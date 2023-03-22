@@ -46,7 +46,7 @@ def break_cycles_tarjan(G):
                 if max_index_edge:
                     # reverse the edge with the highest index
                     new_G.remove_edge(*max_index_edge)
-                    new_G.add_edge(max_index_edge[1], max_index_edge[0])
+                    #new_G.add_edge(max_index_edge[1], max_index_edge[0])
 
     for node in G:
         if node not in index:
@@ -73,7 +73,8 @@ def dominator_tree(graph):
 
     # Step 2: Initialize the dominator tree with the same nodes as the input graph
     dtree = nx.DiGraph()
-    dtree.add_nodes_from(graph.nodes)
+    for node in nx.topological_sort(graph):
+        dtree.add_node(node)
 
     # Step 3: Create a mapping from each node to its immediate dominator
     idom = defaultdict(lambda: None)
@@ -98,6 +99,12 @@ def dominator_tree(graph):
         if dom_node is not None:
             dtree.add_edge(dom_node, node)
 
+    # Step 7: Remove the dummy node
+    #dtree.remove_node(-1)
+
+    # sort the dominator tree topologically
+    #dtree = nx.DiGraph(nx.topological_sort(dtree))
+
     return dtree
  
 def find_bubbles(G):
@@ -108,14 +115,22 @@ def find_bubbles(G):
     subprocess.call(['dot', '-Tpng', 'broken.dot', '-o', 'broken.png'])
     topological_order = list(nx.topological_sort(G))
     dom_tree = dominator_tree(G)
+    # write the updated graph G to a file as dot
+    nx.drawing.nx_pydot.write_dot(G, 'updated.dot')
+    # run dot to generate a png
+    subprocess.call(['dot', '-Tpng', 'updated.dot', '-o', 'updated.png'])
     bubbles = []
     # write the dominator tree to a dot file
     nx.drawing.nx_pydot.write_dot(dom_tree, 'dom_tree.dot')
     # use dot to convert the dot file to a png file
     subprocess.call(['dot', '-Tpng', 'dom_tree.dot', '-o', 'dom_tree.png'])
     for parent in dom_tree:
-        if G.in_degree(parent) > 1:
+        # print the parent node
+        print("parent", parent)
+        if G.out_degree(parent) > 1:
+            # print the children of the parent node
             children = list(dom_tree.successors(parent))
+            print("children", children)
             max_child_order = max(topological_order.index(c) for c in children)
             bubble_end = topological_order[max_child_order]
             bubbles.append((parent, bubble_end))
