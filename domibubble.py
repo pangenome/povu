@@ -1,6 +1,7 @@
 import networkx as nx
 from collections import defaultdict
 import subprocess
+from functools import reduce
 
 def break_cycles_tarjan(G):
     index_counter = [0]
@@ -53,84 +54,60 @@ def break_cycles_tarjan(G):
 
     return new_G
 
-def dominator_tree(G, entry):
-    # Initialize data structures for the algorithm
-    semi = defaultdict(set)
-    idom = {}
-    s = {}
-    bucket = defaultdict(list)
+def dominator_tree(graph):
+    """
+    Generate the dominator tree of a given DAG (Directed Acyclic Graph).
 
-    # Depth-first search to populate 'semi' and 's' dictionaries
-    def dfs(n):
-        if n not in semi:
-            semi[n] = len(semi)
-            s[semi[n]] = n
-            for m in G.successors(n):
-                dfs(m)
+    Parameters:
+    graph (nx.DiGraph): A directed acyclic graph represented using networkx.
 
-    # Function to find the ancestor of 'v' with the lowest semi value
-    def ancestor_with_lowest_semi(v):
-        if v not in parent:
-            return None
-        u = v
-        while v in parent:
-            if semi[v] < semi[u]:
-                u = v
-            v = parent.get(v, None)
-        return u
+    Returns:
+    dtree (nx.DiGraph): The dominator tree of the input graph.
+    """
+    # Step 1: Find all the head nodes (nodes with in-degree 0)
+    head_nodes = [node for node, in_degree in graph.in_degree() if in_degree == 0]
+    # add a new node to the graph that dominates all the head nodes
+    graph.add_node(-1)
+    for head_node in head_nodes:
+        graph.add_edge(-1, head_node)
 
-    # Function to set the parent of 'w' to 'v'
-    def link(v, w):
-        parent[w] = v
+    # Step 2: Initialize the dominator tree with the same nodes as the input graph
+    dtree = nx.DiGraph()
+    dtree.add_nodes_from(graph.nodes)
 
-    # Perform the depth-first search starting from the entry node
-    dfs(entry)
-    n = len(semi) - 1
-    parent = {}
+    # Step 3: Create a mapping from each node to its immediate dominator
+    idom = defaultdict(lambda: None)
 
-    # Iterate through nodes in reverse order of the depth-first search
-    while n > 0:
-        w = s[n]
-        
-        # Calculate semi values for 'w' by iterating through predecessors of 'w'
-        for v in G.predecessors(w):
-            u = ancestor_with_lowest_semi(v)
-            if u is not None and semi[u] < semi[w]:
-                semi[w] = semi[u]
+    # Step 4: Define a function to compute the intersection of dominators
+    def intersect(b1, b2):
+        finger1, finger2 = b1, b2
+        while finger1 != finger2:
+            while (finger1 is not None) and (finger2 is None or finger1 > finger2):
+                finger1 = idom[finger1]
+            while (finger2 is not None) and (finger1 is None or finger2 > finger1):
+                finger2 = idom[finger2]
+        return finger1
 
-        # Add 'w' to the bucket of nodes with the same semi value
-        bucket[s[semi[w]]].append(w)
+    # Step 5: Compute the immediate dominators
+    for node in nx.topological_sort(graph):
+        if node != -1:
+            idom[node] = reduce(intersect, [pred for pred in graph.predecessors(node)])
 
-        # Process nodes in the bucket of the parent of 'w'
-        while bucket[s[n - 1]]:
-            v = bucket[s[n - 1]].pop()
-            u = ancestor_with_lowest_semi(v)
-            if u is not None:
-                # Set the immediate dominator of 'v'
-                idom[v] = u if semi[u] < semi[v] else s[n - 1]
+    # Step 6: Add edges between nodes and their immediate dominators in the dominator tree
+    for node, dom_node in idom.items():
+        if dom_node is not None:
+            dtree.add_edge(dom_node, node)
 
-        n -= 1
-
-    # Update the immediate dominator values for all nodes
-    for n in range(1, len(s)):
-        print("n: ", n)
-        print("s[n]: ", s[n])
-        w = s[n]
-        if w in idom and idom[w] != s[semi[w]]:
-            idom[w] = idom[idom[w]]
-
-    # Build the dominator tree as a NetworkX DiGraph using the calculated idom values
-    dom_tree = nx.DiGraph()
-    for node, dominator in idom.items():
-        if dominator is not None:
-            dom_tree.add_edge(dominator, node)
-
-    return dom_tree
+    return dtree
  
-def find_bubbles(G, entry):
+def find_bubbles(G):
     G = break_cycles_tarjan(G)
+    # write the graph to a file as dot
+    nx.drawing.nx_pydot.write_dot(G, 'broken.dot')
+    # run dot to generate a png
+    subprocess.call(['dot', '-Tpng', 'broken.dot', '-o', 'broken.png'])
     topological_order = list(nx.topological_sort(G))
-    dom_tree = dominator_tree(G, entry)
+    dom_tree = dominator_tree(G)
     bubbles = []
     # write the dominator tree to a dot file
     nx.drawing.nx_pydot.write_dot(dom_tree, 'dom_tree.dot')
@@ -155,10 +132,7 @@ nx.drawing.nx_pydot.write_dot(G, 'cyclic.dot')
 # run dot to create a png
 subprocess.call(['dot', '-Tpng', 'cyclic.dot', '-o', 'cyclic.png'])
 
-# Entry node (source node) of the graph
-entry = 0
-
 # Find bubbles in the graph
-bubbles = find_bubbles(G, entry)
+bubbles = find_bubbles(G)
 print("Bubbles found:", bubbles)
 
