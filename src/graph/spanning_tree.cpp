@@ -22,136 +22,56 @@ const std::size_t SIZE_T_MAX = std::numeric_limits<size_t>::max();
  * ----
  */
 Bracket::Bracket():
-  id(SIZE_T_MAX), recent_size_(0),  recent_class_(0), next_(nullptr), prev_(nullptr) {}
-  Bracket::Bracket(BackEdge &b, std::size_t recent_size, std::size_t recent_class)
-  : id(b.id()), recent_size_(recent_size), recent_class_(recent_class), next_(nullptr), prev_(nullptr) {
-  b.set_bracket_ptr(this);
-}
+  back_edge_id_(SIZE_T_MAX),
+  recent_size_(0),
+  recent_class_(0) {}
 
+Bracket::Bracket(
+  std::size_t backedge_id, std::size_t recent_size, std::size_t recent_class, bool is_capping)
+    : back_edge_id_(backedge_id),
+      recent_size_(recent_size),
+      recent_class_(recent_class),
+      is_capping_(is_capping){}
+
+
+bool Bracket::is_capping() const { return this->is_capping_; }  
+std::size_t Bracket::back_edge_id() { return this->back_edge_id_; }
 std::size_t Bracket::recent_class() const { return this->recent_class_; }
 std::size_t Bracket::recent_size() const { return this->recent_size_; }
-Bracket* Bracket::next() {return this->next_;}
-Bracket* Bracket::prev() {return this->prev_;}
-
-void Bracket::set_next(Bracket* p) {
-  this->next_ = p;
-}
-void Bracket::set_prev(Bracket* p) { this->prev_ = p; }
 void Bracket::set_recent_size(std::size_t s) { this->recent_size_ = s; }
 void Bracket::set_recent_class(std::size_t c) { this->recent_class_ = c; }
-
-/*
- * BracketList
- * ----
- */
-  BracketList::BracketList(): first_(nullptr), last_(nullptr), size_(0) {}
-
-// TODO: have one
-Bracket& BracketList::top() { return *this->first_; }
-Bracket* BracketList::first() { return this->first_; }
-Bracket* BracketList::last() { return this->last_; }
-
-std::size_t BracketList::size() const { return this->size_; };
-void BracketList::set_size(std::size_t s) { this->size_ = s; };
-
-void  BracketList::push(Bracket* b) {
-  if (this->size() == 0) {
-    this->last_ = b;
-  }
-  else { // > 0
-    this
-      ->first()
-      ->set_next(b);
-  }
-
-  b->set_prev(this->first());
-
-  /*if (this->size() > 0) {
-    this->first()->set_next(b);
-  }*/
-  // this->first()->set_next(b);
-  this->first_ = b;
-  // TODO: should this inc size_?
-}
-
-void  BracketList::prepend(BracketList& b) {
-  if (this->size() == 0 ) {
-
-      if (this->last_ != nullptr && this->first_ != nullptr) {
-      // TODO: throw proper exception
-      std::cout << "BL prepend not null" << __LINE__ ;
-      exit(1);
-    }
-
-
-  this->first_ = b.first();
-  this->last_ = b.last();
-  }
-  else {
-
-    this->last_->set_prev(b.first());
-    this->last_ = b.last();
-
-  }
-
-  //this->set_size(this->size() + b.size());
-}
-
-void  BracketList::append(BracketList& b) {
-  // assume this will always have size zero?
-  // TODO: update b?
-
-  if (this->size() == 0 ) {
-    // assume first and last are nullptr
-
-    if (this->last_ != nullptr && this->first_ != nullptr) {
-      // TODO: throw proper exception
-      std::cout << "BL append not null" << __LINE__ ;
-      exit(1);
-    }
-
-    
-    this->first_ = b.first();
-    this->last_ = b.last();
-  }
-  else {
-    
-    this->last_->set_prev(b.first());
-    this->last_ = b.last();
-  }
-
-  // this->last_ = b.first(); // TODO why does this work?
-  //this->set_size(this->size() + b.size());
-}
 
 /*
  * Edge
  * ----
  */
-Edge::Edge():  null_(true) {}
+// constructor(s)
+Edge::Edge(): null_(true) {}
 Edge::Edge(std::size_t id, std::size_t src, std::size_t tgt):
   id_(id), src(src), tgt(tgt), null_(false) {}
 
+// getters
 std::size_t Edge::id() const { return this->id_; }
 std::size_t Edge::get_parent() const { return this->src; }
 std::size_t Edge::get_child() const { return this->tgt; }
-void Edge::set_class_idx(std::size_t c) { this->class_ = c; }
 std::size_t Edge::get_class_idx() { return this->class_; }
+
+// setters
+void Edge::set_class_idx(std::size_t c) { this->class_ = c; }
 
 /*
  * BackEdge
  * --------
  */
 BackEdge::BackEdge(bool capping_be):
-  b(nullptr),  class_(SIZE_T_MAX), capping_back_edge_(capping_be), null_(true)
+  class_(SIZE_T_MAX), capping_back_edge_(capping_be), null_(true)
 {}
 
-BackEdge::BackEdge(
-  std::size_t id, std::size_t src, std::size_t tgt, bool capping_be):
-  id_(id), src(src), tgt(tgt), b(nullptr), class_(SIZE_T_MAX),
-  recent_class_(SIZE_T_MAX), recent_size_(SIZE_T_MAX),
-  capping_back_edge_(capping_be),
-  null_(false) {}
+BackEdge::BackEdge(std::size_t id, std::size_t src, std::size_t tgt,
+                   bool capping_be)
+    : id_(id), src(src), tgt(tgt), class_(SIZE_T_MAX),
+      recent_class_(SIZE_T_MAX), recent_size_(SIZE_T_MAX),
+      capping_back_edge_(capping_be), null_(false) {}
 
 std::size_t BackEdge::id() const { return this->id_; }
 std::size_t BackEdge::get_src() const { return this->src; }
@@ -167,53 +87,52 @@ bool BackEdge::is_capping_backedge() const { return this->capping_back_edge_; }
 void BackEdge::set_class(std::size_t c) { this->class_ = c; }
 void BackEdge::set_recent_class(std::size_t c) { this->recent_class_ = c;}
 void BackEdge::set_recent_size(std::size_t s) { this->recent_size_ = s; }
-
-Bracket* BackEdge::bracket_ptr() { return this->b; }
-void BackEdge::set_bracket_ptr(Bracket* p) { this->b = p; }
+std::list<Bracket>::iterator BackEdge::bracket_it() { return this->bi; }
+void BackEdge::set_bracket_it(std::list<Bracket>::iterator it) {
+  this->bi = it;
+}
 
 /*
  * Vertex
  * ------
  */
-
 // Constructor(s)
 Vertex::Vertex():
-  idx(0),
+  dfs_num_(SIZE_T_MAX),
   parent_id(std::numeric_limits<size_t>::max()),
   hi_(std::numeric_limits<size_t>::max()),
   null_(true) {}
 
 Vertex::Vertex(std::size_t id, std::size_t parent_id):
-  idx (id),
+  dfs_num_ (id),
   parent_id(parent_id),
   hi_(std::numeric_limits<size_t>::max()),
   null_(false){}
 
-
+// getters
+std::size_t  Vertex::hi() const { return this->hi_; }
+std::size_t  Vertex::dfs_num() const { return this->dfs_num_; }
+bool Vertex::is_leaf() const { return this->children.empty(); }
+std::size_t  Vertex::parent() const { return this->parent_id; }
 std::set<size_t> const &Vertex::get_ibe() const { return this->ibe; }
 std::set<size_t> const &Vertex::get_obe() const { return this->obe; }
-std::set<size_t> const& Vertex::get_children() const { return this->children; }
 size_t const& Vertex::get_parent_idx() const { return this->parent_id; }
-
-void Vertex::unset_null(){ this->null_ = false;}
-void Vertex::add_obe(std::size_t id) { this->obe.insert(id); }
-void Vertex::add_ibe(std::size_t id) { this->ibe.insert(id); }
-void Vertex::add_child(std::size_t id) { this->children.insert(id); }
-void Vertex::set_parent(std::size_t id) { this->parent_id = id; }
-void Vertex::set_hi(std::size_t val) { this->hi_ = val; }
-
+std::set<size_t> const& Vertex::get_children() const { return this->children; }
 bool Vertex::is_root() const {
   return
     !this->null_ &&
-    this->id() == 0 &&
+    this->dfs_num() == 0 &&
     this->parent_id == std::numeric_limits<size_t>::max();
 }
 
-
-bool Vertex::is_leaf() const { return this->children.empty(); }
-std::size_t  Vertex::hi() const { return this->hi_; }
-std::size_t  Vertex::id() const { return this->idx; }
-std::size_t  Vertex::parent() const { return this->parent_id; }
+// setters    
+void Vertex::unset_null(){ this->null_ = false;}
+void Vertex::add_obe(std::size_t obe_id) { this->obe.insert(obe_id); }
+void Vertex::add_ibe(std::size_t ibe_id) { this->ibe.insert(ibe_id); }
+void Vertex::add_child(std::size_t e_id) { this->children.insert(e_id); }
+void Vertex::set_parent(std::size_t n_id) { this->parent_id = n_id; }
+void Vertex::set_hi(std::size_t val) { this->hi_ = val; }
+void Vertex::set_dfs_num(std::size_t idx) { this->dfs_num_ = idx; }
 
 /*
  * Tree
@@ -225,6 +144,7 @@ Tree::Tree() :
   tree_edges(std::vector<Edge>{}),
   back_edges(std::vector<BackEdge>{}),
   bracket_lists(std::vector<BracketList>{}),
+  sort_(std::vector<std::size_t>{}),
   equiv_class_count_(0) {}
 
 Tree::Tree(std::size_t size) :
@@ -232,18 +152,29 @@ Tree::Tree(std::size_t size) :
   tree_edges(std::vector<Edge>{}),
   back_edges(std::vector<BackEdge>{}),
   bracket_lists(std::vector<BracketList>{}),
-equiv_class_count_(0) {
+  sort_(std::vector<std::size_t>{}),
+  equiv_class_count_(0) {
   this->nodes.resize(size);
   this->bracket_lists.resize(size);
+  this->sort_.resize(size);
 }
 
+void Tree::set_sort(std::size_t idx, std::size_t vertex) {
+  this->sort_.at(idx) = vertex;
+}
+void Tree::set_dfs_num(std::size_t vertex, std::size_t dfs_num) {
+  this->nodes.at(vertex).set_dfs_num(dfs_num);
+}
 
+    
 Vertex& Tree::get_root() { return this->nodes.at(0); }
 std::size_t Tree::size() const { return this->nodes.size(); }
 Vertex const &Tree::get_vertex(std::size_t vertex) const {
   return this->nodes.at(vertex);
 }
-
+Vertex& Tree::get_vertex_mut(std::size_t vertex) {
+  return this->nodes.at(vertex);
+}
 std::size_t Tree::list_size(std::size_t vertex) {
   return this->bracket_lists.at(vertex).size();
 }
@@ -361,23 +292,14 @@ BackEdge& Tree::get_backedge(std::size_t backedge_idx) {
   return this->back_edges.at(backedge_idx);
 }
 
-void Tree::add_vertex(Vertex &&v) {
-
-  if (this->size() > 0 && v.is_root()) {
-    std::cerr << "Issue " << v.id() << "\n"; exit(1); // TODO: throw exception
-  } else if (v.is_root()) {
-    this->nodes.push_back(std::move(v));
-    return;
+BackEdge Tree::get_backedge_given_id(std::size_t backedge_id) {
+  BackEdge b;
+  for (auto be : this->back_edges) {
+    if (be.id() == backedge_id) {
+      b = be;
+    }
   }
-
-  for (auto idx{this->size()}; idx <= std::max(v.id(), v.parent()); idx++) {
-    this->nodes.push_back(Vertex());
-  }
-
-  this->nodes[v.id()] = std::move(v);
-  this->nodes[v.parent()].add_child(v.id());
-  // expect id to be size + 1?
-  //this->nodes.push_back(std::move(v));
+  return b;
 }
 
 void Tree::add_tree_edge(std::size_t frm, std::size_t to) {
@@ -406,75 +328,90 @@ std::size_t Tree::add_be(std::size_t frm, std::size_t to, bool capping_be) {
 void Tree::set_hi(std::size_t vertex, std::size_t val) {
   this->nodes.at(vertex).set_hi(val);
 }
-void Tree::concat_brackets(std::size_t parent_vertex, std::size_t child_vertex) {
-  //BracketList& l_p = this->bracket_lists.at(parent_vertex);
-  BracketList& child_bracket = this->bracket_lists.at(child_vertex);
-  BracketList& parent_bracket = this->bracket_lists.at(parent_vertex);
-  parent_bracket.append(child_bracket);
-  child_bracket.prepend(parent_bracket);
 
-  std::size_t ps =  parent_bracket.size();
-  std::size_t cs =  child_bracket.size();
+/**
+ * insert the elements of the child bracket list at the
+ * beginning of the parent bracket list
+ *
+ * TODO: make constant time
+ *
+ * @param parent_vertex
+ * @param child_vertex
+*/
+void
+Tree::concat_bracket_lists(std::size_t parent_vertex, std::size_t child_vertex) {
+  BracketList& bl_p = this->bracket_lists.at(parent_vertex);
+  BracketList& bl_c = this->bracket_lists.at(child_vertex);
 
-  parent_bracket.set_size(cs + ps);
-  child_bracket.set_size(cs + ps);
+  bl_p.insert(bl_p.begin(), bl_c.begin(), bl_c.end() );
 }
 
+// TODO: once deleted do we care to reflect changes in the concated ones?
+// WE DO!!
+/**
+   delete the bracket that is associated with the backedge
+   given a vertex id and a backedge idx
+   */
 void Tree::del_bracket(std::size_t vertex, std::size_t backedge_idx) {
   BackEdge& b = this->back_edges.at(backedge_idx);
 
-  Bracket* b_ptr = b.bracket_ptr();
-  if (b_ptr == nullptr) {
-    std::cout << "is null" << __LINE__;
-    exit(1);
+  std::list<Bracket>::iterator b_it =
+    this->back_edges.at(backedge_idx).bracket_it();
+    // BracketList& bl = this->bracket_lists.at(vertex);
+
+  // auto res = this->bracket_lists.at(vertex).erase(b_it);
+
+  for (auto br = this->bracket_lists.at(vertex).begin();
+       br != this->bracket_lists.at(vertex).end();
+       br++) {
+    if (br->back_edge_id() == b.id()) {
+      this->bracket_lists.at(vertex).erase(br);
+      std::size_t s =  this->bracket_lists.at(vertex).size();
+      this->bracket_lists.at(vertex).front().set_recent_size(s);
+      return;
+    }
   }
+}
 
-  Bracket* nxt_ptr = b_ptr->next();
-  Bracket* prv_ptr = b_ptr->prev();
-
-  if (nxt_ptr != nullptr) { // why can it be null?
-    nxt_ptr->set_prev(prv_ptr);
-  }
-
-  if (prv_ptr != nullptr) {
-    prv_ptr->set_next(nxt_ptr);
-  }
-  
-
-  delete b_ptr;
-  b_ptr = nullptr;
-
-  BracketList& bl = this->bracket_lists.at(b.get_src());
-  bl.set_size(bl.size() - 1);
-
-  // TODO: is b_ptr deleted?
+BracketList& Tree::get_bracket_list(std::size_t vertex) {
+    return this->bracket_lists.at(vertex);
 }
 
 void Tree::push(std::size_t vertex, std::size_t backege_idx) {
   std::size_t s = this->bracket_lists.at(vertex).size();
-  ++s;
+  // ++s;
 
-  Bracket* b = new Bracket(this->back_edges.at(backege_idx),
-                           s,
-                           this->equiv_class_count_);
-  this->bracket_lists.at(vertex).push(b);
+  BackEdge& be = this->back_edges.at(backege_idx);
+
+  // TODO: std::move
+  // back edge id, recent size, recent class
+  
+  Bracket br =
+    Bracket(be.id(), s, this->equiv_class_count_, be.is_capping_backedge());
+  this->bracket_lists.at(vertex).push_front(br);
+  std::list<Bracket>::iterator br_it = this->bracket_lists.at(vertex).begin();
 
   // std::size_t s = this->bracket_lists.at(vertex).size();
-  this->bracket_lists.at(vertex).set_size(s);
+  // this->bracket_lists.at(vertex).set_size(++s);
+
+  // update the backedge
+  be.set_bracket_it(br_it);
+  // TODO: unnecssary?
+  be.set_class(this->equiv_class_count_);
+  be.set_recent_size(s);
 }
 
 Bracket& Tree::top(std::size_t vertex) {
-  return this->bracket_lists.at(vertex).top();
+  return this->bracket_lists.at(vertex).front();
 }
 
-std::size_t Tree::new_class() {
-  return this->equiv_class_count_++;
-}
+std::size_t Tree::new_class() { return this->equiv_class_count_++; }
 
 Edge& Tree::get_incoming_edge(std::size_t vertex) {
   std::size_t e_idx = this->nodes.at(vertex).get_parent_idx();
   return this->tree_edges.at(e_idx);
 }
+std::size_t Tree::get_sorted(std::size_t idx) { return  this->sort_.at(idx);}
 
 void Tree::print_dot() {
   std::cout << std::format(
@@ -484,10 +421,24 @@ void Tree::print_dot() {
     "\tedge [arrowhead=vee];\n"
   );
 
-  for (std::size_t i{}; i < this->size(); i++) {
+  for (std::size_t j{}; j < this->size(); j++){
+    std::size_t i = this->get_sorted(j);
+    std::cout << std::format("\t{} [label = \"{} {}_s\"];\n", i, i, j) ;
+  }
+
+
+  for (std::size_t j{}; j < this->size(); j++) {
+
+    std::size_t i = this->sort_.at(j);
+
     // Vertex const& vv = this->get_vertex(i);
     for (auto c : this->get_child_edges(i)) {
-      std::cout << std::format("\t{} -- {}  [label=\"{} {}\"];\n", i, c.get_child(), c.id(), c.get_class_idx());
+      std::string cl = c.get_class_idx() > 10000
+                           ? "\u2205"
+                           : std::to_string(c.get_class_idx());
+
+      std::cout << std::format("\t{}  -- {}  [label=\"{} {}\"];\n",
+                               i, c.get_child(), c.id(), cl);
     }
 
 
@@ -496,7 +447,15 @@ void Tree::print_dot() {
     //}
 
     for (auto o: this->get_obe_w_id(i)) {
-      std::cout << std::format("\t{} -- {} [label=\"{}\" style=dotted];\n", i, o.second, o.first );
+      std::string cl = o.first > 10000 ? "\u2205" : std::to_string(o.first);
+      std::string color =  this->get_backedge_given_id(o.first).is_capping_backedge() ?
+        "red" :
+        "black";
+      
+      std::cout << std::format(
+          "\t{} -- {} [label=\"{}\" style=\"dotted\" color=\"{}\"];\n",
+          i, o.second, cl, color
+          );
     }
   }
 

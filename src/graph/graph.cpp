@@ -17,7 +17,9 @@
 // undirected graph
 namespace u_graph {
 
-// Vertex
+/*
+    Vertex
+*/
 Vertex::Vertex() : adj_vertices(std::set<std::size_t>{}) { }
 void Vertex::add_adjacent_vertex(std::size_t vertex) {
   this->adj_vertices.insert(vertex);
@@ -29,7 +31,7 @@ std::set<std::size_t> const& Vertex::get_adjacent_vertices() const {
 }
 
 void Vertex::del_adjacent_vertex(std::size_t vertex) {
-  adj_vertices.erase(vertex);
+  this->adj_vertices.erase(vertex);
 }
 
 
@@ -97,7 +99,7 @@ void CFG::set_stop_node(std::size_t vertex) {
 void CFG::add_edge(std::size_t n1, std::size_t n2) {
   ++n1; ++n2;
   // move the last node back if n2 or n1 reaches it
-  // TODO: what about self loops
+  // TODO: what about self loops i.e n1 == n2?
   std::size_t size = this->size();
   // TODO: update current start and stop nodes
   if (size < std::max(n1, n2)) {
@@ -128,8 +130,17 @@ spanning_tree::Tree CFG::compute_spanning_tree() {
   std::size_t current_vertex{this->start_node_id};
   visited.push(current_vertex);
 
+  std::size_t counter{0};
+
   while (!visited.empty()) {
     current_vertex = visited.top();
+
+    if (!seen.count(current_vertex)) {
+      t.set_dfs_num(current_vertex, counter);
+      t.set_sort(counter, current_vertex);
+      ++counter;
+    }
+
     seen.insert(current_vertex);
 
     // TODO: simplify below for loop
@@ -141,7 +152,6 @@ spanning_tree::Tree CFG::compute_spanning_tree() {
     // TODO: better condition here for speedup
     for (auto a : v.get_adjacent_vertices()) {
       if (seen.find(a) == seen.end()) {
-        // std::cout << " " << current_vertex << "->" << a << "\n";
         t.add_tree_edge(current_vertex, a);
         visited.push(a);
         f = true;

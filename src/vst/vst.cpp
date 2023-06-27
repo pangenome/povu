@@ -41,7 +41,6 @@ Vertex::Vertex(
     children(std::set<std::size_t>{})
 {}
 
-
 // getters
 // -------
 std::set<std::size_t> const& Vertex::get_children() const {
@@ -53,10 +52,10 @@ std::set<std::size_t> const& Vertex::get_children() const {
 void Vertex::add_child(std::size_t child_idx) {
   this->children.insert(child_idx);
 }
-
+    
 /*
-  VST
-  ---
+ * VST
+ * ---
 */
 
 // constructor(s)
@@ -73,11 +72,13 @@ VST::VST(spanning_tree::Tree &t) : t(std::vector<Vertex>{}) {
   // ---------------
 
   // current spanning tree vertex
+  // TODO: use a reference
+  // the dfs num of the root is always zero
   spanning_tree::Vertex curr_span_tree_v = t.get_root();
 
   // current variant structure tree vertex
-  Vertex curr_vst_v = Vertex(curr_span_tree_v.id());
-  furthest.insert({curr_span_tree_v.id(), this->root_idx()});
+  Vertex curr_vst_v = Vertex(curr_span_tree_v.dfs_num());
+  furthest.insert({curr_span_tree_v.dfs_num(), this->root_idx()});
 
   this->t.push_back(curr_vst_v); // update VST
 
@@ -88,19 +89,17 @@ VST::VST(spanning_tree::Tree &t) : t(std::vector<Vertex>{}) {
 
     curr_span_tree_v = t.get_vertex(i);
     current_equiv_class = t.get_incoming_edge(i).get_class_idx();
+
     // TODO: not hardcode zero
     parent_idx = current_equiv_class == 0
                      ? this->root_idx()
                      : furthest.at(current_equiv_class - 1);
 
-    curr_vst_v = Vertex(curr_span_tree_v.id(), current_equiv_class, parent_idx);
+    curr_vst_v = Vertex(i, current_equiv_class, parent_idx);
 
     // update the map
     // --------------
-
-    // no need to check is value is larger or is already set because
-    // we are guaranteed to always add at the max value for given equiv class
-    furthest.insert({current_equiv_class, this->size()});
+    furthest.insert_or_assign(current_equiv_class, this->size());
 
     // update VST
     // ----------
@@ -111,12 +110,11 @@ VST::VST(spanning_tree::Tree &t) : t(std::vector<Vertex>{}) {
 
 // getters
 // -------
+std::size_t VST::size() const { return this->t.size(); }
+std::size_t VST::root_idx() const { return this->root_idx_; }
 std::set<std::size_t> const& VST::get_children(std::size_t v) const {
   return this->t.at(v).get_children();
 }
-
-std::size_t VST::size() const {return this->t.size(); }
-std::size_t VST::root_idx() const {return this->root_idx_; }
 
 // IO
 // --
@@ -137,16 +135,29 @@ void VST::print_dot() {
   std::cout << "}" << std::endl;
 }
 
+/*
+ * Functions
+ * ---------
+ */
+  
 /**
  * Compute the equivalance class of a given vertex
  */
-void handle_vertex(spanning_tree::Tree& t, std::size_t v) {
+void handle_vertex(spanning_tree::Tree& t, std::size_t r) {
+    
+  std::size_t v = t.get_sorted(r);
+
   /*
    * compute v.hi
+   * ------------
    */
-  std::set<std::size_t> ibe = t.get_ibe(v);
-  std::size_t hi_0 =
-    ibe.empty() ? std::numeric_limits<size_t>::max() : *ibe.begin();
+  std::set<std::size_t> obe = t.get_obe(v);
+  
+  std::size_t hi_0 {SIZE_T_MAX};
+  for (auto be: obe) {
+    // if (t.get_vertex(be).dfs_num() < hi_0) { hi_0 = t.get_vertex(be).dfs_num(); }
+    hi_0 = std::min(hi_0, t.get_vertex(be).dfs_num());
+  }
 
   // given a node v find its child with the lowest hi value
   // (closest to root)
@@ -154,9 +165,44 @@ void handle_vertex(spanning_tree::Tree& t, std::size_t v) {
   // children are empty for dummy stop node
 
   std::set<std::size_t> children = t.get_children(v);
-  std::size_t hi_1{SIZE_T_MAX};
+
+  // a vector of pairs of hi values and children
+  std::vector<std::pair<std::size_t, std::size_t>> hi_and_child{};
+  hi_and_child.reserve(children.size());
+
+  // for each child input the hi value and the child
+  for (auto child: children) {
+      hi_and_child.push_back({t.get_vertex(child).hi(), child});
+  }
+
+  // sort the vertex by hi value
+  std::sort(hi_and_child.begin(), hi_and_child.end());
+  
+  // for each child vertex
+  // the lowest hi value of all the children vertices
+  std::size_t hi_1{SIZE_T_MAX}; 
+  // the child vertex whose hi value is hi_1
   std::size_t hi_child{SIZE_T_MAX};
-  std::size_t hi_2{std::numeric_limits<size_t>::max()};
+
+  // if hi_and_child is not empty
+  // assign hi_1 and hi_child from the first element of hi_and_child
+  if (!hi_and_child.empty()) {
+      hi_1 = hi_and_child[0].first;
+      hi_child = hi_and_child[0].second;
+  }
+
+  //spanning_tree::Vertex& vv = ;
+  t.get_vertex_mut(v).set_hi(std::min(hi_0, hi_1));
+  
+  //std::size_t n_hi = std::min(hi_0, hi_1);
+  
+  std::size_t hi_2{SIZE_T_MAX};
+
+  // if hi_and_child has at least 2 elements
+  // assign hi_2 from the second element of hi_and_child
+  if (hi_and_child.size() > 1) {
+       hi_2 = hi_and_child[1].first;
+  }
 
   // sorts by the first element of the pair
   std::set<std::pair<std::size_t, std::size_t>> p; // TODO: rename p
@@ -178,9 +224,12 @@ void handle_vertex(spanning_tree::Tree& t, std::size_t v) {
 
   /*
    * compute bracket list
+   * --------------------
    */
   // the bracketlist was created in tree constructor
-  for (auto c: children) { t.concat_brackets(v, c); }
+  for (auto c: children) {
+    t.concat_bracket_lists(v, c);
+  }
 
   // for each capping backedge TODO: add
 
@@ -199,37 +248,43 @@ void handle_vertex(spanning_tree::Tree& t, std::size_t v) {
   }
 
   // push outgoing backedges
-  std::set<std::size_t> obe = t.get_obe_idxs(v);
-  for (auto b: obe) {
+  std::set<std::size_t> obe_i = t.get_obe_idxs(v);
+  for (auto b: obe_i) {
     t.push(v, b);
   }
 
   if (hi_2 < hi_0) {
     // add a capping backedge
-    std::size_t be_idx = t.add_be(v, hi_2, true);
+      std::size_t dest_v =  t.get_sorted(hi_2);
+    std::size_t be_idx = t.add_be(v, dest_v, true);
     t.push(v, be_idx);
   }
 
   /*
-    determine equivalance class for edge v.parent() to v
+   * determine equivalance class for edge v.parent() to v
+   * ---------------------------------------------------
    */
 
   // if v is not the root of the spanning tree
   if (!t.is_root(v)) {
     spanning_tree::Bracket& b = t.top(v);
 
-    //
-    if (t.list_size(v) !=  b.recent_size()) {
+    if (!b.is_capping() && t.list_size(v) !=  b.recent_size()) {
       b.set_recent_size(t.list_size(v));
       b.set_recent_class(t.new_class());
     }
 
-    //std::size_t c = t.new_class();
-
+    // when retreating out of a node the tree edge is labelled with
+    // the class of the topmost bracket in the bracket stack
     spanning_tree::Edge& e = t.get_incoming_edge(v);
-    //std::cout << "b->rc: " << b.recent_class() << "\n";
-    e.set_class_idx(b.recent_class());
-
+    if (b.is_capping()) {
+      // e.set_class_idx(b.get_class());
+      e.set_class_idx(b.recent_class() - 1);
+    } else {
+      e.set_class_idx(b.recent_class());
+    }
+    //e.set_class_idx(b.recent_class());
+    
     /*check for e, b equivalance*/
     if (b.recent_size() == 1) {
       b.set_recent_class(e.get_class_idx());
@@ -239,12 +294,13 @@ void handle_vertex(spanning_tree::Tree& t, std::size_t v) {
 
 /**
  * Find the cycle equivalent edges
+ * in reverse DFS
  */
 void cycle_equiv(spanning_tree::Tree &t) {
-  // in reverse DFS
-  for (std::size_t v{t.size() - 1}; v > 0; --v) {
-    // std::cout << "v: " <<  v << "\n";
-    handle_vertex(t, v);
+  for (std::size_t r{t.size() - 1}; r > 0; --r) {
+    
+    // std::cout << "v: " << v << "\n";
+    handle_vertex(t, r);
   }
 }
 

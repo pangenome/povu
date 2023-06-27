@@ -22,7 +22,7 @@ class Edge {
 public:
 Edge(std::size_t l, std::size_t r): l(std::min(l,r)), r(std::max(l,r)){}
 
-  // spaceship operator
+// spaceship operator
 friend constexpr auto operator<=>(Edge, Edge) = default;
 };
 
@@ -44,8 +44,8 @@ class CFG {
   std::vector<Vertex> adj_list;
   // start node is always zero
   // stop node is always N+1
-  //std::set<std::size_t> start_nodes;
-  //std::set<std::size_t> end_nodes;
+  // std::set<std::size_t> start_nodes;
+  // std::set<std::size_t> end_nodes;
   std::size_t start_node_id{}; // static data member
 
   /*
