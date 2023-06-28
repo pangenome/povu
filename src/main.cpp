@@ -19,25 +19,6 @@ u_graph::CFG g1() {
   return g;
 };
 
-// overlapping
-u_graph::CFG g6() {
-  u_graph::CFG g;
-
-  g.add_edge(0, 1);
-  g.add_edge(1, 2);
-  g.add_edge(2, 3);
-  g.add_edge(3, 4);
-  g.add_edge(4, 2);
-  g.add_edge(4, 5);
-  g.add_edge(1, 5);
-  g.add_edge(5, 6);
-
-  g.set_start_node(0);
-  g.set_stop_node(6);
-
-  return g;
-};
-
 // big
 u_graph::CFG g2() {
   u_graph::CFG g;
@@ -108,11 +89,54 @@ u_graph::CFG g4() {
   return g;
 }
 
+// fig 1 a paper
+// diamond
+u_graph::CFG g5() {
+  u_graph::CFG g;
+  g = u_graph::CFG();
+
+  g.add_edge(0, 1);
+  g.add_edge(1, 2);
+  g.add_edge(1, 3);
+  g.add_edge(2, 4);
+  g.add_edge(3, 4);
+  g.add_edge(4, 5);
+  g.add_edge(3, 5);
+  g.add_edge(6, 5);
+
+  g.set_start_node(0);
+  g.set_stop_node(6);
+
+  return g;
+}
+
+
+// overlapping
+u_graph::CFG g6() {
+  u_graph::CFG g;
+
+  g.add_edge(0, 1);
+  g.add_edge(1, 2);
+  g.add_edge(2, 3);
+  g.add_edge(3, 4);
+  g.add_edge(4, 2);
+  g.add_edge(4, 5);
+  g.add_edge(1, 5);
+  g.add_edge(5, 6);
+
+  g.set_start_node(0);
+  g.set_stop_node(6);
+
+  return g;
+};
+
+
+
 const bool DEBUG = true;
 
 int main() {
     
-  u_graph::CFG g = g6();
+  u_graph::CFG g = g5();
   if (DEBUG) { 
     std::cout << "Input Graph" << "\n\n";
     g.print_dot();

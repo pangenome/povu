@@ -90,10 +90,19 @@ VST::VST(spanning_tree::Tree &t) : t(std::vector<Vertex>{}) {
     curr_span_tree_v = t.get_vertex(i);
     current_equiv_class = t.get_incoming_edge(i).get_class_idx();
 
-    // TODO: not hardcode zero
-    parent_idx = current_equiv_class == 0
-                     ? this->root_idx()
-                     : furthest.at(current_equiv_class - 1);
+
+    if (current_equiv_class == 0) { 
+      parent_idx = this->root_idx();
+    }
+    // more than one element
+    else if (furthest.find(current_equiv_class - 1) == furthest.end()) {
+      parent_idx = (--furthest.end())->second;
+    }
+    else {
+      parent_idx = furthest.at(current_equiv_class-1);
+    }
+    
+    
 
     curr_vst_v = Vertex(i, current_equiv_class, parent_idx);
 
