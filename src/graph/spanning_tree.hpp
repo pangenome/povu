@@ -16,7 +16,6 @@ class BackEdge; //
 typedef std::list<Bracket> BracketList;
 // class BracketList;
 
-// enum colour { grey, black };
 
 /*
  * edge

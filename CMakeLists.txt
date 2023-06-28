@@ -32,6 +32,7 @@ endif()
 
 ADD_LIBRARY(LibsModule
   src/vst/vst.cpp
+    src/graph/digraph.cpp
   src/graph/spanning_tree.cpp
   src/graph/graph.cpp
 )

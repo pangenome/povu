@@ -1,5 +1,6 @@
 #include <iostream>
 
+#include "./graph/digraph.hpp"
 #include "./graph/graph.hpp"
 #include "./graph/spanning_tree.hpp"
 #include "./vst/vst.hpp"
@@ -130,13 +131,59 @@ u_graph::CFG g6() {
   return g;
 };
 
+digraph::DiGraph g7() {
+  digraph::DiGraph g(7);
+
+  g.add_edge(0, 1);
+  g.add_edge(1, 2);
+  g.add_edge(2, 3);
+  g.add_edge(3, 4);
+  g.add_edge(4, 2);
+  g.add_edge(4, 5);
+  g.add_edge(1, 5);
+  g.add_edge(5, 6);
+
+  g.add_edge(5, 7);
+  g.add_edge(6, 7);
+  
+  g.add_edge(7, 8);
+
+  g.add_start_node(0);
+  g.add_stop_node(6);
+
+  return g;
+
+}
+
+digraph::DiGraph g8() {
+  digraph::DiGraph g(5);
+
+  g.add_edge(0, 1);
+  g.add_edge(1, 2);
+  g.add_edge(0, 2);
+  g.add_edge(2, 3);
+  g.add_edge(2, 4);
+
+  return g;
+}
 
 
 const bool DEBUG = true;
 
 int main() {
+
+  digraph::DiGraph d = g7();
+
+  //d.print_dot();
+
+  d.biedge();
+
+
+  d.print_dot();
+  
+  return 0;
     
-  u_graph::CFG g = g5();
+  u_graph::CFG g = g1();
   if (DEBUG) { 
     std::cout << "Input Graph" << "\n\n";
     g.print_dot();

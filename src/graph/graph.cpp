@@ -18,8 +18,8 @@
 namespace u_graph {
 
 /*
-    Vertex
-*/
+ * Vertex
+ */
 Vertex::Vertex() : adj_vertices(std::set<std::size_t>{}) { }
 void Vertex::add_adjacent_vertex(std::size_t vertex) {
   this->adj_vertices.insert(vertex);
@@ -178,6 +178,7 @@ spanning_tree::Tree CFG::compute_spanning_tree() {
   return t;
 }
 
+  
 void CFG::print_dot() {
   std::cout << std::format(
     "graph G {{\n"

@@ -90,8 +90,7 @@ VST::VST(spanning_tree::Tree &t) : t(std::vector<Vertex>{}) {
     curr_span_tree_v = t.get_vertex(i);
     current_equiv_class = t.get_incoming_edge(i).get_class_idx();
 
-
-    if (current_equiv_class == 0) { 
+    if (current_equiv_class == 0) {
       parent_idx = this->root_idx();
     }
     // more than one element

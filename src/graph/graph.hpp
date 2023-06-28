@@ -12,15 +12,15 @@
 
 // undirected graph
 namespace u_graph {
-
+  
 /**
  * An edge in an undirected graph where (l , r) == (r, l)
  */
 class Edge {
-    std::size_t l;
-    std::size_t r;
+  std::size_t l;
+  std::size_t r;
 public:
-Edge(std::size_t l, std::size_t r): l(std::min(l,r)), r(std::max(l,r)){}
+  Edge(std::size_t l, std::size_t r):  l(std::min(l,r)), r(std::max(l,r)){}
 
 // spaceship operator
 friend constexpr auto operator<=>(Edge, Edge) = default;
@@ -77,6 +77,10 @@ public:
   void set_stop_node(std::size_t vertex);
   std::size_t size();
   spanning_tree::Tree compute_spanning_tree();
+
+  // split any node with > 1 incoming and >1 outgoing edges
+  // into two nodes connected by a single (grey) edge
+  void make_bi_edged();
 
   void print_dot();
 };
