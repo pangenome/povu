@@ -164,6 +164,12 @@ digraph::DiGraph g8() {
   g.add_edge(2, 3);
   g.add_edge(2, 4);
 
+
+  g.add_start_node(0);
+    g.add_stop_node(3);
+  g.add_stop_node(4);
+
+  
   return g;
 }
 
@@ -172,18 +178,7 @@ const bool DEBUG = true;
 
 int main() {
 
-  digraph::DiGraph d = g7();
-
-  //d.print_dot();
-
-  d.biedge();
-
-
-  d.print_dot();
-  
-  return 0;
-    
-  u_graph::CFG g = g1();
+  u_graph::CFG g = g3();
   if (DEBUG) { 
     std::cout << "Input Graph" << "\n\n";
     g.print_dot();
@@ -205,6 +200,13 @@ int main() {
   if (DEBUG) { 
     std::cout << "\n\n" << "VST" << "\n\n";
     tv.print_dot();
+  }
+
+  pst::PST p = pst::PST(t);
+  if (DEBUG) { 
+    std::cout << "\n\n" << "PST" << "\n\n";
+    //std::cout << "PST size: " << p.size() << "\n";
+    p.print_dot();
   }
   return  0;
 }

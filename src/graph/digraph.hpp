@@ -1,3 +1,6 @@
+#ifndef DIGRAPH_HPP
+#define DIGRAPH_HPP
+
 #include <cstddef>
 #include <iostream>
 #include <unordered_set>
@@ -94,6 +97,4 @@ public:
 
 };
 } // namespace digraph
-
-
-
+#endif

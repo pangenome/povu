@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "./graph.hpp"
-
+#include "./digraph.hpp"
 
 
 // undirected graph
@@ -41,6 +41,32 @@ CFG::CFG(std::size_t initial_len) {
   this->adj_list = std::move(d);
   this->adj_list[0].add_adjacent_vertex(1);
   this->adj_list[1].add_adjacent_vertex(0);
+}
+  
+CFG::CFG(digraph::DiGraph const& di_graph) {
+  std::size_t size = di_graph.size();
+
+  std::vector<Vertex> d(size+2, Vertex());
+  this->adj_list = std::move(d);
+  this->adj_list[0].add_adjacent_vertex(size+1);
+  this->adj_list[size+1].add_adjacent_vertex(0);
+
+  
+  for (std::size_t i{}; i < size; ++i) {
+    for (auto const& edge : di_graph.get_vertex(i).out()) {
+      this->add_edge(i, edge.to());
+    }
+  }
+
+  // connect all digraph start nodes to start node
+  for (auto const& start_node : di_graph.starts()) {
+     this->set_start_node(start_node);
+  }
+
+  // connect all digraph end nodes to stop node
+  for (auto const& stop_node : di_graph.stops()) {
+    this->set_stop_node(stop_node);
+  }
 }
 
 std::size_t CFG::size_internal() {
@@ -101,21 +127,27 @@ void CFG::add_edge(std::size_t n1, std::size_t n2) {
   // move the last node back if n2 or n1 reaches it
   // TODO: what about self loops i.e n1 == n2?
   std::size_t size = this->size();
+
+
   // TODO: update current start and stop nodes
   if (size < std::max(n1, n2)) {
     // delete edge from start to final
     // is out of range
     this->start_node_internal().del_adjacent_vertex(this->size_internal() - 1);
 
-    std::size_t new_internal_size = this->size_internal() + std::max(n1, n2) - size;
+    std::size_t new_internal_size =
+      this->size_internal() + std::max(n1, n2) - size;
+    
     this->adj_list.resize(new_internal_size, Vertex());
 
     std::size_t stop_node_idx = size + 1;
-    std::swap(this->adj_list[stop_node_idx], this->adj_list[new_internal_size - 1]);
+    std::swap(this->adj_list[stop_node_idx],
+              this->adj_list[new_internal_size - 1]);
+    
     // add edge from start to new final node
     this->start_node_internal().add_adjacent_vertex(new_internal_size - 1);
   }
-
+  
   this->adj_list[n1].add_adjacent_vertex(n2);
   this->adj_list[n2].add_adjacent_vertex(n1);
 }

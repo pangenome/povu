@@ -1,7 +1,12 @@
+#ifndef GRAPH_HPP
+#define GRAPH_HPP
+
 #include <cstddef>
 #include <vector>
 #include <set>
+
 #include "./spanning_tree.hpp"
+#include "./digraph.hpp"
 
 /*
  * TODO:
@@ -64,7 +69,9 @@ public:
   // TODO: from gfa
   // CFG(std::size_t initial_len=2); // from di graph or from gfa
   CFG(std::size_t initial_len=2);
+  CFG(digraph::DiGraph const& di_graph);
 
+  
   // setters
   void add_edge(std::size_t n1, std::size_t n2);
 
@@ -86,3 +93,4 @@ public:
 };
 
 }; // namespace u_graph
+#endif

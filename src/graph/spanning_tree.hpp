@@ -153,6 +153,7 @@ class Vertex {
   std::size_t dfs_num_; 
 
   std::size_t parent_id; // id to idx // index to the tree edge vector ?
+  
   // indexes of the children edges in the tree_edges vector
   std::set<std::size_t> children; // children // index to the tree edge vector
 

@@ -148,6 +148,13 @@ void DiGraph::biedge() {
           }
         }
       }
+
+      // increment stop nodes
+      for (auto& n : this->end_nodes) {
+        if (n > idx) {
+          const_cast<std::size_t&>(n) = n + 1;
+        }
+      }
     }
   }
 }

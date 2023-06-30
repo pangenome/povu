@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 #include <map>
+#include <stack>
 
 #include "./vst.hpp"
 
@@ -33,6 +34,14 @@ Vertex::Vertex(std::size_t idx) :
     children(std::set<std::size_t>{})
 {}
 
+Vertex::Vertex(std::size_t idx, std::size_t cycle_equiv_class) :
+    idx(idx),
+    cycle_equiv_class_(cycle_equiv_class),
+    parent(SIZE_T_MAX),
+    children(std::set<std::size_t>{})
+{}
+
+  
 Vertex::Vertex(
   std::size_t idx, std::size_t cycle_equiv_class, std::size_t parent) :
     idx(idx),
@@ -277,7 +286,7 @@ void handle_vertex(spanning_tree::Tree& t, std::size_t r) {
   if (!t.is_root(v)) {
     spanning_tree::Bracket& b = t.top(v);
 
-    if (!b.is_capping() && t.list_size(v) !=  b.recent_size()) {
+    if (t.list_size(v) !=  b.recent_size()) {
       b.set_recent_size(t.list_size(v));
       b.set_recent_class(t.new_class());
     }
@@ -285,11 +294,12 @@ void handle_vertex(spanning_tree::Tree& t, std::size_t r) {
     // when retreating out of a node the tree edge is labelled with
     // the class of the topmost bracket in the bracket stack
     spanning_tree::Edge& e = t.get_incoming_edge(v);
+    e.set_class_idx(b.recent_class());
     if (b.is_capping()) {
       // e.set_class_idx(b.get_class());
-      e.set_class_idx(b.recent_class() - 1);
+      //e.set_class_idx(b.recent_class() - 1);
     } else {
-      e.set_class_idx(b.recent_class());
+      
     }
     //e.set_class_idx(b.recent_class());
     
@@ -313,4 +323,115 @@ void cycle_equiv(spanning_tree::Tree &t) {
 }
 
 } // namespace vst
+
+namespace pst {
+
+
+    
+/*
+ * PST
+ * ---
+*/
+
+// constructor(s)
+// --------------
+PST::PST(spanning_tree::Tree &t) : t(std::vector<vst::Vertex>{}) {
+  this->t.reserve(t.size()); //
+  // for DFS
+  std::stack<std::size_t> vertex_stack{}; // stack of vertices
+
+  // to determine out parent child relationships in the PST
+  std::stack<std::size_t> class_stack{}; // stack of classes
+  std::set<std::size_t> seen{}; //
+
+  // a mapping of a given class and its parent class
+  std::map <std::size_t, std::size_t> class_and_parent{};
+
+  // initialize the root class parent to itself (0)
+  class_and_parent[0] = 0;
+
+  std::size_t current_class{};
+  vertex_stack.push(current_class);
+    
+  std::size_t current_vertex{};
+  vertex_stack.push(current_vertex);
+
+  vst::Vertex root = vst::Vertex{current_vertex, current_class};
+  this->t.push_back(root);
+
+  vst::Vertex v = root;
+  
+  while (!vertex_stack.empty()) {
+    current_vertex = vertex_stack.top();
+    seen.insert(current_vertex);
+
+    if (current_vertex > 0) {
+      spanning_tree::Edge& current_edge = t.get_incoming_edge(current_vertex);
+      std::size_t new_class = current_edge.get_class_idx();
+  
+      auto it = class_and_parent.find(new_class);
+      if (it == class_and_parent.end()) {
+        std::size_t cl_idx = this->t.size();
+        class_and_parent[new_class] = cl_idx;
+        //class_and_parent.find(current_class)->second;
+        
+        vst::Vertex v = vst::Vertex{current_vertex,
+                                    current_class,
+                                    class_and_parent.find(current_class)->second
+                                   };
+        
+        this->t.push_back(v);
+        
+        if (current_class < this->t.size())   {
+          this->t[current_class].add_child(cl_idx);
+        } else {
+          std::cout << "could not add current_vertex: " << current_vertex << "\n";
+        }
+      }
+
+      current_class = new_class;
+    }
+    
+    bool explored = true;
+
+    for (auto c: t.get_children(current_vertex)){
+      if (seen.find(c) == seen.end()) {
+        vertex_stack.push(c);
+        explored = false;
+      }
+    }
+    
+    if (explored) {
+      vertex_stack.pop();
+    }    
+  }  
+}
+
+std::set<std::size_t> const& PST::get_children(std::size_t v) const {
+  return this->t.at(v).get_children();
+}
+
+std::size_t PST::size() const {
+  return this->t.size();
+}
+
+void PST::print_dot() {
+  std::cout << std::format(
+    "graph G {{\n"
+    "\trankdir = TB;\n"
+    "\tnode[shape = circle];\n"
+    "\tedge [arrowhead=vee];\n"
+  );
+
+  for (std::size_t i{}; i < this->size(); i++) {
+    for (auto c : this->get_children(i)) {
+      std::cout << std::format("\t{} -- {};\n", i, c);
+    }
+  }
+
+  std::cout << "}" << std::endl;
+}
+
+  
+} // namespace pst
 
