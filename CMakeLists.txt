@@ -31,10 +31,12 @@ else()
 endif()
 
 ADD_LIBRARY(LibsModule
-  src/vst/vst.cpp
-    src/graph/digraph.cpp
-  src/graph/spanning_tree.cpp
+  src/graph/tree.cpp
   src/graph/graph.cpp
+  src/graph/digraph.cpp
+  src/graph/spanning_tree.cpp
+  src/vst/vst.cpp
+  src/vst/pst.cpp
 )
 
 set(SOURCE_FILES

@@ -10,12 +10,13 @@
 
 /*
  * TODO:
+ * - rename namespace to flow graph
  * - use smart pointers
  */
 
 // undirected graph
 namespace u_graph {
-  
+
 /**
  * An edge in an undirected graph where (l , r) == (r, l)
  */
@@ -24,7 +25,7 @@ class Edge {
   std::size_t r;
 public:
   Edge(std::size_t l, std::size_t r):  l(std::min(l,r)), r(std::max(l,r)){}
-  
+
 // spaceship operator
 friend constexpr auto operator<=>(Edge, Edge) = default;
 };
@@ -40,9 +41,11 @@ public:
   std::set<std::size_t>const& get_adjacent_vertices() const;
 };
 
-// actually a control flow graph
-// undirected
-// edge from end to start will always be a backedge
+/**
+ * this undirected graph is actually a flow graph
+ * undirected
+ * edge from end to start will always be a backedge
+ */
 class CFG {
   std::vector<Vertex> adj_list;
   // start node is always zero
@@ -61,7 +64,7 @@ class CFG {
   Vertex& stop_node_internal();
   Vertex const& get_vertex_internal(std::size_t vertex) const;
   std::set<std::size_t> const& get_adjacent_vertices_internal(std::size_t vertex) const;
-  
+
 public:
   // CFG();
   // TODO: from gfa
@@ -69,7 +72,7 @@ public:
   CFG(std::size_t initial_len=2);
   CFG(digraph::DiGraph const& di_graph);
 
-  
+
   // setters
   void add_edge(std::size_t n1, std::size_t n2);
 

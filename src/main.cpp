@@ -4,6 +4,7 @@
 #include "./graph/graph.hpp"
 #include "./graph/spanning_tree.hpp"
 #include "./vst/vst.hpp"
+#include "./vst/pst.hpp"
 
 u_graph::CFG g1() {
   u_graph::CFG g;
@@ -82,7 +83,6 @@ u_graph::CFG g4() {
   g.add_edge(1, 5);
   g.add_edge(4, 5);
 
-
   g.set_start_node(0);
   g.set_stop_node(5);
 
@@ -143,7 +143,7 @@ digraph::DiGraph g7() {
 
   g.add_edge(5, 7);
   g.add_edge(6, 7);
-  
+
   g.add_edge(7, 8);
 
   g.add_start_node(0);
@@ -162,9 +162,8 @@ digraph::DiGraph g8() {
   g.add_edge(2, 3);
   g.add_edge(2, 4);
 
-
   g.add_start_node(0);
-    g.add_stop_node(3);
+  g.add_stop_node(3);
   g.add_stop_node(4);
 
   return g;
@@ -175,7 +174,7 @@ digraph::DiGraph g9() {
   digraph::DiGraph g(16);
 
   g.add_edge(0, 1);
-  
+
   g.add_edge(1, 3);
   g.add_edge(3, 5);
 
@@ -186,7 +185,6 @@ digraph::DiGraph g9() {
   g.add_edge(11, 13);
   g.add_edge(13, 1);
 
-  
   g.add_edge(0, 2);
   g.add_edge(2, 4);
   g.add_edge(4, 6);
@@ -200,55 +198,52 @@ digraph::DiGraph g9() {
   g.add_edge(15, 0);
   g.add_edge(13, 15);
 
-    g.add_start_node(0);
-    g.add_stop_node(15);
-  
+  g.add_start_node(0);
+  g.add_stop_node(15);
+
   return g;
 }
-
 
 const bool DEBUG = true;
 
 int main() {
-  
+
   u_graph::CFG g = g9();
-  if (DEBUG) { 
+  if (DEBUG) {
     std::cout << "Input Graph" << "\n\n";
     g.print_dot();
   }
-  
+
   spanning_tree::Tree t = g.compute_spanning_tree();
-  if (DEBUG) { 
+  if (DEBUG) {
     std::cout << "\n\n" << "Spanning tree" << "\n\n";
     t.print_dot();
   }
-  
+
   vst::cycle_equiv(t);
-  if (DEBUG) { 
+  if (DEBUG) {
     std::cout << "\n\n" << "Updated Spanning tree" << "\n\n";
     t.print_dot();
   }
-  
+
   vst::VST tv = vst::VST(t);
-  if (DEBUG) { 
+  if (DEBUG) {
     std::cout << "\n\n" << "VST" << "\n\n";
     tv.print_dot();
   }
-  
-  //pst::PST p = pst::PST(t);
-//  if (DEBUG) { 
-  //  std::cout << "\n\n" << "PST" << "\n\n";
-    //std::cout << "PST size: " << p.size() << "\n";
-//    p.print_dot();
-  //}
+
+  // pst::PST p = pst::PST(t);
+  // if (DEBUG) {
+  //   std::cout << "\n\n" << "PST" << "\n\n";
+  //   std::cout << "PST size: " << p.size() << "\n";
+  //   p.print_dot();
+  // }
 
   tree::Tree p = pst::compute_pst(t);
-
-  if (DEBUG) { 
+  if (DEBUG) {
     std::cout << "\n\n" << "PST" << "\n\n";
-    //std::cout << "PST size: " << p.size() << "\n";
     p.print_dot();
   }
-  
+
   return  0;
 }
