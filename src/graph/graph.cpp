@@ -25,7 +25,6 @@ void Vertex::add_adjacent_vertex(std::size_t vertex) {
   this->adj_vertices.insert(vertex);
 }
 
-
 std::set<std::size_t> const& Vertex::get_adjacent_vertices() const {
   return adj_vertices;
 }

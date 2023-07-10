@@ -5,7 +5,6 @@
 #include "./graph/spanning_tree.hpp"
 #include "./vst/vst.hpp"
 
-
 u_graph::CFG g1() {
   u_graph::CFG g;
 
@@ -111,7 +110,6 @@ u_graph::CFG g5() {
   return g;
 }
 
-
 // overlapping
 u_graph::CFG g6() {
   u_graph::CFG g;
@@ -169,6 +167,41 @@ digraph::DiGraph g8() {
     g.add_stop_node(3);
   g.add_stop_node(4);
 
+  return g;
+}
+
+// from ekg
+digraph::DiGraph g9() {
+  digraph::DiGraph g(16);
+
+  g.add_edge(0, 1);
+  
+  g.add_edge(1, 3);
+  g.add_edge(3, 5);
+
+  g.add_edge(5, 7);
+  g.add_edge(5, 9);
+  g.add_edge(7, 11);
+  g.add_edge(9, 11);
+  g.add_edge(11, 13);
+  g.add_edge(13, 1);
+
+  
+  g.add_edge(0, 2);
+  g.add_edge(2, 4);
+  g.add_edge(4, 6);
+  g.add_edge(4, 8);
+  g.add_edge(6, 10);
+  g.add_edge(10, 8);
+  g.add_edge(10, 12);
+  g.add_edge(8, 12);
+  g.add_edge(12, 14);
+  g.add_edge(14, 15);
+  g.add_edge(15, 0);
+  g.add_edge(13, 15);
+
+    g.add_start_node(0);
+    g.add_stop_node(15);
   
   return g;
 }
@@ -177,13 +210,13 @@ digraph::DiGraph g8() {
 const bool DEBUG = true;
 
 int main() {
-
-  u_graph::CFG g = g3();
+  
+  u_graph::CFG g = g9();
   if (DEBUG) { 
     std::cout << "Input Graph" << "\n\n";
     g.print_dot();
   }
-
+  
   spanning_tree::Tree t = g.compute_spanning_tree();
   if (DEBUG) { 
     std::cout << "\n\n" << "Spanning tree" << "\n\n";
@@ -201,12 +234,21 @@ int main() {
     std::cout << "\n\n" << "VST" << "\n\n";
     tv.print_dot();
   }
+  
+  //pst::PST p = pst::PST(t);
+//  if (DEBUG) { 
+  //  std::cout << "\n\n" << "PST" << "\n\n";
+    //std::cout << "PST size: " << p.size() << "\n";
+//    p.print_dot();
+  //}
 
-  pst::PST p = pst::PST(t);
+  tree::Tree p = pst::compute_pst(t);
+
   if (DEBUG) { 
     std::cout << "\n\n" << "PST" << "\n\n";
     //std::cout << "PST size: " << p.size() << "\n";
     p.print_dot();
   }
+  
   return  0;
 }

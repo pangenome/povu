@@ -13,8 +13,6 @@
  * - use smart pointers
  */
 
-
-
 // undirected graph
 namespace u_graph {
   
@@ -26,7 +24,7 @@ class Edge {
   std::size_t r;
 public:
   Edge(std::size_t l, std::size_t r):  l(std::min(l,r)), r(std::max(l,r)){}
-
+  
 // spaceship operator
 friend constexpr auto operator<=>(Edge, Edge) = default;
 };

@@ -54,6 +54,7 @@ Edge::Edge(std::size_t id, std::size_t src, std::size_t tgt):
 std::size_t Edge::id() const { return this->id_; }
 std::size_t Edge::get_parent() const { return this->src; }
 std::size_t Edge::get_child() const { return this->tgt; }
+std::size_t Edge::get_class() const { return this->class_; }
 std::size_t Edge::get_class_idx() { return this->class_; }
 
 // setters
@@ -207,6 +208,10 @@ std::vector<Edge> Tree::get_child_edges(std::size_t vertex) {
   return v;
 }
 
+Edge const& Tree::get_parent_edge(std::size_t vertex) const {
+  return this->tree_edges.at(this->nodes.at(vertex).get_parent_idx());
+}
+  
 std::set<std::size_t> Tree::get_obe_idxs(std::size_t vertex) {
   std::set<std::size_t> v{};
 

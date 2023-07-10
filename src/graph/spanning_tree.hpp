@@ -55,7 +55,8 @@ public:
   std::size_t get_parent() const;
   std::size_t get_child() const;
 
-  // TODO: remove _idx
+  // FIXME: we need both because of a non const call that depends on the non const
+  std::size_t get_class() const;
   std::size_t get_class_idx();
   void set_class_idx(std::size_t c);
 };
@@ -181,8 +182,10 @@ public:
 
   std::set<size_t> const& get_obe() const;
   std::set<size_t> const& get_ibe() const;
+  
   // get the index of the edge that points to the parent in the tree
-  size_t const& get_parent_idx() const; // TODO: get_parent_edge_idx
+  size_t const& get_parent_idx() const; // TODO: rename to get_parent_edge_idx
+
   std::set<size_t> const& get_children() const;
 
   void add_obe(std::size_t obe_id);
@@ -248,16 +251,20 @@ public:
   std::set<std::pair<std::size_t, std::size_t>> get_children_w_id(std::size_t vertex);
 
   std::vector<Edge> get_child_edges(std::size_t vertex);
+  
+  // given a vertex id, return a reference to the edge that points to the parent
+  Edge const& get_parent_edge(std::size_t vertex) const;
 
   // get index of the  be in back_edges vector
-  std::set<std::size_t> get_obe_idxs(std::size_t vertex); 
-
+  std::set<std::size_t> get_obe_idxs(std::size_t vertex);
+  //
   std::set<std::size_t> get_ibe_idxs(std::size_t vertex); 
 
   size_t list_size(std::size_t vertex);
   size_t get_hi(std::size_t vertex);
   std::set<size_t> get_obe(std::size_t vertex); // get backedge target indexes
   std::set<size_t> get_ibe(std::size_t vertex);
+  
   // return reference to a back edge given the
   // index of the back edge in the back_edges vector
   BackEdge& get_backedge(std::size_t backedge_idx);

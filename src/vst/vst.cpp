@@ -3,6 +3,7 @@
 #include "../graph/spanning_tree.hpp"
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <format>
 #include <iostream>
 #include <limits>
@@ -41,7 +42,7 @@ Vertex::Vertex(std::size_t idx, std::size_t cycle_equiv_class) :
     children(std::set<std::size_t>{})
 {}
 
-  
+
 Vertex::Vertex(
   std::size_t idx, std::size_t cycle_equiv_class, std::size_t parent) :
     idx(idx),
@@ -61,7 +62,7 @@ std::set<std::size_t> const& Vertex::get_children() const {
 void Vertex::add_child(std::size_t child_idx) {
   this->children.insert(child_idx);
 }
-    
+
 /*
  * VST
  * ---
@@ -109,8 +110,8 @@ VST::VST(spanning_tree::Tree &t) : t(std::vector<Vertex>{}) {
     else {
       parent_idx = furthest.at(current_equiv_class-1);
     }
-    
-    
+
+
 
     curr_vst_v = Vertex(i, current_equiv_class, parent_idx);
 
@@ -156,12 +157,12 @@ void VST::print_dot() {
  * Functions
  * ---------
  */
-  
+
 /**
  * Compute the equivalance class of a given vertex
  */
 void handle_vertex(spanning_tree::Tree& t, std::size_t r) {
-    
+
   std::size_t v = t.get_sorted(r);
 
   /*
@@ -169,7 +170,7 @@ void handle_vertex(spanning_tree::Tree& t, std::size_t r) {
    * ------------
    */
   std::set<std::size_t> obe = t.get_obe(v);
-  
+
   std::size_t hi_0 {SIZE_T_MAX};
   for (auto be: obe) {
     // if (t.get_vertex(be).dfs_num() < hi_0) { hi_0 = t.get_vertex(be).dfs_num(); }
@@ -194,10 +195,10 @@ void handle_vertex(spanning_tree::Tree& t, std::size_t r) {
 
   // sort the vertex by hi value
   std::sort(hi_and_child.begin(), hi_and_child.end());
-  
+
   // for each child vertex
   // the lowest hi value of all the children vertices
-  std::size_t hi_1{SIZE_T_MAX}; 
+  std::size_t hi_1{SIZE_T_MAX};
   // the child vertex whose hi value is hi_1
   std::size_t hi_child{SIZE_T_MAX};
 
@@ -210,9 +211,9 @@ void handle_vertex(spanning_tree::Tree& t, std::size_t r) {
 
   //spanning_tree::Vertex& vv = ;
   t.get_vertex_mut(v).set_hi(std::min(hi_0, hi_1));
-  
+
   //std::size_t n_hi = std::min(hi_0, hi_1);
-  
+
   std::size_t hi_2{SIZE_T_MAX};
 
   // if hi_and_child has at least 2 elements
@@ -299,10 +300,10 @@ void handle_vertex(spanning_tree::Tree& t, std::size_t r) {
       // e.set_class_idx(b.get_class());
       //e.set_class_idx(b.recent_class() - 1);
     } else {
-      
+
     }
     //e.set_class_idx(b.recent_class());
-    
+
     /*check for e, b equivalance*/
     if (b.recent_size() == 1) {
       b.set_recent_class(e.get_class_idx());
@@ -316,7 +317,6 @@ void handle_vertex(spanning_tree::Tree& t, std::size_t r) {
  */
 void cycle_equiv(spanning_tree::Tree &t) {
   for (std::size_t r{t.size() - 1}; r > 0; --r) {
-    
     // std::cout << "v: " << v << "\n";
     handle_vertex(t, r);
   }
@@ -324,14 +324,86 @@ void cycle_equiv(spanning_tree::Tree &t) {
 
 } // namespace vst
 
+namespace tree {
+  // TODO: declare all of these in a header file
+  const std::size_t SIZE_T_MAX = std::numeric_limits<size_t>::max();
+
+  // Vertex
+  // ======
+  
+  // constructor(s)
+  
+  Vertex::Vertex() :
+    id(SIZE_T_MAX), parent(SIZE_T_MAX), children(std::set<std::size_t>{}), is_valid_(false) {}
+  Vertex::Vertex(std::size_t id) :
+    id(id), parent(SIZE_T_MAX), children(std::set<std::size_t>{}), is_valid_(true) {}
+  Vertex::Vertex(std::size_t id, std::size_t parent_id) :
+    id(id), parent(parent_id), children(std::set<std::size_t>{}), is_valid_(true) {}
+
+  // member function(s)
+  // ------------------
+
+  // getters
+  bool Vertex::is_valid() const { return this->is_valid_; }
+  std::set<std::size_t> const& Vertex::get_children() const { return this->children; }
+
+  // setters
+  // -------
+  
+  void Vertex::add_child(std::size_t child_id) {
+    this->children.insert(child_id);
+  }
+  
+  // Tree
+  // ====
+
+  // constructor(s)
+  
+  Tree::Tree() : vertices(std::vector<tree::Vertex>{}) {}
+
+  Tree::Tree(std::size_t n) : vertices(std::vector<Vertex>(n, Vertex())) {}
+
+  // member function(s)
+  // ------------------
+
+  // setters
+  bool Tree::add_vertex(std::size_t parent_id, std::size_t id) {
+    // TODO: there's a logical error in the caller if the vertex is already in the tree
+    //       should we throw an exception here?
+    if (this->vertices[id].is_valid()) { return false;  }
+    this->vertices[id] = Vertex(id, parent_id);
+    this->vertices[parent_id].add_child(id);
+    return true;
+  }
+
+  std::set<std::size_t> const& Tree::get_children(std::size_t v) const {
+    return this->vertices.at(v).get_children();
+  }
+
+  void Tree::print_dot() {
+  std::cout << std::format(
+    "graph G {{\n"
+    "\trankdir = TB;\n"
+    "\tnode[shape = circle];\n"
+    "\tedge [arrowhead=vee];\n"
+  );
+
+  for (std::size_t i{}; i < this->size(); i++) {
+    for (auto c : this->get_children(i)) {
+      std::cout << std::format("\t{} -- {};\n", i, c);
+    }
+  }
+
+  std::cout << "}" << std::endl;
+}
+
+  // TODO: should this be the number of valid vertices?
+  std::size_t Tree::size() const { return this->vertices.size(); }
+  
+} // namespace tree
+
+
 namespace pst {
-
-
-    
-/*
- * PST
- * ---
-*/
 
 // constructor(s)
 // --------------
@@ -342,7 +414,9 @@ PST::PST(spanning_tree::Tree &t) : t(std::vector<vst::Vertex>{}) {
 
   // to determine out parent child relationships in the PST
   std::stack<std::size_t> class_stack{}; // stack of classes
-  std::set<std::size_t> seen{}; //
+
+  // to keep track of which vertices we pushed onto the vertex stack (seen)
+  std::set<std::size_t> seen{};
 
   // a mapping of a given class and its parent class
   std::map <std::size_t, std::size_t> class_and_parent{};
@@ -351,16 +425,18 @@ PST::PST(spanning_tree::Tree &t) : t(std::vector<vst::Vertex>{}) {
   class_and_parent[0] = 0;
 
   std::size_t current_class{};
-  vertex_stack.push(current_class);
-    
+  class_stack.push(current_class);
+
   std::size_t current_vertex{};
   vertex_stack.push(current_vertex);
 
-  vst::Vertex root = vst::Vertex{current_vertex, current_class};
+  // initialize the PST with the root vertex
+  vst::Vertex root =
+    vst::Vertex{current_vertex, current_class};
   this->t.push_back(root);
 
   vst::Vertex v = root;
-  
+
   while (!vertex_stack.empty()) {
     current_vertex = vertex_stack.top();
     seen.insert(current_vertex);
@@ -368,20 +444,20 @@ PST::PST(spanning_tree::Tree &t) : t(std::vector<vst::Vertex>{}) {
     if (current_vertex > 0) {
       spanning_tree::Edge& current_edge = t.get_incoming_edge(current_vertex);
       std::size_t new_class = current_edge.get_class_idx();
-  
+
       auto it = class_and_parent.find(new_class);
       if (it == class_and_parent.end()) {
         std::size_t cl_idx = this->t.size();
         class_and_parent[new_class] = cl_idx;
         //class_and_parent.find(current_class)->second;
-        
+
         vst::Vertex v = vst::Vertex{current_vertex,
                                     current_class,
                                     class_and_parent.find(current_class)->second
                                    };
-        
+
         this->t.push_back(v);
-        
+
         if (current_class < this->t.size())   {
           this->t[current_class].add_child(cl_idx);
         } else {
@@ -391,7 +467,7 @@ PST::PST(spanning_tree::Tree &t) : t(std::vector<vst::Vertex>{}) {
 
       current_class = new_class;
     }
-    
+
     bool explored = true;
 
     for (auto c: t.get_children(current_vertex)){
@@ -400,11 +476,11 @@ PST::PST(spanning_tree::Tree &t) : t(std::vector<vst::Vertex>{}) {
         explored = false;
       }
     }
-    
+
     if (explored) {
       vertex_stack.pop();
-    }    
-  }  
+    }
+  }
 }
 
 std::set<std::size_t> const& PST::get_children(std::size_t v) const {
@@ -432,6 +508,87 @@ void PST::print_dot() {
   std::cout << "}" << std::endl;
 }
 
+/*
+ * PST
+ * ---
+ *
+ * The PST is a tree of cycle equivalent regions of the spanning tree of the
+ * undirected flow graph U_f with the following properties:
+  * -
+  *
+
+  we use region to refer to a cycle equivalent region of the spanning tree
+  therefore region is synonymous with class
   
+ * The construction is as follows:
+     "When a region is first entered, we set its parent to the current region 
+     and then update the current region to be the region just entered.
+     When a region is exited,
+     the current region is set to be the exited region’s parent."
+  
+  * When a region is first entered:
+      We know a region has been entered because: 
+        - there's an OBE in the current vertex (capping or not)
+    1. we set its parent to the current region
+       and then update the current region to be the region just entered
+       * its parent will be the class on top of the stack
+         * if the stack was empty this class will be the root
+    2. we will then push it onto the stack making it the current region
+       the current equiv class is the class on top of the stack
+   
+  * When a region is exited:
+      We know a region has been entered because: 
+       - we see an outgoing capping back-edge
+       - we see an incoming back-edge
+    1 the current region is set to be the exited region’s parent.
+      a) we pop the value that's on top of the stack
+      b) st spanning tree  
+ */
+tree::Tree compute_pst(spanning_tree::Tree &st) {
+  tree::Tree t = tree::Tree(st.size());
+  std::stack<std::size_t> vertex_stack{}; // stack of vertices
+
+  // go over the nodes in reverse topological order (dfs_num) which may not be
+  // equal to node ids
+  for (std::size_t r{st.size() - 1}; r > 0; --r) {
+    // the vertex id of the vertex at the topological sort index r
+    std::size_t v = st.get_sorted(r);
+    
+    std::set<size_t> obe = st.get_obe_idxs(v);
+    std::set<size_t> ibe = st.get_ibe(v);
+
+    if (obe.empty() && ibe.empty()) { continue; }
+    
+    // the equivalence class of the incoming tree edge
+    std::size_t cl = st.get_parent_edge(v).get_class();
+
+    // check if any of the obe are capping backedges
+    bool has_capping_obe{false};
+    for (auto e_idx: obe) {
+      if (st.get_backedge(e_idx).is_capping_backedge()) {
+        has_capping_obe=true;
+        break;
+      }
+    }
+
+    // exit the current region
+    // --------------------
+    
+    if (!ibe.empty() || has_capping_obe) {
+      vertex_stack.pop();
+    }
+
+    // enter the new region
+    // --------------------
+
+    if (!obe.empty()) { // an equivalence class/region has been entered
+      if (!vertex_stack.empty()) { t.add_vertex(vertex_stack.top(), cl); }
+      vertex_stack.push(cl);
+    }
+  }
+
+  return t;
+}
 } // namespace pst
+
 
