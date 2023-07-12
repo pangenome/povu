@@ -218,7 +218,7 @@ digraph::DiGraph g10() {
   g.add_edge(0, 4);
   g.add_edge(3, 5);
     g.add_edge(2, 5);
-  
+
   g.add_start_node(0);
   g.add_stop_node(5);
 
@@ -235,7 +235,7 @@ digraph::DiGraph g11() {
   g.add_edge(1, 2);
   g.add_edge(2, 3);
   g.add_edge(2, 4);
-  
+
   g.add_start_node(0);
   g.add_stop_node(4);
 
@@ -246,10 +246,12 @@ digraph::DiGraph g12() {
   digraph::DiGraph g;
 
   g.add_edge(0, 1);
+    g.add_edge(0, 4);
   g.add_edge(1, 2);
+  g.add_edge(1, 3);
+
   g.add_edge(2, 3);
-  g.add_edge(3, 1);
-  g.add_edge(3, 4);
+  g.add_edge(2, 4);
 
   g.add_start_node(0);
   g.add_stop_node(4);
@@ -262,11 +264,22 @@ const bool DEBUG = true;
 
 int main() {
 
-  digraph::DiGraph g = g12();
+  digraph::DiGraph g = g10();
 
   g.print_dot();
   g.biedge();
   g.print_dot();
+
+  // a to_cfg() method
+  u_graph::CFG u = u_graph::CFG(g);
+  u.print_dot();
+
+
+  spanning_tree::Tree t = u.compute_spanning_tree();
+  if (DEBUG) {
+    std::cout << "\n\n" << "Spanning tree" << "\n\n";
+    t.print_dot();
+  }
 
   /*
   u_graph::CFG g = g11();
@@ -313,6 +326,6 @@ int main() {
     pv.print_dot();
   }
   */
-  
+
   return  0;
 }

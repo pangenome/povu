@@ -5,6 +5,7 @@
 #include <vector>
 #include <set>
 
+#include "../core/core.hpp"
 #include "./spanning_tree.hpp"
 #include "./digraph.hpp"
 
@@ -23,31 +24,57 @@ namespace u_graph {
 class Edge {
   std::size_t l;
   std::size_t r;
+  core::color c;
+
 public:
-  Edge(std::size_t l, std::size_t r):  l(std::min(l,r)), r(std::max(l,r)){}
+  Edge(std::size_t l, std::size_t r , core::color c=core::color::black):
+    l(std::min(l,r)), r(std::max(l,r)){
+    this->c = c;
+  }
 
 // spaceship operator
 friend constexpr auto operator<=>(Edge, Edge) = default;
+
+  core::color get_color() const { return this->c; }
+  bool is_black() const { return this->c == core::color::black; }
+  std::size_t left() const { return this->l; }
+  std::size_t right() const { return this->r; }
+
+  void set_left(std::size_t l) { this->l = l; }
+  void set_right(std::size_t r) { this->r = r; }
 };
 
 class Vertex {
-  std::set<std::size_t> adj_vertices;
+  // the indexes of edges in CFG
+  std::set<std::size_t> adj_vertices; // TODO: rename edge_idxs
+
 public:
   Vertex();
 
+  // takes an edge index in the flow graph
+  // TODO rename to add_edge_idx
   void add_adjacent_vertex(std::size_t vertex);
   void del_adjacent_vertex(std::size_t vertex);
 
   std::set<std::size_t>const& get_adjacent_vertices() const;
 };
 
+/*
+ * Flow Graph
+ * ==========
+ */
+  
 /**
  * this undirected graph is actually a flow graph
  * undirected
- * edge from end to start will always be a backedge
+ * edge from end to start will always be a back-edge
  */
 class CFG {
   std::vector<Vertex> adj_list;
+
+  // edges in a list
+  std::vector<Edge> edges;
+  
   // start node is always zero
   // stop node is always N+1
   // std::set<std::size_t> start_nodes;
@@ -66,27 +93,41 @@ class CFG {
   std::set<std::size_t> const& get_adjacent_vertices_internal(std::size_t vertex) const;
 
 public:
+  // constructor(s)
+  // --------------
+
+
   // CFG();
   // TODO: from gfa
   // CFG(std::size_t initial_len=2); // from di graph or from gfa
   CFG(std::size_t initial_len=2);
   CFG(digraph::DiGraph const& di_graph);
-  
-  // setters
-  void add_edge(std::size_t n1, std::size_t n2);
 
-  Vertex& get_vertex_mut(std::size_t vertex);
+  // getters
+  // -------
+  
+  std::size_t size();
+  // get an immutable reference to a vertex
   Vertex const& get_vertex(std::size_t vertex) const;
   std::set<std::size_t> const& get_adjacent_vertices(std::size_t vertex) const;
+
+  
+  // setters
+  // -------
+
+  void add_edge(std::size_t n1, std::size_t n2, core::color c=core::color::black);
+
+  // get a mutable reference to a vertex
+  Vertex& get_vertex_mut(std::size_t vertex);
 
   // mark/set a vertex as a start node
   void set_start_node(std::size_t vertex);
   void set_stop_node(std::size_t vertex);
-  std::size_t size();
+
   spanning_tree::Tree compute_spanning_tree();
 
   // split any node with > 1 incoming and >1 outgoing edges
-  // into two nodes connected by a single (grey) edge
+  // into two nodes connected by a single (gray) edge
   void make_bi_edged();
 
   void print_dot();

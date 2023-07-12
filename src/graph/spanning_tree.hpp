@@ -7,6 +7,9 @@
 #include <memory>
 #include <list>
 
+
+#include "../core/core.hpp"
+
 namespace spanning_tree {
 // prototype the classes
 class Edge;
@@ -30,7 +33,7 @@ class Edge {
   std::size_t tgt; // source vertex
 
   // does a tree edge need color?
-  // colour edge_colour;
+  // color edge_color;
 
   std::size_t class_; // equivalnce class id
 
@@ -45,15 +48,18 @@ class Edge {
   //Bracket* b; // if it is a backedge
   bool null_;
 
+  core::color color_;
+  
 public:
 
   Edge();
-  Edge(std::size_t id, std::size_t src, std::size_t tgt);
-
+  Edge(std::size_t id, std::size_t src, std::size_t tgt, core::color c=core::color::black);
 
   std::size_t id() const;
   std::size_t get_parent() const;
   std::size_t get_child() const;
+
+  core::color get_color() const;
 
   // FIXME: we need both because of a non const call that depends on the non const
   std::size_t get_class() const;
@@ -83,9 +89,12 @@ class BackEdge {
   bool capping_back_edge_; // is a capping back edge
   bool null_;
 
+
+  core::color color_;
+
 public:
   BackEdge(bool capping_be=false); // TODO remove? is this used?
-  BackEdge(std::size_t id, std::size_t src, std::size_t tgt, bool capping_be=false);
+  BackEdge(std::size_t id, std::size_t src, std::size_t tgt, bool capping_be=false, core::color c=core::color::black);
 
   std::size_t id() const;
   std::size_t get_src() const;
@@ -97,6 +106,7 @@ public:
   std::size_t get_recent_size() const;
 
   bool is_capping_backedge() const;
+  core::color get_color() const;
 
   void set_class(std::size_t c);
   void set_recent_class(std::size_t c);
@@ -291,8 +301,8 @@ public:
   void set_dfs_num(std::size_t vertex, std::size_t dfs_num);
     
 
-  std::size_t add_be(std::size_t frm, std::size_t to, bool capping_be=false);
-  void add_tree_edge(std::size_t frm, std::size_t to);
+  std::size_t add_be(std::size_t frm, std::size_t to, bool capping_be=false, core::color color=core::color::black);
+  void add_tree_edge(std::size_t frm, std::size_t to, core::color color=core::color::black);
 
   void set_hi(std::size_t vertex, std::size_t val);
 
