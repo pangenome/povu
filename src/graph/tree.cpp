@@ -41,7 +41,11 @@ namespace tree {
 
   Tree::Tree() : vertices(std::vector<tree::Vertex>{}) {}
 
-  Tree::Tree(std::size_t n) : vertices(std::vector<Vertex>(n, Vertex())) {}
+  Tree::Tree(std::size_t n, bool artificial_root) : vertices(std::vector<Vertex>(n, Vertex())) {
+    if (artificial_root) {
+      this->vertices[0] = Vertex(0);
+    }
+  }
 
   // member function(s)
   // ------------------

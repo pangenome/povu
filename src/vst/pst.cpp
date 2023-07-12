@@ -44,6 +44,7 @@ namespace pst {
  */
   
 tree::Tree compute_pst(spanning_tree::Tree &st) {
+  // TODO: urgent! why size and not no of equiv classes?
   tree::Tree t = tree::Tree(st.size());
   std::stack<std::size_t> vertex_stack{}; // stack of vertices
 

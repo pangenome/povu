@@ -204,11 +204,72 @@ digraph::DiGraph g9() {
   return g;
 }
 
+// non planar 1
+digraph::DiGraph g10() {
+  digraph::DiGraph g(5);
+
+  g.add_edge(0, 1);
+
+  g.add_edge(1, 3);
+  g.add_edge(1, 2);
+
+  g.add_edge(3, 4);
+  g.add_edge(2, 4);
+  g.add_edge(0, 4);
+  g.add_edge(3, 5);
+    g.add_edge(2, 5);
+  
+  g.add_start_node(0);
+  g.add_stop_node(5);
+
+  return g;
+}
+
+// non planar 2
+digraph::DiGraph g11() {
+  digraph::DiGraph g(5);
+
+  g.add_edge(0, 1);
+  g.add_edge(0, 3);
+  g.add_edge(1, 3);
+  g.add_edge(1, 2);
+  g.add_edge(2, 3);
+  g.add_edge(2, 4);
+  
+  g.add_start_node(0);
+  g.add_stop_node(4);
+
+  return g;
+}
+
+digraph::DiGraph g12() {
+  digraph::DiGraph g;
+
+  g.add_edge(0, 1);
+  g.add_edge(1, 2);
+  g.add_edge(2, 3);
+  g.add_edge(3, 1);
+  g.add_edge(3, 4);
+
+  g.add_start_node(0);
+  g.add_stop_node(4);
+
+  return g;
+};
+
+
 const bool DEBUG = true;
 
 int main() {
 
-  u_graph::CFG g = g9();
+  digraph::DiGraph g = g12();
+
+  g.print_dot();
+  g.biedge();
+  g.print_dot();
+
+  /*
+  u_graph::CFG g = g11();
   if (DEBUG) {
     std::cout << "Input Graph" << "\n\n";
     g.print_dot();
@@ -245,5 +306,13 @@ int main() {
     p.print_dot();
   }
 
+
+  tree::Tree pv = vst::compute_pvst(t);
+  if (DEBUG) {
+    std::cout << "\n\n" << "PVST" << "\n\n";
+    pv.print_dot();
+  }
+  */
+  
   return  0;
 }

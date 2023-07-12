@@ -13,7 +13,7 @@ namespace tree {
 // ======
 
 class Vertex {
-  std::size_t id;
+  std::size_t id; // allow negative ids?
   std::size_t parent;
   std::set<std::size_t> children;
 
@@ -47,8 +47,10 @@ class Tree {
 public:
   // constructor(s)
   // --------------
-  Tree(); // construct a null tree
-  Tree(std::size_t n); // construct a tree with n null vertices but a valid root
+  // construct a null tree
+  Tree(); 
+  // construct a tree with n null vertices but a valid root
+  Tree(std::size_t n, bool artificial_root=false); 
 
   // setters
   // -------

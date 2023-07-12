@@ -71,8 +71,7 @@ public:
   // CFG(std::size_t initial_len=2); // from di graph or from gfa
   CFG(std::size_t initial_len=2);
   CFG(digraph::DiGraph const& di_graph);
-
-
+  
   // setters
   void add_edge(std::size_t n1, std::size_t n2);
 

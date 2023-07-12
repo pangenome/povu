@@ -6,10 +6,11 @@
 #include "../graph/spanning_tree.hpp"
 #include "../graph/tree.hpp"
 
+// TODO: rename vst to pvst
 namespace vst {
 
 void cycle_equiv(spanning_tree::Tree &t);
-
+  
 class Vertex {
   std::size_t idx;
   std::size_t cycle_equiv_class_;
@@ -57,7 +58,15 @@ public:
   // --
   void print_dot();
 };
+
+tree::Tree compute_pvst(spanning_tree::Tree &st);
+
+
 } // namespace vst
 
+
+/*
+
+ */
 
 #endif

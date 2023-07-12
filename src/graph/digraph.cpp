@@ -114,7 +114,7 @@ void DiGraph::biedge() {
   for (std::size_t idx{}; idx < this->adj.size(); idx++) {
     Vertex const& v = this->get_vertex(idx);
     
-    if (v.out().size() > 1 && v.in().size() > 1) {
+    if (v.out().size() > 1 || v.in().size() > 1) {
       
       Vertex v_0 = this->adj[idx];
       this->adj.insert(this->adj.begin() + idx, v_0);

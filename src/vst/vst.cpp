@@ -95,7 +95,7 @@ VST::VST(spanning_tree::Tree &t) : t(std::vector<Vertex>{}) {
   std::size_t current_equiv_class{};
   std::size_t parent_idx{}; // parent idx in the VST
 
-  for (std::size_t i{1}; i < t.size(); i++){
+  for (std::size_t i{1}; i < t.size(); i++) {
 
     curr_span_tree_v = t.get_vertex(i);
     current_equiv_class = t.get_incoming_edge(i).get_class_idx();
@@ -110,8 +110,6 @@ VST::VST(spanning_tree::Tree &t) : t(std::vector<Vertex>{}) {
     else {
       parent_idx = furthest.at(current_equiv_class-1);
     }
-
-
 
     curr_vst_v = Vertex(i, current_equiv_class, parent_idx);
 
@@ -199,6 +197,8 @@ void handle_vertex(spanning_tree::Tree& t, std::size_t r) {
   // for each child vertex
   // the lowest hi value of all the children vertices
   std::size_t hi_1{SIZE_T_MAX};
+
+  // TODO: urgent!! look into this
   // the child vertex whose hi value is hi_1
   std::size_t hi_child{SIZE_T_MAX};
 
@@ -322,7 +322,220 @@ void cycle_equiv(spanning_tree::Tree &t) {
   }
 }
 
+/*
+ * PVST
+ * ----
+ *
+ * The PVST is a tree of cycle equivalent regions of the spanning tree of the
+ * undirected flow graph U_f with the following properties:
+ 
+  we wish to arrange the nodes of our spanning tree such that the incoming tree
+  edge, the parent edge, which could only be one edge, determines the
+  equivalence class of that node. We want it such that nodes sharing the same
+  equivalence class will be on the same level in the tree, will be children of
+  the same parent in the tree. And then sibling branches or sibling sub-trees of
+  the tree will be such that they are in tandem, the equivalence classes
+  occurred in tandem or interspersed by the outer equivalence class.
+  The parent node in a sub-tree shall represent the start of a bubble and the
+  largest node in a sub-tree shall be the bubble end.
+
+  cycle equivalent regions can only either be nested or disjoint.
+  It therefore follows that bubbles can either only be nested or disjoint.
+  Because of this nodes in our tree at a level n are all disjoint and nodes at a
+  level n+1 are nested within bubbles of the nodes starting at n.
+
+  a node at level N without children does not have any bubbles.
+  A node at level N with children is a bubble start and the child with the
+  largest DFS num or ID is a bubble end or topological sort ID.
+  Nested the subtree of this node represents all the nested bubbles of this node
+  N.
+
+  -----------
+
+  nodes in the outermost level of the flow graph are at the topmost level of the
+  tree and nodes in the innermost bubbles are leaves in the tree
+
+  the height of the tree gives us the deepest node in the graph
+
+  a node in the graph can only belong to a single equivalence class <show why?>
+  because bubbles can either be nested or disjoint
+
+  a node's equivalence class is determined by the class of the incoming tree edge
+  and not the outgoing tree edge. Which can easily be observed by the fact that
+  a node can have multiple outgoing tree edges but only one incoming tree edge.
+  If we assigned a node the class of the outgoing tree edge we risk assigning
+  multiple equivalence classes to the same node leading to a contradiction of
+  theorem xx.
+
+  Traverse the spanning tree in top down topological order
+
+  Going by theorem xx, we can only be in one of the following three states with
+  regards to cycle equivalence, at any point while traversing the spanning tree:
+
+   - a new cycle equivalent region has been entered
+   - or as we traverse a path we are in the same cycle equivalent region
+   - a cycle equiv region has been exited
+
+   note that the entry of one cycle equiv region is not the exiting of another
+   within the same node
+   but rather we exit a cycle equiv region at node n and enter another at node
+   n+1
+
+   we the entry of one cycle equiv region isn't the same as the exit of another
+
+  To build a PVST, it is therefore sufficient to only handle the three
+  previously mentioned states.
+
+  The construction is as follows:
+
+  the current class is the class on top of the stack
+
+  a stack of cycle equivalent regions
+  the cycle equiv region on top of the stack is the current cycle equiv region
+
+  at a node v
+
+  1. Entry
+  * When a region is first entered:
+      We know a region has been entered because:
+        - there's an IBE in the current vertex (capping or not)
+    1. we set its parent to the furthest node in the top of the stack
+
+       and then update the current region to be the region just entered
+       * its parent will be the class on top of the stack
+         * if the stack was empty this class will be the root
+
+    2. we will then push it onto the stack making it the current region
+       the current equiv class is the class on top of the stack
+
+  2. Conserved
+  * when a region has not changed that is the incoming tree edge class is same as the one on top of the stack
+    * add the vertex as a child by looking up the parent node of the current class in a hash table
+      (in the furthest of the previous class in the stack)
+    * set that node to be the new furthest
+
+  3. Exit
+  * When a region is exited:
+      We know a region has been exited because:
+       - we see an OBE that is not a capping back-edge
+    1 the current region is set to be the exited region’s parent.
+      a) we pop the value that's on top of the stack
+
+  Can a vertex have both incoming and outgoing backedges? not if we bi-edge it
+
+
+  entry:
+   - the stack is empty (start)
+   - the parent has an incoming back-edge
+ */
+tree::Tree compute_pvst(spanning_tree::Tree &st) {
+
+  tree::Tree t = tree::Tree(st.size(), true);
+
+  // a map to store the VST index of the
+  // largest (furthest) node with a given equivalence class
+  // key is equivalence class and value is the node index
+  std::map<std::size_t, std::size_t> furthest;
+
+  // a map of a cycle equiv region to a parent node
+  std::map<std::size_t, std::size_t> parent_map;
+
+  std::stack<std::size_t> class_stack{}; // stack of classes
+
+  std::size_t current_class{};
+
+  // in forward topo sort order
+  for (std::size_t r{0}; r < st.size(); r++) {
+    // the vertex id of the vertex at the topological sort index r
+    std::size_t v = st.get_sorted(r);
+
+    //std::cout << "v: " << v << "\n";
+
+    std::set<size_t> obe = st.get_obe_idxs(v);
+    std::set<size_t> ibe = st.get_ibe_idxs(v);
+    
+    // there is at least one obe that is not a capping back edge
+    bool has_non_capping_obe{false};
+    for (std::size_t e_idx: obe) {
+      if (!st.get_backedge(e_idx).is_capping_backedge()) {
+        has_non_capping_obe=true;
+        break;
+      }
+    }
+
+    std::set<size_t> parent_ibe = std::set<size_t>{};
+    if (!class_stack.empty()) {
+      std::size_t prnt_idx = st.get_parent_edge(v).get_parent();
+      parent_ibe = st.get_ibe_idxs(prnt_idx);
+    }
+    
+    //if (!parent_ibe.empty() || class_stack.empty()) {}
+    
+    if (!parent_ibe.empty() || class_stack.empty()) { // entered new equiv class
+      //std::cout << "state: 1\n" ;
+      if (class_stack.empty()) { // this is the root node
+
+        //
+        // the start class is always zero
+        
+        // t.add_vertex(0, 0);
+
+        class_stack.push(0);
+        furthest.insert(std::pair<std::size_t, std::size_t>(0, 0));
+        parent_map.insert(std::pair<std::size_t, std::size_t>(0, 0));
+      }
+      else {
+        current_class = class_stack.top();
+        //std::cout << "cc: " << current_class << "\n";
+        std::size_t prnt_vtx = furthest.at(current_class);
+        t.add_vertex(prnt_vtx, v);
+
+        // the equivalence class of the incoming tree edge
+        std::size_t cl = st.get_parent_edge(v).get_class();
+
+        class_stack.push(cl);
+        
+        //furthest.insert(std::pair<std::size_t, std::size_t>(cl, v));
+        parent_map.insert(std::pair<std::size_t, std::size_t>(cl, prnt_vtx));
+
+        furthest.insert_or_assign(cl, v);  
+      }
+    }
+    else if (obe.empty()) { // the equiv class is maintained
+
+      //std::cout << "state: 2\n" ;
+
+      current_class = class_stack.top();
+
+      //std::cout << "cc: " << current_class << "\n";
+
+      // the equivalence class of the incoming tree edge
+      //std::size_t cl = st.get_parent_edge(v).get_class();
+
+      //current_class = class_stack.top();
+      std::size_t prnt_vtx = parent_map.at(current_class);
+      t.add_vertex(prnt_vtx, v);
+      furthest.insert_or_assign(current_class, v);
+    }
+    else if (has_non_capping_obe) { // exit an equiv class
+
+      //std::cout << "state: 3\n" ;
+      current_class = class_stack.top();
+
+      //std::cout << "cc: " << current_class << "\n";
+      std::size_t prnt_vtx = parent_map.at(current_class);
+
+      t.add_vertex(prnt_vtx, v);
+      furthest.insert_or_assign(current_class, v);
+
+      class_stack.pop();
+    }
+    else {
+      ;
+    }
+  }
+
+  return t;
+}
+
 } // namespace vst
-
-
-
