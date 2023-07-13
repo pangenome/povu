@@ -1,5 +1,5 @@
-#ifndef GRAPH_HPP
-#define GRAPH_HPP
+#ifndef U_GRAPH_HPP
+#define U_GRAPH_HPP
 
 #include <cstddef>
 #include <vector>
@@ -46,15 +46,16 @@ friend constexpr auto operator<=>(Edge, Edge) = default;
 
 class Vertex {
   // the indexes of edges in CFG
-  std::set<std::size_t> adj_vertices; // TODO: rename edge_idxs
+  // TODO: make this a vector
+  std::set<std::size_t> edge_idxs;
 
 public:
   Vertex();
 
   // takes an edge index in the flow graph
   // TODO rename to add_edge_idx
-  void add_adjacent_vertex(std::size_t vertex);
-  void del_adjacent_vertex(std::size_t vertex);
+  void add_edge_idx(std::size_t e_idx);
+  void del_edge_idx(std::size_t e_idx);
 
   std::set<std::size_t>const& get_adjacent_vertices() const;
 };
@@ -69,7 +70,7 @@ public:
  * undirected
  * edge from end to start will always be a back-edge
  */
-class CFG {
+class FlowGraph {
   std::vector<Vertex> adj_list;
 
   // edges in a list
@@ -100,8 +101,8 @@ public:
   // CFG();
   // TODO: from gfa
   // CFG(std::size_t initial_len=2); // from di graph or from gfa
-  CFG(std::size_t initial_len=2);
-  CFG(digraph::DiGraph const& di_graph);
+  FlowGraph(std::size_t initial_len=2);
+  FlowGraph(digraph::DiGraph const& di_graph);
 
   // getters
   // -------
@@ -110,6 +111,7 @@ public:
   // get an immutable reference to a vertex
   Vertex const& get_vertex(std::size_t vertex) const;
   std::set<std::size_t> const& get_adjacent_vertices(std::size_t vertex) const;
+  std::set<std::size_t> get_adjacent_vertices_n(std::size_t vertex) const;
 
   
   // setters

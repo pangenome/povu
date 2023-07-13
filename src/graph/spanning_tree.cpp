@@ -22,7 +22,7 @@ const std::size_t SIZE_T_MAX = std::numeric_limits<size_t>::max();
  * ----
  */
 Bracket::Bracket():
-  back_edge_id_(core::constants::UNDEFINED_SIZE_T),
+  back_edge_id_(SIZE_T_MAX),
   recent_size_(0),
   recent_class_(0) {}
 
@@ -69,10 +69,16 @@ BackEdge::BackEdge(bool capping_be):
   class_(SIZE_T_MAX), capping_back_edge_(capping_be), null_(true)
 {}
 
-BackEdge::BackEdge(std::size_t id, std::size_t src, std::size_t tgt, bool capping_be, core::color c)
-  : id_(id), src(src), tgt(tgt), class_(SIZE_T_MAX),
-    recent_class_(SIZE_T_MAX), recent_size_(SIZE_T_MAX),
-    capping_back_edge_(capping_be), null_(false), color_(c) {}
+BackEdge::BackEdge(
+  std::size_t id,
+  std::size_t src,
+  std::size_t tgt,
+  bool capping_be,
+  core::color c
+  )
+  : id_(id), src(src), tgt(tgt), class_(SIZE_T_MAX), recent_class_(SIZE_T_MAX),
+    recent_size_(SIZE_T_MAX), capping_back_edge_(capping_be), null_(false),
+    color_(c) {}
 
 std::size_t BackEdge::id() const { return this->id_; }
 std::size_t BackEdge::get_src() const { return this->src; }

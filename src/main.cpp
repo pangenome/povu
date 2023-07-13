@@ -1,13 +1,13 @@
 #include <iostream>
 
 #include "./graph/digraph.hpp"
-#include "./graph/graph.hpp"
+#include "./graph/u_graph.hpp"
 #include "./graph/spanning_tree.hpp"
 #include "./vst/vst.hpp"
 #include "./vst/pst.hpp"
 
-u_graph::CFG g1() {
-  u_graph::CFG g;
+u_graph::FlowGraph g1() {
+  u_graph::FlowGraph g;
 
   g.add_edge(0, 1);
   g.add_edge(1, 2);
@@ -21,9 +21,9 @@ u_graph::CFG g1() {
 };
 
 // big
-u_graph::CFG g2() {
-  u_graph::CFG g;
-  g = u_graph::CFG();
+u_graph::FlowGraph g2() {
+  u_graph::FlowGraph g;
+  g = u_graph::FlowGraph();
 
   g.add_edge(0, 3);
   g.add_edge(0, 1);
@@ -52,9 +52,9 @@ u_graph::CFG g2() {
 };
 
 // diamond
-u_graph::CFG g3() {
-  u_graph::CFG g;
-  g = u_graph::CFG();
+u_graph::FlowGraph g3() {
+  u_graph::FlowGraph g;
+  g = u_graph::FlowGraph();
 
   g.add_edge(0, 1);
   g.add_edge(1, 2);
@@ -71,9 +71,9 @@ u_graph::CFG g3() {
 
 // overleaf fig 1
 // missed by bubble finder
-u_graph::CFG g4() {
-  u_graph::CFG g;
-  g = u_graph::CFG();
+u_graph::FlowGraph g4() {
+  u_graph::FlowGraph g;
+  g = u_graph::FlowGraph();
 
   g.add_edge(0, 1);
   g.add_edge(1, 2);
@@ -91,9 +91,9 @@ u_graph::CFG g4() {
 
 // fig 1 a paper
 // diamond
-u_graph::CFG g5() {
-  u_graph::CFG g;
-  g = u_graph::CFG();
+u_graph::FlowGraph g5() {
+  u_graph::FlowGraph g;
+  g = u_graph::FlowGraph();
 
   g.add_edge(0, 1);
   g.add_edge(1, 2);
@@ -111,8 +111,8 @@ u_graph::CFG g5() {
 }
 
 // overlapping
-u_graph::CFG g6() {
-  u_graph::CFG g;
+u_graph::FlowGraph g6() {
+  u_graph::FlowGraph g;
 
   g.add_edge(0, 1);
   g.add_edge(1, 2);
@@ -263,26 +263,54 @@ digraph::DiGraph g12() {
 const bool DEBUG = true;
 
 int main() {
-
   digraph::DiGraph g = g10();
 
-  g.print_dot();
+  //g.print_dot();
   g.biedge();
-  g.print_dot();
 
+  if (DEBUG) {
+    std::cout << "\n\n" << "Bi-edged Di-Graph" << "\n\n";
+    g.print_dot();
+  }
+ 
   // a to_cfg() method
-  u_graph::CFG u = u_graph::CFG(g);
-  u.print_dot();
+  //u_graph::FlowGraph u = g1();
+  u_graph::FlowGraph u = u_graph::FlowGraph(g);
 
-
+  if (DEBUG) {
+    std::cout << "\n\n" << "Flow Graph" << "\n\n";
+    u.print_dot();
+  }
+ 
   spanning_tree::Tree t = u.compute_spanning_tree();
   if (DEBUG) {
     std::cout << "\n\n" << "Spanning tree" << "\n\n";
     t.print_dot();
   }
 
+  //return 0;
+  
+  vst::cycle_equiv(t);
+  if (DEBUG) {
+    std::cout << "\n\n" << "Updated Spanning tree" << "\n\n";
+    t.print_dot();
+  }
+
+    tree::Tree p = pst::compute_pst(t);
+  if (DEBUG) {
+    std::cout << "\n\n" << "PST" << "\n\n";
+    p.print_dot();
+  }
+
+
+  tree::Tree pv = vst::compute_pvst(t);
+  if (DEBUG) {
+    std::cout << "\n\n" << "PVST" << "\n\n";
+    pv.print_dot();
+  }
+  
   /*
-  u_graph::CFG g = g11();
+  u_graph::FlowGraph g = g11();
   if (DEBUG) {
     std::cout << "Input Graph" << "\n\n";
     g.print_dot();

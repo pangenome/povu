@@ -11,7 +11,6 @@ namespace core {
  */
 enum color { gray, black };
 
-
   
 } // namespace core
 #endif
