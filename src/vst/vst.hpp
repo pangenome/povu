@@ -60,6 +60,7 @@ public:
 };
 
 tree::Tree compute_pvst(spanning_tree::Tree &st);
+tree::Tree compute_pvst_grey(spanning_tree::Tree &st);
 
 
 } // namespace vst

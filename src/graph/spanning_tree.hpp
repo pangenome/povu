@@ -301,7 +301,8 @@ public:
   void set_dfs_num(std::size_t vertex, std::size_t dfs_num);
     
 
-  std::size_t add_be(std::size_t frm, std::size_t to, bool capping_be=false, core::color color=core::color::black);
+  std::size_t add_be(std::size_t frm, std::size_t to, bool capping_be=false,
+                     core::color color=core::color::black);
   void add_tree_edge(std::size_t frm, std::size_t to, core::color color=core::color::black);
 
   void set_hi(std::size_t vertex, std::size_t val);

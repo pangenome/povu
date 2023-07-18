@@ -259,29 +259,90 @@ digraph::DiGraph g12() {
   return g;
 };
 
+digraph::DiGraph g13() {
+  digraph::DiGraph g;
+
+  g.add_edge(0, 1);
+  g.add_edge(1, 2);
+  g.add_edge(2, 3);
+  g.add_edge(3, 1);
+  g.add_edge(3, 4);
+
+  g.add_start_node(0);
+  g.add_stop_node(4);
+
+  return g;
+};
+
+
+digraph::DiGraph g14() {
+  digraph::DiGraph g;
+
+  g.add_edge(0, 1);
+
+  g.add_edge(1, 2);
+  g.add_edge(1, 3);
+
+  g.add_edge(2, 4);
+  g.add_edge(3, 4);
+
+  g.add_edge(4, 5);
+
+  g.add_start_node(0);
+  g.add_stop_node(5);
+
+  return g;
+};
+
+digraph::DiGraph g15() {
+  digraph::DiGraph g;
+
+  g.add_edge(0, 1);
+
+  g.add_edge(1, 2);
+  g.add_edge(1, 3);
+
+  g.add_edge(2, 4);
+  g.add_edge(3, 4);
+
+  g.add_edge(4, 5);
+    g.add_edge(1, 5);
+    g.add_edge(5, 6);
+
+
+  g.add_start_node(0);
+  g.add_stop_node(6);
+
+  return g;
+};
+
 
 const bool DEBUG = true;
 
 int main() {
-  digraph::DiGraph g = g10();
+  digraph::DiGraph g = g15();
 
-  //g.print_dot();
+  if (DEBUG) {
+    std::cout << "\n\n" << "Di-Graph" << "\n\n";
+    g.print_dot();
+  }
+
   g.biedge();
 
   if (DEBUG) {
     std::cout << "\n\n" << "Bi-edged Di-Graph" << "\n\n";
     g.print_dot();
   }
- 
+
   // a to_cfg() method
-  //u_graph::FlowGraph u = g1();
+  //u_graph::FlowGraph u = g3();
   u_graph::FlowGraph u = u_graph::FlowGraph(g);
 
   if (DEBUG) {
     std::cout << "\n\n" << "Flow Graph" << "\n\n";
     u.print_dot();
   }
- 
+
   spanning_tree::Tree t = u.compute_spanning_tree();
   if (DEBUG) {
     std::cout << "\n\n" << "Spanning tree" << "\n\n";
@@ -289,26 +350,26 @@ int main() {
   }
 
   //return 0;
-  
+
   vst::cycle_equiv(t);
   if (DEBUG) {
     std::cout << "\n\n" << "Updated Spanning tree" << "\n\n";
     t.print_dot();
   }
 
-    tree::Tree p = pst::compute_pst(t);
+  tree::Tree p = pst::compute_pst(t);
   if (DEBUG) {
     std::cout << "\n\n" << "PST" << "\n\n";
     p.print_dot();
   }
 
 
-  tree::Tree pv = vst::compute_pvst(t);
+  tree::Tree pv = vst::compute_pvst_grey(t);
   if (DEBUG) {
     std::cout << "\n\n" << "PVST" << "\n\n";
     pv.print_dot();
   }
-  
+
   /*
   u_graph::FlowGraph g = g11();
   if (DEBUG) {

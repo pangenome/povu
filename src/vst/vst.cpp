@@ -4,6 +4,7 @@
 #include <format>
 #include <iostream>
 #include <limits>
+#include <unistd.h>
 #include <utility>
 #include <vector>
 #include <map>
@@ -328,7 +329,7 @@ void cycle_equiv(spanning_tree::Tree &t) {
  *
  * The PVST is a tree of cycle equivalent regions of the spanning tree of the
  * undirected flow graph U_f with the following properties:
- 
+
   we wish to arrange the nodes of our spanning tree such that the incoming tree
   edge, the parent edge, which could only be one edge, determines the
   equivalence class of that node. We want it such that nodes sharing the same
@@ -453,7 +454,7 @@ tree::Tree compute_pvst(spanning_tree::Tree &st) {
 
     std::set<size_t> obe = st.get_obe_idxs(v);
     std::set<size_t> ibe = st.get_ibe_idxs(v);
-    
+
     // there is at least one obe that is not a capping back edge
     bool has_non_capping_obe{false};
     for (std::size_t e_idx: obe) {
@@ -468,16 +469,16 @@ tree::Tree compute_pvst(spanning_tree::Tree &st) {
       std::size_t prnt_idx = st.get_parent_edge(v).get_parent();
       parent_ibe = st.get_ibe_idxs(prnt_idx);
     }
-    
+
     //if (!parent_ibe.empty() || class_stack.empty()) {}
-    
+
     if (!parent_ibe.empty() || class_stack.empty()) { // entered new equiv class
       //std::cout << "state: 1\n" ;
       if (class_stack.empty()) { // this is the root node
 
         //
         // the start class is always zero
-        
+
         // t.add_vertex(0, 0);
 
         class_stack.push(0);
@@ -494,11 +495,11 @@ tree::Tree compute_pvst(spanning_tree::Tree &st) {
         std::size_t cl = st.get_parent_edge(v).get_class();
 
         class_stack.push(cl);
-        
+
         //furthest.insert(std::pair<std::size_t, std::size_t>(cl, v));
         parent_map.insert(std::pair<std::size_t, std::size_t>(cl, prnt_vtx));
 
-        furthest.insert_or_assign(cl, v);  
+        furthest.insert_or_assign(cl, v);
       }
     }
     else if (obe.empty()) { // the equiv class is maintained
@@ -535,6 +536,98 @@ tree::Tree compute_pvst(spanning_tree::Tree &st) {
     }
   }
 
+  return t;
+}
+
+/*
+  A region has been entered because it's parent is zero or the parent edge is
+  gray we could also check if it has an IBE
+
+  build the tree as you walk down the spanning tree from 0 to n
+ */
+tree::Tree compute_pvst_grey(spanning_tree::Tree &st){
+  tree::Tree t = tree::Tree(st.size(), true);
+
+  std::set<std::size_t> seen{};
+  std::stack<std::size_t> class_stack{}; // stack of classes
+
+  // curr class to parent class
+  std::map<std::size_t, std::size_t> parent_map{};
+  std::map<std::size_t, std::size_t> furthest_map{};
+
+  bool in{false};
+
+  for (std::size_t r{1}; r < st.size(); r++) {
+
+    // the vertex id of the vertex at the topological sort index r
+    std::size_t v = st.get_sorted(r);
+
+    std::cout << std::format("r:{} v:{}\n", r, v);
+
+    spanning_tree::Edge const& parent_edge = st.get_parent_edge(v);
+    core::color color_ = parent_edge.get_color();
+    std::size_t class_ = parent_edge.get_class();
+    std::size_t parent = parent_edge.get_parent();
+
+    // for each node whose parent is node zero
+    if (parent == 0) {
+      parent_map.insert(std::make_pair(class_, 0));
+      furthest_map.insert_or_assign(class_, v);
+      t.add_vertex(0, v, class_);
+      class_stack.push(class_);
+      continue;
+    }
+
+    if (in) {
+
+      //furthest_map.insert_or_assign(, v);
+
+      std::size_t p = furthest_map.at(class_stack.top());
+
+      parent_map.insert(std::make_pair(class_, p));
+      t.add_vertex(p, v, class_);
+
+      in = false;
+      class_stack.push(class_);
+      continue;
+    }
+
+    if (color_ == core::color::black) {
+      furthest_map.insert_or_assign(class_, v);
+      std::size_t p = class_stack.empty() ? parent_map.at(class_) : class_stack.top();
+      t.add_vertex(p, v, class_);
+      continue;
+    }
+
+    // entry and exit of a region
+    if (color_ == core::color::gray) {
+
+      std::size_t x =
+        parent_map.end() == parent_map.find(class_) ? class_stack.top() : parent_map.at(class_);
+
+      std::cout << "x: " << x << "\n";
+
+      std::size_t tree_parent = furthest_map.at(x);
+
+      if (seen.count(class_)) {
+        while (!class_stack.empty() && class_stack.top() != class_) {
+          class_stack.pop();
+        }
+
+        class_stack.pop();
+        seen.erase(class_);
+
+      } else {
+        seen.insert(class_);
+        //class_stack.push(class_);
+        in = true;
+      }
+
+      t.add_vertex(tree_parent, v, class_);
+
+      continue;
+    }
+  }
   return t;
 }
 

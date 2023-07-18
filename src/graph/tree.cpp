@@ -1,7 +1,10 @@
 #include <iostream>
 #include <format>
 #include <limits>
+#include <string>
+
 #include "./tree.hpp"
+#include "../core/core.hpp"
 
 namespace tree {
   // TODO: declare all of these in a header file
@@ -13,11 +16,32 @@ namespace tree {
   // constructor(s)
   // --------------
   Vertex::Vertex() :
-    id(SIZE_T_MAX), parent(SIZE_T_MAX), children(std::set<std::size_t>{}), is_valid_(false) {}
+    id(core::constants::UNDEFINED_SIZE_T),
+    class_(core::constants::UNDEFINED_SIZE_T),
+    parent(core::constants::UNDEFINED_SIZE_T),
+    children(std::set<std::size_t>{}),
+    is_valid_(false) {}
+
   Vertex::Vertex(std::size_t id) :
-    id(id), parent(SIZE_T_MAX), children(std::set<std::size_t>{}), is_valid_(true) {}
+    id(id),
+    class_(core::constants::UNDEFINED_SIZE_T),
+    parent(core::constants::UNDEFINED_SIZE_T),
+    children(std::set<std::size_t>{}),
+    is_valid_(true) {}
+
   Vertex::Vertex(std::size_t id, std::size_t parent_id) :
-    id(id), parent(parent_id), children(std::set<std::size_t>{}), is_valid_(true) {}
+    id(id),
+    class_(core::constants::UNDEFINED_SIZE_T),
+    parent(parent_id),
+    children(std::set<std::size_t>{}),
+    is_valid_(true) {}
+
+  Vertex::Vertex(std::size_t id, std::size_t parent_id, std::size_t eq_class) :
+    id(id),
+    class_(eq_class),
+    parent(parent_id),
+    children(std::set<std::size_t>{}),
+    is_valid_(true) {}
 
   // member function(s)
   // ------------------
@@ -26,6 +50,7 @@ namespace tree {
   // -------
   bool Vertex::is_valid() const { return this->is_valid_; }
   std::set<std::size_t> const& Vertex::get_children() const { return this->children; }
+std::size_t Vertex::get_class() const { return this->class_; }
 
   // setters
   // -------
@@ -60,9 +85,18 @@ namespace tree {
     return true;
   }
 
-  std::set<std::size_t> const& Tree::get_children(std::size_t v) const {
-    return this->vertices.at(v).get_children();
-  }
+bool Tree::add_vertex(std::size_t parent_id, std::size_t id, std::size_t eq_class) {
+    // TODO: there's a logical error in the caller if the vertex is already in the tree
+    //       should we throw an exception here?
+    if (this->vertices[id].is_valid()) { return false;  }
+    this->vertices[id] = Vertex(id, parent_id, eq_class);
+    this->vertices[parent_id].add_child(id);
+    return true;
+}
+
+std::set<std::size_t> const& Tree::get_children(std::size_t v) const {
+  return this->vertices.at(v).get_children();
+}
 
   void Tree::print_dot() {
   std::cout << std::format(
@@ -71,6 +105,16 @@ namespace tree {
     "\tnode[shape = circle];\n"
     "\tedge [arrowhead=vee];\n"
   );
+
+
+  for (std::size_t i{}; i < this->size(); i++) {
+    std::string class_label =
+      this->vertices[i].get_class() == core::constants::UNDEFINED_SIZE_T ?
+      "UNDEFINED" : std::to_string(this->vertices[i].get_class());
+
+    std::cout <<
+      std::format("\t{} [label=\"v: {}\\ncl: {}\"];\n", i, i, class_label);
+  }
 
   for (std::size_t i{}; i < this->size(); i++) {
     for (auto c : this->get_children(i)) {

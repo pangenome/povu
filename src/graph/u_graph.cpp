@@ -24,23 +24,34 @@ namespace u_graph {
   
 // constructor(s)
 // --------------
-Vertex::Vertex() : edge_idxs(std::set<std::size_t>{}) { }
+Vertex::Vertex() : edge_idxs(std::set<e_v_t>{}) { }
+//Vertex::Vertex (std::size_t edge_idx, std::size_t v_idx) : edge_idxs(std::set<e_v_t>{edge_idx}) { }
 
 // getters
 // -------
-std::set<std::size_t> const& Vertex::get_adjacent_vertices() const {
+std::set<e_v_t> const& Vertex::get_adjacent_vertices() const {
   return edge_idxs;
+}
+
+std::vector<std::size_t> Vertex::edge_indexes() const {
+  std::vector<std::size_t> edge_idxs;
+  for (auto e : this->edge_idxs) { edge_idxs.push_back(e.e_idx); }
+  return edge_idxs;
+}
+
+std::vector<std::size_t> Vertex::adj_vertices() const {
+  std::vector<std::size_t> v;
+  for (auto e : this->edge_idxs) { v.push_back(e.v_idx); }
+  return v;
 }
   
 // setters
 // -------
-void Vertex::add_edge_idx(std::size_t e_idx) {
-  this->edge_idxs.insert(e_idx);
+void Vertex::add_edge_idx(std::size_t e_idx, std::size_t v_idx) {
+  this->edge_idxs.insert(e_v_t{e_idx, v_idx});
 }
 
-void Vertex::del_edge_idx(std::size_t e_idx) {
-  this->edge_idxs.erase(e_idx);
-}
+//void Vertex::del_edge_idx(std::size_t e_idx) { this->edge_idxs.erase(e_idx); }
 
 /*
  * Flow Graph
@@ -55,8 +66,8 @@ FlowGraph::FlowGraph(std::size_t initial_len) {
   
   this->edges.push_back(u_graph::Edge{0, initial_len - 1});
 
-  this->adj_list[0].add_edge_idx(edge_idx);
-  this->adj_list[initial_len - 1].add_edge_idx(edge_idx);
+  this->adj_list[0].add_edge_idx(edge_idx, initial_len - 1);
+  this->adj_list[initial_len - 1].add_edge_idx(edge_idx, 0);
 }
   
 FlowGraph::FlowGraph(digraph::DiGraph const& di_graph) {
@@ -75,8 +86,8 @@ FlowGraph::FlowGraph(digraph::DiGraph const& di_graph) {
   this->edges.push_back(u_graph::Edge{0, size + 1});
 
   // connect start to end
-  this->adj_list[0].add_edge_idx(edge_idx);
-  this->adj_list[size + 1].add_edge_idx(edge_idx);
+  this->adj_list[0].add_edge_idx(edge_idx, size + 1);
+  this->adj_list[size + 1].add_edge_idx(edge_idx, 0);
 
   // connect all digraph start nodes to flow graph dummy start node
   for (auto const& start_node : di_graph.starts()) {
@@ -85,9 +96,9 @@ FlowGraph::FlowGraph(digraph::DiGraph const& di_graph) {
     
     edge_idx = this->edges.size();
     this->edges.push_back(u_graph::Edge{0, start_node+1});
-    this->adj_list[0].add_edge_idx(edge_idx);
+    this->adj_list[0].add_edge_idx(edge_idx, start_node+1);
     // no inc because zero index
-    this->adj_list[start_node].add_edge_idx(edge_idx);
+    this->adj_list[start_node].add_edge_idx(edge_idx, 0);
   }
 
   /*
@@ -111,8 +122,8 @@ FlowGraph::FlowGraph(digraph::DiGraph const& di_graph) {
     
     this->edges.push_back(u_graph::Edge{stop_node+1, this->stop_node_internal_idx()});
 
-    this->adj_list[this->stop_node_internal_idx()].add_edge_idx(edge_idx);
-    this->adj_list[stop_node+1].add_edge_idx(edge_idx);
+    this->adj_list[this->stop_node_internal_idx()].add_edge_idx(edge_idx, stop_node+1);
+    this->adj_list[stop_node+1].add_edge_idx(edge_idx, this->stop_node_internal_idx());
     //this->set_stop_node(stop_node);
   }
 }
@@ -150,33 +161,14 @@ Vertex const& FlowGraph::get_vertex_internal(std::size_t vertex) const {
 }
 
 // will break when called with internal vertex indexes
-std::set<std::size_t>const& FlowGraph::get_adjacent_vertices(std::size_t vertex) const {
-  return this->get_vertex(vertex).get_adjacent_vertices();
-}
+//std::set<std::size_t>const& FlowGraph::get_adjacent_vertices(std::size_t vertex) const {
+//  return this->get_vertex(vertex).get_adjacent_vertices();
+//}
 
 // will break when called with internal vertex indexes
-std::set<std::size_t> FlowGraph::get_adjacent_vertices_n(std::size_t vertex) const {
-  std::set<std::size_t> const& edg_idxs = this->get_vertex(vertex).get_adjacent_vertices();
-
-  std::set<std::size_t> vertices;
-  
-  for (auto i: edg_idxs) {
-
-    std::size_t a = this->edges.at(i).left() == vertex ?
-      this->edges.at(i).right() : this->edges.at(i).left();
-
-    // std::size_t a  = edge.left() == current_vertex ? edge.right() : edge.left();
-    vertices.insert(a);
-  }
-  
-  return vertices;
-  //return this->get_vertex(vertex).get_adjacent_vertices();
-}
-  
-// will break when called with internal vertex indexes
-std::set<std::size_t> const&
-FlowGraph::get_adjacent_vertices_internal(std::size_t vertex) const {
-  return this->get_vertex_internal(vertex).get_adjacent_vertices();
+std::vector<std::size_t>
+FlowGraph::get_edge_indexes_internal(std::size_t vertex) const {
+  return this->get_vertex_internal(vertex).edge_indexes();
 }
 
 void FlowGraph::set_start_node(std::size_t vertex) {
@@ -184,8 +176,8 @@ void FlowGraph::set_start_node(std::size_t vertex) {
   std::size_t  edge_idx = this->edges.size();
   this->edges.push_back(u_graph::Edge{0, vertex+1});
   
-  this->start_node_internal().add_edge_idx(edge_idx);
-  this->get_vertex_mut(vertex).add_edge_idx(edge_idx);
+  this->start_node_internal().add_edge_idx(edge_idx, vertex+1);
+  this->get_vertex_mut(vertex).add_edge_idx(edge_idx, 0);
 }
 
 void FlowGraph::set_stop_node(std::size_t vertex) {
@@ -193,8 +185,8 @@ void FlowGraph::set_stop_node(std::size_t vertex) {
   std::size_t edge_idx = this->edges.size();
   this->edges.push_back(u_graph::Edge{vertex+1, this->stop_node_internal_idx()});
   
-  this->get_vertex_mut(vertex).add_edge_idx(edge_idx);
-  this->stop_node_internal().add_edge_idx(edge_idx);
+  this->get_vertex_mut(vertex).add_edge_idx(edge_idx, this->stop_node_internal_idx());
+  this->stop_node_internal().add_edge_idx(edge_idx, vertex+1);
 }
 
 void FlowGraph::add_edge(std::size_t n1, std::size_t n2, core::color c) {
@@ -210,7 +202,7 @@ void FlowGraph::add_edge(std::size_t n1, std::size_t n2, core::color c) {
     
     // update the edge from dummy start to dummy stop
     // is out of range
-    for (auto edge_idx: this->start_node_internal().get_adjacent_vertices()) {
+    for (auto edge_idx: this->start_node_internal().edge_indexes()) {
 
       Edge& edge = this->edges.at(edge_idx);
       
@@ -233,8 +225,8 @@ void FlowGraph::add_edge(std::size_t n1, std::size_t n2, core::color c) {
 
   //std::cout  << " n1 " << n1 << " n2 " << n2 << " edis " << edge_idx << std::endl;
   this->edges.push_back(u_graph::Edge{n1, n2, c});
-  this->adj_list[n1].add_edge_idx(edge_idx);
-  this->adj_list[n2].add_edge_idx(edge_idx);
+  this->adj_list[n1].add_edge_idx(edge_idx, n2);
+  this->adj_list[n2].add_edge_idx(edge_idx, n1);
 }
 
 spanning_tree::Tree FlowGraph::compute_spanning_tree() {
@@ -267,9 +259,9 @@ spanning_tree::Tree FlowGraph::compute_spanning_tree() {
     Vertex const& v =  this->get_vertex_internal(current_vertex);
 
     // TODO: better condition here for speedup
-    for (auto edge_idx : v.get_adjacent_vertices()) {
-      Edge& edge = this->edges.at(edge_idx);
-      std::size_t a = edge.left() == current_vertex ? edge.right() : edge.left();
+    for (auto adj : v.get_adjacent_vertices()) {
+      Edge& edge = this->edges.at(adj.e_idx);
+      std::size_t a = adj.v_idx;
       
       if (seen.find(a) == seen.end()) {
         t.add_tree_edge(current_vertex, a, edge.get_color());
@@ -312,7 +304,7 @@ void FlowGraph::print_dot() {
   std::set<std::size_t> reported{};
 
   for (std::size_t i{}; i < this->size_internal(); i++) {
-    for (std::size_t  edge_idx : this->get_adjacent_vertices_internal(i)) {
+    for (std::size_t  edge_idx : this->get_edge_indexes_internal(i)) {
       if (reported.count(edge_idx)) { continue; }
 
       reported.insert(edge_idx);

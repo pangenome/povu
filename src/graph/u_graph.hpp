@@ -2,6 +2,7 @@
 #define U_GRAPH_HPP
 
 #include <cstddef>
+#include <cstdlib>
 #include <vector>
 #include <set>
 
@@ -44,27 +45,59 @@ friend constexpr auto operator<=>(Edge, Edge) = default;
   void set_right(std::size_t r) { this->r = r; }
 };
 
+struct EdgeHash {
+  std::size_t operator()(Edge const& e) const {
+    return std::hash<std::size_t>()(e.left()) ^ std::hash<std::size_t>()(e.right());
+  }
+};
+
+// edge vertex type
+// This sorting is used for constructing a spanning tree where the brackets are
+// easier to understand/see
+// a struct that stores the edge index and the vertex index
+// used for sorting (do not name it Foo)
+//
+// because in an indirected graph,
+// there is no source and target of an edge further, the edge (u,v) == (v,u)
+// the v index is just the greater between u and v
+struct e_v_t {
+  std::size_t e_idx; // index of this edge in CFG
+  std::size_t v_idx; // index/id of the target vertex in CFG
+
+  // implement < operator
+  bool operator<(e_v_t const& other) const {
+    return this->v_idx < other.v_idx;
+  }
+
+  // constructor
+  e_v_t(std::size_t e_idx, std::size_t v_idx): e_idx(e_idx), v_idx(v_idx) {}
+};
+
 class Vertex {
   // the indexes of edges in CFG
   // TODO: make this a vector
-  std::set<std::size_t> edge_idxs;
+  std::set<e_v_t> edge_idxs;
 
 public:
   Vertex();
+  //Vertex(std::size_t e_idx, std::size_t v_idx);
 
   // takes an edge index in the flow graph
   // TODO rename to add_edge_idx
-  void add_edge_idx(std::size_t e_idx);
-  void del_edge_idx(std::size_t e_idx);
+  void add_edge_idx(std::size_t e_idx, std::size_t v_idx);
+  //void del_edge_idx(std::size_t e_idx);
 
-  std::set<std::size_t>const& get_adjacent_vertices() const;
+  // TODO: get_edges?
+  std::vector<std::size_t> edge_indexes() const; // get edge indexes
+  std::vector<std::size_t> adj_vertices() const; // get adj vertices
+  std::set<e_v_t>const& get_adjacent_vertices() const;
 };
 
 /*
  * Flow Graph
  * ==========
  */
-  
+
 /**
  * this undirected graph is actually a flow graph
  * undirected
@@ -75,7 +108,7 @@ class FlowGraph {
 
   // edges in a list
   std::vector<Edge> edges;
-  
+
   // start node is always zero
   // stop node is always N+1
   // std::set<std::size_t> start_nodes;
@@ -91,7 +124,7 @@ class FlowGraph {
   Vertex& start_node_internal();
   Vertex& stop_node_internal();
   Vertex const& get_vertex_internal(std::size_t vertex) const;
-  std::set<std::size_t> const& get_adjacent_vertices_internal(std::size_t vertex) const;
+  std::vector<std::size_t> get_edge_indexes_internal(std::size_t vertex) const;
 
 public:
   // constructor(s)
@@ -106,14 +139,13 @@ public:
 
   // getters
   // -------
-  
+
   std::size_t size();
   // get an immutable reference to a vertex
   Vertex const& get_vertex(std::size_t vertex) const;
-  std::set<std::size_t> const& get_adjacent_vertices(std::size_t vertex) const;
-  std::set<std::size_t> get_adjacent_vertices_n(std::size_t vertex) const;
+  //std::set<std::size_t> const& get_adjacent_vertices(std::size_t vertex) const;
 
-  
+
   // setters
   // -------
 

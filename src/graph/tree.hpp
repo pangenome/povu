@@ -14,8 +14,12 @@ namespace tree {
 
 class Vertex {
   std::size_t id; // allow negative ids?
+  std::size_t class_; // equivalence class
+
   std::size_t parent;
   std::set<std::size_t> children;
+
+  // std::size_t depth; // depth of the vertex in the tree
 
   bool is_valid_; // is this a valid vertex in the tree
 
@@ -24,12 +28,16 @@ public:
   // --------------
   Vertex(); // a null vertex
   Vertex(std::size_t id); // root constructor sets the parent to a max value
-  Vertex(std::size_t id, std::size_t parent_id); // non-root vertex constructor
+  Vertex(std::size_t id, std::size_t parent_id);
+
+  // non-root vertex constructor
+  Vertex(std::size_t id, std::size_t parent_id, std::size_t eq_class); // non-root vertex constructor
 
   // getters
   // -------
   bool is_valid() const;
   std::set<std::size_t> const& get_children() const;
+  std::size_t get_class() const;
 
   // setters
   // -------
@@ -48,9 +56,9 @@ public:
   // constructor(s)
   // --------------
   // construct a null tree
-  Tree(); 
+  Tree();
   // construct a tree with n null vertices but a valid root
-  Tree(std::size_t n, bool artificial_root=false); 
+  Tree(std::size_t n, bool artificial_root=false);
 
   // setters
   // -------
@@ -59,7 +67,10 @@ public:
   // given the id of the vertex and the id of the parent
   // returns false if the vertex is already in the tree or some error occurs
   // returns true if the vertex is added to the tree
+  // TODO: deprecated
   bool add_vertex(std::size_t parent_id, std::size_t id);
+
+  bool add_vertex(std::size_t parent_id, std::size_t id, std::size_t eq_class);
 
   // getters
   // -------
