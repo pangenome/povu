@@ -83,7 +83,7 @@ public:
   std::size_t size() const;
 
   // dot format output of the tree
-  void print_dot();
+  void print_dot(bool with_classes=false);
 };
 
 } // namespace tree

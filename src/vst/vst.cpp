@@ -307,7 +307,11 @@ void handle_vertex(spanning_tree::Tree& t, std::size_t r) {
 
     /*check for e, b equivalance*/
     if (b.recent_size() == 1) {
-      b.set_recent_class(e.get_class_idx());
+      std::size_t b_id = b.back_edge_id();
+      spanning_tree::BackEdge& be = t.get_backedge_ref_given_id(b_id);
+      be.set_class(e.get_class_idx());
+
+      // b.set_recent_class(e.get_class_idx());
     }
   }
 }

@@ -12,6 +12,7 @@
 
 #include "./u_graph.hpp"
 #include "./digraph.hpp"
+#include "./spanning_tree.hpp"
 
 
 // undirected graph
@@ -21,7 +22,7 @@ namespace u_graph {
  * Vertex
  * ======
  */
-  
+
 // constructor(s)
 // --------------
 Vertex::Vertex() : edge_idxs(std::set<e_v_t>{}) { }
@@ -44,7 +45,7 @@ std::vector<std::size_t> Vertex::adj_vertices() const {
   for (auto e : this->edge_idxs) { v.push_back(e.v_idx); }
   return v;
 }
-  
+
 // setters
 // -------
 void Vertex::add_edge_idx(std::size_t e_idx, std::size_t v_idx) {
@@ -63,26 +64,26 @@ FlowGraph::FlowGraph(std::size_t initial_len) {
   std::vector<Vertex> d(initial_len, Vertex());
   this->adj_list = std::move(d);
   std::size_t edge_idx = this->edges.size(); // == 0
-  
+
   this->edges.push_back(u_graph::Edge{0, initial_len - 1});
 
   this->adj_list[0].add_edge_idx(edge_idx, initial_len - 1);
   this->adj_list[initial_len - 1].add_edge_idx(edge_idx, 0);
 }
-  
+
 FlowGraph::FlowGraph(digraph::DiGraph const& di_graph) {
   std::size_t size = di_graph.size();
     /*
     handle the start of the graph
    */
-  
+
   // initialize the flow graph
   // with a dummy start and stop node and connect them
   std::vector<Vertex> d(size+2, Vertex());
   this->adj_list = std::move(d);
 
   std::size_t edge_idx = this->edges.size();
-  
+
   this->edges.push_back(u_graph::Edge{0, size + 1});
 
   // connect start to end
@@ -93,7 +94,7 @@ FlowGraph::FlowGraph(digraph::DiGraph const& di_graph) {
   for (auto const& start_node : di_graph.starts()) {
     this->set_start_node(start_node);
     continue;
-    
+
     edge_idx = this->edges.size();
     this->edges.push_back(u_graph::Edge{0, start_node+1});
     this->adj_list[0].add_edge_idx(edge_idx, start_node+1);
@@ -103,7 +104,7 @@ FlowGraph::FlowGraph(digraph::DiGraph const& di_graph) {
 
   /*
     handle the ends of the graph
-   */  
+   */
   for (std::size_t i{}; i < size; ++i) {
     for (auto const& edge : di_graph.get_vertex(i).out()) {
       this->add_edge(i, edge.to(), edge.get_color());
@@ -117,15 +118,61 @@ FlowGraph::FlowGraph(digraph::DiGraph const& di_graph) {
   for (auto const& stop_node : di_graph.stops()) {
     this->set_stop_node(stop_node);
     continue;
-    
+
     edge_idx = this->edges.size();
-    
+
     this->edges.push_back(u_graph::Edge{stop_node+1, this->stop_node_internal_idx()});
 
     this->adj_list[this->stop_node_internal_idx()].add_edge_idx(edge_idx, stop_node+1);
     this->adj_list[stop_node+1].add_edge_idx(edge_idx, this->stop_node_internal_idx());
     //this->set_stop_node(stop_node);
   }
+}
+
+FlowGraph::FlowGraph(spanning_tree::Tree& t) {
+  //FlowGraph g = FlowGraph(t.size());
+
+  //std::size_t initial_len = t.size();
+
+  auto foo =[&](std::size_t n1, std::size_t n2, core::color c, int weight){
+    std::size_t edge_idx = this->edges.size();
+
+    this->edges.push_back( u_graph::Edge{n1, n2, c, weight});
+    this->adj_list[n1].add_edge_idx(edge_idx, n2);
+    this->adj_list[n2].add_edge_idx(edge_idx, n1);
+  };
+
+  std::vector<Vertex> d(t.size(), Vertex());
+
+  this->adj_list = std::move(d);
+  //std::size_t edge_idx = this->edges.size(); // == 0
+
+
+  //this->edges.push_back(u_graph::Edge{0, initial_len - 1});
+
+
+
+  //this->adj_list[0].add_edge_idx(edge_idx, initial_len - 1);
+  //this->adj_list[initial_len - 1].add_edge_idx(edge_idx, 0);
+  //std::size_t edge_idx = this->edges.size(); // == 0
+
+    for (std::size_t j{}; j < t.size(); ++j) {
+      std::size_t i = t.get_sorted(j);
+
+      for (auto edge : t.get_child_edges(i)) {
+        foo(i, edge.get_child(), edge.get_color(), edge.get_class());
+      }
+
+      for (auto bee : t.get_obe_w_id(i)) {
+        spanning_tree::BackEdge be = t.get_backedge_given_id(bee.first);
+        if (!be.is_capping_backedge()) {
+          foo(i, be.get_tgt(), be.get_color(), be.get_class());
+        }
+      }
+    }
+
+    //std::cout << "internal " << this->size_internal() << std::endl;
+
 }
 
 std::size_t FlowGraph::size_internal() {
@@ -175,7 +222,7 @@ void FlowGraph::set_start_node(std::size_t vertex) {
 
   std::size_t  edge_idx = this->edges.size();
   this->edges.push_back(u_graph::Edge{0, vertex+1});
-  
+
   this->start_node_internal().add_edge_idx(edge_idx, vertex+1);
   this->get_vertex_mut(vertex).add_edge_idx(edge_idx, 0);
 }
@@ -184,13 +231,16 @@ void FlowGraph::set_stop_node(std::size_t vertex) {
 
   std::size_t edge_idx = this->edges.size();
   this->edges.push_back(u_graph::Edge{vertex+1, this->stop_node_internal_idx()});
-  
+
   this->get_vertex_mut(vertex).add_edge_idx(edge_idx, this->stop_node_internal_idx());
   this->stop_node_internal().add_edge_idx(edge_idx, vertex+1);
 }
 
-void FlowGraph::add_edge(std::size_t n1, std::size_t n2, core::color c) {
-  ++n1; ++n2;
+void FlowGraph::add_edge(std::size_t n1, std::size_t n2, core::color c, int weight, bool inc) {
+    if (inc) {
+      ++n1; ++n2;
+    }
+    //++n1; ++n2;
   // move the last node further right if n2 or n1 reaches it
   // TODO: what about self loops i.e n1 == n2?
   std::size_t curr_size = this->size();
@@ -199,13 +249,13 @@ void FlowGraph::add_edge(std::size_t n1, std::size_t n2, core::color c) {
   // TODO: update current start and stop nodes
   if (curr_size < greater) {
     std::size_t new_internal_size = this->size_internal() + greater - curr_size;
-    
+
     // update the edge from dummy start to dummy stop
     // is out of range
     for (auto edge_idx: this->start_node_internal().edge_indexes()) {
 
       Edge& edge = this->edges.at(edge_idx);
-      
+
       // TODO: check if stop_node is left
       if (edge.right() == this->stop_node_internal_idx()) {
         edge.set_right(new_internal_size - 1);
@@ -213,7 +263,7 @@ void FlowGraph::add_edge(std::size_t n1, std::size_t n2, core::color c) {
         break;
       }
     }
-    
+
     this->adj_list.resize(new_internal_size, Vertex());
 
     std::size_t curr_stop_node_idx = curr_size + 1;
@@ -224,7 +274,7 @@ void FlowGraph::add_edge(std::size_t n1, std::size_t n2, core::color c) {
   std::size_t edge_idx = this->edges.size();
 
   //std::cout  << " n1 " << n1 << " n2 " << n2 << " edis " << edge_idx << std::endl;
-  this->edges.push_back(u_graph::Edge{n1, n2, c});
+  this->edges.push_back(u_graph::Edge{n1, n2, c, weight});
   this->adj_list[n1].add_edge_idx(edge_idx, n2);
   this->adj_list[n2].add_edge_idx(edge_idx, n1);
 }
@@ -262,7 +312,7 @@ spanning_tree::Tree FlowGraph::compute_spanning_tree() {
     for (auto adj : v.get_adjacent_vertices()) {
       Edge& edge = this->edges.at(adj.e_idx);
       std::size_t a = adj.v_idx;
-      
+
       if (seen.find(a) == seen.end()) {
         t.add_tree_edge(current_vertex, a, edge.get_color());
         visited.push(a);
@@ -288,7 +338,7 @@ spanning_tree::Tree FlowGraph::compute_spanning_tree() {
   return t;
 }
 
-  
+
 void FlowGraph::print_dot() {
   std::cout << std::format(
     "graph G {{\n"
@@ -310,17 +360,26 @@ void FlowGraph::print_dot() {
       reported.insert(edge_idx);
 
       //std::cout << "i" << i << " edge idx " << edge_idx << std::endl;
-      
+
       Edge& edge = this->edges.at(edge_idx);
-      
+
       std::size_t to = edge.right() == i ? edge.left() : edge.right();
-      
+
       std::string color_str =
         this->edges.at(edge_idx).get_color() == core::color::black
         ? "black" : "gray";
-      
-      std::cout <<
-        std::format("\t{} -- {}  [color=\"{}\"];\n", i, to, color_str);
+
+      if (edge.get_weight() == core::constants::UNDEFINED_INT) {
+        std::cout <<
+          std::format("\t{} -- {}  [color=\"{}\"];\n", i, to, color_str);
+      } else {
+        std::cout <<
+          std::format("\t{} -- {}  [color=\"{}\", label=\"{}\"];\n",
+                      i, to, color_str, edge.get_weight());
+      }
+
+      // std::cout <<
+      // std::format("\t{} -- {}  [color=\"{}\"];\n", i, to, color_str);
     }
   }
 

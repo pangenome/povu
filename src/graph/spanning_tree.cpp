@@ -1,10 +1,13 @@
 #include <algorithm>
 #include <cstddef>
+#include <exception>
 #include <format>
 #include <iostream>
 #include <limits>
 #include <set>
 #include <stack>
+#include <stdexcept>
+#include <string>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -34,12 +37,14 @@ Bracket::Bracket(
       is_capping_(is_capping){}
 
 
-bool Bracket::is_capping() const { return this->is_capping_; }  
+bool Bracket::is_capping() const { return this->is_capping_; }
 std::size_t Bracket::back_edge_id() { return this->back_edge_id_; }
 std::size_t Bracket::recent_class() const { return this->recent_class_; }
 std::size_t Bracket::recent_size() const { return this->recent_size_; }
 void Bracket::set_recent_size(std::size_t s) { this->recent_size_ = s; }
 void Bracket::set_recent_class(std::size_t c) { this->recent_class_ = c; }
+
+
 
 /*
  * Edge
@@ -60,6 +65,7 @@ std::size_t Edge::get_class_idx() { return this->class_; }
 
 // setters
 void Edge::set_class_idx(std::size_t c) { this->class_ = c; }
+void Edge::set_class(std::size_t c) { this->class_ = c; }
 
 /*
  * BackEdge
@@ -89,7 +95,7 @@ std::size_t BackEdge::get_recent_class() const { return this->recent_class_; }
 std::size_t BackEdge::get_recent_size() const { return this->recent_size_; }
 
 core::color BackEdge::get_color() const { return this->color_; }
-  
+
 bool BackEdge::is_class_defined() const { return this->class_ != SIZE_T_MAX; }
 bool BackEdge::is_capping_backedge() const { return this->capping_back_edge_; }
 
@@ -134,7 +140,7 @@ bool Vertex::is_root() const {
     this->parent_id == std::numeric_limits<size_t>::max();
 }
 
-// setters    
+// setters
 void Vertex::unset_null(){ this->null_ = false;}
 void Vertex::add_obe(std::size_t obe_id) { this->obe.insert(obe_id); }
 void Vertex::add_ibe(std::size_t ibe_id) { this->ibe.insert(ibe_id); }
@@ -175,7 +181,7 @@ void Tree::set_dfs_num(std::size_t vertex, std::size_t dfs_num) {
   this->nodes.at(vertex).set_dfs_num(dfs_num);
 }
 
-    
+
 Vertex& Tree::get_root() { return this->nodes.at(0); }
 std::size_t Tree::size() const { return this->nodes.size(); }
 Vertex const &Tree::get_vertex(std::size_t vertex) const {
@@ -219,7 +225,7 @@ std::vector<Edge> Tree::get_child_edges(std::size_t vertex) {
 Edge const& Tree::get_parent_edge(std::size_t vertex) const {
   return this->tree_edges.at(this->nodes.at(vertex).get_parent_idx());
 }
-  
+
 std::set<std::size_t> Tree::get_obe_idxs(std::size_t vertex) {
   std::set<std::size_t> v{};
 
@@ -243,7 +249,7 @@ std::set<std::size_t> Tree::get_ibe_idxs(std::size_t vertex) {
 
 std::set<std::pair<std::size_t, std::size_t>>
 Tree::get_obe_w_id(std::size_t vertex) {
-   std::set<std::pair<std::size_t, std::size_t>> res{};
+  std::set<std::pair<std::size_t, std::size_t>> res{};
   for (auto e_idx : this->nodes.at(vertex).get_obe()) {
     res.insert(
       std::make_pair(
@@ -303,6 +309,16 @@ std::size_t Tree::get_parent(std::size_t vertex) {
 
 BackEdge& Tree::get_backedge(std::size_t backedge_idx) {
   return this->back_edges.at(backedge_idx);
+}
+
+BackEdge& Tree::get_backedge_ref_given_id(std::size_t backedge_id) {
+  for (auto it {this->back_edges.begin()}; it != this->back_edges.end(); ++it) {
+    if (it->id() == backedge_id) {
+      return *it;
+    }
+  }
+
+  throw std::out_of_range(std::format("Back edge {} not found", backedge_id));
 }
 
 BackEdge Tree::get_backedge_given_id(std::size_t backedge_id) {
@@ -380,8 +396,8 @@ void Tree::del_bracket(std::size_t vertex, std::size_t backedge_idx) {
        br++) {
     if (br->back_edge_id() == b.id()) {
       this->bracket_lists.at(vertex).erase(br);
-      std::size_t s =  this->bracket_lists.at(vertex).size();
-      this->bracket_lists.at(vertex).front().set_recent_size(s);
+      //std::size_t s =  this->bracket_lists.at(vertex).size();
+      //this->bracket_lists.at(vertex).front().set_recent_size(s);
       return;
     }
   }
@@ -399,9 +415,13 @@ void Tree::push(std::size_t vertex, std::size_t backege_idx) {
 
   // TODO: std::move
   // back edge id, recent size, recent class
-  
+
+
   Bracket br =
-    Bracket(be.id(), s, this->equiv_class_count_, be.is_capping_backedge());
+    Bracket(be.id(),
+            core::constants::UNDEFINED_SIZE_T,
+            core::constants::UNDEFINED_SIZE_T,
+            be.is_capping_backedge());
   this->bracket_lists.at(vertex).push_front(br);
   std::list<Bracket>::iterator br_it = this->bracket_lists.at(vertex).begin();
 
@@ -411,8 +431,8 @@ void Tree::push(std::size_t vertex, std::size_t backege_idx) {
   // update the backedge
   be.set_bracket_it(br_it);
   // TODO: unnecssary?
-  be.set_class(this->equiv_class_count_);
-  be.set_recent_size(s);
+  //be.set_class(this->equiv_class_count_);
+  //be.set_recent_size(s);
 }
 
 Bracket& Tree::top(std::size_t vertex) {
@@ -443,7 +463,7 @@ void Tree::print_dot() {
 
   for (std::size_t j{}; j < this->size(); j++) {
 
-    std::size_t i = this->sort_.at(j);
+    std::size_t i = this->get_sorted(j);
 
     // Vertex const& vv = this->get_vertex(i);
     for (auto c : this->get_child_edges(i)) {
@@ -452,7 +472,7 @@ void Tree::print_dot() {
                            : std::to_string(c.get_class_idx());
 
       std::string color = c.get_color() == core::color::gray ? "gray" : "black";
-      
+
       std::cout << std::format("\t{}  -- {}  [label=\"{} {}\" color=\"{}\"];\n",
                                i, c.get_child(), c.id(), cl, color);
     }
@@ -460,31 +480,34 @@ void Tree::print_dot() {
     //for (auto c : this->get_children_w_id(i)) {
       //std::cout << std::format("\t{} -- {}  [label=\"{}\"];\n", i, c.second, c.first);
     //}
-    
+
     for (auto o: this->get_obe_w_id(i)) {
       std::string cl = o.first > 10000 ? "\u2205" : std::to_string(o.first);
       // a capping backedge is red and can never have been gray
       BackEdge be = this->get_backedge_given_id(o.first);
 
       //std::cout << "be: " << be.get_src() << " " << be.get_tgt() << " " << o.first << " "  << o.second << "\n";
-      
+
       bool is_capping = be.is_capping_backedge();
-      
+
+      std::string class_ = be.get_class() ==  core::constants::UNDEFINED_SIZE_T
+         ?  "" : std::to_string(be.get_class());
+
       std::string color{};
 
       if (is_capping) {
         color = "red";
       }
       else if (this->get_backedge_given_id(o.first).get_color() == core::color::gray) {
-        color = "gray";        
+        color = "gray";
       }
       else {
         color = "black";
       }
-      
+
       std::cout << std::format(
-          "\t{} -- {} [label=\"{}\" style=\"dotted\" color=\"{}\"];\n",
-          i, be.get_tgt(), cl, color
+          "\t{} -- {} [label=\"{} {}\" style=\"dotted\" color=\"{}\"];\n",
+          i, be.get_tgt(), cl, class_, color
           );
     }
   }

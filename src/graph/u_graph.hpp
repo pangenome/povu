@@ -26,12 +26,15 @@ class Edge {
   std::size_t l;
   std::size_t r;
   core::color c;
+  int weight;
+
 
 public:
-  Edge(std::size_t l, std::size_t r , core::color c=core::color::black):
-    l(std::min(l,r)), r(std::max(l,r)){
-    this->c = c;
-  }
+  Edge(std::size_t l,
+       std::size_t r,
+       core::color c=core::color::black,
+       int weight=core::constants::UNDEFINED_INT):
+    l(std::min(l,r)), r(std::max(l,r)), c(c), weight(weight) {}
 
 // spaceship operator
 friend constexpr auto operator<=>(Edge, Edge) = default;
@@ -40,6 +43,8 @@ friend constexpr auto operator<=>(Edge, Edge) = default;
   bool is_black() const { return this->c == core::color::black; }
   std::size_t left() const { return this->l; }
   std::size_t right() const { return this->r; }
+
+  int get_weight() const { return this->weight; }
 
   void set_left(std::size_t l) { this->l = l; }
   void set_right(std::size_t r) { this->r = r; }
@@ -136,6 +141,7 @@ public:
   // CFG(std::size_t initial_len=2); // from di graph or from gfa
   FlowGraph(std::size_t initial_len=2);
   FlowGraph(digraph::DiGraph const& di_graph);
+  FlowGraph(spanning_tree::Tree& t);
 
   // getters
   // -------
@@ -149,7 +155,8 @@ public:
   // setters
   // -------
 
-  void add_edge(std::size_t n1, std::size_t n2, core::color c=core::color::black);
+  void add_edge(std::size_t n1, std::size_t n2, core::color c=core::color::black,
+                int weight=core::constants::UNDEFINED_INT, bool inc=true);
 
   // get a mutable reference to a vertex
   Vertex& get_vertex_mut(std::size_t vertex);

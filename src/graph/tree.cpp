@@ -7,7 +7,7 @@
 #include "../core/core.hpp"
 
 namespace tree {
-  // TODO: declare all of these in a header file
+  // TODO: use the one in constants.hpp
   const std::size_t SIZE_T_MAX = std::numeric_limits<size_t>::max();
 
   // Vertex
@@ -98,7 +98,7 @@ std::set<std::size_t> const& Tree::get_children(std::size_t v) const {
   return this->vertices.at(v).get_children();
 }
 
-  void Tree::print_dot() {
+void Tree::print_dot(bool with_classes) {
   std::cout << std::format(
     "graph G {{\n"
     "\trankdir = TB;\n"
@@ -107,13 +107,15 @@ std::set<std::size_t> const& Tree::get_children(std::size_t v) const {
   );
 
 
-  for (std::size_t i{}; i < this->size(); i++) {
-    std::string class_label =
-      this->vertices[i].get_class() == core::constants::UNDEFINED_SIZE_T ?
-      "UNDEFINED" : std::to_string(this->vertices[i].get_class());
+  if (with_classes) {
+    for (std::size_t i{}; i < this->size(); i++) {
+      std::string class_label =
+        this->vertices[i].get_class() == core::constants::UNDEFINED_SIZE_T ?
+        "UNDEFINED" : std::to_string(this->vertices[i].get_class());
 
-    std::cout <<
-      std::format("\t{} [label=\"v: {}\\ncl: {}\"];\n", i, i, class_label);
+      std::cout <<
+        std::format("\t{} [label=\"v: {}\\ncl: {}\"];\n", i, i, class_label);
+    }
   }
 
   for (std::size_t i{}; i < this->size(); i++) {

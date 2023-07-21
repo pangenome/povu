@@ -17,7 +17,6 @@ class Vertex;
 class Bracket; // holds metadata about a back edge
 class BackEdge; //
 typedef std::list<Bracket> BracketList;
-// class BracketList;
 
 
 /*
@@ -49,7 +48,7 @@ class Edge {
   bool null_;
 
   core::color color_;
-  
+
 public:
 
   Edge();
@@ -64,7 +63,9 @@ public:
   // FIXME: we need both because of a non const call that depends on the non const
   std::size_t get_class() const;
   std::size_t get_class_idx();
-  void set_class_idx(std::size_t c);
+
+  void set_class_idx(std::size_t c); // deprecated replaced by set_class
+  void set_class(std::size_t c);
 };
 
 /*
@@ -80,7 +81,7 @@ class BackEdge {
 
   // iterator to bracket in the bracketlist
   std::list<Bracket>::iterator bi;
-  
+
   //Bracket* b; // pointer to bracket in the BracketList
   std::size_t class_; // equivalnce class id
   std::size_t recent_class_; //
@@ -88,7 +89,6 @@ class BackEdge {
 
   bool capping_back_edge_; // is a capping back edge
   bool null_;
-
 
   core::color color_;
 
@@ -131,9 +131,11 @@ class Bracket {
   //Bracket *next_;
   //Bracket *prev_;
 
+  //std::size_t class_; // equivalnce class id
+
   // if the brackedge this bracket represents is a capping backedge
-  bool is_capping_; 
-  
+  bool is_capping_;
+
 public:
   Bracket();
   Bracket(std::size_t backedge_id, std::size_t recent_size, std::size_t recent_class, bool is_capping=false);
@@ -145,26 +147,27 @@ public:
 
   // true if the backedge described by this bracket is a capping backedge
   // else false
-  bool is_capping() const; 
+  bool is_capping() const;
   std::size_t recent_size() const;
   std::size_t recent_class() const;
 
   void set_recent_size(std::size_t s);
   void set_recent_class(std::size_t c);
+  //void set_back_edge_class(std::size_t c);
 
-  
+
   // void set_next(Bracket *p);
   // void set_prev(Bracket *p);
-  
+
 };
 
 // TODO: remove unused methods
 class Vertex {
   // dfsnum of the node in toposort
-  std::size_t dfs_num_; 
+  std::size_t dfs_num_;
 
   std::size_t parent_id; // id to idx // index to the tree edge vector ?
-  
+
   // indexes of the children edges in the tree_edges vector
   std::set<std::size_t> children; // children // index to the tree edge vector
 
@@ -192,7 +195,7 @@ public:
 
   std::set<size_t> const& get_obe() const;
   std::set<size_t> const& get_ibe() const;
-  
+
   // get the index of the edge that points to the parent in the tree
   size_t const& get_parent_idx() const; // TODO: rename to get_parent_edge_idx
 
@@ -202,14 +205,14 @@ public:
   void add_ibe(std::size_t ibe_id);
   void add_child(std::size_t e_id);
   void unset_null(); // sets null to false;
-    
+
   // the index of the parent node in the tree vertex
   void set_parent(std::size_t n_id);
-    
+
   void set_hi(std::size_t val);
   // the dfs num of the node
   void set_dfs_num(std::size_t idx);
-    
+
 };
 
 class Tree {
@@ -243,41 +246,43 @@ public:
   Vertex& get_root();
   std::size_t size() const;
   Edge& get_incoming_edge(std::size_t vertex);
-    
+
   Vertex const &get_vertex(std::size_t vertex) const;
   Vertex& get_vertex_mut(std::size_t vertex);
-  
+
 
   // given  tree edge index return a the child
   // returns a node index
   // a set?
 
-  
-  // takes a vertex index and returns a back edge id and the node index of 
-  // the target vertex
+
+  // takes a vertex index and returns pair:
+  //   first => backedge id
+  //   second =>  node idx of the target vertex
   std::set<std::pair<std::size_t, std::size_t>> get_obe_w_id(std::size_t vertex);
   std::set<std::pair<std::size_t, std::size_t>> get_ibe_w_id(std::size_t vertex);
-    // take a vertex index and return a 
+
+// take a vertex index and return a
   std::set<std::pair<std::size_t, std::size_t>> get_children_w_id(std::size_t vertex);
 
   std::vector<Edge> get_child_edges(std::size_t vertex);
-  
+
   // given a vertex id, return a reference to the edge that points to the parent
   Edge const& get_parent_edge(std::size_t vertex) const;
 
   // get index of the  be in back_edges vector
   std::set<std::size_t> get_obe_idxs(std::size_t vertex);
-  //
-  std::set<std::size_t> get_ibe_idxs(std::size_t vertex); 
+  std::set<std::size_t> get_ibe_idxs(std::size_t vertex);
 
   size_t list_size(std::size_t vertex);
   size_t get_hi(std::size_t vertex);
   std::set<size_t> get_obe(std::size_t vertex); // get backedge target indexes
   std::set<size_t> get_ibe(std::size_t vertex);
-  
+
   // return reference to a back edge given the
   // index of the back edge in the back_edges vector
   BackEdge& get_backedge(std::size_t backedge_idx);
+  BackEdge& get_backedge_ref_given_id(std::size_t backedge_id);
   // given the back edge's unique back edge id return a reference to the backedge
   BackEdge get_backedge_given_id(std::size_t backedge_id);
   std::set<std::size_t> get_children(std::size_t vertex);
@@ -292,14 +297,14 @@ public:
   std::size_t get_sorted(std::size_t idx);
 
   // setters
-  
+
   // takes an index in toposort
   // and a vertex and sets the vertex as value in the toposort
   // vector
   void set_sort(std::size_t idx, std::size_t vertex);
   // set the dfs number of a vertex
   void set_dfs_num(std::size_t vertex, std::size_t dfs_num);
-    
+
 
   std::size_t add_be(std::size_t frm, std::size_t to, bool capping_be=false,
                      core::color color=core::color::black);
@@ -320,7 +325,7 @@ public:
 
   BracketList& get_bracket_list(std::size_t vertex);
 
-  
+
   // I/O
   void print_dot();
 };
