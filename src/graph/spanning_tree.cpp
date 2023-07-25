@@ -8,6 +8,7 @@
 #include <stack>
 #include <stdexcept>
 #include <string>
+#include <sys/types.h>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -343,6 +344,22 @@ void Tree::add_tree_edge(std::size_t frm, std::size_t to, core::color c) {
   this->nodes[to].set_parent(edge_idx);
 }
 
+std::size_t Tree::add_tree_edge(std::size_t frm, std::size_t to, std::size_t weight, core::color c) {
+  std::size_t edge_idx = this->tree_edges.size();
+  std::size_t edge_count = edge_idx + this->back_edges.size();
+  this->tree_edges.push_back(std::move(Edge(edge_count, frm, to, c)));
+
+  this->tree_edges.at(edge_idx).set_class(weight);
+  
+  this->nodes[frm].unset_null();
+  this->nodes[to].unset_null();
+
+  this->nodes[frm].add_child(edge_idx);
+  this->nodes[to].set_parent(edge_idx);
+
+  return edge_idx;
+}
+
 std::size_t Tree::add_be(std::size_t frm, std::size_t to, bool capping_be, core::color c) {
   std::size_t back_edge_idx = this->back_edges.size();
   std::size_t edge_count = back_edge_idx + this->tree_edges.size();
@@ -354,6 +371,19 @@ std::size_t Tree::add_be(std::size_t frm, std::size_t to, bool capping_be, core:
   return back_edge_idx;
 }
 
+  std::size_t Tree::add_be(std::size_t frm, std::size_t to, std::size_t weight, bool capping_be, core::color c) {
+  std::size_t back_edge_idx = this->back_edges.size();
+  std::size_t edge_count = back_edge_idx + this->tree_edges.size();
+  this->back_edges.push_back(std::move(BackEdge(edge_count, frm, to, capping_be, c)));
+
+  this->back_edges.at(back_edge_idx).set_class(weight);
+
+  this->nodes[frm].add_obe(back_edge_idx);
+  this->nodes[to].add_ibe(back_edge_idx);
+
+  return back_edge_idx;
+}
+  
 void Tree::set_hi(std::size_t vertex, std::size_t val) {
   this->nodes.at(vertex).set_hi(val);
 }

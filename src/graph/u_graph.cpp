@@ -9,10 +9,12 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include <queue>
 
 #include "./u_graph.hpp"
 #include "./digraph.hpp"
 #include "./spanning_tree.hpp"
+#include "./tree.hpp"
 
 
 // undirected graph
@@ -313,6 +315,8 @@ spanning_tree::Tree FlowGraph::compute_spanning_tree() {
       Edge& edge = this->edges.at(adj.e_idx);
       std::size_t a = adj.v_idx;
 
+      //if (a < current_vertex) { continue; }
+
       if (seen.find(a) == seen.end()) {
         t.add_tree_edge(current_vertex, a, edge.get_color());
         visited.push(a);
@@ -334,6 +338,262 @@ spanning_tree::Tree FlowGraph::compute_spanning_tree() {
 
     if (!f) { visited.pop(); }
   }
+
+  return t;
+}
+
+void FlowGraph::compute_pst() {
+  //std::set<std::size_t> grey;
+  std::set<std::size_t> black;
+  std::queue<int> q;
+
+  std::size_t current_vertex{this->start_node_id};
+
+  q.push(current_vertex);
+
+  // implement breath first search
+  //grey.insert(current_vertex);
+
+  while (!q.empty()) {
+    current_vertex = q.front();
+    //black.insert(current_vertex);
+    std::cout << "current vertex: " << current_vertex << std::endl;
+    q.pop();
+
+    Vertex const& v = this->get_vertex_internal(current_vertex);
+
+    for (auto adj : v.get_adjacent_vertices()) {
+
+      Edge& edge = this->edges.at(adj.e_idx);
+      std::size_t a = adj.v_idx;
+
+
+      if (current_vertex == this->start_node_id && a == this->stop_node_internal_idx()) { continue; }
+
+
+
+      if (!black.count(a)) {
+        std::cout << "\t" << a << " w: " << edge.get_weight() << std::endl;
+        q.push(a);
+        black.insert(a);
+      }
+    }
+
+    black.insert(current_vertex);
+  }
+  //this->get_vertex_internal(current_vertex).set_color(core::color::grey);
+
+}
+
+
+spanning_tree::Tree FlowGraph::compute_pst_again() {
+  // based on dfs
+  spanning_tree::Tree t = spanning_tree::Tree(this->size_internal());
+
+  tree::Tree t2 = tree::Tree(20, false);
+
+
+
+  std::vector<std::size_t> in_degree(this->size_internal(), 0);
+  std::vector<std::size_t> out_degree(this->size_internal(), 0);
+  for (std::size_t i{0}; i < this->size_internal(); ++i) {
+    for (auto a : this->get_vertex_internal(i).adj_vertices()) {
+      if (a < i) { ++in_degree[i]; } else { ++out_degree[i]; }
+    }
+  }
+
+  std::size_t current_region{core::constants::UNDEFINED_SIZE_T};
+  std::size_t current_node_idx{core::constants::UNDEFINED_SIZE_T};
+
+  // index and class of the current region
+  // std::pair<std::size_t, std::size_t> cr{core::constants::UNDEFINED_SIZE_T, core::constants::UNDEFINED_SIZE_T};
+  std::vector<bool> in_region(this->size_internal(), false);
+  std::size_t counter{};
+
+  auto handle_edge = [&](std::size_t weight, std::size_t src, std::size_t tgt) {
+    if (src == 0 && tgt == this->stop_node_internal_idx()) { return; }
+    //std::size_t curr_class = t2.get_vertex(current_node_idx).get_class();
+    // current_region = cr.second;
+    std::size_t prev_region = current_region;
+
+    if (current_region != weight &&
+        !in_region[weight] &&
+        (in_region[current_region] || src == 0)) {
+      // we have entered a new region
+
+      if (current_region == core::constants::UNDEFINED_SIZE_T) {
+        t2.add_vertex(0, counter, weight);
+
+      }
+      else {
+        t2.add_vertex(current_node_idx, counter, weight);
+        //cr = std::make_pair(counter, weight);
+      }
+
+
+      std::cout << "opening: " << weight << std::endl;
+
+      current_node_idx = counter;
+      current_region = weight;
+
+      counter++;
+      //cr = std::make_pair(counter, weight);
+
+      // current_region = weight;
+
+      in_region[current_region] = true;
+    }
+    else if ( (current_region == weight && in_region[current_region])) {
+
+      // exit
+      in_region[current_region] = false;
+
+
+      std::cout << "closing 1: " << current_region << std::endl;
+
+      //std::cout << "cr 1: " << current_region << std::endl;
+      
+      std::size_t node_id = t2.get_parent(current_node_idx);
+
+      std::cout << "\t node id " << node_id
+               << " <- current node idx: " << current_node_idx
+               << " <- current region: " << current_region
+               << std::endl;
+
+      current_region = t2.get_vertex(node_id).get_class();
+      current_node_idx = node_id;
+
+      //std::cout << "\t setting " << current_region << " false " << std::endl;
+    }
+    else if (current_region != weight && in_region[weight] ) {
+      std::size_t node_id{};
+
+      // go up the tree
+      // TODO: make a loop that runs one more time after the condition is false
+
+      // write a while loop that rusn one more time after the condition is false
+      // and then remove the node
+      
+
+      std::cout << "closing 2: " << weight << std::endl;
+      
+      while (current_region != weight) {
+
+        std::cout << "removing: " << current_region 
+                  << " node idx: " << current_node_idx << std::endl;
+        
+
+
+
+        node_id = t2.get_parent(current_node_idx);
+        current_region = t2.get_vertex(node_id).get_class();
+
+        std::cout << "pr " << prev_region << "in r " << 
+                  in_region[prev_region] << std::endl;
+
+        if ( in_region[prev_region] ) {
+          t2.remove_vertex(current_node_idx);  
+        }
+
+
+        in_region[current_region] = false;
+        //t2.remove_vertex(current_node_idx);  
+        
+        if (current_region != weight) {
+          // t2.remove_vertex(current_node_idx);  
+        }
+
+        current_node_idx = node_id;
+      }
+
+
+      in_region[current_region] = false;
+
+      node_id = t2.get_parent(current_node_idx);
+      current_region = t2.get_vertex(node_id).get_class();
+      current_node_idx = node_id;
+
+      std::cout << "\t 2 node id " << node_id
+               << " <- current node idx: " << current_node_idx
+               << " <- current region: " << current_region
+               << std::endl;
+
+    }
+
+    if ( //out_degree[tgt] > 1 &&
+         // !in_region[prev_region] &&
+        prev_region == weight) {
+      // same as case 1
+
+      std::cout << "reopening: " << weight << std::endl;
+      
+      t2.add_vertex(current_node_idx, counter, weight);
+
+
+      current_node_idx = counter;
+      current_region = weight;
+
+      counter++;
+
+
+      in_region[current_region] = true;
+    }
+
+
+
+  };
+
+
+  std::set<std::size_t> visited;
+  std::stack<std::size_t> s;
+  std::stack<std::size_t> bi;
+
+  std::size_t current_vertex{this->start_node_id};
+  s.push(current_vertex);
+  bool explored{true};
+
+  while (!s.empty()) {
+    current_vertex = s.top();
+
+    if (in_degree[current_vertex] > 0) {
+      while (s.top() != bi.top()) { s.pop(); }
+      bi.pop();
+      current_vertex = s.top();
+    }
+
+    visited.insert(current_vertex);
+
+    explored = true;
+    Vertex const& v =  this->get_vertex_internal(current_vertex);
+
+    if (out_degree[current_vertex] > 1) { bi.push(current_vertex); }
+
+    for (auto adj : v.get_adjacent_vertices()) {
+      Edge& edge = this->edges.at(adj.e_idx);
+      std::size_t a = adj.v_idx;
+
+      if ( visited.find(a) == visited.end()) {
+        // we have discovered a new edge current_vertex -- a
+
+        std::cout << "" << current_vertex << "-- (" << edge.get_weight()  << ") --" << a << std::endl;
+
+        s.push(a);
+        --in_degree[a];
+        explored = false;
+
+
+        //if (current_vertex == this->start_node_id && a == this->stop_node_internal_idx()) { continue; }
+        handle_edge(edge.get_weight(), current_vertex, a);
+
+
+        break;
+      }
+    }
+
+    if (explored) { s.pop(); }
+  }
+
+  t2.print_dot(true);
 
   return t;
 }

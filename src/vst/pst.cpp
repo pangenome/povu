@@ -1,7 +1,9 @@
+#include <iostream>
 #include <stack>
 
 #include "./pst.hpp"
 #include "../graph/spanning_tree.hpp"
+#include "../graph/u_graph.hpp"
 
 namespace pst {
 /*
@@ -44,11 +46,39 @@ tree::Tree compute_pst(spanning_tree::Tree &st) {
   // TODO: urgent! why size and not no of equiv classes?
   tree::Tree t = tree::Tree(st.size());
   std::stack<std::size_t> vertex_stack{}; // stack of vertices
-
-
-
+  std::stack<std::size_t> seen{};
+ 
   // go over the nodes in reverse topological order (dfs_num) which may not be
   // equal to node ids
+
+  int current_region{0};
+
+  for (std::size_t r{st.size() - 1}; r > 0; --r) {
+
+    std::size_t v = st.get_sorted(r);
+    //std::size_t v = r;
+
+    std::size_t cl = st.get_parent_edge(v).get_class();
+
+    std::cout << "r: "  << r << " v: " << v << " cl: "<< cl << std::endl;
+
+    if (current_region != cl) {
+      t.add_vertex(current_region, cl);
+      current_region = cl;
+      //current_region = cl;
+      //vertex_stack.push(v);
+      //std::cout << "pushing: " << v << std::endl;
+    } else {
+      //std::cout << "popping: " << v << std::endl;
+      //vertex_stack.pop();
+      
+    }
+
+    
+  }
+
+  return t;
+   
   for (std::size_t r{st.size() - 1}; r > 0; --r) {
     // the vertex id of the vertex at the topological sort index r
     std::size_t v = st.get_sorted(r);
@@ -89,4 +119,6 @@ tree::Tree compute_pst(spanning_tree::Tree &st) {
 
   return t;
 }
+
+
 } // namespace pst

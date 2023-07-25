@@ -16,7 +16,7 @@ class Vertex {
   std::size_t id; // allow negative ids?
   std::size_t class_; // equivalence class
 
-  std::size_t parent;
+  std::size_t parent; // TODO: use underscore and make parent() and method
   std::set<std::size_t> children;
 
   // std::size_t depth; // depth of the vertex in the tree
@@ -38,10 +38,12 @@ public:
   bool is_valid() const;
   std::set<std::size_t> const& get_children() const;
   std::size_t get_class() const;
+  std::size_t get_parent() const;
 
   // setters
   // -------
   void add_child(std::size_t child_id);
+  void remove_child(std::size_t child_id);
 };
 
 // Tree
@@ -72,12 +74,17 @@ public:
 
   bool add_vertex(std::size_t parent_id, std::size_t id, std::size_t eq_class);
 
+  bool remove_vertex(std::size_t id);
+
   // getters
   // -------
 
   // given the id of the vertex
   // returns the set of children of the vertex
   std::set<std::size_t> const& get_children(std::size_t id) const;
+
+  Vertex const& get_vertex(std::size_t id) const;
+  std::size_t get_parent(std::size_t id) const;
 
   // the number of vertices in the tree
   std::size_t size() const;

@@ -414,8 +414,44 @@ digraph::DiGraph g19() {
   return g;
 };
 
+// figure 1 Johnson et al
+digraph::DiGraph g20() {
+  digraph::DiGraph g;
 
-const bool DEBUG = true;
+  g.add_edge(0, 1);
+
+  //g.add_edge(0, 1);
+  g.add_edge(1, 3);
+  g.add_edge(3, 5);
+  g.add_edge(5, 8);
+  g.add_edge(5, 9);
+  g.add_edge(8, 10);
+  g.add_edge(9, 10);
+  g.add_edge(10, 11);
+  g.add_edge(11, 1);
+  g.add_edge(11, 15);
+  g.add_edge(15, 16);
+
+  g.add_edge(0, 2);
+  g.add_edge(2, 4);
+  g.add_edge(4, 6);
+  g.add_edge(4, 7);
+  g.add_edge(6, 12);
+  g.add_edge(7, 12);
+  g.add_edge(12, 13);
+  g.add_edge(13, 7);
+  g.add_edge(13, 14);
+  g.add_edge(14, 15);
+  g.add_edge(15, 16);
+
+  g.add_start_node(0);
+  g.add_stop_node(16);
+
+  return g;
+};
+
+
+const bool DEBUG = false;
 
 int main() {
   digraph::DiGraph g = g16();
@@ -457,17 +493,20 @@ int main() {
     t.print_dot();
   }
 
-  u_graph::FlowGraph nu = u_graph::FlowGraph(t);
+  u_graph::FlowGraph afg = u_graph::FlowGraph(t);
   if (DEBUG) {
-    std::cout << "\n\n" << "NFG" << "\n\n";
-    nu.print_dot();
+    std::cout << "\n\n" << "Annotated Flow Graph" << "\n\n";
+    afg.print_dot();
   }
 
+  //afg.compute_pst();
 
-  tree::Tree p = pst::compute_pst(t);
+   spanning_tree::Tree t2 =  afg.compute_pst_again();
+  
+  //tree::Tree p = compute_pst(t);
   if (DEBUG) {
-    std::cout << "\n\n" << "PST" << "\n\n";
-    p.print_dot();
+    std::cout << "\n\n" << "T2" << "\n\n";
+    t2.print_dot();
   }
 
   return 0;

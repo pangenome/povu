@@ -51,7 +51,7 @@ namespace tree {
   bool Vertex::is_valid() const { return this->is_valid_; }
   std::set<std::size_t> const& Vertex::get_children() const { return this->children; }
 std::size_t Vertex::get_class() const { return this->class_; }
-
+std::size_t Vertex::get_parent() const { return this->parent; }
   // setters
   // -------
 
@@ -59,6 +59,11 @@ std::size_t Vertex::get_class() const { return this->class_; }
     this->children.insert(child_id);
   }
 
+
+  void Vertex::remove_child(std::size_t child_id) {
+    this->children.erase(child_id);
+  }
+  
   // Tree
   // ====
 
@@ -94,10 +99,29 @@ bool Tree::add_vertex(std::size_t parent_id, std::size_t id, std::size_t eq_clas
     return true;
 }
 
+bool Tree::remove_vertex(std::size_t id) {
+    if (!this->vertices[id].is_valid()) { return false; }
+    std::size_t parent_id = this->vertices[id].get_parent();
+    this->vertices[parent_id].remove_child(id);
+    this->vertices[id] = Vertex();
+    return true;
+}
+  
 std::set<std::size_t> const& Tree::get_children(std::size_t v) const {
   return this->vertices.at(v).get_children();
 }
 
+std::size_t Tree::get_parent(std::size_t id) const {
+  std::size_t p= this->vertices.at(id).get_parent();
+  return p == core::constants::UNDEFINED_SIZE_T ? 0 : p; 
+  //return this->vertices.at(id).get_parent();
+}
+
+Vertex const& Tree::get_vertex(std::size_t id) const {
+  
+  return this->vertices.at(id);
+}
+  
 void Tree::print_dot(bool with_classes) {
   std::cout << std::format(
     "graph G {{\n"
