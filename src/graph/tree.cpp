@@ -133,12 +133,17 @@ void Tree::print_dot(bool with_classes) {
 
   if (with_classes) {
     for (std::size_t i{}; i < this->size(); i++) {
+
+      // TODO: remove
+      if (this->vertices[i].get_class() == core::constants::UNDEFINED_SIZE_T) { continue; }
+      
       std::string class_label =
         this->vertices[i].get_class() == core::constants::UNDEFINED_SIZE_T ?
         "UNDEFINED" : std::to_string(this->vertices[i].get_class());
 
-      std::cout <<
-        std::format("\t{} [label=\"v: {}\\ncl: {}\"];\n", i, i, class_label);
+      
+      
+      std::cout << std::format("\t{} [label=\"v: {}\\ncl: {}\"];\n", i, i, class_label);
     }
   }
 

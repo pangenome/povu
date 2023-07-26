@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 #include <queue>
+#include <map>
 
 #include "./u_graph.hpp"
 #include "./digraph.hpp"
@@ -385,14 +386,218 @@ void FlowGraph::compute_pst() {
 
 }
 
+void construct_pst(std::vector<std::size_t> const& v) {
+    tree::Tree t = tree::Tree(30, false);
 
+    std::map<std::size_t, std::size_t> count_map;
+    std::map<std::size_t, std::vector<std::size_t>> pos_map;
+
+    for (auto i : v) {
+      if (count_map.find(i) == count_map.end()) {
+        count_map[i] = 1;
+      }
+      else {
+        count_map[i] += 1;
+      }
+    }
+
+    for (std::size_t i{}; i < v.size(); ++i) {
+      pos_map[v[i]].push_back(i);
+    }
+
+    std::vector<std::size_t> temp{};
+
+    std::size_t counter{};
+    std::size_t cr{};
+    std::size_t cr_idx{};
+
+    auto find = [&](std::size_t q) {
+      for (std::size_t j{}; j < temp.size(); ++j) {
+        if (q == temp[j]) { return j; }
+      }
+    };
+
+    std::vector<bool> nesting(pos_map.size(), false);
+    
+    //
+    for (std::size_t i{}; i < v.size(); ++i) {
+      if (pos_map[v[i]].size() == 1) { continue; }
+      temp = pos_map[v[i]];
+
+      std::size_t res;
+
+      // find
+      res = find(i);
+
+      if (nesting[v[i]]) {
+        // the last
+        cr_idx = t.get_parent(cr_idx);
+        nesting[v[i]] = false;
+
+        if ( i+1 < v.size() && v[i] == v[i+1]) {
+          std::size_t p = t.get_parent(cr_idx);
+          t.add_vertex(p, counter, v[i]);
+          cr_idx = counter;
+          ++counter;
+        }
+      }
+      else {
+        if (i > 0 && v[i] == v[i-1] && res != temp.size() - 1) {
+          std::size_t p = t.get_parent(cr_idx);
+          
+          t.add_vertex(p, counter, v[i]);
+          cr_idx = counter;
+          ++counter;
+
+          if (v[i] != v[i+1]) {
+            nesting[v[i]] = true;
+            continue;
+          }
+        } else if (i > 0 && v[i] == v[i-1] && res == temp.size() - 1) {
+          //std::size_t p = t.get_parent(cr_idx);
+          //t.add_vertex(p, counter, v[i]);
+          //cr_idx = counter;
+          //++counter;
+          //continue;
+        }
+
+
+        
+        if ( v[i] == v[i+1] && res != temp.size() - 2) {
+          // happens twice
+
+          t.add_vertex(cr_idx,counter, v[i]);
+          cr_idx = counter;
+          ++counter;
+                      
+        }
+        else if (v[i] == v[i+1] && res == temp.size() - 2){
+          // first of a possible pair?
+          // happens once
+
+          t.add_vertex(cr_idx,counter, v[i]);
+          ++counter;
+          //cr_idx = counter;
+          
+        }
+        else if (v[i] != v[i+1] && i > 0 && v[i] ==v[i-1]) {
+          
+        }
+        else if (v[i] != v[i+1]) {
+
+          if (counter == 0) {
+            t.add_vertex(0,0, v[i]);
+            cr_idx = 0;
+          } else {
+            t.add_vertex(cr_idx,counter, v[i]);
+          }
+
+          nesting[v[i]] = true;
+
+          cr = v[i];
+          cr_idx = counter;
+          ++counter;
+        } else {
+          
+        }
+      }
+
+    }
+
+    
+}
+
+struct Foo {
+  std::size_t src;
+  std::size_t tgt;
+  std::size_t class_;
+};
+  
+void construct_pvst(std::vector<Foo> const& v) {
+
+  tree::Tree t = tree::Tree(30, false);
+
+  //std::map<std::size_t, std::size_t> count_map;
+    std::map<std::size_t, std::vector<std::size_t>> pos_map;
+
+    //for (auto j : v) {
+    // std::size_t i = j.class_;
+    // if (count_map.find(i) == count_map.end()) {
+    //   count_map[i] = 1;
+    // }
+    // else {
+    //   count_map[i] += 1;
+    // }
+    //}
+
+    for (std::size_t i{}; i < v.size(); ++i) {
+      //std::size_t i = j.class_;
+      pos_map[v[i].class_].push_back(i);
+    }
+
+    std::vector<std::size_t> temp{};
+
+    std::size_t counter{};
+    std::size_t pr{};
+    std::size_t pr_idx{};
+
+    auto find = [&](std::size_t q) {
+      for (std::size_t j{}; j < temp.size(); ++j) {
+        if (q == temp[j]) { return j; }
+      }
+    };
+
+    std::size_t res;
+
+    std::vector<bool> nesting(pos_map.size(), false);
+    
+    for (std::size_t i{}; i < v.size(); i++) {
+      std::size_t cl = v[i].class_;
+      temp = pos_map[cl];
+      if (temp.size() == 1) { continue; }
+
+      // the position of
+      // the current element in
+      // in temp
+      res = find(i);
+
+      if (nesting[cl]) {
+        pr_idx = pr_idx == 0 ? 0 : t.get_parent(pr_idx);
+        nesting[cl] = false;
+      }
+      else if (i+1 < v.size() && cl != v[i+1].class_ && res != temp.size() - 1 ) {
+        // enter a new region
+
+        if (counter == 0) {
+            pr_idx = 0;
+        } 
+
+        t.add_vertex(pr_idx,counter, cl);
+
+        nesting[cl] = true;
+        pr_idx = counter;        
+        ++counter;
+
+
+      }
+      else {
+        t.add_vertex(pr_idx,counter, cl);
+        ++counter;        
+      }
+      
+    }
+
+    t.print_dot(true);
+}
+
+
+  
 spanning_tree::Tree FlowGraph::compute_pst_again() {
   // based on dfs
   spanning_tree::Tree t = spanning_tree::Tree(this->size_internal());
 
-  tree::Tree t2 = tree::Tree(20, false);
-
-
+  std::vector<std::size_t> bub_v;
+  std::vector<Foo> foo_v;
 
   std::vector<std::size_t> in_degree(this->size_internal(), 0);
   std::vector<std::size_t> out_degree(this->size_internal(), 0);
@@ -401,148 +606,6 @@ spanning_tree::Tree FlowGraph::compute_pst_again() {
       if (a < i) { ++in_degree[i]; } else { ++out_degree[i]; }
     }
   }
-
-  std::size_t current_region{core::constants::UNDEFINED_SIZE_T};
-  std::size_t current_node_idx{core::constants::UNDEFINED_SIZE_T};
-
-  // index and class of the current region
-  // std::pair<std::size_t, std::size_t> cr{core::constants::UNDEFINED_SIZE_T, core::constants::UNDEFINED_SIZE_T};
-  std::vector<bool> in_region(this->size_internal(), false);
-  std::size_t counter{};
-
-  auto handle_edge = [&](std::size_t weight, std::size_t src, std::size_t tgt) {
-    if (src == 0 && tgt == this->stop_node_internal_idx()) { return; }
-    //std::size_t curr_class = t2.get_vertex(current_node_idx).get_class();
-    // current_region = cr.second;
-    std::size_t prev_region = current_region;
-
-    if (current_region != weight &&
-        !in_region[weight] &&
-        (in_region[current_region] || src == 0)) {
-      // we have entered a new region
-
-      if (current_region == core::constants::UNDEFINED_SIZE_T) {
-        t2.add_vertex(0, counter, weight);
-
-      }
-      else {
-        t2.add_vertex(current_node_idx, counter, weight);
-        //cr = std::make_pair(counter, weight);
-      }
-
-
-      std::cout << "opening: " << weight << std::endl;
-
-      current_node_idx = counter;
-      current_region = weight;
-
-      counter++;
-      //cr = std::make_pair(counter, weight);
-
-      // current_region = weight;
-
-      in_region[current_region] = true;
-    }
-    else if ( (current_region == weight && in_region[current_region])) {
-
-      // exit
-      in_region[current_region] = false;
-
-
-      std::cout << "closing 1: " << current_region << std::endl;
-
-      //std::cout << "cr 1: " << current_region << std::endl;
-      
-      std::size_t node_id = t2.get_parent(current_node_idx);
-
-      std::cout << "\t node id " << node_id
-               << " <- current node idx: " << current_node_idx
-               << " <- current region: " << current_region
-               << std::endl;
-
-      current_region = t2.get_vertex(node_id).get_class();
-      current_node_idx = node_id;
-
-      //std::cout << "\t setting " << current_region << " false " << std::endl;
-    }
-    else if (current_region != weight && in_region[weight] ) {
-      std::size_t node_id{};
-
-      // go up the tree
-      // TODO: make a loop that runs one more time after the condition is false
-
-      // write a while loop that rusn one more time after the condition is false
-      // and then remove the node
-      
-
-      std::cout << "closing 2: " << weight << std::endl;
-      
-      while (current_region != weight) {
-
-        std::cout << "removing: " << current_region 
-                  << " node idx: " << current_node_idx << std::endl;
-        
-
-
-
-        node_id = t2.get_parent(current_node_idx);
-        current_region = t2.get_vertex(node_id).get_class();
-
-        std::cout << "pr " << prev_region << "in r " << 
-                  in_region[prev_region] << std::endl;
-
-        if ( in_region[prev_region] ) {
-          t2.remove_vertex(current_node_idx);  
-        }
-
-
-        in_region[current_region] = false;
-        //t2.remove_vertex(current_node_idx);  
-        
-        if (current_region != weight) {
-          // t2.remove_vertex(current_node_idx);  
-        }
-
-        current_node_idx = node_id;
-      }
-
-
-      in_region[current_region] = false;
-
-      node_id = t2.get_parent(current_node_idx);
-      current_region = t2.get_vertex(node_id).get_class();
-      current_node_idx = node_id;
-
-      std::cout << "\t 2 node id " << node_id
-               << " <- current node idx: " << current_node_idx
-               << " <- current region: " << current_region
-               << std::endl;
-
-    }
-
-    if ( //out_degree[tgt] > 1 &&
-         // !in_region[prev_region] &&
-        prev_region == weight) {
-      // same as case 1
-
-      std::cout << "reopening: " << weight << std::endl;
-      
-      t2.add_vertex(current_node_idx, counter, weight);
-
-
-      current_node_idx = counter;
-      current_region = weight;
-
-      counter++;
-
-
-      in_region[current_region] = true;
-    }
-
-
-
-  };
-
 
   std::set<std::size_t> visited;
   std::stack<std::size_t> s;
@@ -575,16 +638,17 @@ spanning_tree::Tree FlowGraph::compute_pst_again() {
       if ( visited.find(a) == visited.end()) {
         // we have discovered a new edge current_vertex -- a
 
-        std::cout << "" << current_vertex << "-- (" << edge.get_weight()  << ") --" << a << std::endl;
+        // std::cout << "" << current_vertex << "-- (" << edge.get_weight()  << ") --" << a << std::endl;
+
+        bub_v.push_back(edge.get_weight());
+        foo_v.push_back(Foo{.src = current_vertex, .tgt = 1, .class_ = edge.get_weight()});
 
         s.push(a);
         --in_degree[a];
         explored = false;
 
-
         //if (current_vertex == this->start_node_id && a == this->stop_node_internal_idx()) { continue; }
-        handle_edge(edge.get_weight(), current_vertex, a);
-
+        //handle_edge(edge.get_weight(), current_vertex, a);
 
         break;
       }
@@ -593,7 +657,10 @@ spanning_tree::Tree FlowGraph::compute_pst_again() {
     if (explored) { s.pop(); }
   }
 
-  t2.print_dot(true);
+  std::cout << std::endl;
+
+  construct_pst(bub_v);
+  construct_pvst(foo_v);
 
   return t;
 }
