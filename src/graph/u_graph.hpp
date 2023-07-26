@@ -9,6 +9,7 @@
 #include "../core/core.hpp"
 #include "./spanning_tree.hpp"
 #include "./digraph.hpp"
+#include "./tree.hpp"
 
 /*
  * TODO:
@@ -166,13 +167,16 @@ public:
 
   spanning_tree::Tree compute_spanning_tree();
 
-  void compute_pst();
-
-  spanning_tree::Tree compute_pst_again();
-
   // split any node with > 1 incoming and >1 outgoing edges
   // into two nodes connected by a single (gray) edge
   void make_bi_edged();
+
+  //void compute_pst();
+  
+  // spanning_tree::Tree compute_pst_again();
+  std::vector<Edge> compute_edge_stack();
+  tree::Tree construct_pvst(std::vector<Edge> const& v) const;
+  tree::Tree construct_pst(std::vector<Edge> const& v) const;
 
   void print_dot();
 };

@@ -5,6 +5,7 @@
 #include "./graph/spanning_tree.hpp"
 #include "./vst/vst.hpp"
 #include "./vst/pst.hpp"
+#include "graph/tree.hpp"
 
 u_graph::FlowGraph g1() {
   u_graph::FlowGraph g;
@@ -451,7 +452,7 @@ digraph::DiGraph g20() {
 };
 
 
-const bool DEBUG = false;
+const bool DEBUG = true;
 
 int main() {
   digraph::DiGraph g = g16();
@@ -499,23 +500,20 @@ int main() {
     afg.print_dot();
   }
 
-  //afg.compute_pst();
+  std::vector<u_graph::Edge> edges = afg.compute_edge_stack();
 
-   spanning_tree::Tree t2 =  afg.compute_pst_again();
-  
-  //tree::Tree p = compute_pst(t);
+  tree::Tree pst =  afg.construct_pst(edges);
   if (DEBUG) {
-    std::cout << "\n\n" << "T2" << "\n\n";
-    t2.print_dot();
+    std::cout << "\n\n" << "PST" << "\n\n";
+    pst.print_dot(true);
   }
-
-  return 0;
-
-  tree::Tree pv = vst::compute_pvst_grey(t);
+  
+  tree::Tree pvst =  afg.construct_pvst(edges);
   if (DEBUG) {
     std::cout << "\n\n" << "PVST" << "\n\n";
-    pv.print_dot();
+    pvst.print_dot(true);
   }
+  
 
   /*
   u_graph::FlowGraph g = g11();

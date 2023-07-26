@@ -70,6 +70,10 @@ void Vertex::set_meta(std::string&& meta) {
   this->meta = meta;
 }
   
+void Vertex::set_class(std::size_t class_) {
+  this->class_ = class_;
+}
+  
 // Tree
 // ====
 
@@ -149,7 +153,7 @@ if (with_classes) {
   for (std::size_t i{}; i < this->size(); i++) {
 
     // TODO: remove
-    //if (this->vertices[i].get_class() == core::constants::UNDEFINED_SIZE_T) { continue; }
+    if (this->vertices[i].get_class() == core::constants::UNDEFINED_SIZE_T) { continue; }
 
     std::string class_label =
       this->vertices[i].get_class() == core::constants::UNDEFINED_SIZE_T ?

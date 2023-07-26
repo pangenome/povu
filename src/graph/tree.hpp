@@ -47,6 +47,7 @@ public:
   // -------
   void add_child(std::size_t child_id);
   void remove_child(std::size_t child_id);
+  void set_class(std::size_t class_);
   void set_meta(std::string&& meta);
 };
 
