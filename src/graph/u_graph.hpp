@@ -28,7 +28,6 @@ class Edge {
   core::color c;
   int weight;
 
-
 public:
   Edge(std::size_t l,
        std::size_t r,

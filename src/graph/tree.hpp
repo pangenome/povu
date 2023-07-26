@@ -1,7 +1,7 @@
 #ifndef TREE_HPP
 #define TREE_HPP
 
-
+#include <string>
 #include <cstddef>
 #include <set>
 #include <vector>
@@ -23,6 +23,8 @@ class Vertex {
 
   bool is_valid_; // is this a valid vertex in the tree
 
+  std::string meta;
+
 public:
   // constructor(s)
   // --------------
@@ -31,7 +33,7 @@ public:
   Vertex(std::size_t id, std::size_t parent_id);
 
   // non-root vertex constructor
-  Vertex(std::size_t id, std::size_t parent_id, std::size_t eq_class); // non-root vertex constructor
+  Vertex(std::size_t id, std::size_t parent_id, std::size_t eq_class);
 
   // getters
   // -------
@@ -39,11 +41,13 @@ public:
   std::set<std::size_t> const& get_children() const;
   std::size_t get_class() const;
   std::size_t get_parent() const;
+  std::string get_meta() const;
 
   // setters
   // -------
   void add_child(std::size_t child_id);
   void remove_child(std::size_t child_id);
+  void set_meta(std::string&& meta);
 };
 
 // Tree
@@ -71,7 +75,6 @@ public:
   // returns true if the vertex is added to the tree
   // TODO: deprecated
   bool add_vertex(std::size_t parent_id, std::size_t id);
-
   bool add_vertex(std::size_t parent_id, std::size_t id, std::size_t eq_class);
 
   bool remove_vertex(std::size_t id);
@@ -84,6 +87,7 @@ public:
   std::set<std::size_t> const& get_children(std::size_t id) const;
 
   Vertex const& get_vertex(std::size_t id) const;
+  Vertex& get_vertex_mut(std::size_t id);
   std::size_t get_parent(std::size_t id) const;
 
   // the number of vertices in the tree

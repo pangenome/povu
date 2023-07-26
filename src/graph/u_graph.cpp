@@ -418,7 +418,7 @@ void construct_pst(std::vector<std::size_t> const& v) {
     };
 
     std::vector<bool> nesting(pos_map.size(), false);
-    
+
     //
     for (std::size_t i{}; i < v.size(); ++i) {
       if (pos_map[v[i]].size() == 1) { continue; }
@@ -444,7 +444,7 @@ void construct_pst(std::vector<std::size_t> const& v) {
       else {
         if (i > 0 && v[i] == v[i-1] && res != temp.size() - 1) {
           std::size_t p = t.get_parent(cr_idx);
-          
+
           t.add_vertex(p, counter, v[i]);
           cr_idx = counter;
           ++counter;
@@ -462,14 +462,14 @@ void construct_pst(std::vector<std::size_t> const& v) {
         }
 
 
-        
+
         if ( v[i] == v[i+1] && res != temp.size() - 2) {
           // happens twice
 
           t.add_vertex(cr_idx,counter, v[i]);
           cr_idx = counter;
           ++counter;
-                      
+
         }
         else if (v[i] == v[i+1] && res == temp.size() - 2){
           // first of a possible pair?
@@ -478,10 +478,10 @@ void construct_pst(std::vector<std::size_t> const& v) {
           t.add_vertex(cr_idx,counter, v[i]);
           ++counter;
           //cr_idx = counter;
-          
+
         }
         else if (v[i] != v[i+1] && i > 0 && v[i] ==v[i-1]) {
-          
+
         }
         else if (v[i] != v[i+1]) {
 
@@ -498,13 +498,10 @@ void construct_pst(std::vector<std::size_t> const& v) {
           cr_idx = counter;
           ++counter;
         } else {
-          
+
         }
       }
-
     }
-
-    
 }
 
 struct Foo {
@@ -512,92 +509,93 @@ struct Foo {
   std::size_t tgt;
   std::size_t class_;
 };
-  
-void construct_pvst(std::vector<Foo> const& v) {
 
-  tree::Tree t = tree::Tree(30, false);
+void construct_pvst(std::vector<Edge> const& v) {
+  std::size_t last_node_idx = v.back().right() +10;
+  tree::Tree t = tree::Tree(last_node_idx, true);
 
-  //std::map<std::size_t, std::size_t> count_map;
-    std::map<std::size_t, std::vector<std::size_t>> pos_map;
+  std::map<std::size_t, std::vector<std::size_t>> pos_map;
+  for (std::size_t i{}; i < v.size(); ++i) {
+    pos_map[v[i].get_weight()].push_back(i);
+  }
 
-    //for (auto j : v) {
-    // std::size_t i = j.class_;
-    // if (count_map.find(i) == count_map.end()) {
-    //   count_map[i] = 1;
-    // }
-    // else {
-    //   count_map[i] += 1;
-    // }
-    //}
+  std::size_t res{};
+  std::vector<bool> nesting(pos_map.size(), false);
 
-    for (std::size_t i{}; i < v.size(); ++i) {
-      //std::size_t i = j.class_;
-      pos_map[v[i].class_].push_back(i);
+  std::vector<std::size_t> temp{};
+  std::size_t counter{};
+  std::size_t pr_idx{};
+
+  /*
+    the position of the current element in temp
+   */
+  auto find = [&](std::size_t q) {
+    for (std::size_t j{}; j < temp.size(); ++j) {
+      if (q == temp[j]) { return j; }
+    }
+  };
+
+  for (std::size_t i{}; i < v.size(); i++) {
+    std::size_t cl = v[i].get_weight();
+    temp = pos_map[cl];
+
+    if (temp.size() == 1) {
+      t.add_vertex(pr_idx,counter, cl);
+      t.get_vertex_mut(counter).set_meta(std::to_string(v[i].right()));
+      ++counter;
+      continue;
     }
 
-    std::vector<std::size_t> temp{};
+    res = find(i);
 
-    std::size_t counter{};
-    std::size_t pr{};
-    std::size_t pr_idx{};
+    if (nesting[cl]) {
+      pr_idx = pr_idx == 0 ? 0 : t.get_parent(pr_idx);
+      nesting[cl] = false;
+      t.add_vertex(pr_idx,counter, cl);
+      t.get_vertex_mut(counter).set_meta(std::to_string(v[i].right()));
+      ++counter;
+    }
+    else if (
+      i+1 < v.size() &&
+      cl != v[i+1].get_weight() &&
+      res != temp.size() - 1
+      ) {
+      // enter a new region
+      if (counter == 0) {
+        // we already have a root
+        t.add_vertex(0,++counter, cl);
 
-    auto find = [&](std::size_t q) {
-      for (std::size_t j{}; j < temp.size(); ++j) {
-        if (q == temp[j]) { return j; }
-      }
-    };
-
-    std::size_t res;
-
-    std::vector<bool> nesting(pos_map.size(), false);
-    
-    for (std::size_t i{}; i < v.size(); i++) {
-      std::size_t cl = v[i].class_;
-      temp = pos_map[cl];
-      if (temp.size() == 1) { continue; }
-
-      // the position of
-      // the current element in
-      // in temp
-      res = find(i);
-
-      if (nesting[cl]) {
-        pr_idx = pr_idx == 0 ? 0 : t.get_parent(pr_idx);
-        nesting[cl] = false;
-      }
-      else if (i+1 < v.size() && cl != v[i+1].class_ && res != temp.size() - 1 ) {
-        // enter a new region
-
-        if (counter == 0) {
-            pr_idx = 0;
-        } 
-
+      } else {
         t.add_vertex(pr_idx,counter, cl);
-
-        nesting[cl] = true;
-        pr_idx = counter;        
-        ++counter;
-
-
-      }
-      else {
-        t.add_vertex(pr_idx,counter, cl);
-        ++counter;        
+        //t.get_vertex_mut(counter).set_meta(std::to_string(v[i].right()));
+        //pr_idx = counter;
+        //++counter;
       }
       
+      t.get_vertex_mut(counter).set_meta(std::to_string(v[i].right()));
+      pr_idx = counter;
+      ++counter;
+        
+      nesting[cl] = true;
     }
+    else {
+      t.add_vertex(pr_idx,counter, cl);
+      t.get_vertex_mut(counter).set_meta(std::to_string(v[i].right()));
+      ++counter;
+    }
+  }
 
-    t.print_dot(true);
+  t.print_dot(true);
 }
 
 
-  
+
 spanning_tree::Tree FlowGraph::compute_pst_again() {
   // based on dfs
   spanning_tree::Tree t = spanning_tree::Tree(this->size_internal());
 
   std::vector<std::size_t> bub_v;
-  std::vector<Foo> foo_v;
+  std::vector<Edge> foo_v;
 
   std::vector<std::size_t> in_degree(this->size_internal(), 0);
   std::vector<std::size_t> out_degree(this->size_internal(), 0);
@@ -638,16 +636,16 @@ spanning_tree::Tree FlowGraph::compute_pst_again() {
       if ( visited.find(a) == visited.end()) {
         // we have discovered a new edge current_vertex -- a
 
-        // std::cout << "" << current_vertex << "-- (" << edge.get_weight()  << ") --" << a << std::endl;
+        //std::cout << "" << current_vertex << "-- (" << edge.get_weight()  << ") --" << a << std::endl;
 
         bub_v.push_back(edge.get_weight());
-        foo_v.push_back(Foo{.src = current_vertex, .tgt = 1, .class_ = edge.get_weight()});
+        foo_v.push_back(edge);
 
         s.push(a);
         --in_degree[a];
         explored = false;
 
-        //if (current_vertex == this->start_node_id && a == this->stop_node_internal_idx()) { continue; }
+        // if (current_vertex == this->start_node_id && a == this->stop_node_internal_idx()) { continue; }
         //handle_edge(edge.get_weight(), current_vertex, a);
 
         break;
