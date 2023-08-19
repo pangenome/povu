@@ -343,6 +343,95 @@ spanning_tree::Tree FlowGraph::compute_spanning_tree() {
   return t;
 }
 
+spanning_tree::Tree FlowGraph::compute_spanning_tree_two(digraph::DiGraph const& g) {
+  spanning_tree::Tree t = spanning_tree::Tree(this->size_internal());
+
+  std::set<std::size_t> seen;
+  std::stack<std::size_t> visited;
+
+  std::size_t current_vertex{this->start_node_id};
+  visited.push(current_vertex);
+
+  std::size_t counter{0};
+
+  while (!visited.empty()) {
+    current_vertex = visited.top();
+
+    if (!seen.count(current_vertex)) {
+      t.set_dfs_num(current_vertex, counter);
+      t.set_sort(counter, current_vertex);
+      ++counter;
+    }
+
+    seen.insert(current_vertex);
+
+    // TODO: simplify below for loop
+    // - replace f with not_explored
+    // bool not_explored{false}; // the current vertex has not been explored
+    bool f{false};
+    Vertex const& v =  this->get_vertex_internal(current_vertex);
+
+    // std::cout << "current vertex: " << current_vertex << std::endl;
+
+    // TODO: better condition here for speedup
+    for (auto adj : v.get_adjacent_vertices()) {
+      Edge& edge = this->edges.at(adj.e_idx);
+      std::size_t a = adj.v_idx;
+
+      bool x {false};
+      
+      if (current_vertex != this->start_node_id && a != this->stop_node_internal_idx()) {
+        if  (current_vertex == this->stop_node_internal_idx()) {continue;}
+        for (auto e : g.get_vertex(current_vertex - 1 ).out()) {
+          if (e.to() == a - 1) {
+            x = true;
+            break; }
+        }
+      }
+      else if (current_vertex == this->start_node_id && a != this->stop_node_internal_idx()) {
+        x = true;
+      } else if (current_vertex != this->start_node_id && a == this->stop_node_internal_idx()) {
+        x = true;
+      } else if (current_vertex == this->start_node_id && a == this->stop_node_internal_idx()) {
+        t.add_be(current_vertex, a, edge.get_weight(), false, edge.get_color());
+      }
+      
+      if (g.starts().count(current_vertex)) {
+      
+      }
+      else if (g.stops().count(current_vertex)) {
+      
+      }
+      else {
+        
+      }
+
+      if ( x && seen.find(a) == seen.end()) {
+        t.add_tree_edge(current_vertex, a, edge.get_weight(), edge.get_color());
+        visited.push(a);
+        f = true;
+        break;
+      }
+      else if (
+        !t.is_root(current_vertex) &&
+        t.get_parent(current_vertex) != a &&
+        !t.has_child(current_vertex, a) &&
+        !t.has_ibe(current_vertex, a) &&
+        !t.has_obe(current_vertex, a)
+      ) {
+        // TODO: why the has child and not parent test?
+        //std::cout << "adding back edge: " << current_vertex << " -> " << a << std::endl;
+        t.add_be(current_vertex, a, edge.get_weight(), false, edge.get_color());
+      }
+    }
+
+    if (!f) { visited.pop(); }
+  }
+
+  return t;
+}
+
+
 void construct_pst(std::vector<std::size_t> const& v) {
   tree::Tree t = tree::Tree(v.size(), false);
 
@@ -550,12 +639,12 @@ tree::Tree FlowGraph::construct_pst(std::vector<Edge> const& v) const {
         }
       }
     }
-    
+
     //t.print_dot(true);
 
     return t;
 }
-  
+
 tree::Tree FlowGraph::construct_pvst(std::vector<Edge> const& v) const {
   std::size_t last_node_idx = v.back().right() +10;
   tree::Tree t = tree::Tree(last_node_idx, true);
@@ -607,17 +696,17 @@ tree::Tree FlowGraph::construct_pvst(std::vector<Edge> const& v) const {
       } else {
         t.add_vertex(pr_idx,counter, cl);
       }
-      
+
       t.get_vertex_mut(counter).set_meta(std::to_string(v[i].right()));
       pr_idx = counter;
       ++counter;
-        
+
       nesting[cl] = true;
     }
     else {
       // matches when temp.size() == 1 and
       // ...
-      
+
       t.add_vertex(pr_idx,counter, cl);
       t.get_vertex_mut(counter).set_meta(std::to_string(v[i].right()));
       ++counter;
@@ -625,24 +714,26 @@ tree::Tree FlowGraph::construct_pvst(std::vector<Edge> const& v) const {
   }
 
   //t.print_dot(true);
-  
+
   return t;
 }
 
+/**
+   DFS with backtracking
+ */
 std::vector<Edge> FlowGraph::compute_edge_stack() {
-  // based on dfs
-  spanning_tree::Tree t = spanning_tree::Tree(this->size_internal());
-
-  //std::vector<std::size_t> bub_v;
-  std::vector<Edge> foo_v;
 
   std::vector<std::size_t> in_degree(this->size_internal(), 0);
   std::vector<std::size_t> out_degree(this->size_internal(), 0);
+
+  // populate the vectors in_degree and out_degree
   for (std::size_t i{0}; i < this->size_internal(); ++i) {
     for (auto a : this->get_vertex_internal(i).adj_vertices()) {
       if (a < i) { ++in_degree[i]; } else { ++out_degree[i]; }
     }
   }
+
+  std::set<Edge> added;
 
   std::set<std::size_t> visited;
   std::stack<std::size_t> s;
@@ -652,14 +743,32 @@ std::vector<Edge> FlowGraph::compute_edge_stack() {
   s.push(current_vertex);
   bool explored{true};
 
+  std::vector<Edge> foo_v;
+
+  std::size_t previous_vertex{};
+
+  //std::size_t furthest{};
+
+
+  std::map<std::size_t, std::set<std::size_t>> m;
+
+  //std::set<std::size_t> seen;
+
   while (!s.empty()) {
     current_vertex = s.top();
 
     if (in_degree[current_vertex] > 0) {
-      while (s.top() != bi.top()) { s.pop(); }
+      while (s.top() != bi.top()) {
+        m[previous_vertex].insert(s.top());
+        s.pop();
+      }
       bi.pop();
       current_vertex = s.top();
+
+
     }
+
+    previous_vertex = current_vertex;
 
     visited.insert(current_vertex);
 
@@ -672,20 +781,24 @@ std::vector<Edge> FlowGraph::compute_edge_stack() {
       Edge& edge = this->edges.at(adj.e_idx);
       std::size_t a = adj.v_idx;
 
-      if ( visited.find(a) == visited.end()) {
+      if ( !m[current_vertex].count(a) && !visited.count(a)
+
+           //&& !seen.count(a)
+        ) {
         // we have discovered a new edge current_vertex -- a
 
-        //std::cout << "" << current_vertex << "-- (" << edge.get_weight()  << ") --" << a << std::endl;
+        //std::cout << "adding edge " << edge.left() << " -- " << edge.get_weight() << " -- " << edge.right() << std::endl;
 
-        //bub_v.push_back(edge.get_weight());
+        // if (!added.count(edge) ) {}
+
+        //seen.insert(a);
+
         foo_v.push_back(edge);
+        added.insert(edge);
 
         s.push(a);
         --in_degree[a];
         explored = false;
-
-        // if (current_vertex == this->start_node_id && a == this->stop_node_internal_idx()) { continue; }
-        //handle_edge(edge.get_weight(), current_vertex, a);
 
         break;
       }
@@ -694,15 +807,51 @@ std::vector<Edge> FlowGraph::compute_edge_stack() {
     if (explored) { s.pop(); }
   }
 
-  //std::cout << std::endl;
-  // construct_pst(bub_v);
-
-  //std::cout << std::endl;
-  //construct_pvst(foo_v);
-  //std::cout << std::endl;
-  
   return foo_v;
 }
+
+/**
+Edge Stack
+
+0-- (0) --1
+1-- (7) --2
+2-- (8) --4
+4-- (8) --6
+6-- (10) --9
+9-- (10) --11
+6-- (9) --10
+10-- (9) --11
+11-- (8) --12
+2-- (11) --12
+12-- (7) --16
+1-- (2) --3
+3-- (2) --5
+5-- (1) --7
+7-- (1) --13
+5-- (3) --8
+8-- (4) --13
+13-- (6) --14
+8-- (5) --14
+14-- (2) --15
+15-- (2) --16
+16-- (0) --17
+17-- (0) --18
+0-- (0) --18
+
+
+Edge Stack
+
+0-- (0) --1
+1-- (7) --2
+2-- (5) --3
+3-- (3) --5
+4-- (2) --5
+4-- (1) --6
+6-- (0) --7
+0-- (0) --7
+
+
+*/
 
 void FlowGraph::print_dot() {
   std::cout << std::format(

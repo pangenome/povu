@@ -13,6 +13,7 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include <map>
 
 #include "../core/core.hpp"
 #include "./spanning_tree.hpp"
@@ -475,8 +476,369 @@ Edge& Tree::get_incoming_edge(std::size_t vertex) {
   std::size_t e_idx = this->nodes.at(vertex).get_parent_idx();
   return this->tree_edges.at(e_idx);
 }
+
+/**
+ * Get the node id of the node with the given sort value
+ *
+ * The sort vector is sorted in ascending order based on the index from 0..n
+ * the value at index zero in the sort vector (`sort_`) is the node id of the 
+ * node with the smallest sort value and so forth.
+ * We can then use this node id to get the node from the nodes vector (`nodes`)
+ * 
+ * @param[in] idx the sort value of the node
+ * @return the node id of the node with the given sort value
+ */ 
 std::size_t Tree::get_sorted(std::size_t idx) { return  this->sort_.at(idx);}
 
+void Tree::cycles_vector() {
+
+
+  // a lambda that given a vertex id v will loop through the sort_ vector
+  // and find the value of v in the sort_ vector and return the index
+  // of that value
+  auto find_sort_value = [this](std::size_t v) {
+		for (std::size_t i = 0; i < this->sort_.size(); i++) {
+			if (this->sort_.at(i) == v) {
+				return i;
+			}
+		}
+		return core::constants::UNDEFINED_SIZE_T;
+  };
+  
+  // set of eq classes 
+  // if they have been seen or not
+  std::set<size_t> seen;
+
+  // number of vertices
+  // the index is i & the value is the first/last index that i was seen
+  std::vector<size_t> first_seen(this->size(), core::constants::UNDEFINED_SIZE_T);
+  std::vector<size_t> last_seen(this->size(), core::constants::UNDEFINED_SIZE_T);
+
+  // a stack of branching paths
+  // contains node ids of nodes with more than 1 child
+  std::stack<size_t> branching_stack; // TODO: rename branching paths?
+
+  // a stack of suspended classes or vertices
+  std::stack<size_t> suspended_stack;
+
+  // which branches have been explored?
+  // a map of vertex ids to a set of eq classes
+  // the eq classes are the ones that have been explored
+  std::map<size_t, std::set<size_t>> explored_branches;
+
+
+  // a vector of class ids in order
+  std::vector<size_t> classes;
+  // a vector of vertex ids in order
+  std::vector<size_t> vertices;
+
+  /*
+	initialize variables
+   */
+
+  // initialize vertices with id 0
+  vertices.push_back(0);
+
+  // current index to i is 1
+  std::size_t i = 1;
+  
+  // the vertex at index i
+  std::size_t v{core::constants::UNDEFINED_SIZE_T};
+
+  // Is this a suspended run?
+  bool suspended_run; // TODO: rename to suspended?
+
+  // has i been set
+  bool i_set{false};
+  
+  // initialize the current class
+  std::size_t current_class{core::constants::UNDEFINED_SIZE_T};
+
+  // outgoing backedge indexes
+  std::set<size_t> obe_idxs;
+
+  // a lambda that will update classes and vertices with the current class and v values
+  auto update_classes_and_vertices = [&]() {
+	classes.push_back(current_class);
+	vertices.push_back(v);
+
+	// loop through the outgoing backedges of v and add the classes of these
+	//  back-edges to the classes vector
+	for (size_t obe_idx : obe_idxs) {
+	  classes.push_back(this->get_backedge(obe_idx).get_class());
+	}
+  };
+  
+  while (true) {
+
+	std::cout << "i: " << i << std::endl;
+	
+	suspended_run = false;
+	v = this->get_sorted(i);
+	current_class = this->get_parent_edge(v).get_class();
+
+	// if the current class has been seen
+	if (seen.count(current_class)) {
+	  if (last_seen.at(current_class) == i) { suspended_run = true; }
+	  last_seen.at(current_class) = i;
+	}
+	// it is the first time seeing this class
+	else {
+	  first_seen.at(current_class) = i;
+	  seen.insert(current_class);
+	}
+
+	// get the vector of children
+	std::vector<Edge> children = this->get_child_edges(v);
+
+	// is branching
+	if (children.size() > 1) { branching_stack.push(v); }
+
+	i_set = false;
+
+	// obe_idxs
+	
+	obe_idxs = this->get_obe_idxs(v);
+
+	// if node has outgoing back-edges and this is not the first time the class is being seen
+
+	std::cout << "suspended run: " << suspended_run
+			  << " " << (first_seen[current_class] != i)
+			  << " " << obe_idxs.empty() << std::endl;
+	
+	if (!suspended_run
+		&& first_seen[current_class] != i
+		&& !obe_idxs.empty()
+	  ) {
+	  for (size_t obe_idx : obe_idxs) {
+		//std::cout << "obe_idx: " << obe_idx << std::endl;
+		BackEdge obe = this->get_backedge(obe_idx);
+		//obe.is_capping_backedge()
+		// if outgoing backedge goes above the first seen or to zero then everything
+		// (the subtree) below first seen is within the SESE bubble
+		if (!obe.is_capping_backedge()
+			&& obe.get_tgt() < first_seen[current_class]
+			&& !branching_stack.empty()
+		  ) {
+
+		  std::size_t b = branching_stack.top();
+		  // loop through the children of the nodes at b
+		  for (Edge e : this->get_child_edges(b)) {
+			// the child lies in v vertex id and not in i sort id
+			std::size_t child = e.get_child();
+			
+			// if the child is not in explored branches then add it and then
+			// push i into suspended_stack
+			// TODO: does the lack of order break things here?
+			if (!explored_branches[b].count(child)) {
+			  explored_branches[b].insert(child);
+			  suspended_stack.push(i);
+			  i = find_sort_value(child);
+			  i_set = true; // assumes find_sort_value above will always find a value
+			  break;
+			}	
+		  }
+		}
+	}
+  }
+
+	// if i is set continue
+	if (i_set) { continue; }
+	// if i is the last vertex
+	else if (i == this->size() - 1) {
+	  update_classes_and_vertices();
+	  break;
+	}
+	// is branching
+	else if (children.size() > 1) {
+	  update_classes_and_vertices();
+		  std::cout << "here" << std::endl;
+	  // loop through the edges in children and if you find one that is not in explored branches
+	  // then push set i to that child and insert it into explored branches
+	  for (Edge e : children) {
+		std::size_t child = e.get_child();
+		std::cout << "child: " << child << std::endl;
+		if (!explored_branches[v].count(child)) {
+		  explored_branches[v].insert(child);
+		  i = find_sort_value(child);
+		  break;
+		}
+	  }
+	}
+	// 
+	else if (first_seen[current_class] == i // we are seeing the class for the first time
+			 && !children.empty() // is not a leaf
+	  ) {
+	  update_classes_and_vertices();
+
+	  std::size_t child = children.front().get_child();
+	  i = find_sort_value(child);
+	}
+	// is a leaf or suspended run is true
+	else if (children.empty() || suspended_run) {
+	  update_classes_and_vertices();
+
+
+	  std::size_t b = branching_stack.top();
+	  
+	  // loop through the explored branches of v and if all have been explored then pop
+	  // the branching stack then set i to the top of the suspended stack and pop the suspended stack
+	  // if the suspended stack is empty then we are done
+	  if (explored_branches[b].size() == children.size()) {
+		branching_stack.pop();
+		// TODO: what to do in this case?
+		if (suspended_stack.empty()) {
+		  std::cout << "suspended stack is empty, exiting" << std::endl;
+		  break;
+		}
+		i = suspended_stack.top();
+		suspended_stack.pop();
+	  }
+	  else {
+		// take the value on top of the branching stack and find the first child that has not been explored
+		std::size_t b = branching_stack.top();
+		for (Edge e : this->get_child_edges(b)) {
+		  std::size_t child = e.get_child();
+		  if (!explored_branches[b].count(child)) {
+			explored_branches[b].insert(child);
+			if (!suspended_run) { i = find_sort_value(child); }
+			break;
+		  }
+		}
+
+		if (explored_branches[v].size() == children.size()) {
+		  branching_stack.pop();
+		  if (suspended_run) { i = suspended_stack.top(); }
+		  suspended_stack.pop();
+		}
+	  }
+	}
+	// i is not branching
+	// same as 4
+	else if (children.size() == 1) {
+	  update_classes_and_vertices();
+
+	  std::size_t child = children.front().get_child();
+	  i = find_sort_value(child);
+	}
+    // suspended stack is empty
+	else if (suspended_stack.empty()) {
+	  // loop through the edges in children and if you find one that is not in explored branches
+	  // then push set i to that child and insert it into explored branches
+	  for (Edge e : children) {
+		std::size_t child = e.get_child();
+		if (!explored_branches[v].count(child)) {
+		  explored_branches[v].insert(child);
+		  i = find_sort_value(child);
+		  break;
+		}
+	  }
+	}
+	// if i is not set
+	else if (!i_set) {
+       // suspended is assumed to not be empty
+       // happens if we have explored all paths
+	  branching_stack.pop();
+	  i = suspended_stack.top();
+	  //if (suspended_run) {  }
+	  suspended_stack.pop();
+	}
+	else {
+	  std::cout << "something went wrong" << std::endl;
+	  break;
+	}
+	
+  } // end while loop
+
+
+  // print class vector
+  std::cout << "classes: ";
+  for (size_t c : classes) {
+	std::cout << c << " ";
+  }
+  std::cout << std::endl;
+
+  // print vertices vector
+  std::cout << "vertices: ";
+  for (size_t v : vertices) {
+	std::cout << v << " ";
+  }
+}
+
+std::vector<Edge> Tree::compute_edge_stack() {
+  std::vector<Edge> edge_stack;
+  std::size_t current_vertex{};
+  std::set<size_t> seen;
+  std::set<size_t> exp;
+
+  std::stack<std::size_t> bts;
+
+  int counter {};
+
+  while (counter < 15) {
+
+    std::cout << "current vertex: " << current_vertex << std::endl;
+
+    ++counter;
+    seen.insert(current_vertex);
+
+    std::size_t prev_vertex = current_vertex;
+
+
+    std::vector<Edge> child_edges = this->get_child_edges(current_vertex);
+
+    
+    std::set<size_t> o = this->get_obe(current_vertex);
+
+    if (!child_edges.empty() && !o.empty()) {
+      bts.push(current_vertex);
+    }
+    
+    for (auto it : child_edges) {
+      auto c = it.get_child();
+
+      if (!seen.count(c)) {
+        current_vertex = c;
+        edge_stack.push_back(it);
+        exp.insert(c);
+        break;
+      }
+      
+    }
+
+    for (auto it : child_edges) {
+      auto c = it.get_child();
+
+
+      
+      if (!exp.count(c)) {
+        bts.push(prev_vertex);
+        break;  
+      }
+    }
+
+    // print child edges for current vertex
+    //for (auto e : child_edges) {
+    // std::cout << e.get_parent() << " " << e.get_class() << " " << e.get_child() << std::endl;
+      //}
+    
+
+    
+    if (child_edges.empty()) {
+      current_vertex = bts.top();
+      bts.pop();
+    }
+  }
+
+  std::cout << "edge stack" << std::endl;
+
+  for (auto e : edge_stack ) {
+    std::cout << e.get_parent() << " " << e.get_class() << " " << e.get_child() << std::endl;
+  }
+  
+  return edge_stack;
+}
+   
 void Tree::print_dot() {
   std::cout << std::format(
     "graph G {{\n"

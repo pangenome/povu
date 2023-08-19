@@ -166,6 +166,7 @@ public:
   void set_stop_node(std::size_t vertex);
 
   spanning_tree::Tree compute_spanning_tree();
+  spanning_tree::Tree compute_spanning_tree_two(digraph::DiGraph const& g);
 
   // split any node with > 1 incoming and >1 outgoing edges
   // into two nodes connected by a single (gray) edge

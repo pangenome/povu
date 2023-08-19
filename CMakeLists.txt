@@ -16,11 +16,6 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 enable_testing()
 
-FetchContent_Declare(
-  libhandlegraph
-  URL https://github.com/vgteam/libhandlegraph/archive/refs/heads/master.zip
-)
-FetchContent_MakeAvailable(libhandlegraph)
 
 if (MSVC)
     # warning level 4
@@ -45,13 +40,13 @@ set(SOURCE_FILES
 
 # source
 add_executable( domibubble
-${SOURCE_FILES}
+  ${SOURCE_FILES}
 )
 
 target_link_libraries(
   domibubble
-  LibsModule)
-
+  LibsModule
+)
 
 set(BINARY_DIR ./bin)
 

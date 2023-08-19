@@ -238,12 +238,18 @@ class Tree {
   std::size_t equiv_class_count_;
 
 public:
+
+  // --------------
   // constructor(s)
+  // --------------
   Tree();
   Tree(std::size_t size);
 
+  // -------
   // getters
+  // -------
   Vertex& get_root();
+  // 
   std::size_t size() const;
   Edge& get_incoming_edge(std::size_t vertex);
 
@@ -262,9 +268,10 @@ public:
   std::set<std::pair<std::size_t, std::size_t>> get_obe_w_id(std::size_t vertex);
   std::set<std::pair<std::size_t, std::size_t>> get_ibe_w_id(std::size_t vertex);
 
-// take a vertex index and return a
+  // take a vertex index and return a
   std::set<std::pair<std::size_t, std::size_t>> get_children_w_id(std::size_t vertex);
 
+  // return edges that point to children of the vertex
   std::vector<Edge> get_child_edges(std::size_t vertex);
 
   // given a vertex id, return a reference to the edge that points to the parent
@@ -294,10 +301,13 @@ public:
   bool has_obe(std::size_t vertex, std::size_t qry_idx);
   bool has_child(std::size_t vertex, std::size_t qry_idx);
 
+  // the vertex id of the node at sort value idx
   std::size_t get_sorted(std::size_t idx);
 
+  // -------
   // setters
-
+  // -------
+  
   // takes an index in toposort
   // and a vertex and sets the vertex as value in the toposort
   // vector
@@ -306,7 +316,9 @@ public:
   void set_dfs_num(std::size_t vertex, std::size_t dfs_num);
 
 
-  std::size_t add_be(std::size_t frm, std::size_t to, bool capping_be=false,
+  std::size_t add_be(std::size_t frm,
+					 std::size_t to,
+					 bool capping_be=false,
                      core::color color=core::color::black);
 
   std::size_t add_be(std::size_t frm,
@@ -315,10 +327,15 @@ public:
                      bool capping_be=false,
                      core::color color=core::color::black);
   
-  void add_tree_edge(std::size_t frm, std::size_t to, core::color color=core::color::black);
+  void add_tree_edge(std::size_t frm,
+					 std::size_t to,
+					 core::color color=core::color::black);
 
   // returns the tree edge index
-  std::size_t add_tree_edge(std::size_t frm, std::size_t to, std::size_t weight, core::color color=core::color::black);
+  std::size_t add_tree_edge(std::size_t frm,
+							std::size_t to,
+							std::size_t weight,
+							core::color color=core::color::black);
 
   void set_hi(std::size_t vertex, std::size_t val);
 
@@ -335,6 +352,10 @@ public:
 
   BracketList& get_bracket_list(std::size_t vertex);
 
+  // compute equiv classes stack and the vertices vector
+  void cycles_vector();
+
+  std::vector<Edge> compute_edge_stack();  
 
   // I/O
   void print_dot();

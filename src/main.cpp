@@ -218,7 +218,7 @@ digraph::DiGraph g10() {
   g.add_edge(2, 4);
   g.add_edge(0, 4);
   g.add_edge(3, 5);
-    g.add_edge(2, 5);
+  g.add_edge(2, 5);
 
   g.add_start_node(0);
   g.add_stop_node(5);
@@ -452,19 +452,17 @@ digraph::DiGraph g20() {
 };
 
 
-const bool DEBUG = true;
+bool DEBUG = false;
 
 int main() {
-  digraph::DiGraph g = g16();
-
+  
+  digraph::DiGraph g = g10();
+  g = g20();
+  
   if (DEBUG) {
     std::cout << "\n\n" << "Di-Graph" << "\n\n";
     g.print_dot();
   }
-
-  // return 0;
-
-  // g.biedge();
 
   if (DEBUG) {
     std::cout << "\n\n" << "Bi-edged Di-Graph" << "\n\n";
@@ -474,7 +472,6 @@ int main() {
   // a to_cfg() method
   //u_graph::FlowGraph u = g3();
   u_graph::FlowGraph u = u_graph::FlowGraph(g);
-
   if (DEBUG) {
     std::cout << "\n\n" << "Flow Graph" << "\n\n";
     u.print_dot();
@@ -486,80 +483,53 @@ int main() {
     t.print_dot();
   }
 
-  //return 0;
-
   vst::cycle_equiv(t);
   if (DEBUG) {
     std::cout << "\n\n" << "Updated Spanning tree" << "\n\n";
     t.print_dot();
   }
 
+  t.cycles_vector();
+
+
+  return 0;
+  
   u_graph::FlowGraph afg = u_graph::FlowGraph(t);
   if (DEBUG) {
     std::cout << "\n\n" << "Annotated Flow Graph" << "\n\n";
     afg.print_dot();
   }
 
-  std::vector<u_graph::Edge> edges = afg.compute_edge_stack();
+  spanning_tree::Tree sp2 = afg.compute_spanning_tree_two(g);
+  if (DEBUG) {
+    std::cout << "\n\n" << "Directed spanning tree Stack" << "\n\n";
+    sp2.print_dot();
 
-  tree::Tree pst =  afg.construct_pst(edges);
+  }
+
+  sp2.compute_edge_stack();
+
+  return 0;
+  
+  std::vector<u_graph::Edge> edge_stack = afg.compute_edge_stack();
+  if (DEBUG) {
+    std::cout << "\n\n" << "Edge Stack" << "\n\n";
+    for (auto e : edge_stack) {
+      std::cout << "" << e.left()  << "-- (" << e.get_weight()  << ") --" << e.right() << "\n";
+    }
+  }
+
+  tree::Tree pst =  afg.construct_pst(edge_stack);
   if (DEBUG) {
     std::cout << "\n\n" << "PST" << "\n\n";
     pst.print_dot(true);
   }
-  
-  tree::Tree pvst =  afg.construct_pvst(edges);
+
+  tree::Tree pvst =  afg.construct_pvst(edge_stack);
   if (DEBUG) {
     std::cout << "\n\n" << "PVST" << "\n\n";
     pvst.print_dot(true);
   }
-  
-
-  /*
-  u_graph::FlowGraph g = g11();
-  if (DEBUG) {
-    std::cout << "Input Graph" << "\n\n";
-    g.print_dot();
-  }
-
-  spanning_tree::Tree t = g.compute_spanning_tree();
-  if (DEBUG) {
-    std::cout << "\n\n" << "Spanning tree" << "\n\n";
-    t.print_dot();
-  }
-
-  vst::cycle_equiv(t);
-  if (DEBUG) {
-    std::cout << "\n\n" << "Updated Spanning tree" << "\n\n";
-    t.print_dot();
-  }
-
-  vst::VST tv = vst::VST(t);
-  if (DEBUG) {
-    std::cout << "\n\n" << "VST" << "\n\n";
-    tv.print_dot();
-  }
-
-  // pst::PST p = pst::PST(t);
-  // if (DEBUG) {
-  //   std::cout << "\n\n" << "PST" << "\n\n";
-  //   std::cout << "PST size: " << p.size() << "\n";
-  //   p.print_dot();
-  // }
-
-  tree::Tree p = pst::compute_pst(t);
-  if (DEBUG) {
-    std::cout << "\n\n" << "PST" << "\n\n";
-    p.print_dot();
-  }
-
-
-  tree::Tree pv = vst::compute_pvst(t);
-  if (DEBUG) {
-    std::cout << "\n\n" << "PVST" << "\n\n";
-    pv.print_dot();
-  }
-  */
 
   return  0;
 }
