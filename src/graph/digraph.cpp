@@ -59,6 +59,75 @@ bool Vertex::is_leaf() const { return this->out().empty(); }
  * -------
  */
 
+// handlegraph
+
+handlegraph::handle_t DiGraph::create_handle(const std::string& sequence) {
+  this->create_handle(sequence, this->adj.size());
+}
+
+handlegraph::handle_t DiGraph::create_handle(const std::string& sequence, const handlegraph::nid_t& id) {
+  // we expect id to be equal to the end of the vector
+
+  handlegraph::handle_t h;
+  
+  if (id == this->size()) {
+	this->adj.push_back(Vertex());
+  }
+  else if (id > this->adj.size()) {
+	//this->adj.resize(id + 1);
+  }
+  else {
+	// TODO: throw an error because this edge exists
+	// TODO: check if already exists
+  }
+  //this->adj.push_back(Vertex());
+  //Vertex()
+  //this->create_handle(sequence, this->adj.size());
+
+  return h;
+}
+
+void DiGraph::create_edge(const handlegraph::handle_t& left, const handlegraph::handle_t& right) {
+  std::size_t l_value = std::stoul(left.data);
+  std::size_t r_value = std::stoul(right.data);
+
+  this->add_edge(l_value, r_value, core::color::black);
+}
+
+// FIXME: does this work in our context?
+handlegraph::handle_t DiGraph::apply_orientation(const handlegraph::handle_t& handle){
+  handlegraph::handle_t h;
+  return h;
+}
+
+std::vector<handlegraph::handle_t>
+DiGraph::divide_handle(const handlegraph::handle_t& handle, const std::vector<std::size_t>& offsets) {
+	std::vector<handlegraph::handle_t> handles;
+	return handles;
+}
+
+void DiGraph::optimize(bool allow_id_reassignment) {
+	return;
+}
+
+bool DiGraph::apply_ordering(const std::vector<handlegraph::handle_t>& order, bool compact_ids) {
+  	return false;
+}
+
+void DiGraph::set_id_increment(const handlegraph::nid_t& min_id) {
+	return;
+}
+
+void DiGraph::increment_node_ids(handlegraph::nid_t increment) {
+	
+}
+  
+void DiGraph::increment_node_ids(long increment) {}
+    
+void DiGraph::reassign_node_ids(const std::function<handlegraph::nid_t(const handlegraph::nid_t&)>& get_new_id) {}
+  
+// constructor(s)
+// --------------
 DiGraph::DiGraph() : adj(std::vector<Vertex>{}) {};
 DiGraph::DiGraph(std::size_t size) : adj(std::vector<Vertex>{}) {
   adj.reserve(size);
@@ -68,6 +137,8 @@ DiGraph::DiGraph(std::set<std::size_t>&& start_nodes, std::set<std::size_t>&& st
     start_nodes(std::move(start_nodes)),
     end_nodes(std::move(stop_nodes)) {};
 
+// getters
+// -------
 void DiGraph::add_start_node(std::size_t idx) {
   this->start_nodes.insert(idx);
 }

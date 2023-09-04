@@ -9,6 +9,8 @@
 
 #include "../core/core.hpp"
 
+#include <handlegraph/mutable_handle_graph.hpp>
+
 namespace digraph {
 
 /*
@@ -64,12 +66,50 @@ public:
  * Vertex
  * ------
  */
+
+// TODO: handle the case of disconnected components
 class DiGraph {
   std::vector<Vertex> adj; // adjacency list to store edges
   std::set<std::size_t> start_nodes;
   std::set<std::size_t> end_nodes;
 
 public:
+
+  //
+  // ------------
+
+  // add a sequence to the end of the graph
+  // increment the size of the graph by 1
+  handlegraph::handle_t create_handle(const std::string& sequence);
+
+  handlegraph::handle_t create_handle(const std::string& sequence,
+									  const handlegraph::nid_t& id);
+
+
+  /// Create an edge connecting the given handles in the given order and orientations.
+  /// Ignores existing edges.
+  void create_edge(const handlegraph::handle_t& left,
+				   const handlegraph::handle_t& right);
+
+
+  handlegraph::handle_t apply_orientation(const handlegraph::handle_t& handle);
+
+  std::vector<handlegraph::handle_t>
+  divide_handle(const handlegraph::handle_t& handle, const std::vector<std::size_t>& offsets);
+
+  void optimize(bool allow_id_reassignment = true);
+
+
+  bool apply_ordering(const std::vector<handlegraph::handle_t>& order, bool compact_ids = false);
+
+  void set_id_increment(const handlegraph::nid_t& min_id);
+
+  void increment_node_ids(handlegraph::nid_t increment);
+  
+  void increment_node_ids(long increment);
+    
+  void reassign_node_ids(const std::function<handlegraph::nid_t(const handlegraph::nid_t&)>& get_new_id);
+  
   // constructor(s)
   // --------------
   DiGraph();
@@ -94,6 +134,9 @@ public:
 
   Vertex& get_vertex_mut(std::size_t idx);
 
+  // if the from node or to node does not exist, add edges until they
+  // do exist
+  
   /*
    * add an edge to the graph
    * if the edge already exists, do nothing

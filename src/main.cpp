@@ -8,6 +8,7 @@
 #include "./pvst/pvst.hpp"
 #include "graph/tree.hpp"
 
+#include "./io/io.hpp"
 
 #include <handlegraph/handle_graph.hpp>
 #include <handlegraph/mutable_handle_graph.hpp>
@@ -461,6 +462,9 @@ digraph::DiGraph g20() {
 bool DEBUG = false;
 
 int main() {
+
+  io::reader();
+  return 0;
   
   digraph::DiGraph g = g10();
   g = g20();

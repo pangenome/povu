@@ -27,29 +27,55 @@ endif()
 
 # Include libhandlegraph library
 add_subdirectory(
-  deps/gfakluge
+# deps/gfakluge
   deps/libhandlegraph
-
 )
 
 ADD_LIBRARY(LibsModule
+  # io
+  src/io/gfa.cpp
+  # graph
   src/graph/tree.cpp
   src/graph/u_graph.cpp
   src/graph/digraph.cpp
   src/graph/spanning_tree.cpp
+  # 
   src/vst/vst.cpp
   src/vst/pst.cpp
   src/pvst/pvst.cpp
+)
+
+#include_directories(
+#    ./deps/gfakluge/src
+#    ./deps/gfakluge/src/tinyFA
+#    ./deps/libhandlegraph/src/include
+#)
+
+include_directories(
+  # deps
+  ${CMAKE_CURRENT_SOURCE_DIR}/deps/gfakluge/src
+  ${CMAKE_CURRENT_SOURCE_DIR}/deps/gfakluge/src/tinyFA
+  ${CMAKE_CURRENT_SOURCE_DIR}/deps/libhandlegraph/src/include
 )
 
 set(SOURCE_FILES
   src/main.cpp
 )
 
+
 # source
-add_executable( domibubble
+add_executable(domibubble
   ${SOURCE_FILES}
 )
+
+# recommended but does not work
+# Specify the include directories for the target
+#target_include_directories(domibubble
+#    PRIVATE
+#    ${CMAKE_CURRENT_SOURCE_DIR}/deps/gfakluge/src
+#    ${CMAKE_CURRENT_SOURCE_DIR}/deps/gfakluge/src/tinyFA
+#    ${CMAKE_CURRENT_SOURCE_DIR}/deps/libhandlegraph/src/include
+#)
 
 #target_include_directories(domibubble PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/build/libs/libhandlegraph)
 
