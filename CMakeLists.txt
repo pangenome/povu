@@ -25,6 +25,13 @@ else()
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+# Include libhandlegraph library
+add_subdirectory(
+  deps/gfakluge
+  deps/libhandlegraph
+
+)
+
 ADD_LIBRARY(LibsModule
   src/graph/tree.cpp
   src/graph/u_graph.cpp
@@ -32,6 +39,7 @@ ADD_LIBRARY(LibsModule
   src/graph/spanning_tree.cpp
   src/vst/vst.cpp
   src/vst/pst.cpp
+  src/pvst/pvst.cpp
 )
 
 set(SOURCE_FILES
@@ -43,10 +51,19 @@ add_executable( domibubble
   ${SOURCE_FILES}
 )
 
-target_link_libraries(
-  domibubble
-  LibsModule
-)
+#target_include_directories(domibubble PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/build/libs/libhandlegraph)
+
+
+#
+# Link the library (LibsModule) and libhandlegraph to your executable
+#target_link_libraries(
+#  domibubble
+#  LibsModule
+#  handlegraph_static
+#)
+
+# Link the library (LibsModule) and libhandlegraph to your executable
+target_link_libraries(domibubble PRIVATE LibsModule handlegraph_shared)
 
 set(BINARY_DIR ./bin)
 
@@ -62,11 +79,16 @@ add_executable( domibubble_test
 )
 
 
-target_link_libraries(
-  domibubble_test
-  LibsModule
-  GTest::gtest_main
-)
+#target_link_libraries(
+#  domibubble_test
+#  LibsModule
+#  handlegraph
+#  GTest::gtest_main
+#)
+
+# Link the library (LibsModule), libhandlegraph, and Google Test to your test executable
+target_link_libraries(domibubble_test PRIVATE LibsModule handlegraph_static GTest::gtest_main)
+
 
 include(GoogleTest)
 gtest_discover_tests(domibubble_test)

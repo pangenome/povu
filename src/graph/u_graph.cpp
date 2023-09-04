@@ -580,6 +580,7 @@ tree::Tree FlowGraph::construct_pst(std::vector<Edge> const& v) const {
         }
       }
       else {
+		// why check if i > 0?
         if (i > 0 && v[i] == v[i-1] && res != temp.size() - 1) {
           std::size_t p = t.get_parent(cr_idx);
 

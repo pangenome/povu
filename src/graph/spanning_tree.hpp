@@ -353,7 +353,9 @@ public:
   BracketList& get_bracket_list(std::size_t vertex);
 
   // compute equiv classes stack and the vertices vector
-  void cycles_vector();
+  //void cycles_vector();
+
+  void cycles_vector(std::vector<std::tuple< size_t , size_t, size_t>>& v, std::vector<std::size_t>& classes);
 
   std::vector<Edge> compute_edge_stack();  
 

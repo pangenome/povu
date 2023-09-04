@@ -490,7 +490,10 @@ Edge& Tree::get_incoming_edge(std::size_t vertex) {
  */ 
 std::size_t Tree::get_sorted(std::size_t idx) { return  this->sort_.at(idx);}
 
-void Tree::cycles_vector() {
+void Tree::cycles_vector(
+  std::vector<std::tuple< size_t , size_t, size_t>>& vertices_four,
+  std::vector<size_t> & classes
+  ) {
 
 
   // a lambda that given a vertex id v will loop through the sort_ vector
@@ -528,9 +531,14 @@ void Tree::cycles_vector() {
 
 
   // a vector of class ids in order
-  std::vector<size_t> classes;
+  // std::vector<size_t> classes;
   // a vector of vertex ids in order
   std::vector<size_t> vertices;
+
+   
+  // a vertex of size_t pairs
+  //std::vector<std::tuple< size_t , size_t, size_t>> vertices_four;
+  
 
   /*
 	initialize variables
@@ -557,21 +565,51 @@ void Tree::cycles_vector() {
   // outgoing backedge indexes
   std::set<size_t> obe_idxs;
 
+  std::vector<Edge> children;
+
   // a lambda that will update classes and vertices with the current class and v values
   auto update_classes_and_vertices = [&]() {
 	classes.push_back(current_class);
 	vertices.push_back(v);
 
+
+	std::size_t src = this->get_parent_edge(v).get_parent();
+	std::size_t tgt = this->get_parent_edge(v).get_child();
+
+	// push src and tgt to vertices_four
+	vertices_four.push_back(std::make_tuple(current_class, src, tgt));
+
+	
+	// populate vertices_three
+
+	// create a tuple of v and a set of classes for the current vertex and push it to vertices_three
+
+	// loop through the classes in children and accumulate them into a set
+	std::set<size_t> classes_set;
+	for (Edge e : children) {
+	  classes_set.insert(e.get_class());
+	}
+
+	
+
 	// loop through the outgoing backedges of v and add the classes of these
 	//  back-edges to the classes vector
 	for (size_t obe_idx : obe_idxs) {
-	  classes.push_back(this->get_backedge(obe_idx).get_class());
+	  
+	  // ignore capping backedges
+	  BackEdge obe = this->get_backedge(obe_idx);
+	  if (!obe.is_capping_backedge()) {
+		classes.push_back(obe.get_class());
+		
+		src = obe.get_src();
+		tgt = obe.get_tgt();
+		
+		vertices_four.push_back(std::make_tuple(obe.get_class(), src, tgt));
+	  }
 	}
   };
   
   while (true) {
-
-	std::cout << "i: " << i << std::endl;
 	
 	suspended_run = false;
 	v = this->get_sorted(i);
@@ -589,7 +627,7 @@ void Tree::cycles_vector() {
 	}
 
 	// get the vector of children
-	std::vector<Edge> children = this->get_child_edges(v);
+	children = this->get_child_edges(v);
 
 	// is branching
 	if (children.size() > 1) { branching_stack.push(v); }
@@ -602,9 +640,9 @@ void Tree::cycles_vector() {
 
 	// if node has outgoing back-edges and this is not the first time the class is being seen
 
-	std::cout << "suspended run: " << suspended_run
-			  << " " << (first_seen[current_class] != i)
-			  << " " << obe_idxs.empty() << std::endl;
+	//std::cout << "suspended run: " << suspended_run
+	//		  << " " << (first_seen[current_class] != i)
+	//		  << " " << obe_idxs.empty() << std::endl;
 	
 	if (!suspended_run
 		&& first_seen[current_class] != i
@@ -652,12 +690,12 @@ void Tree::cycles_vector() {
 	// is branching
 	else if (children.size() > 1) {
 	  update_classes_and_vertices();
-		  std::cout << "here" << std::endl;
+	  //	  std::cout << "here" << std::endl;
 	  // loop through the edges in children and if you find one that is not in explored branches
 	  // then push set i to that child and insert it into explored branches
 	  for (Edge e : children) {
 		std::size_t child = e.get_child();
-		std::cout << "child: " << child << std::endl;
+		//std::cout << "child: " << child << std::endl;
 		if (!explored_branches[v].count(child)) {
 		  explored_branches[v].insert(child);
 		  i = find_sort_value(child);
@@ -684,7 +722,7 @@ void Tree::cycles_vector() {
 	  // loop through the explored branches of v and if all have been explored then pop
 	  // the branching stack then set i to the top of the suspended stack and pop the suspended stack
 	  // if the suspended stack is empty then we are done
-	  if (explored_branches[b].size() == children.size()) {
+	  if (explored_branches[b].size() == this->get_child_edges(b).size()) {
 		branching_stack.pop();
 		// TODO: what to do in this case?
 		if (suspended_stack.empty()) {
@@ -701,15 +739,17 @@ void Tree::cycles_vector() {
 		  std::size_t child = e.get_child();
 		  if (!explored_branches[b].count(child)) {
 			explored_branches[b].insert(child);
-			if (!suspended_run) { i = find_sort_value(child); }
+			i = find_sort_value(child);
+			//if (!suspended_run) {  }
 			break;
 		  }
 		}
 
 		if (explored_branches[v].size() == children.size()) {
 		  branching_stack.pop();
-		  if (suspended_run) { i = suspended_stack.top(); }
-		  suspended_stack.pop();
+		  //if (suspended_run) { i = suspended_stack.top(); }
+		  //if (!suspended_stack.empty()) { suspended_stack.pop(); }
+
 		}
 	  }
 	}
@@ -751,17 +791,22 @@ void Tree::cycles_vector() {
   } // end while loop
 
 
-  // print class vector
-  std::cout << "classes: ";
-  for (size_t c : classes) {
-	std::cout << c << " ";
-  }
-  std::cout << std::endl;
+  if (false) {
+	// print class vector
+	std::cout << "classes: ";
+	for (size_t c : classes) {
+	  std::cout << c << " ";
+	}
+	std::cout << std::endl;
+  
+	// print vertices_four vector of pairs
+	std::cout << std::endl << "vertices_four: ";
+	for (auto v : vertices_four) {
+	  std::cout << "(" << std::get<0>(v) << ": " << std::get<1>(v)
+				<< ", " << std::get<2>(v) << "), ";
+	}
 
-  // print vertices vector
-  std::cout << "vertices: ";
-  for (size_t v : vertices) {
-	std::cout << v << " ";
+    std::cout << std::endl;
   }
 }
 

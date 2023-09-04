@@ -5,7 +5,13 @@
 #include "./graph/spanning_tree.hpp"
 #include "./vst/vst.hpp"
 #include "./vst/pst.hpp"
+#include "./pvst/pvst.hpp"
 #include "graph/tree.hpp"
+
+
+#include <handlegraph/handle_graph.hpp>
+#include <handlegraph/mutable_handle_graph.hpp>
+#include <handlegraph/mutable_path_deletable_handle_graph.hpp>
 
 u_graph::FlowGraph g1() {
   u_graph::FlowGraph g;
@@ -489,9 +495,16 @@ int main() {
     t.print_dot();
   }
 
-  t.cycles_vector();
+  std::vector<std::tuple< size_t , size_t, size_t>> v;
+  std::vector<size_t> s;
+  t.cycles_vector(v, s);
 
+  //tree::Tree pst_ =  pvst::compute_pst(s);
+  //pst_.print_dot(true);
 
+  tree::Tree pvst_ =  pvst::compute_pvst(v);
+  pvst_.print_dot(true);
+  
   return 0;
   
   u_graph::FlowGraph afg = u_graph::FlowGraph(t);

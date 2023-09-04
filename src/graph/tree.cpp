@@ -29,6 +29,8 @@ Vertex::Vertex(std::size_t id) :
   children(std::set<std::size_t>{}),
   is_valid_(true) {}
 
+
+  
 Vertex::Vertex(std::size_t id, std::size_t parent_id) :
   id(id),
   class_(core::constants::UNDEFINED_SIZE_T),
@@ -102,11 +104,28 @@ bool Tree::add_vertex(std::size_t parent_id, std::size_t id) {
   return true;
 }
 
+  
 bool Tree::add_vertex(
   std::size_t parent_id,
   std::size_t id,
   std::size_t eq_class
   ) {
+  // if the tree is empty, add a root, a tree is empty is parent id is
+  // undefined and id is 0 and vertices is empty
+  if (this->vertices.empty() && parent_id == core::constants::UNDEFINED_SIZE_T && id == 0) {
+	Vertex root = Vertex(id);
+	root.set_class(eq_class);
+	//this->vertices.push_back();
+	//this->vertices[0] = root;
+	this->vertices.push_back(root);
+	return true;
+  }
+
+  // if id is larger than the current size of the tree, resize the tree
+  if (id >= this->vertices.size()) {
+	this->vertices.resize(id + 1, Vertex());
+  }
+  
   // TODO: there's a logical error in the caller if the vertex is already in the tree
   //       should we throw an exception here?
   if (this->vertices[id].is_valid()) { return false;  }
@@ -115,6 +134,39 @@ bool Tree::add_vertex(
   return true;
 }
 
+bool Tree::add_vertex(
+  std::size_t parent_id,
+  std::size_t id,
+  std::size_t eq_class,
+   std::string& meta
+  ) {
+  // if the tree is empty, add a root, a tree is empty is parent id is
+  // undefined and id is 0 and vertices is empty
+  if (this->vertices.empty() && parent_id == core::constants::UNDEFINED_SIZE_T && id == 0) {
+	Vertex root = Vertex(id);
+	root.set_class(eq_class);
+	root.set_meta(std::move(meta));
+	//this->vertices.push_back();
+	//this->vertices[0] = root;
+	this->vertices.push_back(root);
+	return true;
+  }
+
+  // if id is larger than the current size of the tree, resize the tree
+  if (id >= this->vertices.size()) {
+	this->vertices.resize(id + 1, Vertex());
+  }
+  
+  // TODO: there's a logical error in the caller if the vertex is already in the tree
+  //       should we throw an exception here?
+  if (this->vertices[id].is_valid()) { return false;  }
+  this->vertices[id] = Vertex(id, parent_id, eq_class);
+  //this->vertices.at(id).set_meta(std::move(meta));
+  this->vertices[id].set_meta(std::move(meta));
+  this->vertices[parent_id].add_child(id);
+  return true;
+}
+  
 bool Tree::remove_vertex(std::size_t id) {
   if (!this->vertices[id].is_valid()) { return false; }
   std::size_t parent_id = this->vertices[id].get_parent();
@@ -128,7 +180,7 @@ std::set<std::size_t> const& Tree::get_children(std::size_t v) const {
 }
 
 std::size_t Tree::get_parent(std::size_t id) const {
-  std::size_t p= this->vertices.at(id).get_parent();
+  std::size_t p = this->vertices.at(id).get_parent();
   return p == core::constants::UNDEFINED_SIZE_T ? 0 : p;
 }
 
@@ -182,5 +234,8 @@ std::cout << "}" << std::endl;
 
 // TODO: should this be the number of valid vertices?
 std::size_t Tree::size() const { return this->vertices.size(); }
+
+bool Tree::empty() const { return this->vertices.size() == 0; }
+
 
 } // namespace tree

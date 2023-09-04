@@ -30,6 +30,7 @@ public:
   // --------------
   Vertex(); // a null vertex
   Vertex(std::size_t id); // root constructor sets the parent to a max value
+  //Vertex(std::size_t id, std::size_t eq_class); // root constructor sets the parent to a max value 
   Vertex(std::size_t id, std::size_t parent_id);
 
   // non-root vertex constructor
@@ -77,6 +78,7 @@ public:
   // TODO: deprecated
   bool add_vertex(std::size_t parent_id, std::size_t id);
   bool add_vertex(std::size_t parent_id, std::size_t id, std::size_t eq_class);
+  bool add_vertex(std::size_t parent_id, std::size_t id, std::size_t eq_class, std::string& meta);
 
   bool remove_vertex(std::size_t id);
 
@@ -93,6 +95,8 @@ public:
 
   // the number of vertices in the tree
   std::size_t size() const;
+
+  bool empty() const;
 
   // dot format output of the tree
   void print_dot(bool with_classes=false);
