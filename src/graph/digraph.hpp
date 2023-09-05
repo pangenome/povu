@@ -3,13 +3,16 @@
 
 #include <cstddef>
 #include <iostream>
+#include <string>
 #include <unordered_set>
 #include <set>
 #include <vector>
+#include <functional>
 
 #include "../core/core.hpp"
 
-#include <handlegraph/mutable_handle_graph.hpp>
+#include <handlegraph/handle_graph.hpp>
+//#include <handlegraph/mutable_handle_graph.hpp>
 
 namespace digraph {
 
@@ -46,19 +49,34 @@ bool operator<(const Edge& lhs, const Edge& rhs);
 class Vertex {
   std::set<Edge> o;
   std::set<Edge> i;
+  std::string seq;
+  // todo: store a size_t ?
+  std::string handle; // name, id or handle lack of a handle means the vertex is invalid/unset
+
+  // TODO: add orientation
 
 public:
   Vertex();
+  Vertex(const std::string& sequence);
+  Vertex(const std::string& sequence, const handlegraph::nid_t& id);
 
   std::set<Edge> const& out() const;
   std::set<Edge> const& in() const;
 
+  std::string const& get_seq() const;
+  std::string const& get_handle() const;
+
+  
   std::set<Edge>* out_mut ();
   std::set<Edge>* in_mut();
 
   void add_out(std::size_t self_idx, std::size_t to_idx, core::color c);
   void add_in(std::size_t from_idx, std::size_t self_idx, core::color c);
 
+  //void set_seq(std::string& s);
+  //void set_handle(std::string&& h);
+
+  
   bool is_leaf() const;
 };
 
@@ -68,47 +86,70 @@ public:
  */
 
 // TODO: handle the case of disconnected components
-class DiGraph {
+class DiGraph : public handlegraph::HandleGraph {
   std::vector<Vertex> adj; // adjacency list to store edges
-  std::set<std::size_t> start_nodes;
-  std::set<std::size_t> end_nodes;
+  
+  // nodes which have no incoming edges and no outgoing edges do are not yet handled/stored
+  std::set<std::size_t> start_nodes; // nodes with no incoming edges
+  std::set<std::size_t> end_nodes; // nodes with no outgoing edges
 
 public:
 
-  //
-  // ------------
+  // HandleGraph
+  // -----------
 
-  // add a sequence to the end of the graph
-  // increment the size of the graph by 1
+  bool has_node(handlegraph::nid_t node_id) const;
+
+  // returns the node_id as a handle
+  // TODO: not applicable, make applidable
+  handlegraph::handle_t get_handle(const handlegraph::nid_t& node_id,
+								   bool is_reverse = false) const;
+
+  handlegraph::nid_t get_id(const handlegraph::handle_t& handle) const;
+
+  // FIXME: always returns false for now
+  bool get_is_reverse(const handlegraph::handle_t& handle) const;
+
+  // since vertex doesn't have orientation yet this is useless and just returns the handle
+  handlegraph::handle_t flip(const handlegraph::handle_t& handle) const;
+
+  /// Get the length of a node
+  // TODO: not applicable, make applidable
+  size_t get_length(const handlegraph::handle_t& handle) const;
+
+  std::string get_sequence(const handlegraph::handle_t& handle) const;
+
+  std::size_t get_node_count() const;
+
+  handlegraph::nid_t min_node_id() const;
+
+  handlegraph::nid_t max_node_id() const;
+
+ // TODO: implement
+ bool follow_edges_impl(const handlegraph::handle_t& handle,
+						bool go_left,
+						const std::function<bool(const handlegraph::handle_t&)>& iteratee) const;
+
+
+  // TODO: implement
+  bool for_each_handle_impl(const std::function<bool(const handlegraph::handle_t&)>& iteratee,
+							bool parallel = false) const;
+
+
+  // MutableHandleGraph
+  // ------------------
+  // TODO: not yet fully implements MutableHandleGraph
+
+  // adds a sequence to the end of the graph
   handlegraph::handle_t create_handle(const std::string& sequence);
 
-  handlegraph::handle_t create_handle(const std::string& sequence,
-									  const handlegraph::nid_t& id);
+  handlegraph::handle_t create_handle(const std::string& sequence, const handlegraph::nid_t& id);
 
+  // the second arg is expected to be a string castable into size_t
+  //handlegraph::handle_t create_handle(const std::string& sequence, const std::string const& name);
 
-  /// Create an edge connecting the given handles in the given order and orientations.
-  /// Ignores existing edges.
-  void create_edge(const handlegraph::handle_t& left,
-				   const handlegraph::handle_t& right);
-
-
-  handlegraph::handle_t apply_orientation(const handlegraph::handle_t& handle);
-
-  std::vector<handlegraph::handle_t>
-  divide_handle(const handlegraph::handle_t& handle, const std::vector<std::size_t>& offsets);
-
-  void optimize(bool allow_id_reassignment = true);
-
-
-  bool apply_ordering(const std::vector<handlegraph::handle_t>& order, bool compact_ids = false);
-
-  void set_id_increment(const handlegraph::nid_t& min_id);
-
-  void increment_node_ids(handlegraph::nid_t increment);
+  void create_edge(const handlegraph::handle_t& left, const handlegraph::handle_t& right);
   
-  void increment_node_ids(long increment);
-    
-  void reassign_node_ids(const std::function<handlegraph::nid_t(const handlegraph::nid_t&)>& get_new_id);
   
   // constructor(s)
   // --------------
@@ -131,6 +172,9 @@ public:
   // -------
   void add_start_node(std::size_t idx);
   void add_stop_node(std::size_t idx);
+
+  void compute_start_nodes();
+  void compute_stop_nodes();
 
   Vertex& get_vertex_mut(std::size_t idx);
 

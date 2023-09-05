@@ -4,8 +4,10 @@
 #include <iostream>
 #include <set>
 #include <stack>
+#include <string>
 #include <vector>
-
+#include <functional>
+// #include <cstring>
 
 #include "./digraph.hpp"
 
@@ -31,19 +33,43 @@ bool Edge::is_black() const { return this->c == core::color::black; }
 void Edge::set_to(std::size_t t) { this->t = t; }
 void Edge::set_from(std::size_t f) { this->frm = f; }
 
-
+// TODO: decouple internal graph rep with handlegraph ideas and names
 /*
  * Vertex
  * ------
  */
-Vertex::Vertex() : o(std::set<Edge>{}), i(std::set<Edge>{}) {};
+Vertex::Vertex() : o(std::set<Edge>{}),
+				   i(std::set<Edge>{}),
+				   seq(std::string{}),
+				   handle(std::string{})
+  {};
 
+Vertex::Vertex(const std::string& sequence, const handlegraph::nid_t& id) :
+  o(std::set<Edge>{}),
+  i(std::set<Edge>{}),
+  seq(sequence),
+  handle(std::to_string(id))
+{};
+  
+Vertex::Vertex(const std::string& sequence) :
+  o(std::set<Edge>{}),
+  i(std::set<Edge>{}),
+  seq(sequence),
+  handle(std::string{})
+{};
+
+  
 std::set<Edge> const& Vertex::out() const { return this->o; }
 std::set<Edge> const& Vertex::in() const { return this->i; }
 
 std::set<Edge>* Vertex::out_mut() { return &this->o; }
 std::set<Edge>* Vertex::in_mut() { return &this->i; }
 
+//void Vertex::set_seq(std::string&& s) { this->seq = s;  }
+//void Vertex::set_handle(std::string&& h) { this->handle = h; }
+  
+std::string const& Vertex::get_seq() const { return this->seq; }
+std::string const& Vertex::get_handle() const { return this->handle; }
 
 // TODO: not use zero
 void Vertex::add_out(std::size_t self_idx, std::size_t to_idx, core::color c) {
@@ -61,70 +87,102 @@ bool Vertex::is_leaf() const { return this->out().empty(); }
 
 // handlegraph
 
+bool DiGraph::has_node(handlegraph::nid_t node_id) const {
+		return node_id < this->size();
+}
+
+handlegraph::handle_t DiGraph::get_handle(const handlegraph::nid_t& node_id, bool is_reverse) const {
+  handlegraph::handle_t h;
+
+  std::snprintf(h.data, sizeof(h.data), "%d", node_id);
+  
+  //handle.data = std::to_string(node_id).c_str();
+
+  return h;
+}
+
+handlegraph::nid_t DiGraph::get_id(const handlegraph::handle_t& handle) const {
+  return std::stoi(handle.data);
+}
+
+bool DiGraph::get_is_reverse(const handlegraph::handle_t& handle) const {
+  return false;
+}
+  
+handlegraph::handle_t DiGraph::flip(const handlegraph::handle_t& handle) const {
+	return handle;
+}
+
+size_t DiGraph::get_length(const handlegraph::handle_t& handle) const {
+  return 0;	
+}
+
+std::string DiGraph::get_sequence(const handlegraph::handle_t& handle) const {
+	return "";
+}
+
+std::size_t DiGraph::get_node_count() const {
+	return this->size();
+}
+
+handlegraph::nid_t DiGraph::min_node_id() const {
+  	return 0;
+}
+
+handlegraph::nid_t DiGraph::max_node_id() const {
+  	return 0;
+}
+
+bool DiGraph::follow_edges_impl(const handlegraph::handle_t& handle,
+					   bool go_left,
+					   const std::function<bool(const handlegraph::handle_t&)>& iteratee) const {
+  return false;
+}
+
+
+bool DiGraph::for_each_handle_impl(const std::function<bool(const handlegraph::handle_t&)>& iteratee,
+						  bool parallel) const {
+		return false;
+  }
+ 
+// MutableHandleGraph
+// ------------------
 handlegraph::handle_t DiGraph::create_handle(const std::string& sequence) {
-  this->create_handle(sequence, this->adj.size());
+  handlegraph::handle_t h;
+
+  //std::cout << "creating: " << sequence << this->size() << std::endl;
+
+  std::snprintf(h.data, sizeof(h.data), "%ld", this->size());
+
+
+  //std::cout << "creating: " << sequence << " size "<< this->size() << std::endl;
+  this->adj.push_back(Vertex(sequence, this->size()));
+
+  //std::cout << "pushed\n";
+  return h;
 }
 
 handlegraph::handle_t DiGraph::create_handle(const std::string& sequence, const handlegraph::nid_t& id) {
-  // we expect id to be equal to the end of the vector
 
-  handlegraph::handle_t h;
+  std::size_t id_ = id;
   
-  if (id == this->size()) {
+  if (id < this->size()) {
+	throw std::invalid_argument("id is less than size");
+  }
+
+  //std::cout << "creating: " << this->size() << " " << id_ << std::endl;
+  
+  // pad with empty vertices until we reach the id
+  for (std::size_t i = this->size(); i < id_ - 1; i++) {
 	this->adj.push_back(Vertex());
   }
-  else if (id > this->adj.size()) {
-	//this->adj.resize(id + 1);
-  }
-  else {
-	// TODO: throw an error because this edge exists
-	// TODO: check if already exists
-  }
-  //this->adj.push_back(Vertex());
-  //Vertex()
-  //this->create_handle(sequence, this->adj.size());
 
-  return h;
+  return create_handle(sequence);
 }
 
 void DiGraph::create_edge(const handlegraph::handle_t& left, const handlegraph::handle_t& right) {
-  std::size_t l_value = std::stoul(left.data);
-  std::size_t r_value = std::stoul(right.data);
-
-  this->add_edge(l_value, r_value, core::color::black);
+  this->add_edge(std::stoll(left.data), std::stoll(right.data));
 }
-
-// FIXME: does this work in our context?
-handlegraph::handle_t DiGraph::apply_orientation(const handlegraph::handle_t& handle){
-  handlegraph::handle_t h;
-  return h;
-}
-
-std::vector<handlegraph::handle_t>
-DiGraph::divide_handle(const handlegraph::handle_t& handle, const std::vector<std::size_t>& offsets) {
-	std::vector<handlegraph::handle_t> handles;
-	return handles;
-}
-
-void DiGraph::optimize(bool allow_id_reassignment) {
-	return;
-}
-
-bool DiGraph::apply_ordering(const std::vector<handlegraph::handle_t>& order, bool compact_ids) {
-  	return false;
-}
-
-void DiGraph::set_id_increment(const handlegraph::nid_t& min_id) {
-	return;
-}
-
-void DiGraph::increment_node_ids(handlegraph::nid_t increment) {
-	
-}
-  
-void DiGraph::increment_node_ids(long increment) {}
-    
-void DiGraph::reassign_node_ids(const std::function<handlegraph::nid_t(const handlegraph::nid_t&)>& get_new_id) {}
   
 // constructor(s)
 // --------------
@@ -147,6 +205,22 @@ void DiGraph::add_stop_node(std::size_t idx) {
   this->end_nodes.insert(idx);
 }
 
+void DiGraph::compute_start_nodes() {
+  for (std::size_t i = 0; i < this->size(); i++) {
+	if (this->get_vertex(i).in().empty() && !this->get_vertex(i).out().empty()) {
+	  this->add_start_node(i);
+	}
+  }
+}
+
+void DiGraph::compute_stop_nodes() {
+  for (std::size_t i = 0; i < this->size(); i++) {
+	if (this->get_vertex(i).out().empty() && !this->get_vertex(i).in().empty()) {
+	  this->add_stop_node(i);
+	}
+  }
+}
+  
 Vertex const& DiGraph::get_vertex(std::size_t idx) const {
   return this->adj.at(idx);
 }
