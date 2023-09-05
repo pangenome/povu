@@ -33,16 +33,20 @@ add_subdirectory(
 
 ADD_LIBRARY(LibsModule
   # io
-  src/io/gfa.cpp
+  src/io/gfa_to_digraph.cpp
   # graph
   src/graph/tree.cpp
   src/graph/u_graph.cpp
   src/graph/digraph.cpp
   src/graph/spanning_tree.cpp
   # 
-  src/vst/vst.cpp
-  src/vst/pst.cpp
+  #src/vst/vst.cpp
+  #src/vst/pst.cpp
   src/pvst/pvst.cpp
+  src/pst/pst.cpp
+
+  # algorithms
+  src/algorithms/cycle_equiv.cpp
 )
 
 #include_directories(

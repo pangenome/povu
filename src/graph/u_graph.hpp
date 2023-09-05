@@ -135,10 +135,6 @@ public:
   // constructor(s)
   // --------------
 
-
-  // CFG();
-  // TODO: from gfa
-  // CFG(std::size_t initial_len=2); // from di graph or from gfa
   FlowGraph(std::size_t initial_len=2);
   FlowGraph(digraph::DiGraph const& di_graph);
   FlowGraph(spanning_tree::Tree& t);
