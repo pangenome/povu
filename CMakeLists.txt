@@ -1,4 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
+#set(CMAKE_C_COMPILER "gcc")
+#set(CMAKE_CXX_COMPILER "g++")
+
 project(domibubble)
 
 # GoogleTest requires at least C++14
@@ -25,6 +28,8 @@ else()
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # Include libhandlegraph library
 add_subdirectory(
 # deps/gfakluge
@@ -44,6 +49,9 @@ ADD_LIBRARY(LibsModule
   #src/vst/pst.cpp
   src/pvst/pvst.cpp
   src/pst/pst.cpp
+  # genomics
+  src/genomics/variant_calling.cpp
+    src/genomics/vcf.cpp
 
   # algorithms
   src/algorithms/cycle_equiv.cpp
@@ -65,6 +73,7 @@ include_directories(
 set(SOURCE_FILES
   src/main.cpp
 )
+
 
 
 # source

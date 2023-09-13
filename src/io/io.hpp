@@ -1,5 +1,6 @@
 #include "../graph/digraph.hpp"
+#include <string>
 
 namespace io {
-  void gfa_to_digraph(char* filename, digraph::DiGraph* dg);
+  digraph::DiGraph gfa_to_digraph(const char* filename);
 } // namespace io

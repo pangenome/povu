@@ -1,4 +1,5 @@
 
+#include <cassert>
 #include <cstddef>
 #include <iostream>
 #include <limits>
@@ -15,6 +16,8 @@
 
 #include "../graph/digraph.hpp"
 #include "./io.hpp"
+
+namespace hg = handlegraph;
 
 namespace io {
 /**
@@ -43,6 +46,10 @@ std::map<char, uint64_t> gfa_line_counts(const char* filename) {
   return counts;
 }
 
+// from odgi
+
+//const std::size_t THREAD_COUNT = 4;
+
 // TODO:
 // - what about nodes without incoming or outgoing edges?
 /**
@@ -52,12 +59,18 @@ std::map<char, uint64_t> gfa_line_counts(const char* filename) {
  * @param[in] filename The GFA file to read.
  * @param[out] dg The DiGraph to read into.
  */
-void gfa_to_digraph(char* filename, digraph::DiGraph* dg) {
+  digraph::DiGraph gfa_to_digraph(const char* filename) {
   gfak::GFAKluge gg = gfak::GFAKluge();
   gg.parse_gfa_file(filename);
 
-  // scan over the file to count edges and sequences in parallel
-  // -----------------------------------------------------------
+  /*
+    Preprocess the GFA
+    ------------------
+
+	scan over the file to count edges and sequences in parallel
+  */
+
+
   std::map<char, uint64_t> line_counts;
   std::size_t min_id = std::numeric_limits<uint64_t>::max();
   std::size_t max_id = std::numeric_limits<uint64_t>::min();
@@ -76,20 +89,46 @@ void gfa_to_digraph(char* filename, digraph::DiGraph* dg) {
 	x.join();
   }
 
+  std::cout << "min_id: " << min_id << " max_id: " << max_id << std::endl;
+
   std::size_t node_count = line_counts['S'];
   std::size_t edge_count = line_counts['L'];
   std::size_t path_count = line_counts['P'];
 
+
+  /*
+	Build the digraph 
+	-----------------
+	  
+  */
+  
+  // compute max nodes by difference between max and min ids
+  std::size_t max_nodes = max_id - min_id + 1;
+
+  digraph::DiGraph dg(max_nodes, path_count);
+
+  // we want to start counting from 0 so we have to have an offset_value which would subtruct from the min_id
+  // this is because the input graph is not guaranteed to start from 0
+  // so we have to make sure that the graph starts from 0 as is the digraph
+    
+  std::size_t offset_value = min_id;
+  std::cout << "offset_value: " << offset_value << std::endl;
+	
   // add nodes
   // ---------
   {
 	gg.for_each_sequence_line_in_file(
 	  filename,
 	  [&](const gfak::sequence_elem& s) {
-		dg->create_handle(s.sequence, std::stoll(s.name));
+		dg.create_handle(s.sequence, std::stoll(s.name) - offset_value);
 	  });
   }
 
+  assert(dg.size() == node_count);
+
+  std::cout << "Nodes added "
+			<< " Graph size: " << dg.size() << std::endl;
+  
   // add edges
   // ---------
   {
@@ -98,15 +137,51 @@ void gfa_to_digraph(char* filename, digraph::DiGraph* dg) {
 	  [&](const gfak::edge_elem& e) {
 		if (e.source_name.empty()) return;
 		// TODO: is this not pointless computation for the sake of following the libhandlegraph the API?
-		handlegraph::handle_t a = dg->get_handle(stoll(e.source_name), !e.source_orientation_forward);
-		handlegraph::handle_t b = dg->get_handle(stoll(e.sink_name), !e.sink_orientation_forward);
-		dg->create_edge(a, b);
+		hg::handle_t a =
+		  dg.get_handle(stoll(e.source_name) - offset_value,
+						 !e.source_orientation_forward);
+		hg::handle_t b =
+		  dg.get_handle(stoll(e.sink_name) - offset_value,
+						 !e.sink_orientation_forward);
+		dg.create_edge(a, b);
 	  });	
   }
 
-  dg->compute_start_nodes();
-  dg->compute_stop_nodes();
+  std::cout << "Edges added "
+			<< " Graph size: " << dg.size() << std::endl;
 
+
+  // add paths
+  // ---------
+  // do this by associating each node with a path
+  if (path_count > 0) {
+	gg.for_each_path_line_in_file(
+	  filename,
+	  [&](const gfak::path_elem& path) {
+		handlegraph::path_handle_t p_h = dg.create_path_handle(path.name);
+		
+		for (auto& s : path.segment_names) {
+		  handlegraph::nid_t id = std::stoull(s) - offset_value;
+		  // this can be done through handle but this is preferable in my case
+		  digraph::Vertex& v = dg.get_vertex_mut(id);
+
+		  if (v.set_path(std::stoll(p_h.data)) < 0) {
+			std::cout << "error setting path" << std::endl;
+		  }
+
+		}
+
+	  });
+  }
+
+  std::cout << "Paths added "
+			<< " Graph size: " << dg.size() << std::endl;
+
+
+  dg.compute_start_nodes();
+  dg.compute_stop_nodes();
+
+  return dg;
 
 }
   

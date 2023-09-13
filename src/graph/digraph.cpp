@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cstddef>
+#include <cstring>
 #include <format>
 #include <iostream>
 #include <set>
@@ -11,7 +12,16 @@
 
 #include "./digraph.hpp"
 
+namespace hg = handlegraph;
+
 namespace digraph {
+
+
+// impl < for path_t
+// bool operator<(const digraph::path_t& lhs, const digraph::path_t& rhs) {
+//   return std::make_tuple(lhs.name, lhs.id) < std::make_tuple(rhs.name, rhs.id);
+// }
+
 /*
  * Edge
  * ----
@@ -22,7 +32,7 @@ Edge::Edge(std::size_t frm, std::size_t to, core::color c) : frm(frm), t(to), c(
 // implement operator< for Edge
 bool operator<(const Edge& lhs, const Edge& rhs) {
   return std::make_tuple(lhs.from(), lhs.to(), lhs.get_color()) <
-    std::make_tuple(rhs.from(), rhs.to(), rhs.get_color());
+	std::make_tuple(rhs.from(), rhs.to(), rhs.get_color());
 }
 
 std::size_t Edge::to() const { return this->t; }
@@ -38,27 +48,31 @@ void Edge::set_from(std::size_t f) { this->frm = f; }
  * Vertex
  * ------
  */
-Vertex::Vertex() : o(std::set<Edge>{}),
-				   i(std::set<Edge>{}),
-				   seq(std::string{}),
-				   handle(std::string{})
+Vertex::Vertex() :
+  o(std::set<Edge>{}),
+  i(std::set<Edge>{}),
+  seq(std::string{}),
+  handle(std::string{}),
+  paths(std::set<std::size_t>{})
   {};
 
 Vertex::Vertex(const std::string& sequence, const handlegraph::nid_t& id) :
   o(std::set<Edge>{}),
   i(std::set<Edge>{}),
   seq(sequence),
-  handle(std::to_string(id))
+  handle(std::to_string(id)),
+  paths(std::set<std::size_t>{})
 {};
-  
+
 Vertex::Vertex(const std::string& sequence) :
   o(std::set<Edge>{}),
   i(std::set<Edge>{}),
   seq(sequence),
-  handle(std::string{})
+  handle(std::string{}),
+  paths(std::set<std::size_t>{})
 {};
 
-  
+
 std::set<Edge> const& Vertex::out() const { return this->o; }
 std::set<Edge> const& Vertex::in() const { return this->i; }
 
@@ -67,9 +81,16 @@ std::set<Edge>* Vertex::in_mut() { return &this->i; }
 
 //void Vertex::set_seq(std::string&& s) { this->seq = s;  }
 //void Vertex::set_handle(std::string&& h) { this->handle = h; }
-  
+
 std::string const& Vertex::get_seq() const { return this->seq; }
 std::string const& Vertex::get_handle() const { return this->handle; }
+
+int Vertex::set_path(std::size_t p_id) {
+  if (this->handle == "" || this->seq == "" ) { return 1; }
+
+  this->paths.insert(p_id);
+  return 0;
+}
 
 // TODO: not use zero
 void Vertex::add_out(std::size_t self_idx, std::size_t to_idx, core::color c) {
@@ -79,6 +100,8 @@ void Vertex::add_in(std::size_t from_idx, std::size_t self_idx, core::color c) {
   this->i.insert(Edge(from_idx, self_idx, c));
 };
 bool Vertex::is_leaf() const { return this->out().empty(); }
+
+
 
 /*
  * DiGraph
@@ -91,11 +114,12 @@ bool DiGraph::has_node(handlegraph::nid_t node_id) const {
 		return node_id < this->size();
 }
 
-handlegraph::handle_t DiGraph::get_handle(const handlegraph::nid_t& node_id, bool is_reverse) const {
+handlegraph::handle_t DiGraph::get_handle(const handlegraph::nid_t& node_id,
+										  bool is_reverse) const {
   handlegraph::handle_t h;
 
-  std::snprintf(h.data, sizeof(h.data), "%d", node_id);
-  
+  std::snprintf(h.data, sizeof(h.data), "%lld", node_id);
+
   //handle.data = std::to_string(node_id).c_str();
 
   return h;
@@ -108,13 +132,13 @@ handlegraph::nid_t DiGraph::get_id(const handlegraph::handle_t& handle) const {
 bool DiGraph::get_is_reverse(const handlegraph::handle_t& handle) const {
   return false;
 }
-  
+
 handlegraph::handle_t DiGraph::flip(const handlegraph::handle_t& handle) const {
 	return handle;
 }
 
 size_t DiGraph::get_length(const handlegraph::handle_t& handle) const {
-  return 0;	
+  return 0;
 }
 
 std::string DiGraph::get_sequence(const handlegraph::handle_t& handle) const {
@@ -126,11 +150,11 @@ std::size_t DiGraph::get_node_count() const {
 }
 
 handlegraph::nid_t DiGraph::min_node_id() const {
-  	return 0;
+	return 0;
 }
 
 handlegraph::nid_t DiGraph::max_node_id() const {
-  	return 0;
+	return 0;
 }
 
 bool DiGraph::follow_edges_impl(const handlegraph::handle_t& handle,
@@ -144,36 +168,35 @@ bool DiGraph::for_each_handle_impl(const std::function<bool(const handlegraph::h
 						  bool parallel) const {
 		return false;
   }
- 
+
 // MutableHandleGraph
 // ------------------
 handlegraph::handle_t DiGraph::create_handle(const std::string& sequence) {
   handlegraph::handle_t h;
 
   //std::cout << "creating: " << sequence << this->size() << std::endl;
-
   std::snprintf(h.data, sizeof(h.data), "%ld", this->size());
-
 
   //std::cout << "creating: " << sequence << " size "<< this->size() << std::endl;
   this->adj.push_back(Vertex(sequence, this->size()));
+
+  //std::cout << "creating: " << sequence << " size "<< this->size() << std::endl;
 
   //std::cout << "pushed\n";
   return h;
 }
 
 handlegraph::handle_t DiGraph::create_handle(const std::string& sequence, const handlegraph::nid_t& id) {
-
   std::size_t id_ = id;
-  
+
   if (id < this->size()) {
 	throw std::invalid_argument("id is less than size");
   }
 
-  //std::cout << "creating: " << this->size() << " " << id_ << std::endl;
-  
+  std::cout << "creating: " << this->size() << " " << id_ << std::endl;
+
   // pad with empty vertices until we reach the id
-  for (std::size_t i = this->size(); i < id_ - 1; i++) {
+  for (std::size_t i = this->size(); i < id_; i++) {
 	this->adj.push_back(Vertex());
   }
 
@@ -183,17 +206,62 @@ handlegraph::handle_t DiGraph::create_handle(const std::string& sequence, const 
 void DiGraph::create_edge(const handlegraph::handle_t& left, const handlegraph::handle_t& right) {
   this->add_edge(std::stoll(left.data), std::stoll(right.data));
 }
-  
+
+handlegraph::path_handle_t DiGraph::create_path_handle(const std::string& name,
+											  bool is_circular) {
+  handlegraph::path_handle_t h;
+  std::size_t path_id = this->paths.size();
+  this->paths.push_back(path_t({name, path_id}));
+
+  strncpy(h.data, std::to_string(path_id).c_str(), sizeof(h.data));
+
+  //std::snprintf(h.data, sizeof(h.data), "%uld", this->size());
+  return h;
+}
+
+handlegraph::path_handle_t
+DiGraph::rename_path(const handlegraph::path_handle_t& path_handle,
+					 const std::string& new_name) {
+  // extract path id from path_handle
+  std::size_t path_id = std::stoll(path_handle.data);
+  this->paths[path_id].name = new_name;
+  return path_handle;
+}
+
+
+
+//void DiGraph::add_path(const std::string& name) {
+//  this->paths.insert(name);
+//}
+
 // constructor(s)
 // --------------
-DiGraph::DiGraph() : adj(std::vector<Vertex>{}) {};
-DiGraph::DiGraph(std::size_t size) : adj(std::vector<Vertex>{}) {
+DiGraph::DiGraph()
+  : adj(std::vector<Vertex>{}),
+	paths(std::vector<path_t>{})
+{}
+
+DiGraph::DiGraph(std::size_t size)
+  : adj(std::vector<Vertex>{}),
+	paths(std::vector<path_t>{})
+{
   adj.reserve(size);
 }
+
+DiGraph::DiGraph(std::size_t size, std::size_t path_count)
+  : adj(std::vector<Vertex>{}),
+	paths(std::vector<path_t>{})
+{
+  adj.reserve(size);
+  paths.reserve(path_count);
+}
+
 DiGraph::DiGraph(std::set<std::size_t>&& start_nodes, std::set<std::size_t>&& stop_nodes)
   : adj(std::vector<Vertex>{}),
-    start_nodes(std::move(start_nodes)),
-    end_nodes(std::move(stop_nodes)) {};
+	start_nodes(std::move(start_nodes)),
+	end_nodes(std::move(stop_nodes)),
+	paths(std::vector<path_t>{})
+{}
 
 // getters
 // -------
@@ -220,7 +288,7 @@ void DiGraph::compute_stop_nodes() {
 	}
   }
 }
-  
+
 Vertex const& DiGraph::get_vertex(std::size_t idx) const {
   return this->adj.at(idx);
 }
@@ -244,9 +312,15 @@ void DiGraph::add_edge(std::size_t from, std::size_t to, core::color c) {
   std::size_t size = this->size();
   std::size_t max = std::max(from, to);
 
+
   // if the graph is not big enough, add empty vertices
+	// no throw an exception if the graph is too small
   for (std::size_t pos{size}; pos <= max; pos++) {
-    this->adj.push_back(Vertex());
+	// throw an out of range exception if the graph is too small
+	throw std::out_of_range("graph is too small");
+	//std::cout << "adding empty vertex\n";
+
+	this->adj.push_back(Vertex());
   }
 
   this->adj[from].add_out(from, to, c);
@@ -266,82 +340,82 @@ void DiGraph::add_edge(std::size_t from, std::size_t to, core::color c) {
  * node & n+1 is the second (or right) node
  */
 void DiGraph::biedge() {
- 
+
   for (std::size_t idx{}; idx < this->adj.size(); idx++) {
-    Vertex const& v = this->get_vertex(idx);
+	Vertex const& v = this->get_vertex(idx);
 
-    if (
-      (v.in().size() > 1 && v.out().size() > 1) ||
-      ((v.out().size() > 1) && v.in().begin()->is_black()) ||
-      ((v.in().size() > 1) && v.out().begin()->is_black())
-      )
-    {
+	if (
+	  (v.in().size() > 1 && v.out().size() > 1) ||
+	  ((v.out().size() > 1) && v.in().begin()->is_black()) ||
+	  ((v.in().size() > 1) && v.out().begin()->is_black())
+	  )
+	{
 
-      // duplicate the node (v_0) at idx
-      Vertex v_0 = this->adj[idx];
-      this->adj.insert(this->adj.begin() + idx, v_0);
+	  // duplicate the node (v_0) at idx
+	  Vertex v_0 = this->adj[idx];
+	  this->adj.insert(this->adj.begin() + idx, v_0);
 
-      Vertex& v1 = this->get_vertex_mut(idx);
-      Vertex& v2 = this->get_vertex_mut(idx+1);
+	  Vertex& v1 = this->get_vertex_mut(idx);
+	  Vertex& v2 = this->get_vertex_mut(idx+1);
 
-      v1.out_mut()->clear();
-      v2.in_mut()->clear();
+	  v1.out_mut()->clear();
+	  v2.in_mut()->clear();
 
-      this->add_edge(idx, idx+1, core::color::gray);
+	  this->add_edge(idx, idx+1, core::color::gray);
 
-      // increment all affected edges
-      for (std::size_t j{}; j < this->adj.size(); j++) {
+	  // increment all affected edges
+	  for (std::size_t j{}; j < this->adj.size(); j++) {
 
-        if (j == idx) {  continue; }
+		if (j == idx) {  continue; }
 
-        Vertex* v = &this->adj[j];
-        std::set<Edge>* in = v->in_mut();
-        std::set<Edge>* out = v->out_mut();
+		Vertex* v = &this->adj[j];
+		std::set<Edge>* in = v->in_mut();
+		std::set<Edge>* out = v->out_mut();
 
-        for (auto& e : *out) {
-          if (e.to() > idx) { const_cast<Edge&>(e).set_to(e.to() + 1); }
-        }
+		for (auto& e : *out) {
+		  if (e.to() > idx) { const_cast<Edge&>(e).set_to(e.to() + 1); }
+		}
 
-        for (auto& e : *in) {
-          if (e.from() > idx) { const_cast<Edge&>(e).set_from(e.from() + 1); }
-        }
-      }
+		for (auto& e : *in) {
+		  if (e.from() > idx) { const_cast<Edge&>(e).set_from(e.from() + 1); }
+		}
+	  }
 
-      // increment stop nodes
-      for (auto& n : this->end_nodes) {
-        if (n > idx) {
-          const_cast<std::size_t&>(n) = n + 1;
-        }
-      }
-    }
+	  // increment stop nodes
+	  for (auto& n : this->end_nodes) {
+		if (n > idx) {
+		  const_cast<std::size_t&>(n) = n + 1;
+		}
+	  }
+	}
   }
 }
 
 void DiGraph::print_dot() {
   std::cout << std::format(
-    "digraph G {{\n"
-    "\trankdir = TB;\n"
-    "\tnode[shape = circle];\n"
-    "\tedge [arrowhead=vee];\n"
+	"digraph G {{\n"
+	"\trankdir = TB;\n"
+	"\tnode[shape = circle];\n"
+	"\tedge [arrowhead=vee];\n"
   );
 
   for (auto n: this->starts()) {
-    std::cout << std::format("\t{} [color=\"green\"];\n", n);
+	std::cout << std::format("\t{} [color=\"green\"];\n", n);
   }
 
   for (auto n: this->stops()) {
-    std::cout << std::format("\t{} [color=\"blue\"];\n", n);
+	std::cout << std::format("\t{} [color=\"blue\"];\n", n);
   }
 
   for (std::size_t i{}; i < this->size(); i++) {
-    // for each outgoing vertex
-    for (auto o : this->get_vertex(i).out()) {
-      std::cout << std::format("\t{} -> {} [color=\"{}\"];\n",
-                               i,
-                               o.to(),
-                               (o.get_color() == core::color::black ? "black" : "gray")
-        );
-    }
+	// for each outgoing vertex
+	for (auto o : this->get_vertex(i).out()) {
+	  std::cout << std::format("\t{} -> {} [color=\"{}\"];\n",
+							   i,
+							   o.to(),
+							   (o.get_color() == core::color::black ? "black" : "gray")
+		);
+	}
   }
   std::cout << "}" << std::endl;
 }

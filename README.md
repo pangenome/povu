@@ -1,3 +1,9 @@
-# domibubble
+Input GFA
 
-Sketch of a bubble detection algorithm based on dominator trees.
+Expect a sorted graph
+Expect first node to have id 1
+
+
+cmake -H. -Bbuild
+cmake --build build -- -j 3 
+

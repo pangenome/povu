@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <iostream>
 #include <format>
 #include <limits>
@@ -51,6 +52,7 @@ Vertex::Vertex(std::size_t id, std::size_t parent_id, std::size_t eq_class) :
 // getters
 // -------
 bool Vertex::is_valid() const { return this->is_valid_; }
+std::size_t Vertex::get_id() const { return this->id; }
 std::size_t Vertex::get_class() const { return this->class_; }
 std::size_t Vertex::get_parent() const { return this->parent; }
 std::string Vertex::get_meta() const { return this->meta; }
@@ -175,6 +177,8 @@ bool Tree::remove_vertex(std::size_t id) {
   return true;
 }
 
+
+  
 std::set<std::size_t> const& Tree::get_children(std::size_t v) const {
   return this->vertices.at(v).get_children();
 }
@@ -184,6 +188,10 @@ std::size_t Tree::get_parent(std::size_t id) const {
   return p == core::constants::UNDEFINED_SIZE_T ? 0 : p;
 }
 
+Vertex const& Tree::get_root() const {
+  return this->vertices.at(  this->root_idx_);
+}
+  
 Vertex const& Tree::get_vertex(std::size_t id) const {
   return this->vertices.at(id);
 }

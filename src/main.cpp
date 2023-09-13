@@ -1,35 +1,88 @@
 #include <iostream>
+#include <string>
 
 #include "./io/io.hpp"
-#include "./algorithms/cycle_equiv.hpp"
-//#include "./vst/vst.hpp"
-//#include "./vst/pst.hpp"
-#include "./pvst/pvst.hpp"
 #include "./pst/pst.hpp"
+#include "./pvst/pvst.hpp"
 #include "./graph/tree.hpp"
 #include "./graph/digraph.hpp"
 #include "./graph/u_graph.hpp"
 #include "./graph/spanning_tree.hpp"
+#include "./algorithms/cycle_equiv.hpp"
+#include "./genomics/genomics.hpp"
 
+// TODO: remove
 #include "./example_graphs.hpp"
 
 
 bool DEBUG = true;
 
+
+
 int main() {
 
   // from a gfa file
   {
-	digraph::DiGraph dg;
-	io::gfa_to_digraph("/home/sluggie/src/phd/domibubble-cpp/deps/gfakluge/data/test.gfa", &dg);
-	dg.print_dot();
+	std::string filename = "./test_data/t2.gfa";
+	digraph::DiGraph dg = io::gfa_to_digraph(filename.c_str());
+
+	if (true) {
+	  std::cout << "[domibubble::main] Successfully read GFA\n";
+	  std::cout << "Graph properties:\n";
+	}
+
+	if (DEBUG) {
+	  std::cout << "\n\n" << "Di-Graph" << "\n\n";
+	  dg.print_dot();
+	}
 
 	u_graph::FlowGraph fg = u_graph::FlowGraph(dg);
 	if (DEBUG) {
 	  std::cout << "\n\n" << "Flow Graph" << "\n\n";
 	  fg.print_dot();
 	}
-  
+
+	spanning_tree::Tree t = fg.compute_spanning_tree();
+	if (DEBUG) {
+	  std::cout << "\n\n" << "Spanning tree" << "\n\n";
+	  t.print_dot();
+	}
+
+
+
+	algorithms::cycle_equiv(t);
+	if (DEBUG) {
+	  std::cout << "\n\n" << "Updated Spanning tree" << "\n\n";
+	  t.print_dot();
+	}
+
+
+	u_graph::FlowGraph afg = u_graph::FlowGraph(t);
+	if (DEBUG) {
+	  std::cout << "\n\n" << "Annotated Flow Graph" << "\n\n";
+	  afg.print_dot();
+	}
+
+
+	std::vector<std::tuple< size_t , size_t, size_t>> v;
+	std::vector<size_t> s;
+	t.cycles_vector(v, s);
+
+	tree::Tree pst_ =  pst::compute_pst(s);
+	if (DEBUG) {
+	  std::cout << "\n\n" << "PST" << "\n\n";
+	  pst_.print_dot(true);
+	}
+	
+	tree::Tree pvst_ =  pvst::compute_pvst(v);
+	if (DEBUG) {
+	  std::cout << "\n\n" << "PVST" << "\n\n";
+	  pvst_.print_dot(true);
+	}
+
+	// call variants
+	genomics::call_variants(pvst_, dg);
+	
 	return 0;
   }
   

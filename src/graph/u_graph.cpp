@@ -76,26 +76,35 @@ FlowGraph::FlowGraph(std::size_t initial_len) {
 
 FlowGraph::FlowGraph(digraph::DiGraph const& di_graph) {
   std::size_t size = di_graph.size();
-   
+
+  //std::cout << "size: " << size << std::endl;
+  
   // initialize the flow graph
   // with a dummy start and stop node and connect them
   std::vector<Vertex> d(size+2, Vertex());
   this->adj_list = std::move(d);
+  //std::cout << "size: " << this->adj_list.size() << std::endl;
+
+  std::size_t dummy_start_node_idx = 0;
+  std::size_t dummy_stop_node_idx = size+1;
+  std::size_t offset = 1;
+  
 
   std::size_t edge_idx = this->edges.size();
 
-  this->edges.push_back(u_graph::Edge{0, size + 1});
+  this->edges.push_back(u_graph::Edge{0, dummy_stop_node_idx});
 
   // connect start to end
-  this->adj_list[0].add_edge_idx(edge_idx, size + 1);
-  this->adj_list[size + 1].add_edge_idx(edge_idx, 0);
+  this->adj_list[0].add_edge_idx(edge_idx, dummy_stop_node_idx);
+  this->adj_list[dummy_stop_node_idx].add_edge_idx(edge_idx, 0);
 
    /*
     handle the start of the graph
    */
   // connect all digraph start nodes to flow graph dummy start node
   for (auto const& start_node : di_graph.starts()) {
-    this->set_start_node(start_node-1);
+	//std::cout << "start node" << start_node << std::endl;
+    this->set_start_node(start_node);
     continue;
 
     //edge_idx = this->edges.size();
@@ -120,8 +129,9 @@ FlowGraph::FlowGraph(digraph::DiGraph const& di_graph) {
 	}
 	
     for (auto const& edge : di_graph.get_vertex(i).out()) {
-	  this->add_edge(i, edge.to(), edge.get_color(),
-					 core::constants::UNDEFINED_INT, false);
+	  //std::cout <<"i: " << i << "edge: " << edge.to() << std::endl;
+	  // add_edge takes two default args: edge weight and inc
+	  this->add_edge(i, edge.to(), edge.get_color());
     }
   }
 
@@ -130,7 +140,8 @@ FlowGraph::FlowGraph(digraph::DiGraph const& di_graph) {
    */
   // connect all digraph end nodes to stop node
   for (auto const& stop_node : di_graph.stops()) {
-    this->set_stop_node(stop_node-1);
+	//std::cout << "stop node" << stop_node << std::endl;
+    this->set_stop_node(stop_node);
     continue;
 
     //edge_idx = this->edges.size();

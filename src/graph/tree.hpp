@@ -13,6 +13,8 @@ namespace tree {
 // ======
 
 class Vertex {
+  // TODO: make sure id is the same as the index in the di_graph or u_graph or have
+  // a way of mapping to the index
   std::size_t id; // allow negative ids?
   std::size_t class_; // equivalence class
 
@@ -40,6 +42,7 @@ public:
   // -------
   bool is_valid() const;
   std::set<std::size_t> const& get_children() const;
+  std::size_t get_id() const;
   std::size_t get_class() const;
   std::size_t get_parent() const;
   std::string get_meta() const;
@@ -85,6 +88,8 @@ public:
   // getters
   // -------
 
+  Vertex const& get_root() const;
+  
   // given the id of the vertex
   // returns the set of children of the vertex
   std::set<std::size_t> const& get_children(std::size_t id) const;
