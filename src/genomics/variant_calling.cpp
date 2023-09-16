@@ -1,4 +1,6 @@
+#include <cmath>
 #include <cstddef>
+#include <functional>
 #include <iostream>
 #include <stack>
 #include <queue>
@@ -16,6 +18,7 @@
 #include "../graph/tree.hpp"
 #include "../graph/digraph.hpp"
 #include "../core/constants.hpp"
+#include "../core/core.hpp"
 #include "./genomics.hpp"
 
 namespace genomics {
@@ -42,7 +45,7 @@ extract_canonical_flubbles(tree::Tree pvst_) {
 	current_vertex = q.front();
 	q.pop();
 
-	std::cout << "current vertex: " << current_vertex << std::endl;
+	//std::cout << "current vertex: " << current_vertex << std::endl;
 
 	std::set<std::size_t> const& children = pvst_.get_children(current_vertex);
 
@@ -71,20 +74,24 @@ extract_canonical_flubbles(tree::Tree pvst_) {
   }
 
   // loop over canonical subtrees and print
+  /*
   std::cout << "Canonical subtrees:" << std::endl;
   for (auto subtree: canonical_flubbles) {
 	std::cout << subtree.first << " " << subtree.second << std::endl;
   }
-
-  return canonical_flubbles;
+*/
+  
   // use canonical subtrees to make a vector of pairs of flubble starts and stops
   //std::vector<std::pair<std::size_t, std::size_t>> canonical_flubbles;
+  return canonical_flubbles;
 }
-
 
 std::vector<std::vector<std::size_t>>
 get_paths(std::size_t start, std::size_t stop, digraph::DiGraph dg) {
+  std::cout << "[genomics::get_paths]\n";
 
+  // std::cout << "start: " << start << " stop " << stop << std::endl;
+  
   // typedef std::vector<std::vector<std::size_t>> x;
   std::vector<std::vector<std::size_t>> paths;
 
@@ -98,7 +105,7 @@ get_paths(std::size_t start, std::size_t stop, digraph::DiGraph dg) {
   }
   
 
-  std::vector<std::size_t> path {9};
+  std::vector<std::size_t> path {start};
   //path.push_back(start);
   paths.push_back(path);
 
@@ -149,6 +156,7 @@ get_paths(std::size_t start, std::size_t stop, digraph::DiGraph dg) {
   }
 
   // print the content of paths_map at stop
+
   /*
   std::cout << "Final:\n";
   for (auto pp: paths_map[stop]) {
@@ -163,33 +171,77 @@ get_paths(std::size_t start, std::size_t stop, digraph::DiGraph dg) {
   return paths_map[stop];
 }
 
+void call_variants(
+  tree::Tree pvst_,
+  digraph::DiGraph dg,
+  core::config app_config) {
 
-  
-void call_variants(tree::Tree pvst_, digraph::DiGraph dg) {
+  std::cout << "[genomics::call_variants]" << std::endl;
+    
   //output_format of = output_format::VCF;
   std::vector<std::pair<std::size_t, std::size_t>> canonical_flubbles =
 	extract_canonical_flubbles(pvst_);
 
   // walk paths in the digraph
   // while looping over canonical_flubles
-
-  vcf::print_vcf_header();
   
-  for (auto c_flubble: canonical_flubbles) {
+  std::vector<std::vector<std::vector<std::size_t>>> all_paths;
+
+  // extract flubble paths
+    for (auto c_flubble: canonical_flubbles) {
+
+	  //std::cout << "canonical flubble: " << c_flubble.first << " " << c_flubble.second << std::endl;
+	
 	std::size_t offset = 1;
 	std::size_t start = c_flubble.first-offset;
 	std::size_t stop = c_flubble.second - offset;
 
 	//limited_dfs(start, stop, dg);
 	std::vector<std::vector<std::size_t>> paths = get_paths(start, stop, dg);
+	all_paths.push_back(paths);
 
-
-	vcf::print_vcf_variants(paths, dg);
-	//v.out();
   }
 
-}
+  // TODO: should this be in digraph?
+  std::map<std::string, std::size_t> paths_map; // path to id
 
+  for (auto p : dg.get_paths()) { paths_map[p.name] = p.id; }
+
+  // include the undefined reference
+  if (true) {
+	// add the undefined reference for flubbles that don't have the a reference
+	paths_map["undefined"] = core::constants::UNDEFINED_SIZE_T;
+	app_config.reference_paths.push_back("undefined");
+  }
+  
+   std::size_t ref_id{};
+ 
+   for (std::string ref_path : app_config.reference_paths) {
+
+	 std::cout << "\n\n";
+	 //std::cout << "ref_path: " << ref_path << std::endl;
+	 
+	ref_id =  paths_map[ref_path];
+	// TODO: move to print VCF
+	vcf::print_vcf_header(ref_path);
+
+	for (std::size_t i{0}; i < all_paths.size(); ++i) {
+	  std::vector<std::vector<std::size_t>> paths = all_paths[i];
+	  bool print_res  =
+		vcf::print_vcf(paths, dg, ref_path, ref_id);
+
+	  if (print_res) {
+		// delete the path from all_paths
+		all_paths.erase(all_paths.begin()+i);
+		--i;
+	  }
+	}
+
+	//for (auto paths: all_paths) {	  
+	//  vcf::print_vcf(paths, dg, ref_path, ref_id);
+	//}
+  }
+}
 
 } // namespace genomics
 

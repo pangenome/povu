@@ -39,6 +39,7 @@ add_subdirectory(
 ADD_LIBRARY(LibsModule
   # io
   src/io/gfa_to_digraph.cpp
+
   # graph
   src/graph/tree.cpp
   src/graph/u_graph.cpp
@@ -51,7 +52,7 @@ ADD_LIBRARY(LibsModule
   src/pst/pst.cpp
   # genomics
   src/genomics/variant_calling.cpp
-    src/genomics/vcf.cpp
+  src/genomics/vcf.cpp
 
   # algorithms
   src/algorithms/cycle_equiv.cpp

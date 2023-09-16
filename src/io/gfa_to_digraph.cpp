@@ -1,4 +1,4 @@
-
+#include <utility>
 #include <cassert>
 #include <cstddef>
 #include <iostream>
@@ -16,6 +16,7 @@
 
 #include "../graph/digraph.hpp"
 #include "./io.hpp"
+#include "handlegraph/types.hpp"
 
 namespace hg = handlegraph;
 
@@ -151,6 +152,13 @@ std::map<char, uint64_t> gfa_line_counts(const char* filename) {
 			<< " Graph size: " << dg.size() << std::endl;
 
 
+  // TODO: use handles?
+  //std::map<std::string, std::size_t> path_id_map;
+
+  //std::vector<std::vector<std::pair<std::size_t, std::size_t>>> path_spans;
+  
+  std::size_t path_pos{0};
+
   // add paths
   // ---------
   // do this by associating each node with a path
@@ -159,16 +167,45 @@ std::map<char, uint64_t> gfa_line_counts(const char* filename) {
 	  filename,
 	  [&](const gfak::path_elem& path) {
 		handlegraph::path_handle_t p_h = dg.create_path_handle(path.name);
+
+		//metadata.path_id_map[path.name] = path_counter++;
+
+		//auto x = std::vector<std::pair<std::size_t, std::size_t>>();
+		//x.reserve(path.segment_names.size());
+
+		//metadata.path_spans.push_back(x);
+
+		//std::vector<std::pair<std::size_t, std::size_t>>& curr_spans =
+		//metadata.path_spans.back();
+
+		path_pos = 0;
 		
 		for (auto& s : path.segment_names) {
+		  
 		  handlegraph::nid_t id = std::stoull(s) - offset_value;
+
+		  // TODO: go through the handle graph API		  
 		  // this can be done through handle but this is preferable in my case
 		  digraph::Vertex& v = dg.get_vertex_mut(id);
 
-		  if (v.set_path(std::stoll(p_h.data)) < 0) {
+		  //if (curr_spans.empty()) {
+		  //curr_spans.push_back(std::make_pair(0, v.get_seq().length()));
+		  //}
+		  //else {
+		  //	std::pair<std::size_t, std::size_t> prev =
+		  //  curr_spans.back();
+		  //std::pair<std::size_t, std::size_t> curr =
+		  //  std::make_pair(prev.second + prev.first, v.get_seq().length());
+			
+		  //curr_spans.push_back(curr);
+		  //}
+
+		  if (v.add_path(std::stoll(p_h.data), path_pos) < 0) {
 			std::cout << "error setting path" << std::endl;
 		  }
 
+		  path_pos += v.get_seq().length();
+		  //std::cout << "path_pos: " << path_pos << std::endl;
 		}
 
 	  });
@@ -176,7 +213,6 @@ std::map<char, uint64_t> gfa_line_counts(const char* filename) {
 
   std::cout << "Paths added "
 			<< " Graph size: " << dg.size() << std::endl;
-
 
   dg.compute_start_nodes();
   dg.compute_stop_nodes();

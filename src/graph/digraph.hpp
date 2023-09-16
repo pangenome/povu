@@ -69,7 +69,10 @@ class Vertex {
   // path ids
   // a path should be a more complex object (see odgi)
   // name of the path the vertex is in
-  std::set<std::size_t> paths;
+  // std::set<std::size_t> paths;
+  // path id and position in the path
+  std::set<std::pair<std::size_t, std::size_t>> paths; 
+
 
   // TODO: add orientation
 
@@ -96,9 +99,11 @@ public:
 
   // returns a positive value when the vertex is valid and the handle is set and
   // path was empty
-  int set_path(std::size_t p_id);
+  //int set_path(std::size_t p_id);
+  int add_path(std::size_t p_id, std::size_t p_pos);
 
-
+  std::set<std::pair<std::size_t, std::size_t>> const& get_paths() const;
+  
   bool is_leaf() const;
 };
 
@@ -115,6 +120,7 @@ class DiGraph : public handlegraph::HandleGraph {
   std::set<std::size_t> start_nodes; // nodes with no incoming edges
   std::set<std::size_t> end_nodes; // nodes with no outgoing edges
 
+  // should be a hash table?
   std::vector<path_t> paths; // names of the paths in the graph, does not enumerate the nodes in the paths
 
 public:
@@ -165,8 +171,12 @@ public:
    */
   void biedge();
 
+  
   void print_dot();
 
+
+  std::vector<path_t> const& get_paths() const;
+  
   /*
 	Library implementations
   */

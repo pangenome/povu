@@ -1,5 +1,7 @@
 #include <iostream>
 #include <string>
+#include <vector>
+#include <map>
 
 #include "./io/io.hpp"
 #include "./pst/pst.hpp"
@@ -13,9 +15,10 @@
 
 // TODO: remove
 #include "./example_graphs.hpp"
+#include "core/core.hpp"
 
 
-bool DEBUG = true;
+bool DEBUG = false;
 
 
 
@@ -23,7 +26,13 @@ int main() {
 
   // from a gfa file
   {
+	core::config app_config;
+	
 	std::string filename = "./test_data/t2.gfa";
+
+	app_config.add_reference_path("hap1");
+	app_config.add_reference_path("hap4");
+	
 	digraph::DiGraph dg = io::gfa_to_digraph(filename.c_str());
 
 	if (true) {
@@ -81,7 +90,7 @@ int main() {
 	}
 
 	// call variants
-	genomics::call_variants(pvst_, dg);
+	genomics::call_variants(pvst_, dg, app_config);
 	
 	return 0;
   }

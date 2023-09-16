@@ -6,6 +6,7 @@
 #include <set>
 #include <stack>
 #include <string>
+#include <utility>
 #include <vector>
 #include <functional>
 // #include <cstring>
@@ -53,7 +54,7 @@ Vertex::Vertex() :
   i(std::set<Edge>{}),
   seq(std::string{}),
   handle(std::string{}),
-  paths(std::set<std::size_t>{})
+  paths(std::set<std::pair<std::size_t, std::size_t>>{})
   {};
 
 Vertex::Vertex(const std::string& sequence, const handlegraph::nid_t& id) :
@@ -61,7 +62,7 @@ Vertex::Vertex(const std::string& sequence, const handlegraph::nid_t& id) :
   i(std::set<Edge>{}),
   seq(sequence),
   handle(std::to_string(id)),
-  paths(std::set<std::size_t>{})
+  paths(std::set<std::pair<std::size_t, std::size_t>>{})
 {};
 
 Vertex::Vertex(const std::string& sequence) :
@@ -69,7 +70,7 @@ Vertex::Vertex(const std::string& sequence) :
   i(std::set<Edge>{}),
   seq(sequence),
   handle(std::string{}),
-  paths(std::set<std::size_t>{})
+  paths(std::set<std::pair<std::size_t, std::size_t>>{})
 {};
 
 
@@ -85,11 +86,15 @@ std::set<Edge>* Vertex::in_mut() { return &this->i; }
 std::string const& Vertex::get_seq() const { return this->seq; }
 std::string const& Vertex::get_handle() const { return this->handle; }
 
-int Vertex::set_path(std::size_t p_id) {
+int Vertex::add_path(std::size_t p_id, std::size_t p_pos) {
   if (this->handle == "" || this->seq == "" ) { return 1; }
 
-  this->paths.insert(p_id);
+  this->paths.insert(std::make_pair(p_id, p_pos));
   return 0;
+}
+
+std::set<std::pair<std::size_t, std::size_t>> const& Vertex::get_paths() const {
+	return this->paths;
 }
 
 // TODO: not use zero
@@ -153,6 +158,8 @@ handlegraph::nid_t DiGraph::min_node_id() const {
 	return 0;
 }
 
+
+  
 handlegraph::nid_t DiGraph::max_node_id() const {
 	return 0;
 }
@@ -307,6 +314,10 @@ std::set<std::size_t> const& DiGraph::stops() const {
 
 std::size_t DiGraph::size() const { return this->adj.size(); }
 
+std::vector<path_t> const& DiGraph::get_paths() const { return this->paths; }
+
+// setters
+  
 void DiGraph::add_edge(std::size_t from, std::size_t to, core::color c) {
 
   std::size_t size = this->size();
