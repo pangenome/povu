@@ -60,10 +60,15 @@ std::map<char, uint64_t> gfa_line_counts(const char* filename) {
  * @param[in] filename The GFA file to read.
  * @param[out] dg The DiGraph to read into.
  */
-  digraph::DiGraph gfa_to_digraph(const char* filename) {
-  gfak::GFAKluge gg = gfak::GFAKluge();
-  gg.parse_gfa_file(filename);
+digraph::DiGraph gfa_to_digraph(const char* filename) {
 
+  std::cout << "[io::gfa_to_digraph]" << "\n";
+	
+  gfak::GFAKluge gg = gfak::GFAKluge();
+
+  std::cout << "he\n";
+  gg.parse_gfa_file(filename);
+  std::cout << "oe\n";
   /*
     Preprocess the GFA
     ------------------
@@ -140,10 +145,10 @@ std::map<char, uint64_t> gfa_line_counts(const char* filename) {
 		// TODO: is this not pointless computation for the sake of following the libhandlegraph the API?
 		hg::handle_t a =
 		  dg.get_handle(stoll(e.source_name) - offset_value,
-						 !e.source_orientation_forward);
+						!e.source_orientation_forward);
 		hg::handle_t b =
 		  dg.get_handle(stoll(e.sink_name) - offset_value,
-						 !e.sink_orientation_forward);
+						!e.sink_orientation_forward);
 		dg.create_edge(a, b);
 	  });	
   }
@@ -218,7 +223,6 @@ std::map<char, uint64_t> gfa_line_counts(const char* filename) {
   dg.compute_stop_nodes();
 
   return dg;
-
 }
   
 } // namespace io

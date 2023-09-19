@@ -12,7 +12,7 @@
 #include <utility>
 #include <ctime>
 #include <iomanip>
-
+#include <deque>
 
 #include "../pvst/pvst.hpp"
 #include "../graph/tree.hpp"
@@ -87,10 +87,10 @@ extract_canonical_flubbles(tree::Tree pvst_) {
 }
 
 std::vector<std::vector<std::size_t>>
-get_paths(std::size_t start, std::size_t stop, digraph::DiGraph dg) {
+get_paths_old(std::size_t start, std::size_t stop, digraph::DiGraph dg) {
   std::cout << "[genomics::get_paths]\n";
 
-  // std::cout << "start: " << start << " stop " << stop << std::endl;
+  //std::cout << "\t" << "start: " << start << " stop " << stop << std::endl;
   
   // typedef std::vector<std::vector<std::size_t>> x;
   std::vector<std::vector<std::size_t>> paths;
@@ -116,13 +116,13 @@ get_paths(std::size_t start, std::size_t stop, digraph::DiGraph dg) {
   for (std::size_t i{start+1}; i < stop+1; ++i) {
 	// get the vertex at index i
 
-	//std::cout << "\t" << "i: " << i << "\n";
+	std::cout << "\t" << "i: " << i << "\n";
 
 	digraph::Vertex const& v = dg.get_vertex(i);
 	  std::vector<std::vector<std::size_t>>	curr_paths;
 	  
 	for (auto adj: v.in()) {
-	  //std::cout << "\t\t" << "frm:" << adj.from() << "\n";
+	  std::cout << "\t\t" << "frm:" << adj.from() << "\n";
 	  std::vector<std::vector<std::size_t>>& in_paths = paths_map.at(adj.from());
 
 	  // there is a cycle
@@ -171,6 +171,126 @@ get_paths(std::size_t start, std::size_t stop, digraph::DiGraph dg) {
   return paths_map[stop];
 }
 
+  
+std::vector<std::vector<std::size_t>>
+get_paths(std::size_t start, std::size_t stop, digraph::DiGraph dg) {
+  std::cout << "[genomics::get_paths]\n";
+
+  //std::cout << "\t" << "start: " << start << " stop " << stop << std::endl;
+  
+  // typedef std::vector<std::vector<std::size_t>> x;
+  std::vector<std::vector<std::size_t>> paths;
+
+  // the paths leading up to key vertex
+  std::map<std::size_t, std::vector<std::vector<std::size_t>>> paths_map;
+
+  // nodes that are in the path leading to the key vertex
+  std::map<std::size_t, std::set<std::size_t>> in_path;
+  for (std::size_t i{start}; i < stop+1; ++i) {
+	in_path[i] = {};
+  }
+  
+
+  std::vector<std::size_t> path {start};
+  //path.push_back(start);
+  paths.push_back(path);
+
+  paths_map[start] = paths;
+
+  in_path[start].insert(start);
+
+  // push every vertex into a queue
+  // a queue of size_t
+  std::deque<std::size_t> q;
+  for (std::size_t i{start+1}; i < stop+1; ++i) {
+	q.push_back(i);
+  }
+
+  std::set<std::size_t> visited;
+  
+  while (!q.empty()) {
+	std::size_t i = q.front();
+
+	if (visited.count(i)) {
+	  q.pop_front();
+	  continue;
+	}
+
+	// get the vertex at index i
+	std::cout << "\t" << "i: " << i << "\n";
+
+	digraph::Vertex const& v = dg.get_vertex(i);
+
+	std::vector<std::vector<std::size_t>> curr_paths;
+
+	bool go_back{false};
+	
+	for (auto adj: v.in()) {
+	  std::cout << "\t\t" << "frm:" << adj.from() << "\n";
+
+	  // check whether adj.from() is in paths_map
+	  if (paths_map.find(adj.from()) == paths_map.end() ) {
+		// push from to queue and break
+		q.push_front(adj.from());
+		go_back = true;
+		break;
+	  }
+	  
+	  std::vector<std::vector<std::size_t>>& in_paths = paths_map.at(adj.from());
+
+	  // there is a cycle
+	  if (in_path[adj.from()].count(i) ) { continue; }
+
+	  for (std::vector<std::size_t>& p: in_paths) {
+		std::vector<std::size_t> p_ = p;
+		//curr_paths.push_back
+		p_.push_back(i);
+		curr_paths.push_back(p_);
+
+		// populate in_path
+		for (auto v: p_) {
+		  in_path[i].insert(v);
+		}
+		
+	  }
+	  /*
+	  std::cout << "\t\t" << "curr_paths: " << "\n" << "\t\t\t";
+	  for (auto p: curr_paths) {
+		for (auto v: p) {
+		  std::cout << v << " ";
+		}
+		std::cout << "\n";
+		}
+
+	  */
+	}
+
+	if (!go_back) {
+	  paths_map[i] = curr_paths;
+
+	  visited.insert(i);
+	}
+	
+	
+  }
+
+  
+  // print the content of paths_map at stop
+ 
+  /*
+  std::cout << "Final:\n";
+  for (auto pp: paths_map[stop]) {
+	for (auto p: pp) {
+	  std::cout << p << " ";
+	}
+	std::cout << "\n";
+  }
+  */
+  
+
+  return paths_map[stop];
+}
+
 void call_variants(
   tree::Tree pvst_,
   digraph::DiGraph dg,
@@ -188,9 +308,9 @@ void call_variants(
   std::vector<std::vector<std::vector<std::size_t>>> all_paths;
 
   // extract flubble paths
-    for (auto c_flubble: canonical_flubbles) {
+  for (auto c_flubble: canonical_flubbles) {
 
-	  //std::cout << "canonical flubble: " << c_flubble.first << " " << c_flubble.second << std::endl;
+	//std::cout << "canonical flubble: " << c_flubble.first << " " << c_flubble.second << std::endl;
 	
 	std::size_t offset = 1;
 	std::size_t start = c_flubble.first-offset;

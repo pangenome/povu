@@ -18,22 +18,15 @@
 #include "core/core.hpp"
 
 
-bool DEBUG = false;
+bool DEBUG = true;
 
-
-
-int main() {
-
+void do_flubble(core::config& app_config) {
+  
   // from a gfa file
   {
-	core::config app_config;
 	
-	std::string filename = "./test_data/t2.gfa";
-
-	app_config.add_reference_path("hap1");
-	app_config.add_reference_path("hap4");
-	
-	digraph::DiGraph dg = io::gfa_to_digraph(filename.c_str());
+	digraph::DiGraph dg =
+	  io::gfa_to_digraph( app_config.get_input_gfa().c_str());
 
 	if (true) {
 	  std::cout << "[domibubble::main] Successfully read GFA\n";
@@ -56,22 +49,18 @@ int main() {
 	  std::cout << "\n\n" << "Spanning tree" << "\n\n";
 	  t.print_dot();
 	}
-
-
-
+	
 	algorithms::cycle_equiv(t);
 	if (DEBUG) {
 	  std::cout << "\n\n" << "Updated Spanning tree" << "\n\n";
 	  t.print_dot();
 	}
 
-
 	u_graph::FlowGraph afg = u_graph::FlowGraph(t);
 	if (DEBUG) {
 	  std::cout << "\n\n" << "Annotated Flow Graph" << "\n\n";
 	  afg.print_dot();
 	}
-
 
 	std::vector<std::tuple< size_t , size_t, size_t>> v;
 	std::vector<size_t> s;
@@ -90,11 +79,14 @@ int main() {
 	}
 
 	// call variants
-	genomics::call_variants(pvst_, dg, app_config);
+	if (app_config.call_variants()) {
+	  genomics::call_variants(pvst_, dg, app_config);
+	}
 	
-	return 0;
+	return;
   }
-  
+
+  {
   digraph::DiGraph g = g10();
   g = g20();
   
@@ -138,7 +130,7 @@ int main() {
   tree::Tree pvst_ =  pvst::compute_pvst(v);
   pvst_.print_dot(true);
   
-  return 0;
+  return;
   
   u_graph::FlowGraph afg = u_graph::FlowGraph(t);
   if (DEBUG) {
@@ -155,7 +147,7 @@ int main() {
 
   sp2.compute_edge_stack();
 
-  return 0;
+  return;
   
   std::vector<u_graph::Edge> edge_stack = afg.compute_edge_stack();
   if (DEBUG) {
@@ -177,5 +169,22 @@ int main() {
     pvst.print_dot(true);
   }
 
-  return  0;
+  return;
+  }
+}
+
+int main() {
+
+  core::config app_config;
+	
+  std::string filename = "./test_data/t3.gfa";
+  app_config.set_input_gfa(filename.c_str());
+	
+  app_config.add_reference_path("hap1");
+
+  app_config.set_call_variants(true);
+  
+  do_flubble(app_config);
+
+  return 0;
 }
