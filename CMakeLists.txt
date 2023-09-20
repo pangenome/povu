@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 #set(CMAKE_C_COMPILER "gcc")
 #set(CMAKE_CXX_COMPILER "g++")
 
-project(domibubble)
+project(povu)
 
 # GoogleTest requires at least C++14
 set(CMAKE_CXX_STANDARD 20)
@@ -78,57 +78,57 @@ set(SOURCE_FILES
 
 
 # source
-add_executable(domibubble
+add_executable(povu
   ${SOURCE_FILES}
 )
 
 # recommended but does not work
 # Specify the include directories for the target
-#target_include_directories(domibubble
+#target_include_directories(povu
 #    PRIVATE
 #    ${CMAKE_CURRENT_SOURCE_DIR}/deps/gfakluge/src
 #    ${CMAKE_CURRENT_SOURCE_DIR}/deps/gfakluge/src/tinyFA
 #    ${CMAKE_CURRENT_SOURCE_DIR}/deps/libhandlegraph/src/include
 #)
 
-#target_include_directories(domibubble PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/build/libs/libhandlegraph)
+#target_include_directories(povu PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/build/libs/libhandlegraph)
 
 
 #
 # Link the library (LibsModule) and libhandlegraph to your executable
 #target_link_libraries(
-#  domibubble
+#  povu
 #  LibsModule
 #  handlegraph_static
 #)
 
 # Link the library (LibsModule) and libhandlegraph to your executable
-target_link_libraries(domibubble PRIVATE LibsModule handlegraph_shared)
+target_link_libraries(povu PRIVATE LibsModule handlegraph_shared)
 
 set(BINARY_DIR ./bin)
 
 file(MAKE_DIRECTORY ${BINARY_DIR}/)
 
 
-add_custom_command(TARGET domibubble
+add_custom_command(TARGET povu
                    POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:domibubble> ../${BINARY_DIR}/)
+                   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:povu> ../${BINARY_DIR}/)
 
-add_executable( domibubble_test
+add_executable( povu_test
   tests/main_tests.cc
 )
 
 
 #target_link_libraries(
-#  domibubble_test
+#  povu_test
 #  LibsModule
 #  handlegraph
 #  GTest::gtest_main
 #)
 
 # Link the library (LibsModule), libhandlegraph, and Google Test to your test executable
-target_link_libraries(domibubble_test PRIVATE LibsModule handlegraph_static GTest::gtest_main)
+target_link_libraries(povu_test PRIVATE LibsModule handlegraph_static GTest::gtest_main)
 
 
 include(GoogleTest)
-gtest_discover_tests(domibubble_test)
+gtest_discover_tests(povu_test)
