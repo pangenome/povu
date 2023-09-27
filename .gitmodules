@@ -4,3 +4,6 @@
 [submodule "deps/gfakluge"]
 	path = deps/gfakluge
 	url = https://github.com/vgteam/gfakluge.git
+[submodule "deps/args"]
+	path = deps/args
+	url = https://github.com/Taywee/args.git

@@ -56,6 +56,9 @@ ADD_LIBRARY(LibsModule
 
   # algorithms
   src/algorithms/cycle_equiv.cpp
+
+  # cli
+  src/cli/cli.cpp
 )
 
 #include_directories(
@@ -66,6 +69,7 @@ ADD_LIBRARY(LibsModule
 
 include_directories(
   # deps
+  ${CMAKE_CURRENT_SOURCE_DIR}/deps/args/
   ${CMAKE_CURRENT_SOURCE_DIR}/deps/gfakluge/src
   ${CMAKE_CURRENT_SOURCE_DIR}/deps/gfakluge/src/tinyFA
   ${CMAKE_CURRENT_SOURCE_DIR}/deps/libhandlegraph/src/include
