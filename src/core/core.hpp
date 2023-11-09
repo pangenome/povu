@@ -43,7 +43,8 @@ struct config {
   // Getters
   // --------
   std::string get_input_gfa() { return this->input_gfa; }
-
+  std::vector<std::string> const& get_reference_paths() const { return this->reference_paths; }
+  std::vector<std::string>* get_reference_ptr() { return &this->reference_paths; }
   bool call_variants() { return this->call_variants_; }
 
   // --------

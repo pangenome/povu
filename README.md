@@ -1,3 +1,8 @@
+# povu
+povu is the swahili word for foam 
+
+# Input
+
 Input GFA
 
 Expect a sorted graph in GFA
