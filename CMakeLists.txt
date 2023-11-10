@@ -44,6 +44,7 @@ ADD_LIBRARY(LibsModule
   src/graph/tree.cpp
   src/graph/u_graph.cpp
   src/graph/digraph.cpp
+  src/graph/bidirected.cpp
   src/graph/spanning_tree.cpp
   # 
   #src/vst/vst.cpp

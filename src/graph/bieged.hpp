@@ -1,0 +1,3 @@
+namespace biedged {
+
+}; // namespace biedged

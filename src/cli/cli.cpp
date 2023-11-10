@@ -96,7 +96,7 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
   else if (ref_list) {
 	std::cout << "ref_list: " << bool{ref_list} << ", value: " << args::get(ref_list) << std::endl;
 
-	foo (args::get(ref_list), app_config.get_reference_ptr());
+	//foo (args::get(ref_list), app_config.get_reference_ptr());
 	
 	
   }

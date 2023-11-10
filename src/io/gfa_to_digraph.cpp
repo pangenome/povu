@@ -15,6 +15,7 @@
 #include "gfakluge.hpp"
 
 #include "../graph/digraph.hpp"
+#include "../graph/bidirected.hpp"
 #include "./io.hpp"
 #include "handlegraph/types.hpp"
 
@@ -224,5 +225,168 @@ digraph::DiGraph gfa_to_digraph(const char* filename) {
 
   return dg;
 }
+
+bidirected::VariationGraph gfa_to_vg(const char* filename) {
   
+  std::cout << "[io::gfa_to_vg]" << "\n";
+	
+  gfak::GFAKluge gg = gfak::GFAKluge();
+
+  gg.parse_gfa_file(filename);
+
+  /*
+    Preprocess the GFA
+    ------------------
+
+	scan over the file to count edges and sequences in parallel
+  */
+
+
+  std::map<char, uint64_t> line_counts;
+  std::size_t min_id = std::numeric_limits<uint64_t>::max();
+  std::size_t max_id = std::numeric_limits<uint64_t>::min();
+  {
+	std::thread x(
+	  [&]() {
+		gg.for_each_sequence_line_in_file(
+		  filename,
+		  [&](gfak::sequence_elem s) {
+			uint64_t id = stol(s.name);
+			min_id = std::min(min_id, id);
+			max_id = std::max(max_id, id);
+		  });
+	  });
+	line_counts = gfa_line_counts(filename);
+	x.join();
+  }
+
+  std::cout << "min_id: " << min_id << " max_id: " << max_id << std::endl;
+
+  std::size_t node_count = line_counts['S'];
+  std::size_t edge_count = line_counts['L'];
+  std::size_t path_count = line_counts['P'];
+
+
+  /*
+	Build the digraph 
+	-----------------
+	  
+  */
+  
+  // compute max nodes by difference between max and min ids
+  std::size_t max_nodes = max_id - min_id + 1;
+
+  // the node count and max and min ids are not necessarily the same
+  // this is based on ids and node count not being the same
+  bidirected::VariationGraph vg(max_nodes, edge_count, path_count);
+
+  
+  // we want to start counting from 0 so we have to have an offset_value which would subtruct from the min_id
+  // this is because the input graph is not guaranteed to start from 0
+  // so we have to make sure that the graph starts from 0 as is the digraph
+    
+  std::size_t offset_value = min_id;
+  std::cout << "offset_value: " << offset_value << std::endl;
+	
+  // add nodes
+  // ---------
+  {
+	gg.for_each_sequence_line_in_file(
+	  filename,
+	  [&](const gfak::sequence_elem& s) {
+		vg.create_handle(s.sequence, std::stoll(s.name) - offset_value);
+	  });
+  }
+
+  assert(vg.size() == node_count);
+
+  std::cout << "[io::gfa_to_vg]"
+			<< "Nodes added Graph size: " << vg.size() << std::endl;
+
+  // add edges
+  // ---------
+  {
+	gg.for_each_edge_line_in_file(
+	  filename,
+	  [&](const gfak::edge_elem& e) {
+		if (e.source_name.empty()) return;
+
+		/*
+		  The handlegraph create_edge method doesn't make sense in this case
+		  because the edge is bidirected
+		  and not the vertex itself so we don't return a handle to a vertex side
+		  but rather a handle to a vertex
+		  this would make more sense in the biedged graph
+		 */
+		auto v1_end =
+		  e.source_orientation_forward ? bidirected::VertexEnd::r : bidirected::VertexEnd::l;
+		auto v2_end =
+		  e.sink_orientation_forward ? bidirected::VertexEnd::l : bidirected::VertexEnd::r;
+		
+		vg.add_edge(stoll(e.source_name) - offset_value, v1_end,
+					stoll(e.sink_name) - offset_value, v2_end);
+	  });	
+  }
+
+  std::cout  << "[io::gfa_to_vg]" << "Edges added\n";
+
+
+  // TODO: use handles?
+  //std::map<std::string, std::size_t> path_id_map;
+
+  //std::vector<std::vector<std::pair<std::size_t, std::size_t>>> path_spans;
+  
+  std::size_t path_pos{0};
+
+  // add paths
+  // ---------
+  // do this by associating each node with a path
+  if (path_count > 0) {
+	gg.for_each_path_line_in_file(
+	  filename,
+	  [&](const gfak::path_elem& path) {
+		
+		handlegraph::path_handle_t p_h =
+		  vg.create_path_handle(
+			path.name,
+			*std::begin(path.segment_names) == *std::rbegin(path.segment_names)
+			);
+
+		path_pos = 0;
+
+
+		handlegraph::nid_t start_id = std::stoull(*std::begin(path.segment_names)) - offset_value;
+		handlegraph::nid_t end_id = std::stoull(*std::rbegin(path.segment_names)) - offset_value;
+
+		vg.add_start_node(start_id);
+		vg.add_stop_node(end_id);
+		
+		for (auto& s : path.segment_names) {
+		  
+		  handlegraph::nid_t id = std::stoull(s) - offset_value;
+
+		  /*
+			this can be done through handleGraph's append_step but this is preferable in my
+			because it also sets the step value
+			which is usable for variant calling
+		  */
+
+		  bidirected::Vertex& v = vg.get_vertex_mut(id);
+		  v.add_path(std::stoll(p_h.data), path_pos);
+
+		  path_pos += v.get_label().length();
+		}
+
+	  });
+  }
+
+  std::cout << "Paths added " << std::endl;
+
+
+
+
+  return vg;
+  
+}
+
 } // namespace io

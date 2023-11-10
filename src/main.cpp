@@ -4,6 +4,8 @@
 
 #include "./core/core.hpp"
 #include "./cli/cli.hpp"
+#include "./io/io.hpp"
+#include "./graph/bidirected.hpp"
 
 
 int main(int argc, char *argv[]) {
@@ -16,6 +18,14 @@ int main(int argc, char *argv[]) {
   std::cout << "l:" << app_config.get_reference_paths().size();
   for (auto &&path : app_config.get_reference_paths()) {
 	std::cout << "path: " << path << std::endl;
+
+	
   }
+
+
+  bidirected::VariationGraph vg =
+  io::gfa_to_vg(app_config.get_input_gfa().c_str());
+
+  
 
 }

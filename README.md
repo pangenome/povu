@@ -1,5 +1,5 @@
 # povu
-povu is the swahili word for foam 
+povu is swahili for foam 
 
 # Input
 
