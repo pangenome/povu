@@ -38,7 +38,7 @@ add_subdirectory(
 
 ADD_LIBRARY(LibsModule
   # io
-  src/io/gfa_to_digraph.cpp
+  src/io/from_gfa.cpp
 
   # graph
   src/graph/tree.cpp

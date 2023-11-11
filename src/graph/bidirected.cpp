@@ -242,8 +242,6 @@ VariationGraph::create_handle(const std::string& sequence, const handlegraph::ni
 	throw std::invalid_argument("id is less than size");
   }
 
-  std::cout << "creating: " << this->size() << " " << id_ << std::endl;
-
   // pad with empty/invalid vertices until we reach the id
   for (std::size_t i = this->size(); i < id_; i++) {
 	this->append_vertex();

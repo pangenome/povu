@@ -22,9 +22,8 @@ int main(int argc, char *argv[]) {
 	
   }
 
-
   bidirected::VariationGraph vg =
-  io::gfa_to_vg(app_config.get_input_gfa().c_str());
+	io::from_gfa::to_vg(app_config.get_input_gfa().c_str());
 
   
 

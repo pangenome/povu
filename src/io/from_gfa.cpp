@@ -21,7 +21,7 @@
 
 namespace hg = handlegraph;
 
-namespace io {
+namespace io::from_gfa {
 /**
  * Count the number of lines of each type in a GFA file.
  *
@@ -48,12 +48,7 @@ std::map<char, uint64_t> gfa_line_counts(const char* filename) {
   return counts;
 }
 
-// from odgi
 
-//const std::size_t THREAD_COUNT = 4;
-
-// TODO:
-// - what about nodes without incoming or outgoing edges?
 /**
  * Read a GFA file into a DiGraph.
  *
@@ -61,7 +56,7 @@ std::map<char, uint64_t> gfa_line_counts(const char* filename) {
  * @param[in] filename The GFA file to read.
  * @param[out] dg The DiGraph to read into.
  */
-digraph::DiGraph gfa_to_digraph(const char* filename) {
+digraph::DiGraph to_digraph(const char* filename) {
 
   std::cout << "[io::gfa_to_digraph]" << "\n";
 	
@@ -226,7 +221,15 @@ digraph::DiGraph gfa_to_digraph(const char* filename) {
   return dg;
 }
 
-bidirected::VariationGraph gfa_to_vg(const char* filename) {
+  
+/**
+ * 
+ *
+   
+ * @param [in] filename The GFA file to read
+ * @return A VariationGraph object from the GFA file
+ */
+bidirected::VariationGraph to_vg(const char* filename) {
   
   std::cout << "[io::gfa_to_vg]" << "\n";
 	
@@ -383,10 +386,8 @@ bidirected::VariationGraph gfa_to_vg(const char* filename) {
   std::cout << "Paths added " << std::endl;
 
 
-
-
   return vg;
   
 }
 
-} // namespace io
+};
