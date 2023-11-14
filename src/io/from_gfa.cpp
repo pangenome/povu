@@ -325,6 +325,7 @@ bidirected::VariationGraph to_vg(const char* filename) {
 		  e.source_orientation_forward ? bidirected::VertexEnd::r : bidirected::VertexEnd::l;
 		auto v2_end =
 		  e.sink_orientation_forward ? bidirected::VertexEnd::l : bidirected::VertexEnd::r;
+
 		
 		vg.add_edge(stoll(e.source_name) - offset_value, v1_end,
 					stoll(e.sink_name) - offset_value, v2_end);

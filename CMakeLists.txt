@@ -30,6 +30,8 @@ endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+set(CMAKE_BUILD_TYPE Debug)
+
 # Include libhandlegraph library
 add_subdirectory(
 # deps/gfakluge
@@ -45,12 +47,15 @@ ADD_LIBRARY(LibsModule
   src/graph/u_graph.cpp
   src/graph/digraph.cpp
   src/graph/bidirected.cpp
+  src/graph/biedged.cpp
   src/graph/spanning_tree.cpp
-  # 
+  
+  # trees 
   #src/vst/vst.cpp
   #src/vst/pst.cpp
   src/pvst/pvst.cpp
   src/pst/pst.cpp
+  
   # genomics
   src/genomics/variant_calling.cpp
   src/genomics/vcf.cpp

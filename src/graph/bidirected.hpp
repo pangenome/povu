@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <unordered_set>
+#include <set>
 
 #include <handlegraph/handle_graph.hpp>
 //#include <handlegraph/mutable_handle_graph.hpp>
@@ -53,13 +54,28 @@ struct PathInfo {
    all edges in this graph are gray and have no labels
  */
 class Edge {
-  std::pair<std::size_t, VertexEnd> v1;
-  std::pair<std::size_t, VertexEnd> v2;
+  std::size_t v1_idx;
+  VertexEnd v1_end;
+  std::size_t v2_idx;
+  VertexEnd v2_end;
+  
+  //std::pair<std::size_t, VertexEnd> v1;
+  //std::pair<std::size_t, VertexEnd> v2;
 
 public:
   // constructor
   Edge();
   Edge(std::size_t v1, VertexEnd v1_end, std::size_t v2, VertexEnd v2_end);
+
+  // getters
+  std::size_t get_v1_idx() const;
+  VertexEnd get_v1_end() const;
+  std::size_t get_v2_idx() const;
+  VertexEnd get_v2_end() const;
+
+  // operators
+  // << operator
+  friend std::ostream& operator<<(std::ostream& os, const Edge& e);
 };
 
 /**
@@ -67,19 +83,23 @@ public:
  */
 class Vertex {
   std::string label; // or sequence
-  std::unordered_set<std::size_t> edges; // indexes to the edge vector in Graph
+  //std::unordered_set<std::size_t> edges; // indexes to the edge vector in Graph
+  
+  // indexes to the edge vector in Graph
+  std::set<std::size_t> edges_l;
+  std::set<std::size_t> edges_r;
 
   // paths (also colors)
   // the first element is the path id and the second is the step index or the coordinate of the sequence in that linear haplotype
   // TODO: change to unordered_set
   std::vector<PathInfo> paths;
 
-  
   // from libHandleGraph
   std::string handle;
   bool is_reversed_;
   
 public:
+  // ------------
   // constructors
   // ------------
   Vertex();
@@ -87,20 +107,30 @@ public:
   Vertex(const std::string& label, const handlegraph::nid_t& id);
   //Vertex(std::string label, std::unordered_set<std::size_t> edge_index);
 
-  // setters and getters
-  // -------------------
-  
+  /*
+	setters and getters
+	-------------------
+  */
+
+  // -------
   // getters
+  // -------
+
+  bool is_reversed() const;
   const std::string& get_label() const;
   const std::string& get_handle() const;
-  bool is_reversed() const;
+  const std::set<std::size_t>& get_edges_l() const;
+  const std::set<std::size_t>& get_edges_r() const;
 
+  // -------
   // setters
+  // -------
+
   // returns the new value
   bool toggle_reversed();
   //void set_handle(const std::string& handle);
   //void set_label(const std::string& label);
-  void add_edge(std::size_t edge_index);
+  void add_edge(std::size_t edge_index, VertexEnd vertex_end);
   //void remove_edge(std::size_t edge_index);
   //std::unordered_set<std::size_t> get_edges() const;
 
@@ -136,7 +166,7 @@ public:
   std::size_t size() const; // the number of vertices in the graph valid or not
   const Vertex& get_vertex(std::size_t index) const;
   Vertex& get_vertex_mut(std::size_t index);
-  
+  const Edge& get_edge(std::size_t index) const;
 
   // setters
   void append_vertex();   // adds an invalid vertex to the graph

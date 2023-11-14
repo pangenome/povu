@@ -1,5 +1,6 @@
 #include <cstddef>
 #include <cstring>
+#include <format>
 #include <string>
 #include <vector>
 #include <unordered_set>
@@ -13,15 +14,43 @@ namespace bidirected {
  * ----
  */
 Edge::Edge() {
-  this->v1 = std::make_pair(std::size_t(), VertexEnd::l);
-  this->v2 = std::make_pair(std::size_t(), VertexEnd::l);
+  this->v1_idx = std::size_t();
+  this->v1_end = VertexEnd::l;
+  this->v2_idx = std::size_t();
+  this->v2_end = VertexEnd::l;
 }
 
 Edge::Edge(std::size_t v1, VertexEnd v1_end, std::size_t v2, VertexEnd v2_end)
-  : v1(std::make_pair(v1, v1_end)),
-	v2(std::make_pair(v2, v2_end))
+  : v1_idx(v1), v1_end(v1_end),
+	v2_idx(v2), v2_end(v2_end)
 {}
+
+std::size_t Edge::get_v1_idx() const {
+  return this->v1_idx;
+}
+
+VertexEnd Edge::get_v1_end() const {
+  return this->v1_end;
+}
+
+std::size_t Edge::get_v2_idx() const {
+  return this->v2_idx;
+}
+
+VertexEnd Edge::get_v2_end() const {
+  return this->v2_end;
+}
+
+// << operator
+std::ostream& operator<<(std::ostream& os, const Edge& edge) {
+  os << std::format("{{bidirected::Edge {}{} {}{} }}",
+					edge.v1_idx, (edge.v1_end == VertexEnd::l ? "+" : "-"),
+					edge.v2_idx, (edge.v2_end == VertexEnd::l ? "+" : "-"));
+
+  return os;
+}
   
+
 /*
  * Vertex
  * ------
@@ -29,7 +58,8 @@ Edge::Edge(std::size_t v1, VertexEnd v1_end, std::size_t v2, VertexEnd v2_end)
  
 Vertex::Vertex() {
   this->label = std::string();
-  this->edges = std::unordered_set<std::size_t>();
+  this->edges_l = std::set<std::size_t>();
+  this->edges_r = std::set<std::size_t>();
 
   //std::unordered_set<PathInfo> myset;
   this->paths = std::vector<PathInfo>();
@@ -38,10 +68,11 @@ Vertex::Vertex() {
 }
 
 Vertex::Vertex(const std::string& label): label(label) {
-  this->edges = std::unordered_set<std::size_t>();
-
-    this->paths = std::vector<PathInfo>();
-	//this->paths = std::unordered_set<std::size_t>();
+  this->edges_l = std::set<std::size_t>();
+  this->edges_r = std::set<std::size_t>();
+  
+  this->paths = std::vector<PathInfo>();
+  //this->paths = std::unordered_set<std::size_t>();
   this->handle = std::string();
   this->is_reversed_ = false;
 }
@@ -50,7 +81,8 @@ Vertex::Vertex(const std::string& label, const handlegraph::nid_t& id)
   : label(label),
 	handle(std::to_string(id))
 {
-  this->edges = std::unordered_set<std::size_t>();
+  this->edges_l = std::set<std::size_t>();
+  this->edges_r = std::set<std::size_t>();
 
   this->paths = std::vector<PathInfo>();
   this->is_reversed_ = false;
@@ -64,6 +96,13 @@ const std::string& Vertex::get_handle() const {
   return this->handle;
 }
 
+const std::set<std::size_t>& Vertex::get_edges_l() const {
+	return this->edges_l;
+}
+
+const std::set<std::size_t>& Vertex::get_edges_r() const {
+	return this->edges_r;
+}
   
 bool Vertex::is_reversed() const {
   return this->is_reversed_;
@@ -74,8 +113,13 @@ bool Vertex::toggle_reversed() {
   return this->is_reversed_;
 }
 
-void Vertex::add_edge(std::size_t edge_index) {
-  this->edges.insert(edge_index);
+void Vertex::add_edge(std::size_t edge_index, VertexEnd vertex_end) {
+  if (vertex_end == VertexEnd::l) {
+	this->edges_l.insert(edge_index);
+  }
+  else {
+	this->edges_r.insert(edge_index);
+  }
 }
 
 void Vertex::add_path(std::size_t path_id, std::size_t step_index) {
@@ -116,7 +160,11 @@ const Vertex& VariationGraph::get_vertex(std::size_t index) const {
 }
 
 Vertex& VariationGraph::get_vertex_mut(std::size_t index) {
-	return this->vertices[index];
+  return this->vertices.at(index);
+}
+
+const Edge& VariationGraph::get_edge(std::size_t index) const {
+	return this->edges[index];
 }
   
 // setters
@@ -134,8 +182,8 @@ void VariationGraph::add_edge(std::size_t v1, VertexEnd v1_end,
 {
   std::size_t edge_idx = this->edges.size();
   this->edges.push_back(Edge(v1, v1_end, v2, v2_end));
-  this->get_vertex_mut(v1).add_edge(edge_idx);
-  this->get_vertex_mut(v2).add_edge(edge_idx);
+  this->get_vertex_mut(v1).add_edge(edge_idx, v1_end);
+  this->get_vertex_mut(v2).add_edge(edge_idx, v2_end);
 }
   
 void VariationGraph::set_min_id(std::size_t min_id) {

@@ -6,6 +6,7 @@
 #include "./cli/cli.hpp"
 #include "./io/io.hpp"
 #include "./graph/bidirected.hpp"
+#include "./graph/biedged.hpp"
 
 
 int main(int argc, char *argv[]) {
@@ -25,6 +26,10 @@ int main(int argc, char *argv[]) {
   bidirected::VariationGraph vg =
 	io::from_gfa::to_vg(app_config.get_input_gfa().c_str());
 
+  std::cout << "Biedging\n";
   
+  biedged::BVariationGraph bg(vg);
+  //bg.print_dot();
+
 
 }
