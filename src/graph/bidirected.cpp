@@ -1,12 +1,14 @@
 #include <cstddef>
 #include <cstring>
 #include <format>
+#include <iostream>
 #include <string>
 #include <vector>
 #include <unordered_set>
 #include <utility>
 
 #include "./bidirected.hpp"
+#include "../core/utils.hpp"
 
 namespace bidirected {
 /*
@@ -49,13 +51,13 @@ std::ostream& operator<<(std::ostream& os, const Edge& edge) {
 
   return os;
 }
-  
+
 
 /*
  * Vertex
  * ------
  */
- 
+
 Vertex::Vertex() {
   this->label = std::string();
   this->edges_l = std::set<std::size_t>();
@@ -70,7 +72,7 @@ Vertex::Vertex() {
 Vertex::Vertex(const std::string& label): label(label) {
   this->edges_l = std::set<std::size_t>();
   this->edges_r = std::set<std::size_t>();
-  
+
   this->paths = std::vector<PathInfo>();
   //this->paths = std::unordered_set<std::size_t>();
   this->handle = std::string();
@@ -103,11 +105,11 @@ const std::set<std::size_t>& Vertex::get_edges_l() const {
 const std::set<std::size_t>& Vertex::get_edges_r() const {
 	return this->edges_r;
 }
-  
+
 bool Vertex::is_reversed() const {
   return this->is_reversed_;
 }
-  
+
 bool Vertex::toggle_reversed() {
   this->is_reversed_ = !this->is_reversed_;
   return this->is_reversed_;
@@ -130,13 +132,13 @@ void Vertex::add_path(std::size_t path_id, std::size_t step_index) {
  * Variation Graph
  * ---------------
  */
-  
+
 VariationGraph::VariationGraph()
   : vertices(std::vector<Vertex>{}),
 	edges((std::vector<Edge>{})),
 	paths(std::vector<path_t>{})
 {}
-  
+
 VariationGraph::VariationGraph(
   std::size_t vertex_count, std::size_t edge_count, std::size_t path_count)
   : vertices(std::vector<Vertex>{}),
@@ -166,7 +168,26 @@ Vertex& VariationGraph::get_vertex_mut(std::size_t index) {
 const Edge& VariationGraph::get_edge(std::size_t index) const {
 	return this->edges[index];
 }
-  
+
+
+
+
+void VariationGraph::dbg_print() {
+  std::cerr << "VariationGraph: " << std::endl;
+  std::cerr << "\t" << "vertices: " << this->size() << std::endl;
+  std::cerr << "\t"<< "valid vertices: " << std::endl;
+  std::cerr << "\t"<< "edges: " << this->edges.size() << std::endl;
+  std::cerr << "\t" << "paths: " << this->paths.size() << std::endl;
+
+  std::cerr << "\t" << "start nodes: ";
+  utils::print_with_comma(this->start_nodes);
+  std::cerr << "\n";
+
+  std::cerr << "\t" << "end nodes: ";
+  utils::print_with_comma(this->end_nodes);
+  std::cerr << "\n";
+}
+
 // setters
 // -------
 void VariationGraph::append_vertex() {
@@ -185,7 +206,7 @@ void VariationGraph::add_edge(std::size_t v1, VertexEnd v1_end,
   this->get_vertex_mut(v1).add_edge(edge_idx, v1_end);
   this->get_vertex_mut(v2).add_edge(edge_idx, v2_end);
 }
-  
+
 void VariationGraph::set_min_id(std::size_t min_id) {
   this->min_id = min_id;
 }
@@ -193,7 +214,7 @@ void VariationGraph::set_min_id(std::size_t min_id) {
 void VariationGraph::set_max_id(std::size_t max_id) {
   this->max_id = max_id;
 }
-  
+
 // HandleGraph
 // -----------
 
@@ -243,7 +264,7 @@ void VariationGraph::add_start_node(std::size_t node_id) {
 void VariationGraph::add_stop_node(std::size_t node_id) {
   this->end_nodes.insert(node_id);
 }
-  
+
 handlegraph::nid_t VariationGraph::min_node_id() const {
 	return this->min_id;
 }
@@ -269,7 +290,7 @@ bool VariationGraph::for_each_handle_impl(
 }
 
 
-  
+
 // MutableHandleGraph
 // ------------------
 handlegraph::handle_t
@@ -312,7 +333,7 @@ VariationGraph::create_path_handle(const std::string& name, bool is_circular) {
 
   return h;
 }
-  
+
 handlegraph::path_handle_t
 VariationGraph::rename_path(const handlegraph::path_handle_t& path_handle,
 							const std::string& new_name) {
@@ -321,5 +342,5 @@ VariationGraph::rename_path(const handlegraph::path_handle_t& path_handle,
   this->paths[path_id].name = new_name;
   return path_handle;
 }
-  
+
 }; // namespace bidirected

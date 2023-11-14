@@ -65,6 +65,8 @@ ADD_LIBRARY(LibsModule
 
   # cli
   src/cli/cli.cpp
+  src/core/core.cpp
+  src/core/utils.cpp
 )
 
 #include_directories(

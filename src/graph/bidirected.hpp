@@ -27,7 +27,7 @@ struct path_t {
   bool is_circular; // is the path circular?
 };
 
-  
+
 /**
    l (left) 5' or +
    r (left) 3' or -
@@ -58,7 +58,7 @@ class Edge {
   VertexEnd v1_end;
   std::size_t v2_idx;
   VertexEnd v2_end;
-  
+
   //std::pair<std::size_t, VertexEnd> v1;
   //std::pair<std::size_t, VertexEnd> v2;
 
@@ -79,12 +79,12 @@ public:
 };
 
 /**
-   a vertex is invalid if it lacks either a label or a handle 
+   a vertex is invalid if it lacks either a label or a handle
  */
 class Vertex {
   std::string label; // or sequence
   //std::unordered_set<std::size_t> edges; // indexes to the edge vector in Graph
-  
+
   // indexes to the edge vector in Graph
   std::set<std::size_t> edges_l;
   std::set<std::size_t> edges_r;
@@ -97,7 +97,7 @@ class Vertex {
   // from libHandleGraph
   std::string handle;
   bool is_reversed_;
-  
+
 public:
   // ------------
   // constructors
@@ -147,28 +147,35 @@ class VariationGraph {
   std::vector<Edge> edges;
 
   std::vector<path_t> paths;
-  
+
   std::unordered_set<std::size_t> start_nodes;
   std::unordered_set<std::size_t> end_nodes;
 
-  
   // for libHandleGraph
   // min and max vertex ids
   std::size_t min_id;
   std::size_t max_id;
-  
+
 public:
+  // -----------
   // constructor
+  // -----------
   VariationGraph();
   VariationGraph(std::size_t vertex_count, std::size_t edge_count, std::size_t path_count);
 
+
+  // -------
   // getters
+  // -------
   std::size_t size() const; // the number of vertices in the graph valid or not
   const Vertex& get_vertex(std::size_t index) const;
   Vertex& get_vertex_mut(std::size_t index);
   const Edge& get_edge(std::size_t index) const;
 
+
+  // -------
   // setters
+  // --------
   void append_vertex();   // adds an invalid vertex to the graph
   void add_vertex(const Vertex& vertex);
   void add_edge(std::size_t v1, VertexEnd v1_end, std::size_t v2, VertexEnd v2_end);
@@ -179,7 +186,13 @@ public:
   void set_min_id(std::size_t min_id);
   void set_max_id(std::size_t max_id);
 
-    
+
+  // ----
+  // misc
+  // ----
+  void dbg_print();
+
+
   /*
 	Library implementations
 	=======================
@@ -193,14 +206,14 @@ public:
 	 HandleGraph
 	 -----------
 
-  	Partially implements HandleGraph
+	Partially implements HandleGraph
 
 	Implemented:
-	 -  
+	 -
    */
-  
 
-  /// Method to check if a node exists by ID  
+
+  /// Method to check if a node exists by ID
   bool has_node(handlegraph::nid_t node_id) const;
 
   /// Look up the handle for the node with the given ID in the given orientation
@@ -252,10 +265,10 @@ public:
 							bool parallel = false) const;
 
 
-    /*
+	/*
 	  MutableHandleGraph
 	  -------------------
-	
+
 	partially implements MutableHandleGraph
 
 	Implemented:
@@ -276,7 +289,7 @@ public:
   /*
 	MutablePathHandleGraph
 	----------------------
-	
+
 	partially implements MutablePathHandleGraph
 
 	Implemented:
@@ -284,11 +297,11 @@ public:
    */
 
    /**
-     * Create a path with the given name. The caller must ensure that no path
-     * with the given name exists already, or the behavior is undefined.
-     * Returns a handle to the created empty path. Handles to other paths must
-     * remain valid.
-     */
+	 * Create a path with the given name. The caller must ensure that no path
+	 * with the given name exists already, or the behavior is undefined.
+	 * Returns a handle to the created empty path. Handles to other paths must
+	 * remain valid.
+	 */
   hg::path_handle_t create_path_handle(const std::string& name,
 									   bool is_circular = false);
 
@@ -299,26 +312,26 @@ public:
   hg::path_handle_t rename_path(const hg::path_handle_t& path_handle,
 								const std::string& new_name);
 
-    /**
-     * Append a visit to a node to the given path. Returns a handle to the new
-     * final step on the path which is appended. If the path is cirular, the new
-     * step is placed between the steps considered "last" and "first" by the
-     * method path_begin. Handles to prior steps on the path, and to other paths,
-     * must remain valid.
-     */
+	/**
+	 * Append a visit to a node to the given path. Returns a handle to the new
+	 * final step on the path which is appended. If the path is cirular, the new
+	 * step is placed between the steps considered "last" and "first" by the
+	 * method path_begin. Handles to prior steps on the path, and to other paths,
+	 * must remain valid.
+	 */
   hg::step_handle_t append_step(const hg::path_handle_t& path,
 								const hg::handle_t& to_append);
 
   /**
-     * Make a path circular or non-circular. If the path is becoming circular, the
-     * last step is joined to the first step. If the path is becoming linear, the
-     * step considered "last" is unjoined from the step considered "first" according
-     * to the method path_begin.
-     */
+	 * Make a path circular or non-circular. If the path is becoming circular, the
+	 * last step is joined to the first step. If the path is becoming linear, the
+	 * step considered "last" is unjoined from the step considered "first" according
+	 * to the method path_begin.
+	 */
   void set_circularity(const hg::path_handle_t& path, bool circular);
-  
+
 };
 
-  
+
 }; // namespace bidirected
 #endif

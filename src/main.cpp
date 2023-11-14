@@ -10,26 +10,18 @@
 
 
 int main(int argc, char *argv[]) {
-    // set a higher value for tcmalloc warnings
-    //setenv("TCMALLOC_LARGE_ALLOC_REPORT_THRESHOLD", "1000000000000000", 1);
+	// set a higher value for tcmalloc warnings
+	//setenv("TCMALLOC_LARGE_ALLOC_REPORT_THRESHOLD", "1000000000000000", 1);
   core::config app_config;
   cli::cli(argc, argv, app_config);
 
-  std::cout << "input_gfa: " << app_config.get_input_gfa() << std::endl;
-  std::cout << "l:" << app_config.get_reference_paths().size();
-  for (auto &&path : app_config.get_reference_paths()) {
-	std::cout << "path: " << path << std::endl;
-
-	
-  }
+  app_config.dbg_print();
 
   bidirected::VariationGraph vg =
 	io::from_gfa::to_vg(app_config.get_input_gfa().c_str());
 
-  std::cout << "Biedging\n";
-  
+  vg.dbg_print();
+
   biedged::BVariationGraph bg(vg);
-  //bg.print_dot();
-
-
+  if (false) { bg.print_dot(); }
 }

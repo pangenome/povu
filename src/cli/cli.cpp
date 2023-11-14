@@ -11,6 +11,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <args.hxx>
+
 #include "../core/core.hpp"
 
 
@@ -24,7 +25,7 @@ namespace cli {
   }
 
 
-  
+
 // version string constant
 const std::string VERSION = "0.0.0-alpha";
 
@@ -60,8 +61,8 @@ void read_lines_to_vector_str(const std::string& fp, std::vector<std::string> *v
 
   while (f >> temp) { v->push_back(temp); }
 }
-  
-void fp_to_vector (const std::string& fp, std::vector<std::string>* v) {  
+
+void fp_to_vector (const std::string& fp, std::vector<std::string>* v) {
   size_t file_size = get_file_size(fp);
 
   v->reserve(file_size);
@@ -74,14 +75,16 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
   args::ValueFlag<std::string> input_gfa(parser, "gfa", "path to input gfa [required]", {'i', "input-gfa"}, args::Options::Required);
   args::ValueFlag<std::string> ref_list(parser, "ref_list", "path to txt file containing reference haplotypes [optional]", {'p', "path-list"});
   args::PositionalList<std::string> pathsList(parser, "paths", "files to commit");
-	
+
   parser.Parse();
 
   //std::cout << "input_gfa: " << bool{input_gfa} << ", value: " << args::get(input_gfa) << std::endl;
 
+  app_config.set_task(core::task_t::call);
+
   // input gfa is already a c_Str
   app_config.set_input_gfa(args::get(input_gfa));
-  
+
   // either ref list or path list
   // if ref list is not set, then path list must be set
   // -------------
@@ -90,36 +93,27 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
 	std::cerr << "[cli::call_handler]Error: cannot set both ref_list and path_list" << std::endl;
 	std::exit(1);
 
-    // throw an argument error
-	//throw std::invalid_argument( "[cli::call_handler]Error: cannot set both ref_list and path_list" );
   }
   else if (ref_list) {
-	std::cout << "ref_list: " << bool{ref_list} << ", value: " << args::get(ref_list) << std::endl;
-
-	//foo (args::get(ref_list), app_config.get_reference_ptr());
-	
-	
+	app_config.set_ref_input_format(core::input_format_t::file_path);
+	app_config.set_reference_txt_path(std::move(args::get(ref_list)));
+	std::vector<std::string> ref_paths;
+	read_lines_to_vector_str(app_config.get_references_txt(), &ref_paths);
+	app_config.set_reference_paths(std::move(ref_paths));
   }
   else {
+	app_config.set_ref_input_format(core::input_format_t::params);
 	// assume pathsList is not empty
 	for (auto &&path : pathsList)
 	{
-	  app_config.add_reference_path( path);
+	  app_config.add_reference_path(path);
 	}
-	  
-  }
-	
-   
-  std::cout << std::endl;
 
-  //if (message)
-  //{
-  //    std::cout << "message: " << args::get(message) << std::endl;
-  //}
+  }
 }
 
 
-  
+
 int cli(int argc, char **argv, core::config& app_config) {
 
   args::ArgumentParser p("Use cycle equivalence call variants");

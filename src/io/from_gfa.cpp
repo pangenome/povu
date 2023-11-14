@@ -231,7 +231,7 @@ digraph::DiGraph to_digraph(const char* filename) {
  */
 bidirected::VariationGraph to_vg(const char* filename) {
   
-  std::cout << "[io::gfa_to_vg]" << "\n";
+  //std::cout << "[io::gfa_to_vg]" << "\n";
 	
   gfak::GFAKluge gg = gfak::GFAKluge();
 
@@ -263,7 +263,7 @@ bidirected::VariationGraph to_vg(const char* filename) {
 	x.join();
   }
 
-  std::cout << "min_id: " << min_id << " max_id: " << max_id << std::endl;
+  //std::cout << "min_id: " << min_id << " max_id: " << max_id << std::endl;
 
   std::size_t node_count = line_counts['S'];
   std::size_t edge_count = line_counts['L'];
@@ -289,7 +289,7 @@ bidirected::VariationGraph to_vg(const char* filename) {
   // so we have to make sure that the graph starts from 0 as is the digraph
     
   std::size_t offset_value = min_id;
-  std::cout << "offset_value: " << offset_value << std::endl;
+  //std::cout << "offset_value: " << offset_value << std::endl;
 	
   // add nodes
   // ---------
@@ -303,8 +303,7 @@ bidirected::VariationGraph to_vg(const char* filename) {
 
   assert(vg.size() == node_count);
 
-  std::cout << "[io::gfa_to_vg]"
-			<< "Nodes added Graph size: " << vg.size() << std::endl;
+  //std::cout << "[io::gfa_to_vg]" << "Nodes added Graph size: " << vg.size() << std::endl;
 
   // add edges
   // ---------
@@ -332,7 +331,7 @@ bidirected::VariationGraph to_vg(const char* filename) {
 	  });	
   }
 
-  std::cout  << "[io::gfa_to_vg]" << "Edges added\n";
+  //std::cout  << "[io::gfa_to_vg]" << "Edges added\n";
 
 
   // TODO: use handles?
@@ -384,7 +383,7 @@ bidirected::VariationGraph to_vg(const char* filename) {
 	  });
   }
 
-  std::cout << "Paths added " << std::endl;
+  //std::cout << "Paths added " << std::endl;
 
 
   return vg;
