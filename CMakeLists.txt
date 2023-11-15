@@ -2,11 +2,27 @@ cmake_minimum_required(VERSION 3.14)
 #set(CMAKE_C_COMPILER "gcc")
 #set(CMAKE_CXX_COMPILER "g++")
 
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+  # set(CMAKE_BUILD_TYPE Debug)
+endif()
+
+set(CMAKE_CXX_FLAGS "-Wall -Wextra -Wpedantic")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+
 project(povu)
 
 # GoogleTest requires at least C++14
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+
+# Avoid warning about DOWNLOAD_EXTRACT_TIMESTAMP in CMake 3.24
+# https://cmake.org/cmake/help/latest/policy/CMP0135.html
+if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
+  cmake_policy(SET CMP0135 NEW)
+endif()
 
 include(FetchContent)
 FetchContent_Declare(
@@ -30,7 +46,7 @@ endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(CMAKE_BUILD_TYPE Debug)
+
 
 # Include libhandlegraph library
 add_subdirectory(

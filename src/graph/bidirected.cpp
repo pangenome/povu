@@ -169,8 +169,13 @@ const Edge& VariationGraph::get_edge(std::size_t index) const {
 	return this->edges[index];
 }
 
+std::unordered_set<std::size_t> VariationGraph::get_start_nodes() const {
+  return this->start_nodes;
+}
 
-
+std::unordered_set<std::size_t> VariationGraph::get_end_nodes() const {
+  return this->end_nodes;
+}
 
 void VariationGraph::dbg_print() {
   std::cerr << "VariationGraph: " << std::endl;

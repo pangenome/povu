@@ -78,11 +78,9 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
 
   parser.Parse();
 
-  //std::cout << "input_gfa: " << bool{input_gfa} << ", value: " << args::get(input_gfa) << std::endl;
-
   app_config.set_task(core::task_t::call);
 
-  // input gfa is already a c_Str
+  // input gfa is already a c_str
   app_config.set_input_gfa(args::get(input_gfa));
 
   // either ref list or path list
@@ -92,7 +90,6 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
   if (ref_list && std::begin(pathsList) != std::end(pathsList)) {
 	std::cerr << "[cli::call_handler]Error: cannot set both ref_list and path_list" << std::endl;
 	std::exit(1);
-
   }
   else if (ref_list) {
 	app_config.set_ref_input_format(core::input_format_t::file_path);
@@ -104,11 +101,9 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
   else {
 	app_config.set_ref_input_format(core::input_format_t::params);
 	// assume pathsList is not empty
-	for (auto &&path : pathsList)
-	{
+	for (auto &&path : pathsList) {
 	  app_config.add_reference_path(path);
 	}
-
   }
 }
 
@@ -120,30 +115,35 @@ int cli(int argc, char **argv, core::config& app_config) {
   args::Group commands(p, "commands");
   args::Command commit(commands, "call", "call",
 					   [&](args::Subparser &parser) { call_handler(parser, app_config); });
-  //p.Prog(argv[0]);
+
   args::Group arguments(p, "arguments", args::Group::Validators::DontCare, args::Options::Global);
   args::Flag version(arguments, "version", "show the ...", {"version"});
   args::ValueFlag<int> verbosity(arguments, "verbosity", "Level out output", {'v', "verbosity"});
   args::HelpFlag h(arguments, "help", "help", {'h', "help"});
 
 
-  try
-  {
+  try {
 	p.ParseCLI(argc, argv);
   }
-  catch (args::Help)
-  {
+  catch (args::Help) {
 	std::cout << p;
   }
-  catch (args::Error& e)
-  {
-	std::cerr << e.what() << std::endl << p;
-	return 1;
+  catch (args::Error& e) {
+	// only run this if the user is not requesting to print the version
+	if (!version) {
+	  std::cerr << e.what() << std::endl << p;
+	  return 1;
+	}
   }
 
-  if (verbosity) { std::cout << "i: " << args::get(verbosity) << std::endl; }
-  if (version) { std::cout << VERSION << std::endl; }
+  if (version) {
+	std::cout << VERSION << std::endl;
+	std::exit(0);
+  }
 
+  if (args::get(verbosity)) {
+	app_config.set_verbosity(args::get(verbosity));
+  }
 
   return 0;
 }

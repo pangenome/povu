@@ -1,27 +1,32 @@
-#include <iostream>
-#include <fstream>
-
-
 #include "./core/core.hpp"
 #include "./cli/cli.hpp"
 #include "./io/io.hpp"
 #include "./graph/bidirected.hpp"
 #include "./graph/biedged.hpp"
-
+#include "./graph/spanning_tree.hpp"
+#include "./algorithms/cycle_equiv.hpp"
 
 int main(int argc, char *argv[]) {
-	// set a higher value for tcmalloc warnings
-	//setenv("TCMALLOC_LARGE_ALLOC_REPORT_THRESHOLD", "1000000000000000", 1);
   core::config app_config;
   cli::cli(argc, argv, app_config);
 
-  app_config.dbg_print();
+  if (app_config.verbosity()) { app_config.dbg_print(); }
 
-  bidirected::VariationGraph vg =
-	io::from_gfa::to_vg(app_config.get_input_gfa().c_str());
+  // read the input gfa into a bidirected variation graph
+  bidirected::VariationGraph vg = io::from_gfa::to_vg(app_config.get_input_gfa().c_str());
+  if (app_config.verbosity() > 1) { vg.dbg_print(); }
 
-  vg.dbg_print();
-
+  // convert the bidirected variation graph into a biedged variation graph
   biedged::BVariationGraph bg(vg);
-  if (false) { bg.print_dot(); }
+  if (app_config.verbosity() > 2) { bg.print_dot(); }
+  bg.componetize();
+  if (app_config.verbosity() > 2) { bg.print_dot(); }
+
+  // compute the spanning tree of the biedged variation graph
+  spanning_tree::Tree st = bg.compute_spanning_tree();
+  if (app_config.verbosity() > 2) { st.print_dot(); }
+
+  // compute the cycle equivalence classes of the spanning tree
+  algorithms::cycle_equiv(st);
+  if (app_config.verbosity() > 2) { st.print_dot(); }
 }

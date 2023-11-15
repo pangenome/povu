@@ -9,11 +9,9 @@
 #include <set>
 
 #include <handlegraph/handle_graph.hpp>
-//#include <handlegraph/mutable_handle_graph.hpp>
+
 
 namespace hg = handlegraph;
-
-
 
 namespace bidirected {
 
@@ -43,6 +41,9 @@ struct PathInfo {
   std::size_t path_id;
   std::size_t step_index;
 
+  // --------------
+  // constructor(s)
+  // --------------
   PathInfo(): path_id(0), step_index(0) {}
   PathInfo(std::size_t path_id, std::size_t step_index): path_id(path_id), step_index(step_index) {}
 };
@@ -59,22 +60,26 @@ class Edge {
   std::size_t v2_idx;
   VertexEnd v2_end;
 
-  //std::pair<std::size_t, VertexEnd> v1;
-  //std::pair<std::size_t, VertexEnd> v2;
-
 public:
-  // constructor
+  // --------------
+  // constructor(s)
+  // --------------
   Edge();
   Edge(std::size_t v1, VertexEnd v1_end, std::size_t v2, VertexEnd v2_end);
 
-  // getters
+
+  // ---------
+  // getter(s)
+  // ---------
   std::size_t get_v1_idx() const;
   VertexEnd get_v1_end() const;
   std::size_t get_v2_idx() const;
   VertexEnd get_v2_end() const;
+  
 
-  // operators
-  // << operator
+  // -----------
+  // operator(s)
+  // -----------
   friend std::ostream& operator<<(std::ostream& os, const Edge& e);
 };
 
@@ -83,14 +88,14 @@ public:
  */
 class Vertex {
   std::string label; // or sequence
-  //std::unordered_set<std::size_t> edges; // indexes to the edge vector in Graph
 
   // indexes to the edge vector in Graph
   std::set<std::size_t> edges_l;
   std::set<std::size_t> edges_r;
 
   // paths (also colors)
-  // the first element is the path id and the second is the step index or the coordinate of the sequence in that linear haplotype
+  // the first element is the path id and the second is the step index or
+  // the coordinate of the sequence in that linear haplotype
   // TODO: change to unordered_set
   std::vector<PathInfo> paths;
 
@@ -99,44 +104,33 @@ class Vertex {
   bool is_reversed_;
 
 public:
-  // ------------
-  // constructors
-  // ------------
+  // --------------
+  // constructor(s)
+  // --------------
   Vertex();
   Vertex(const std::string& label);
   Vertex(const std::string& label, const handlegraph::nid_t& id);
-  //Vertex(std::string label, std::unordered_set<std::size_t> edge_index);
 
-  /*
-	setters and getters
-	-------------------
-  */
 
-  // -------
-  // getters
-  // -------
-
+  // ---------
+  // getter(s)
+  // ---------
   bool is_reversed() const;
   const std::string& get_label() const;
   const std::string& get_handle() const;
   const std::set<std::size_t>& get_edges_l() const;
   const std::set<std::size_t>& get_edges_r() const;
 
-  // -------
-  // setters
-  // -------
-
+  
+  // ---------
+  // setter(s)
+  // ---------
   // returns the new value
   bool toggle_reversed();
-  //void set_handle(const std::string& handle);
-  //void set_label(const std::string& label);
   void add_edge(std::size_t edge_index, VertexEnd vertex_end);
-  //void remove_edge(std::size_t edge_index);
-  //std::unordered_set<std::size_t> get_edges() const;
 
   // It is up to the user to make sure that the path_id is not already in the "set"
   void add_path(std::size_t path_id, std::size_t step_index);
-
 };
 
 /**
@@ -157,32 +151,32 @@ class VariationGraph {
   std::size_t max_id;
 
 public:
-  // -----------
-  // constructor
-  // -----------
+  // --------------
+  // constructor(s)
+  // --------------
   VariationGraph();
   VariationGraph(std::size_t vertex_count, std::size_t edge_count, std::size_t path_count);
 
 
-  // -------
-  // getters
-  // -------
+  // ---------
+  // getter(s)
+  // ---------
   std::size_t size() const; // the number of vertices in the graph valid or not
   const Vertex& get_vertex(std::size_t index) const;
   Vertex& get_vertex_mut(std::size_t index);
   const Edge& get_edge(std::size_t index) const;
+  std::unordered_set<std::size_t> get_start_nodes() const;
+  std::unordered_set<std::size_t> get_end_nodes() const;
+  
 
-
-  // -------
-  // setters
-  // --------
+  // ---------
+  // setter(s)
+  // ---------
   void append_vertex();   // adds an invalid vertex to the graph
   void add_vertex(const Vertex& vertex);
   void add_edge(std::size_t v1, VertexEnd v1_end, std::size_t v2, VertexEnd v2_end);
-
   void add_start_node(std::size_t node_id);
   void add_stop_node(std::size_t node_id);
-
   void set_min_id(std::size_t min_id);
   void set_max_id(std::size_t max_id);
 
