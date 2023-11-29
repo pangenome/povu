@@ -162,6 +162,7 @@ Tree::Tree() :
   back_edges(std::vector<BackEdge>{}),
   bracket_lists(std::vector<BracketList>{}),
   sort_(std::vector<std::size_t>{}),
+  sort_g(std::vector<std::size_t>{}),
   equiv_class_count_(0) {}
 
 Tree::Tree(std::size_t size) :
@@ -170,15 +171,22 @@ Tree::Tree(std::size_t size) :
   back_edges(std::vector<BackEdge>{}),
   bracket_lists(std::vector<BracketList>{}),
   sort_(std::vector<std::size_t>{}),
+  sort_g(std::vector<std::size_t>{}),
   equiv_class_count_(0) {
   this->nodes.resize(size);
   this->bracket_lists.resize(size);
   this->sort_.resize(size);
+  this->sort_g.resize(size);
 }
 
 void Tree::set_sort(std::size_t idx, std::size_t vertex) {
   this->sort_.at(idx) = vertex;
 }
+  
+void Tree::set_sort_g(std::size_t idx, std::size_t vertex) {
+  this->sort_g.at(idx) = vertex;
+}
+    
 void Tree::set_dfs_num(std::size_t vertex, std::size_t dfs_num) {
   this->nodes.at(vertex).set_dfs_num(dfs_num);
 }
@@ -490,6 +498,8 @@ Edge& Tree::get_incoming_edge(std::size_t vertex) {
  */
 std::size_t Tree::get_sorted(std::size_t idx) { return  this->sort_.at(idx);}
 
+std::size_t Tree::get_sorted_g(std::size_t idx) { return  this->sort_g.at(idx);}
+  
 void Tree::cycles_vector(
   std::vector<std::tuple< size_t , size_t, size_t>>& vertices_four,
   std::vector<size_t> & classes
@@ -884,6 +894,55 @@ std::vector<Edge> Tree::compute_edge_stack() {
   return edge_stack;
 }
 
+std::vector<std::pair<std::size_t, std::size_t>>
+  Tree::compute_edge_stack2() {
+
+  std::stack<std::pair<std::size_t, std::size_t>> s;
+  // first is vertex, second is eq class of the vertex
+  std::vector<std::pair<std::size_t, std::size_t>> v;
+  
+  for (std::size_t j{}; j < this->size(); j++) {
+	std::size_t i = this->get_sorted(j);
+	std::size_t k = this->get_sorted_g(i);
+
+	// the 0th vertex has no parent and will throw an exception
+	// if we try to get its parent
+	// this should be fixed somehow but for now we just skip it
+	if (k > 0) {
+	  	Edge const& parent_edge = this->get_parent_edge(k);
+		//std::cout << "parent: " << parent_edge.get_class()
+		//		  << " " << parent_edge.get_color()
+		//		  << std::endl;
+		if (parent_edge.get_color() == core::color::black) {
+		  v.push_back(std::make_pair(k, parent_edge.get_class()));  
+		  s.push(std::make_pair(k, parent_edge.get_class()));  
+		}
+		
+	}
+
+	std::set<size_t> obes = this->get_obe_idxs(k);
+	for (auto o : obes) {
+	  BackEdge& be  = this->get_backedge(o);
+	  if (be.is_capping_backedge()) { continue; }	  		
+	  //std::cout << "backedge: " << be.get_class()
+	  //			<< " " << be.get_color()
+	  //			<< std::endl;
+
+	  if (be.get_color() == core::color::black) {
+		v.push_back(std::make_pair(k, be.get_class()));  
+		  s.push(std::make_pair(k, be.get_class()));  
+		}
+	}		
+  }
+
+  // print the conents of the stack
+  for (auto it : v) {
+	std::cout << it.first << " " << it.second << std::endl;
+	}
+
+  return v;
+}
+  
 void Tree::print_dot() {
   std::cout << std::format(
 	"graph G {{\n"

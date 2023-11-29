@@ -79,7 +79,7 @@ extract_canonical_flubbles(tree::Tree pvst_) {
   for (auto subtree: canonical_flubbles) {
 	std::cout << subtree.first << " " << subtree.second << std::endl;
   }
-*/
+  */
   
   // use canonical subtrees to make a vector of pairs of flubble starts and stops
   //std::vector<std::pair<std::size_t, std::size_t>> canonical_flubbles;
@@ -174,7 +174,7 @@ get_paths_old(std::size_t start, std::size_t stop, digraph::DiGraph dg) {
   
 std::vector<std::vector<std::size_t>>
 get_paths(std::size_t start, std::size_t stop, digraph::DiGraph dg) {
-  std::cout << "[genomics::get_paths]\n";
+  std::cout << "[povu::genomics::get_paths]\n";
 
   //std::cout << "\t" << "start: " << start << " stop " << stop << std::endl;
   
@@ -186,9 +186,7 @@ get_paths(std::size_t start, std::size_t stop, digraph::DiGraph dg) {
 
   // nodes that are in the path leading to the key vertex
   std::map<std::size_t, std::set<std::size_t>> in_path;
-  for (std::size_t i{start}; i < stop+1; ++i) {
-	in_path[i] = {};
-  }
+  for (std::size_t i{start}; i < stop+1; ++i) { in_path[i] = {}; }
   
 
   std::vector<std::size_t> path {start};

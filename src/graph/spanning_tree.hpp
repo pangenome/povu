@@ -37,12 +37,12 @@ class Edge {
   std::size_t class_; // equivalnce class id
 
   // TODO: is size used?
-    // not used in tree edge
+// not used in tree edge
   std::size_t size;      // (recent size) size of the bracket list
   // std::size_t recent_class; // (recent class) id of the topmost backedge
 
   std::size_t backedge_id; // TODO: used??
-        // not used in tree edge
+// not used in tree edge
   // std::size_t id; // (recent class)
   //Bracket* b; // if it is a backedge
   bool null_;
@@ -122,6 +122,8 @@ public:
 /*
  * Bracket
  * -------
+ *
+ *
  */
 class Bracket {
   std::size_t back_edge_id_; // rename to backedge id? TODO: remove?
@@ -161,7 +163,12 @@ public:
 
 };
 
-// TODO: remove unused methods
+/*
+ * Vertex
+ * ------
+ *
+ * TODO: remove unused methods
+ */
 class Vertex {
   // dfsnum of the node in toposort
   std::size_t dfs_num_;
@@ -223,7 +230,7 @@ class Tree {
 
   // a BracketList for each node
   // the list of backedges bracketing a node
-    // a bracketList is a backedge with some metadata around it
+  // a bracketList is a backedge with some metadata around it
   std::vector<BracketList> bracket_lists;
 
   // Holds the topo mapping of the tree
@@ -231,6 +238,11 @@ class Tree {
   // the value at a poistion is the index in nodes
   // topo sort vector
   std::vector<std::size_t> sort_;
+
+  // sort based on the input graph
+  // the index in the vertex is the index in the input graph
+  // and the value is the index in the tree
+  std::vector<std::size_t> sort_g;
 
   static const size_t root_node_index{0};
 
@@ -245,11 +257,11 @@ public:
   Tree();
   Tree(std::size_t size);
 
-  // -------
-  // getters
-  // -------
+  // ---------
+  // getter(s)
+  // ---------
   Vertex& get_root();
-  // 
+  //
   std::size_t size() const;
   Edge& get_incoming_edge(std::size_t vertex);
 
@@ -304,14 +316,24 @@ public:
   // the vertex id of the node at sort value idx
   std::size_t get_sorted(std::size_t idx);
 
+
+  std::size_t get_sorted_g(std::size_t idx);
+
   // -------
   // setters
   // -------
-  
+
   // takes an index in toposort
   // and a vertex and sets the vertex as value in the toposort
   // vector
   void set_sort(std::size_t idx, std::size_t vertex);
+
+  // takes an index in the input graph
+  // and a vertex and sets the vertex as value in the toposort
+  // vector
+  void set_sort_g(std::size_t idx, std::size_t vertex);
+
+  
   // set the dfs number of a vertex
   void set_dfs_num(std::size_t vertex, std::size_t dfs_num);
 
@@ -319,14 +341,14 @@ public:
   std::size_t add_be(std::size_t frm,
 					 std::size_t to,
 					 bool capping_be=false,
-                     core::color color=core::color::black);
+					 core::color color=core::color::black);
 
   std::size_t add_be(std::size_t frm,
-                     std::size_t to,
-                     std::size_t weight,
-                     bool capping_be=false,
-                     core::color color=core::color::black);
-  
+					 std::size_t to,
+					 std::size_t weight,
+					 bool capping_be=false,
+					 core::color color=core::color::black);
+
   void add_tree_edge(std::size_t frm,
 					 std::size_t to,
 					 core::color color=core::color::black);
@@ -357,7 +379,10 @@ public:
 
   void cycles_vector(std::vector<std::tuple< size_t , size_t, size_t>>& v, std::vector<std::size_t>& classes);
 
-  std::vector<Edge> compute_edge_stack();  
+  std::vector<Edge> compute_edge_stack();
+
+  // added after biedging
+  std::vector<std::pair<std::size_t, std::size_t>> compute_edge_stack2();
 
   // I/O
   void print_dot();

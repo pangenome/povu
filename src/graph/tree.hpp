@@ -9,9 +9,12 @@
 
 namespace tree {
 
-// Vertex
-// ======
 
+/*
+ * Vertex
+ * ------
+ *
+ */  
 class Vertex {
   // TODO: make sure id is the same as the index in the di_graph or u_graph or have
   // a way of mapping to the index
@@ -24,6 +27,7 @@ class Vertex {
   // std::size_t depth; // depth of the vertex in the tree
 
   bool is_valid_; // is this a valid vertex in the tree
+  bool is_dummy_node_; // is this a dummy node in the tree
 
   std::string meta;
 
@@ -39,29 +43,36 @@ public:
   // non-root vertex constructor
   Vertex(std::size_t id, std::size_t parent_id, std::size_t eq_class);
 
+  Vertex(std::size_t id, std::size_t parent_id, std::size_t eq_class, bool is_dummy);
+
   // ---------
   // getter(s)
   // ---------
   bool is_valid() const;
+  bool is_dummy() const;
   std::set<std::size_t> const& get_children() const;
   std::size_t get_id() const;
   std::size_t get_class() const;
   std::size_t get_parent() const;
   std::string get_meta() const;
 
+
   // ---------
   // setter(s)
   // ---------
+  void set_parent(std::size_t child_id);
   void add_child(std::size_t child_id);
   void remove_child(std::size_t child_id);
   void set_class(std::size_t class_);
   void set_meta(std::string&& meta);
 };
 
-// Tree
-// ====
-
-// a simple vector backed tree implementation
+/*
+ * Tree
+ * ------
+ *
+ * a simple vector backed tree implementation
+ */
 class Tree {
   std::vector<Vertex> vertices;
   static const std::size_t root_idx_{}; // root is always at index 0
@@ -71,6 +82,7 @@ public:
   // constructor(s)
   // --------------
   // construct a null tree
+  // without any vertices
   Tree();
   // construct a tree with n null vertices but a valid root
   Tree(std::size_t n, bool artificial_root=false);
@@ -107,12 +119,14 @@ public:
   bool add_vertex(std::size_t parent_id, std::size_t id);
   bool add_vertex(std::size_t parent_id, std::size_t id, std::size_t eq_class);
   bool add_vertex(std::size_t parent_id, std::size_t id, std::size_t eq_class, std::string& meta);
+  bool add_vertex(std::size_t parent_id, std::size_t id, std::size_t eq_class, std::string& meta, bool is_dummy);
   bool remove_vertex(std::size_t id);
 
 
   // -----------------
   // display method(s)
   // -----------------
+  
   // dot format output of the tree
   void print_dot(bool with_classes=false);
 };

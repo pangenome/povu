@@ -1,13 +1,16 @@
 #include <bit>
+#include <cstddef>
 #include <iostream>
 #include <map>
 #include <string>
-
-
+#include <vector>
+#include <list>
 
 #include "../graph/tree.hpp"
 #include "./pvst.hpp"
 #include "../core/core.hpp"
+
+
 
 namespace pvst {
 /**
@@ -311,5 +314,213 @@ tree::Tree compute_pvst(
   return t;
 }
 
+/**
+ * @brief compute the pvst of a given vector of pairs
+ *
+ * @param v a vector of pairs
+ *          where each pair is (index, eq class)  
+ * @return a tree
+ */
+tree::Tree compute_pvst(std::vector<std::pair<std::size_t, std::size_t>> v) {
+  if (true) {
+	std::cout << "[povu::pvst::compute_pvst]\n";
+  }
   
+  tree::Tree t = tree::Tree();
+
+  // lambda to map back an index from the biedged and dummies vertex idx to the
+  // bidirected idx
+  auto bidirected_idx = [](std::size_t x) -> std::size_t {
+	x = x - 1;
+	return x % 2 == 0 ? ((x + 2) / 2) - 1 : ((x + 1) / 2) - 1;
+  };
+
+	
+  for (auto i: v) {
+	std::cout << i.first << " b " << bidirected_idx(i.first) << " " << i.second << std::endl; 
+  }
+
+  // a map of equivalence classes to a vector of their positions in the edge stack
+  std::map<size_t, std::vector<size_t>> pos_map;
+  for (std::size_t i{}; i < v.size(); ++i) {
+	pos_map[v[i].second].push_back(i);
+  }
+
+  // print pos_map
+  std::cout << "pos_map\n";
+  for (auto i: pos_map) {
+	std::cout << i.first << ": ";
+	for (auto j: i.second) { std::cout << j << ", "; }
+	std::cout << std::endl;
+  }
+
+  std::string bd_idx_str;
+
+  std::size_t
+	current_parent_class{},
+	current_parent_id{},
+	current_class{},
+	prev_class{},
+	bd_idx{}, // bidirected index
+	be_idx{}  // biedged index
+	;
+
+  tree::Vertex p_v;
+  
+  std::size_t counter{}, i{};
+
+  while (i < v.size()) {
+
+
+	
+	be_idx = v[i].first;
+    bd_idx = bidirected_idx(be_idx);
+	current_class = v[i].second;
+	bd_idx_str = std::to_string(bd_idx+1);
+
+
+	std::cout << "i: " << i << " counter: " << counter
+			  << " cpid: " << current_parent_id << " be idx " << be_idx << " bd idx: " << bd_idx
+			  << std::endl;
+	
+	// ----------------------
+	// handle the root vertex
+	// ----------------------
+
+	//
+	{
+	  if (i==0 && t.empty()) {
+		t.add_vertex(core::constants::UNDEFINED_SIZE_T, counter, current_class, bd_idx_str);
+		current_parent_class = current_class;
+		current_parent_id = i;
+		++counter;
+		++i;
+		continue;
+	  }
+	  else if (i==0 && !t.empty()) {
+		throw std::runtime_error("adding vertices to a rootless tree");
+	  }
+	}
+
+	// ------------------
+	// add other vertices
+	// ------------------
+	{
+	  t.add_vertex(current_parent_id, counter, current_class, bd_idx_str);
+	}	
+
+    // ------------------
+	// update/determine the parent
+	// ------------------
+
+
+	std::vector<std::size_t> const& ps = pos_map[current_class];
+	
+	std::list<std::size_t> positions;
+	for (auto p: ps) {
+	  positions.push_back(p);
+	}
+	
+	if (positions.size () == 1) {
+	  ++counter;
+	  ++i;
+	  continue; }
+
+	bool foo{false};
+
+	for (auto it = positions.begin(); it != positions.end(); ++it) {
+	  if (std::next(it) == positions.end()) { break; }
+
+	  if (*it == i && it != positions.begin() &&
+		  (*it  - *std::prev(it ) > 1) &&
+		((*std::next(it) - *it ) > 1) ) {
+		// add a dummy parent?
+
+		auto prt_v = t.get_vertex(current_parent_id);
+
+		if (!prt_v.is_dummy()) {
+
+		  //bool h{false};
+		  std::vector<std::size_t> children_found;
+		  for (auto c : prt_v.get_children()) {
+			// check whether the string contains _d
+		  
+			if (!t.get_vertex(c).is_dummy() ) {
+			  //h = true;
+			  ++counter;
+
+			  std::string dummy_str = std::to_string(prt_v.get_id() + 1);
+			  t.add_vertex(current_parent_id, counter,
+						   prt_v.get_class(), dummy_str, true);
+			  break;
+			}
+		  }
+
+		  for (auto c : prt_v.get_children()) {
+			// check whether the string contains _d
+		  
+			if (!t.get_vertex(c).is_dummy()) {
+			  t.get_vertex_mut(c).set_parent(counter);
+			  t.get_vertex_mut(counter).add_child(c);
+			  children_found.push_back(c);
+			  //prt_v.remove_child(c);
+			}
+		  }
+
+		  for (auto c : children_found) {
+			//std::cout << "\t remove "<< c << "\n";
+			t.get_vertex_mut(current_parent_id).remove_child(c);
+		  }
+		}
+
+		// move up the tree to find a non dummy parent
+		while (t.get_vertex(current_parent_id).is_dummy() ) {
+		  current_parent_id = t.get_parent(current_parent_id);
+		}
+		
+		std::cout << "\tcpid "<< current_parent_id << " " << counter<< "\n";
+		++counter;
+		std::string dummy_str = std::to_string( (bidirected_idx(v[i].first) + 1));
+
+		t.add_vertex(current_parent_id, counter, current_class, dummy_str, true);
+
+		current_parent_id = counter;
+		++i;
+		++counter;
+		foo = true;
+		// update all the 
+	  }
+	}
+
+	if (foo) {
+	  std::cout << "foo was true" << "\n";
+	  continue;
+	}
+	
+	if (positions.back() == i) {
+		// this is the last time we are seeing this class
+		std::cout << "up " << i << "\n";
+		// go up
+		std::size_t parent_id = t.get_parent(current_parent_id);
+		p_v = t.get_vertex(parent_id);
+		
+		current_parent_class = p_v.get_class();
+		current_parent_id = p_v.get_id();
+	}
+	else if (current_class != v[i+1].second) {
+	  // go down
+	  std::cout << "down " << i << "\n";
+	  current_parent_class = current_class;
+	  current_parent_id = i;	  
+	}
+
+	//prev_class = current_class;
+	++counter;
+	
+	++i;
+  }
+  
+  
+  return t;
+}  
 } // namespace pvst

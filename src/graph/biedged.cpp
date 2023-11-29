@@ -482,9 +482,12 @@ spanning_tree::Tree BVariationGraph::compute_spanning_tree() const {
   while (!visited.empty()) {
 	current_vertex = visited.top();
 
+	std::cout << "current_vertex: " << current_vertex << std::endl;
+	
 	if (!seen.count(current_vertex)) {
 	  t.set_dfs_num(current_vertex, counter);
 	  t.set_sort(counter, current_vertex);
+	  t.set_sort_g(current_vertex, counter);
 	  ++counter;
 	}
 
@@ -499,11 +502,37 @@ spanning_tree::Tree BVariationGraph::compute_spanning_tree() const {
 	std::set<size_t> adj_edges = v.get_grey_edges();
 	if (v.get_type() != VertexType::dummy) { adj_edges.insert(v.get_black_edge()); }
 
-
-	// TODO: better condition here for speedup
+	// target vertex, edge index
+	std::vector<std::pair<std::size_t, std::size_t>> adj_vertices;
 	for (std::size_t e_idx : adj_edges) {
 	  Edge e = this->edges.at(e_idx);
 	  std::size_t adj_v_idx = e.get_v1_idx() == current_vertex ? e.get_v2_idx() : e.get_v1_idx();
+	  adj_vertices.push_back( std::make_pair(adj_v_idx, e_idx) );
+	}
+
+	std::sort(
+	  adj_vertices.begin(),
+	  adj_vertices.end(),
+	  [](std::pair<std::size_t, std::size_t> const& a, std::pair<std::size_t, std::size_t> const& b) {
+		return a.first < b.first;
+	  });
+
+	// TODO: better condition here for speedup
+	for (auto e_idx : adj_edges) {
+
+	  Edge e = this->edges.at(e_idx);
+	  std::size_t adj_v_idx = e.get_v1_idx() == current_vertex ? e.get_v2_idx() : e.get_v1_idx();
+	  
+	  //std::size_t adj_v_idx = el.first;
+	  //std::size_t e_idx = el.second;
+
+
+	  
+	  //Edge e = this->edges.at(e_idx);
+
+	  // std::cout << "to: "<< adj_v_idx  << " e_idx: " << e.get_color() << " e_idx: " << e_idx << std::endl;
+	  
+	  //std::size_t adj_v_idx = e.get_v1_idx() == current_vertex ? e.get_v2_idx() : e.get_v1_idx();
 	  //std::size_t a = adj.v_idx;
 
 	  //if (a < current_vertex) { continue; }

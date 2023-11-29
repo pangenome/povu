@@ -23,7 +23,11 @@ enum output_format {
 };
     
 void call_variants(tree::Tree pvst_,
-				   digraph::DiGraph dg,   core::config app_config);
+				   digraph::DiGraph dg,
+				   core::config app_config);
+
+std::vector<std::pair<std::size_t, std::size_t>> extract_canonical_flubbles(tree::Tree pvst_);
+  
 } // namespace genomics
 
 namespace vcf {

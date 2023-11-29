@@ -21,37 +21,48 @@ Vertex::Vertex() :
   class_(core::constants::UNDEFINED_SIZE_T),
   parent(core::constants::UNDEFINED_SIZE_T),
   children(std::set<std::size_t>{}),
-  is_valid_(false) {}
+  is_valid_(false),
+  is_dummy_node_(false) {}
 
 Vertex::Vertex(std::size_t id) :
   id(id),
   class_(core::constants::UNDEFINED_SIZE_T),
   parent(core::constants::UNDEFINED_SIZE_T),
   children(std::set<std::size_t>{}),
-  is_valid_(true) {}
-
-
+  is_valid_(true),
+  is_dummy_node_(false) {}
   
 Vertex::Vertex(std::size_t id, std::size_t parent_id) :
   id(id),
   class_(core::constants::UNDEFINED_SIZE_T),
   parent(parent_id),
   children(std::set<std::size_t>{}),
-  is_valid_(true) {}
+  is_valid_(true),
+  is_dummy_node_(false){}
 
 Vertex::Vertex(std::size_t id, std::size_t parent_id, std::size_t eq_class) :
   id(id),
   class_(eq_class),
   parent(parent_id),
   children(std::set<std::size_t>{}),
-  is_valid_(true) {}
+  is_valid_(true),
+  is_dummy_node_(false) {}
 
+Vertex::Vertex(std::size_t id, std::size_t parent_id, std::size_t eq_class, bool is_dummy) :
+  id(id),
+	class_(eq_class),
+	parent(parent_id),
+	children(std::set<std::size_t>{}),
+  is_valid_(true),
+  is_dummy_node_(is_dummy){}
+  
 // member function(s)
 // ------------------
 
 // getters
 // -------
 bool Vertex::is_valid() const { return this->is_valid_; }
+bool Vertex::is_dummy() const { return this->is_dummy_node_; }
 std::size_t Vertex::get_id() const { return this->id; }
 std::size_t Vertex::get_class() const { return this->class_; }
 std::size_t Vertex::get_parent() const { return this->parent; }
@@ -62,6 +73,10 @@ std::set<std::size_t> const& Vertex::get_children() const {
 
 // setters
 // -------
+void Vertex::set_parent(std::size_t parent_id) {
+	this->parent = parent_id;
+}
+  
 void Vertex::add_child(std::size_t child_id) {
   this->children.insert(child_id);
 }
@@ -168,7 +183,41 @@ bool Tree::add_vertex(
   this->vertices[parent_id].add_child(id);
   return true;
 }
+
+bool Tree::add_vertex(
+  std::size_t parent_id,
+  std::size_t id,
+  std::size_t eq_class,
+  std::string& meta,
+  bool is_dummy
+  ) {
+  // if the tree is empty, add a root, a tree is empty is parent id is
+  // undefined and id is 0 and vertices is empty
+  if (this->vertices.empty() && parent_id == core::constants::UNDEFINED_SIZE_T && id == 0) {
+	Vertex root = Vertex(id);
+	root.set_class(eq_class);
+	root.set_meta(std::move(meta));
+	//this->vertices.push_back();
+	//this->vertices[0] = root;
+	this->vertices.push_back(root);
+	return true;
+  }
+
+  // if id is larger than the current size of the tree, resize the tree
+  if (id >= this->vertices.size()) {
+	this->vertices.resize(id + 1, Vertex());
+  }
   
+  // TODO: there's a logical error in the caller if the vertex is already in the tree
+  //       should we throw an exception here?
+  if (this->vertices[id].is_valid()) { return false;  }
+  this->vertices[id] = Vertex(id, parent_id, eq_class, is_dummy);
+  //this->vertices.at(id).set_meta(std::move(meta));
+  this->vertices[id].set_meta(std::move(meta));
+  this->vertices[parent_id].add_child(id);
+  return true;
+}
+
 bool Tree::remove_vertex(std::size_t id) {
   if (!this->vertices[id].is_valid()) { return false; }
   std::size_t parent_id = this->vertices[id].get_parent();
@@ -221,11 +270,12 @@ if (with_classes) {
 
     std::cout <<
       std::format(
-        "\t{} [label=\"v: {}\\ncl: {}\\nmeta: {}\"];\n",
+        "\t{} [label=\"v: {}\\ncl: {}\\ngid: {}\", color=\"{}\"];\n",
         i,
         i,
         class_label,
-        this->vertices[i].get_meta());
+        this->vertices[i].get_meta(),
+		this->vertices[i].is_dummy() ? "red" : "black");
   }
 }
 
