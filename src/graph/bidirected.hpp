@@ -34,7 +34,11 @@ enum class VertexEnd {
 	l,
 	r
 };
-
+// -----------
+// operator(s)
+// -----------
+// operator << for VertexEnd
+std::ostream& operator<<(std::ostream& os, const VertexEnd& ve);
 
 
 struct PathInfo {
@@ -67,7 +71,7 @@ public:
   Edge();
   Edge(std::size_t v1, VertexEnd v1_end, std::size_t v2, VertexEnd v2_end);
 
-
+  
   // ---------
   // getter(s)
   // ---------
@@ -75,8 +79,8 @@ public:
   VertexEnd get_v1_end() const;
   std::size_t get_v2_idx() const;
   VertexEnd get_v2_end() const;
-  
 
+  
   // -----------
   // operator(s)
   // -----------

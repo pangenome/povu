@@ -4,6 +4,8 @@
 #include "../graph/tree.hpp"
 #include "../graph/digraph.hpp"
 #include "../core/core.hpp"
+#include "../graph/bidirected.hpp"
+
 
 namespace genomics {
 // TODO: make use of this or delete
@@ -22,10 +24,9 @@ enum output_format {
 	PAF, // not yet supported
 };
     
-void call_variants(tree::Tree pvst_,
-				   digraph::DiGraph dg,
-				   core::config app_config);
+//void call_variants(tree::Tree pvst_, digraph::DiGraph dg, core::config app_config);
 
+void call_variants(tree::Tree pvst_, bidirected::VariationGraph bd_vg, core::config app_config);
 std::vector<std::pair<std::size_t, std::size_t>> extract_canonical_flubbles(tree::Tree pvst_);
   
 } // namespace genomics

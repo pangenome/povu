@@ -12,6 +12,23 @@
 
 namespace bidirected {
 /*
+ * VertexEnd
+ * ---------
+ */
+std::ostream& operator<<(std::ostream& os, const VertexEnd& ve) {
+  switch (ve) {
+  case VertexEnd::l:
+  os << "+";
+  break;
+  case VertexEnd::r:
+  os << "-";
+  break;
+  }
+
+  return os;
+}
+  
+/*
  * Edge
  * ----
  */

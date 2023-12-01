@@ -6,9 +6,12 @@
 #include "./graph/spanning_tree.hpp"
 #include "./algorithms/cycle_equiv.hpp"
 #include "./pvst/pvst.hpp"
+#include "./genomics/genomics.hpp"
+#include "graph/tree.hpp"
+
 
 #include "./graph/u_graph.hpp"
-#include "graph/tree.hpp"
+
 
 int main(int argc, char *argv[]) {
   core::config app_config;
@@ -48,6 +51,9 @@ int main(int argc, char *argv[]) {
 	t.print_dot(true);	
   }
 
+  
+
+  genomics::call_variants(t, vg, app_config);
 
   return 0;
   
