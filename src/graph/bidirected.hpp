@@ -23,6 +23,8 @@ struct path_t {
   std::string name; // name as pertains the GFA file
   std::size_t id; // numerical id to be associated with handle
   bool is_circular; // is the path circular?
+
+  // TODO: use methods here instead of accessing directly
 };
 
 
@@ -121,9 +123,12 @@ public:
   // ---------
   bool is_reversed() const;
   const std::string& get_label() const;
+  // rc is reverse complement
+  std::string get_rc_label() const; 
   const std::string& get_handle() const;
   const std::set<std::size_t>& get_edges_l() const;
   const std::set<std::size_t>& get_edges_r() const;
+  const std::vector<PathInfo>& get_paths() const;
 
   
   // ---------
@@ -171,7 +176,7 @@ public:
   const Edge& get_edge(std::size_t index) const;
   std::unordered_set<std::size_t> get_start_nodes() const;
   std::unordered_set<std::size_t> get_end_nodes() const;
-  
+  const std::vector<path_t>& get_paths() const;
 
   // ---------
   // setter(s)

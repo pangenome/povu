@@ -232,6 +232,10 @@ std::set<std::size_t> const& Tree::get_children(std::size_t v) const {
   return this->vertices.at(v).get_children();
 }
 
+std::size_t Tree::get_class(std::size_t id) const {
+	return this->vertices.at(id).get_class();
+}
+
 std::size_t Tree::get_parent(std::size_t id) const {
   std::size_t p = this->vertices.at(id).get_parent();
   return p == core::constants::UNDEFINED_SIZE_T ? 0 : p;

@@ -9,6 +9,7 @@
 
 #include "./bidirected.hpp"
 #include "../core/utils.hpp"
+#include "../core/utils.hpp"
 
 namespace bidirected {
 /*
@@ -111,6 +112,10 @@ const std::string& Vertex::get_label() const {
   return this->label;
 }
 
+std::string Vertex::get_rc_label() const{
+  return utils::reverse_complement(this->label);
+}
+  
 const std::string& Vertex::get_handle() const {
   return this->handle;
 }
@@ -121,6 +126,10 @@ const std::set<std::size_t>& Vertex::get_edges_l() const {
 
 const std::set<std::size_t>& Vertex::get_edges_r() const {
 	return this->edges_r;
+}
+  
+const std::vector<PathInfo>& Vertex::get_paths() const {
+  return this->paths;
 }
 
 bool Vertex::is_reversed() const {
@@ -194,6 +203,10 @@ std::unordered_set<std::size_t> VariationGraph::get_end_nodes() const {
   return this->end_nodes;
 }
 
+const std::vector<path_t>& VariationGraph::get_paths() const {
+  return this->paths;
+}
+  
 void VariationGraph::dbg_print() {
   std::cerr << "VariationGraph: " << std::endl;
   std::cerr << "\t" << "vertices: " << this->size() << std::endl;
