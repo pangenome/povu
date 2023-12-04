@@ -97,7 +97,7 @@ public:
   // returns the set of children of the vertex
   std::set<std::size_t> const& get_children(std::size_t id) const;
   std::size_t get_class(std::size_t id) const;
-
+  std::size_t get_meta(std::size_t id) const;
   Vertex const& get_vertex(std::size_t id) const;
   Vertex& get_vertex_mut(std::size_t id);
   std::size_t get_parent(std::size_t id) const;

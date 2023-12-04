@@ -236,6 +236,11 @@ std::size_t Tree::get_class(std::size_t id) const {
 	return this->vertices.at(id).get_class();
 }
 
+std::size_t Tree::get_meta(std::size_t id) const {
+  // convert the result of meta from string to std::size_t
+  return std::stoull(this->vertices.at(id).get_meta());
+}
+  
 std::size_t Tree::get_parent(std::size_t id) const {
   std::size_t p = this->vertices.at(id).get_parent();
   return p == core::constants::UNDEFINED_SIZE_T ? 0 : p;

@@ -209,10 +209,10 @@ const std::vector<path_t>& VariationGraph::get_paths() const {
   
 void VariationGraph::dbg_print() {
   std::cerr << "VariationGraph: " << std::endl;
-  std::cerr << "\t" << "vertices: " << this->size() << std::endl;
+  std::cerr << "\t" << "vertex count:  " << this->size() << std::endl;
   std::cerr << "\t"<< "valid vertices: " << std::endl;
-  std::cerr << "\t"<< "edges: " << this->edges.size() << std::endl;
-  std::cerr << "\t" << "paths: " << this->paths.size() << std::endl;
+  std::cerr << "\t"<< "edge count: " << this->edges.size() << std::endl;
+  std::cerr << "\t" << "path count: " << this->paths.size() << std::endl;
 
   std::cerr << "\t" << "start nodes: ";
   utils::print_with_comma(this->start_nodes);

@@ -8,6 +8,14 @@
 
 
 namespace genomics {
+
+typedef std::size_t id_t; //
+typedef id_t vertex_id_t; //
+typedef std::pair<bidirected::VertexEnd, id_t> side_n_id_t; // TODO: replace with struct
+typedef std::vector<side_n_id_t> subpath_t;
+typedef std::vector<subpath_t> subpaths_t;
+
+  
 // TODO: make use of this or delete
 enum variant_type {
 	SNP,
@@ -25,7 +33,6 @@ enum output_format {
 };
 
 
-    
 //void call_variants(tree::Tree pvst_, digraph::DiGraph dg, core::config app_config);
 
 void call_variants(const tree::Tree& pvst_, const bidirected::VariationGraph& bd_vg, const core::config& app_config);
@@ -34,6 +41,10 @@ std::vector<std::pair<std::size_t, std::size_t>> extract_canonical_flubbles(cons
 } // namespace genomics
 
 namespace vcf {
+
+const std::string UNDEFINED_PATH_LABEL = "undefined";
+const std::size_t UNDEFINED_PATH_ID = core::constants::SIZE_T_MAX;
+const std::size_t UNDEFINED_PATH_POS = core::constants::SIZE_T_MAX;
 
 struct vcf_record {
   std::string chrom;
