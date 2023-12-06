@@ -62,14 +62,11 @@ void write_vcfs(const std::map<std::size_t,
 				const core::config& app_config) {
   std::string fn_name = "[povu::vcf::write_vcfs]";
 
-  
-   
   // this map is redundant
   std::map<std::size_t, std::string> path_id_name_map; //  id to path name
   for (auto p : bd_vg.get_paths()) {
 	path_id_name_map[p.id] = p.name;
   }
-
 
   path_id_name_map[UNDEFINED_PATH_ID] = UNDEFINED_PATH_LABEL;
 

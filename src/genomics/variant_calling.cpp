@@ -647,7 +647,7 @@ void call_variants(const tree::Tree& pvst_,
 				   const bidirected::VariationGraph& bd_vg,
 				   const core::config& app_config) {
   std::string fn_name = "[povu::genomics::call_variants]";
-  if (app_config.verbosity() > 3) { std::cout << fn_name << "\n"; }
+  if (app_config.verbosity() > 3) { std::cerr << fn_name << "\n"; }
 
   //output_format of = output_format::VCF;
   std::vector<std::pair<std::size_t, std::size_t>> canonical_flubbles =

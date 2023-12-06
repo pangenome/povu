@@ -321,10 +321,9 @@ tree::Tree compute_pvst(
  *          where each pair is (index, eq class)  
  * @return a tree
  */
-tree::Tree compute_pvst(std::vector<std::pair<std::size_t, std::size_t>> v) {
-  if (true) {
-	std::cout << "[povu::pvst::compute_pvst]\n";
-  }
+tree::Tree compute_pvst(std::vector<std::pair<std::size_t, std::size_t>> v, const core::config& app_config) {
+  std::string fn_name = "[povu::pvst::compute_pvst]";
+  if (app_config.verbosity() > 3) { std::cerr << fn_name << "\n"; }
   
   tree::Tree t = tree::Tree();
 
@@ -336,9 +335,9 @@ tree::Tree compute_pvst(std::vector<std::pair<std::size_t, std::size_t>> v) {
   };
 
 	
-  for (auto i: v) {
-	std::cout << i.first << " b " << bidirected_idx(i.first) << " " << i.second << std::endl; 
-  }
+  //for (auto i: v) {
+//	std::cout << i.first << " b " << bidirected_idx(i.first) << " " << i.second << std::endl; 
+  //}
 
   // a map of equivalence classes to a vector of their positions in the edge stack
   std::map<size_t, std::vector<size_t>> pos_map;
@@ -347,12 +346,14 @@ tree::Tree compute_pvst(std::vector<std::pair<std::size_t, std::size_t>> v) {
   }
 
   // print pos_map
+  /*
   std::cout << "pos_map\n";
   for (auto i: pos_map) {
 	std::cout << i.first << ": ";
 	for (auto j: i.second) { std::cout << j << ", "; }
 	std::cout << std::endl;
   }
+  */
 
   std::string bd_idx_str;
 
@@ -379,9 +380,11 @@ tree::Tree compute_pvst(std::vector<std::pair<std::size_t, std::size_t>> v) {
 	bd_idx_str = std::to_string(bd_idx+1);
 
 
+	/*
 	std::cout << "i: " << i << " counter: " << counter
 			  << " cpid: " << current_parent_id << " be idx " << be_idx << " bd idx: " << bd_idx
 			  << std::endl;
+	*/
 	
 	// ----------------------
 	// handle the root vertex
@@ -478,7 +481,7 @@ tree::Tree compute_pvst(std::vector<std::pair<std::size_t, std::size_t>> v) {
 		  current_parent_id = t.get_parent(current_parent_id);
 		}
 		
-		std::cout << "\tcpid "<< current_parent_id << " " << counter<< "\n";
+		//std::cout << "\tcpid "<< current_parent_id << " " << counter<< "\n";
 		++counter;
 		std::string dummy_str = std::to_string( (bidirected_idx(v[i].first) + 1));
 
@@ -493,13 +496,13 @@ tree::Tree compute_pvst(std::vector<std::pair<std::size_t, std::size_t>> v) {
 	}
 
 	if (foo) {
-	  std::cout << "foo was true" << "\n";
+	  //std::cout << "foo was true" << "\n";
 	  continue;
 	}
 	
 	if (positions.back() == i) {
 		// this is the last time we are seeing this class
-		std::cout << "up " << i << "\n";
+		//std::cout << "up " << i << "\n";
 		// go up
 		std::size_t parent_id = t.get_parent(current_parent_id);
 		p_v = t.get_vertex(parent_id);
@@ -509,7 +512,7 @@ tree::Tree compute_pvst(std::vector<std::pair<std::size_t, std::size_t>> v) {
 	}
 	else if (current_class != v[i+1].second) {
 	  // go down
-	  std::cout << "down " << i << "\n";
+	  //std::cout << "down " << i << "\n";
 	  current_parent_class = current_class;
 	  current_parent_id = i;	  
 	}
