@@ -61,6 +61,15 @@ VertexEnd Edge::get_v2_end() const {
   return this->v2_end;
 }
 
+side_n_id_t Edge::get_other_vertex(std::size_t vertex_index) const {
+  if (this->get_v1_idx() == vertex_index) {
+	return side_n_id_t {this->get_v2_end(), this->get_v2_idx() };
+  }
+  else {
+	return side_n_id_t {this->get_v1_end(), this->get_v1_idx() };
+  }
+}
+
 // << operator
 std::ostream& operator<<(std::ostream& os, const Edge& edge) {
   os << std::format("{{bidirected::Edge {}{} {}{} }}",
@@ -195,6 +204,25 @@ const Edge& VariationGraph::get_edge(std::size_t index) const {
 	return this->edges[index];
 }
 
+std::vector<side_n_id_t> VariationGraph::get_adj_vertices(std::size_t vertex_index, VertexEnd vertex_end) const {  
+  std::vector<side_n_id_t> adj_vertices;
+
+  if (vertex_end == VertexEnd::l) {
+	for (const auto& edge_index : this->vertices[vertex_index].get_edges_l()) {
+	  const Edge& e = this->get_edge(edge_index);
+	  adj_vertices.push_back(e.get_other_vertex(vertex_index));
+	}
+  }
+  else {
+	for (const auto& edge_index : this->vertices[vertex_index].get_edges_r()) {
+	  	  const Edge& e = this->get_edge(edge_index);
+	  adj_vertices.push_back(e.get_other_vertex(vertex_index));
+	}
+  }
+
+  return adj_vertices;
+}
+
 std::unordered_set<std::size_t> VariationGraph::get_start_nodes() const {
   return this->start_nodes;
 }
@@ -210,8 +238,8 @@ const std::vector<path_t>& VariationGraph::get_paths() const {
 void VariationGraph::dbg_print() {
   std::cerr << "VariationGraph: " << std::endl;
   std::cerr << "\t" << "vertex count:  " << this->size() << std::endl;
-  std::cerr << "\t"<< "valid vertices: " << std::endl;
-  std::cerr << "\t"<< "edge count: " << this->edges.size() << std::endl;
+  std::cerr << "\t" << "valid vertices: " << std::endl;
+  std::cerr << "\t" << "edge count: " << this->edges.size() << std::endl;
   std::cerr << "\t" << "path count: " << this->paths.size() << std::endl;
 
   std::cerr << "\t" << "start nodes: ";

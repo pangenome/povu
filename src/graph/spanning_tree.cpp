@@ -832,7 +832,7 @@ std::vector<Edge> Tree::compute_edge_stack() {
 
   while (counter < 15) {
 
-	std::cout << "current vertex: " << current_vertex << std::endl;
+	//std::cout << "current vertex: " << current_vertex << std::endl;
 
 	++counter;
 	seen.insert(current_vertex);
@@ -936,9 +936,9 @@ std::vector<std::pair<std::size_t, std::size_t>>
   }
 
   // print the conents of the stack
-  for (auto it : v) {
-	std::cout << it.first << " " << it.second << std::endl;
-	}
+  //for (auto it : v) {
+	//std::cout << it.first << " " << it.second << std::endl;
+	//}
 
   return v;
 }

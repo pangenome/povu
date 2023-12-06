@@ -15,7 +15,7 @@ std::string reverse_complement(const std::string& sequence);
  * Concatenates a vector of strings with a given character
  */ 
 std::string concat_with (const std::vector<std::string>& v, char c);
-
+//template <typename T> std::string concat_with(const T& v, char delim);
 /**
  * Returns the current date in the format YYYYMMDD
  */
@@ -24,10 +24,10 @@ std::string today();
 /**
  * @brief
  *
- * @param v the vector whose value is to be erased
- * @param idx the index to be erased
+ * @param v: the vector whose value is to be erased passed by copy to avoid mutating the original
+ * @param idx: the index to be erased
  * @return a vector with the value at the given index erased
  */
-std::vector<std::string> immutable_erase(std::vector<std::string>& v, std::size_t idx);
+std::vector<std::string> immutable_erase(std::vector<std::string> v, std::size_t idx);
 } // namespace utils
 #endif

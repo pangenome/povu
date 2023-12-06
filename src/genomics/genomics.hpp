@@ -61,7 +61,7 @@ struct vcf_record {
 };
 
 void write_vcfs(const std::map<std::size_t, std::vector<vcf_record>>& vcf_records,
-				const bidirected::VariationGraph& bd_vg);
+				const bidirected::VariationGraph& bd_vg, const core::config& app_config);
 bool print_vcf(std::vector<std::vector<std::size_t>> paths,
 			   digraph::DiGraph dg,
 			   std::string ref_path_name,

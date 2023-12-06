@@ -22,15 +22,17 @@
 
 namespace vcf {
 
-void write_vcf(const std::string& ref_name, const std::vector<vcf_record>& vcf_records) {
-  	std::string vcf_file_name = std::format("{}/{}.vcf", ".", ref_name);
+void write_vcf(const std::string& ref_name,
+			   const std::vector<vcf_record>& vcf_records,
+			   const core::config& app_config) {
+	std::string vcf_file_name = std::format("{}/{}.vcf", ".", ref_name);
 	std::ofstream vcf_file(vcf_file_name);
 
 	if (!vcf_file.is_open()) {
 	  std::cerr << "ERROR: could not open file " << vcf_file_name << "\n";
 	  std::exit(1);
 	}
-	
+
 	// write the header
 	vcf_file << "##fileformat=VCFv4.2\n";
 	vcf_file << "##fileDate=" << utils::today() << std::endl;
@@ -41,36 +43,42 @@ void write_vcf(const std::string& ref_name, const std::vector<vcf_record>& vcf_r
 	vcf_file << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
 	vcf_file << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE\n";
 
-	
 	// write the records
 	for (const vcf_record& vcf_rec : vcf_records) {
-	  vcf_file << vcf_rec.chrom << "\t" << vcf_rec.pos << "\t.\t" << vcf_rec.ref
+	  
+	  vcf_file << app_config.get_chrom()
+			   << "\t" << (vcf_rec.pos == UNDEFINED_PATH_POS ? std::to_string(-1) : std::to_string(vcf_rec.pos))
+			   << "\t." 
+			   << "\t" << vcf_rec.ref
 			   << "\t" << utils::concat_with(vcf_rec.alt, ',') << "\t.\t.\t.\tGT\t0/1\n";
 	}
 
 	vcf_file.close();
 }
-  
+
 void write_vcfs(const std::map<std::size_t,
 				std::vector<vcf_record>>& vcf_records,
-				const bidirected::VariationGraph& bd_vg) {
+				const bidirected::VariationGraph& bd_vg,
+				const core::config& app_config) {
+  std::string fn_name = "[povu::vcf::write_vcfs]";
 
+  
+   
   // this map is redundant
   std::map<std::size_t, std::string> path_id_name_map; //  id to path name
   for (auto p : bd_vg.get_paths()) {
 	path_id_name_map[p.id] = p.name;
   }
 
- 
+
   path_id_name_map[UNDEFINED_PATH_ID] = UNDEFINED_PATH_LABEL;
 
   for (auto& [ref_id, vcf_recs]: vcf_records) {
-
 	std::string ref_name = path_id_name_map[ref_id];
-   std::cout << "writing vcf for " << ref_name << "\n";
-	write_vcf(ref_name, vcf_recs);
+	std::cerr << fn_name << "writing vcf for " << ref_name << "\n";
+	write_vcf(ref_name, vcf_recs, app_config);
   }
 }
 
-  
+
 } // namespace vcf

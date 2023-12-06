@@ -3,6 +3,9 @@
 #include <numeric>
 #include <ctime>
 #include <iomanip>
+#include <sstream>
+#include <iterator>
+#include <algorithm>
 
 #include "./utils.hpp"
 
@@ -16,13 +19,14 @@ void print_with_comma(std::unordered_set<std::size_t>& iterable) {
   }
 }
 
-std::string concat_with (const std::vector<std::string>& v, char c) {
-  return std::accumulate(v.begin(), v.end(), std::string(),
-						 [&c](const std::string& a, const std::string& b) -> std::string {
-						   return a + c + b;
-						 }
-	);
-};
+std::string concat_with(const std::vector<std::string>& v, char c) {
+  if (v.empty()) { return ""; } // means a deletion in the case of VCF
+  return std::accumulate(
+	std::next(v.begin()), v.end(), v.front(),
+	[&c](const std::string& a, const std::string& b) -> std::string {
+	  return a + c + b; 
+	});
+}
 
 char complement(char nucleotide) {
   switch (nucleotide) {
@@ -66,10 +70,9 @@ std::string today() {
     return dateTimeStream.str();
 }
 
-std::vector<std::string> immutable_erase(std::vector<std::string>& v, std::size_t idx) {
-  std::vector<std::string> v_ = v;
-  v_.erase(v_.begin()+idx, v_.begin()+idx);
-  return v_;
+std::vector<std::string> immutable_erase(std::vector<std::string> v, std::size_t idx) {
+  v.erase(v.begin()+idx, v.begin()+idx+1);
+  return v;
 }
   
 } // namespace utils

@@ -39,7 +39,7 @@ std::string path_to_seq( const bidirected::VariationGraph& bd_vg, const subpath_
 	bidirected::Vertex const& v = bd_vg.get_vertex(id);
 	seq += side == bidirected::VertexEnd::l ? v.get_label() : v.get_rc_label();
   }
-  
+
   return seq;
 }
 
@@ -49,7 +49,7 @@ std::string path_to_seq( const bidirected::VariationGraph& bd_vg, const subpath_
 const std::set<std::size_t>& get_edges_for_side(bidirected::Vertex const& v, bidirected::VertexEnd side) {
   return side == bidirected::VertexEnd::l ? v.get_edges_l() : v.get_edges_r();
 }
-  
+
 /**
  * @brief compute the opposite side of an vertex
  * @return the opposite side of the given vertex
@@ -146,16 +146,28 @@ extract_canonical_flubbles(const tree::Tree& pvst_) {
  * @param all_paths a vector of paths
  * @return std::vector<subpaths_t> a vector of simplified paths
  */
-subpaths_t simplify_paths(const subpaths_t& all_paths) {
+subpaths_t simplify_paths(std::size_t start_id, std::size_t stop_id, const subpaths_t& all_paths) {
 
   subpaths_t simplified_paths;
   simplified_paths.reserve(all_paths.size());
+
+  auto in_flubble = [start_id, stop_id](id_t i) -> bool {
+	return i > start_id && i < stop_id;
+  };
+  
+  
 
   for (std::size_t i{}; i < all_paths.size(); ++i) {
 	const subpath_t& path = all_paths[i];
 
 	if (path.size() % 2 != 0) {
-	  std::cout << "Expected even number of paths, skipping path\n";
+	  std::cout << "Expected even number of vertices in path, skipping path\n";
+	  // print path
+	  for (auto [side, id]: path) {
+		std::cout << side << " " << id << ", ";
+	  }
+	  std::cout << std::endl;
+
 	  continue;
 	}
 
@@ -172,6 +184,8 @@ subpaths_t simplify_paths(const subpaths_t& all_paths) {
 		std::cout << "Expected same node id, skipping path\n";
 	  }
 
+	  if (!in_flubble(path[j].second)) { continue; }
+	  
 	  simplified_path.push_back(std::make_pair(path[j].first, path[j].second));
 	}
 
@@ -181,7 +195,7 @@ subpaths_t simplify_paths(const subpaths_t& all_paths) {
   return simplified_paths;
 }
 
-  
+// TODO: make this a method of bi_vg
 /**
  * @brief Get all paths between two nodes in the bidirected variation graph
  *
@@ -191,38 +205,69 @@ subpaths_t simplify_paths(const subpaths_t& all_paths) {
  * @return std::vector<subpaths_t> a vector of paths
  */
 subpaths_t get_paths(id_t start_id, id_t stop_id, const bidirected::VariationGraph& bi_vg) {
-  //std::cout << "[povu::genomics::get_paths]\n";
+  std::string fn_name = "[povu::genomics::get_paths]";
+  std::cout << fn_name << "\n";
+
+  
+  auto in_flubble = [start_id, stop_id](id_t i) -> bool {
+	return i >= start_id && i <= stop_id;
+  };
+  
+  bidirected::VertexEnd start_side;
+
+  typedef bidirected::VertexEnd v_end;
 
   // a pair of side and vertex that has been visited
   std::set<std::pair<bidirected::VertexEnd, id_t>> visited;
 
   // init a visit queue
-  bidirected::Vertex const& v_start = bi_vg.get_vertex(start_id);
+  std::deque<side_n_id_t> q;
 
-  const std::set<std::size_t>& edge_from =
-	v_start.get_edges_l().size() == 1 ? v_start.get_edges_l() : v_start.get_edges_r();
-  const std::set<std::size_t>& edges_to =
-	v_start.get_edges_l().size() > 1 ? v_start.get_edges_l() : v_start.get_edges_r();
+  std::vector<bidirected::side_n_id_t> v_left = bi_vg.get_adj_vertices(start_id, v_end::l);
+  std::vector<bidirected::side_n_id_t> v_right = bi_vg.get_adj_vertices(start_id, v_end::r);
 
-  std::deque<std::pair<bidirected::VertexEnd, id_t>> q;
-  for (auto e_idx: edges_to) {
-	const bidirected::Edge& e = bi_vg.get_edge(e_idx);
-	e.get_v1_idx() == start_id ?
-	  q.push_back(std::make_pair(e.get_v2_end(), e.get_v2_idx())) :
-	  q.push_back(std::make_pair(e.get_v1_end(), e.get_v1_idx()));
-  }
-
-  std::set<std::pair<bidirected::VertexEnd, id_t>> seen;
-
-  auto unique_push_back_q =
-	[&q, &seen, stop_id](std::pair<bidirected::VertexEnd, id_t> e) {
-	  if (seen.count(e) || e.second > stop_id) { return; }
-
-	  // std::cout << "\t" << "q push back: " << e.first << " " << e.second << "\n";
-
-	  q.push_back(e);
-	  seen.insert(e);
+  
+	auto remove = [](std::vector<bidirected::side_n_id_t>& v, std::function<bool(bidirected::side_n_id_t)> condition){
+	  v.erase(std::remove_if(v.begin(), v.end(), condition), v.end());
 	};
+
+	remove(v_left, [&](bidirected::side_n_id_t x) { return x.v_idx < start_id; });
+	remove(v_right, [&](bidirected::side_n_id_t x) { return x.v_idx < start_id; });
+
+	if (v_left.empty() && v_right.empty()) {
+	  std::cerr << fn_name << " No paths can be found\n";
+	}
+	else if (v_left.empty() && !v_right.empty() && v_right.size() == v_right.size()) {
+	  for (auto x: v_right) {
+		std::cout << "init pushing " << x.v_end << " " << x.v_idx << std::endl;
+		q.push_back( std::make_pair(x.v_end, x.v_idx) );
+	  }
+	  start_side = v_end::r;
+	}
+	else if (!v_left.empty() && v_right.empty() && v_left.size() == v_left.size()) {
+	  for (auto x: v_left) {
+		std::cout << "init pushing " << x.v_end << " " << x.v_idx << std::endl;
+		q.push_back( std::make_pair(x.v_end, x.v_idx) );
+	  }
+	  start_side = v_end::l;
+	}
+	else {
+	  std::cout  << fn_name << " Both sides have adj vertices\n";
+	}
+  
+
+  std::cout << "start side: " << start_side << std::endl;
+  
+  std::set<side_n_id_t> seen;
+
+  auto unique_push_back_q = [&](side_n_id_t e) {
+	if (seen.count(e) || !in_flubble(e.second)) { return; }
+
+	std::cout << "\t" << "lambda q push back: " << e.first << " " << e.second << "\n";
+
+	q.push_back(e);
+	seen.insert(e);
+  };
 
   // nodes that are in the path leading to the key vertex
   std::map<side_n_id_t, std::set<side_n_id_t>> in_path;
@@ -231,32 +276,54 @@ subpaths_t get_paths(id_t start_id, id_t stop_id, const bidirected::VariationGra
 	in_path[std::make_pair(bidirected::VertexEnd::l, i)] = {};
   }
 
-  bidirected::VertexEnd side =
-	v_start.get_edges_l().size() == 1? bidirected::VertexEnd::l : bidirected::VertexEnd::r ;
-  in_path[std::make_pair(side, start_id)].insert(std::make_pair(side, start_id));
+  //bidirected::VertexEnd side = start_side;
+  if (start_side == bidirected::VertexEnd::r) {
+	in_path[std::make_pair(start_side, start_id)].insert(std::make_pair(v_end::l, start_id));
+	in_path[std::make_pair(start_side, start_id)].insert(std::make_pair(start_side, start_id));
+  }
+  else {
+	in_path[std::make_pair(start_side, start_id)].insert(std::make_pair(v_end::r, start_id));
+	in_path[std::make_pair(start_side, start_id)].insert(std::make_pair(start_side, start_id));
+  }
 
   // the key is the vertex id and the value is a vector of (unique) paths
   // leading up to the key vertex
   std::map<side_n_id_t, subpaths_t> paths_map;
   // start by adding the start vertex as the only path to itself
-  paths_map[std::make_pair(side, start_id)] =
-	std::vector<std::vector<side_n_id_t>>{{std::make_pair(side, start_id)}};
 
-  subpaths_t curr_paths;
+  paths_map[std::make_pair(start_side, start_id)] =
+	std::vector<std::vector<side_n_id_t>>{
+	{
+	  std::make_pair(bidirected::VertexEnd::l, start_id) ,
+	  std::make_pair(start_side, start_id)
+	}
+  };
 
-  auto extend_paths = [&paths_map](side_n_id_t adj,side_n_id_t alt_adj) {
+  paths_map[std::make_pair(complement_side(start_side), start_id)] =
+	std::vector<std::vector<side_n_id_t>>{
+	{
+	  std::make_pair(bidirected::VertexEnd::l, start_id) ,
+	  std::make_pair(start_side, start_id)
+	}
+  };
+
+  auto extend_paths = [&paths_map](side_n_id_t adj, side_n_id_t alt_adj) {
 	paths_map[adj] = paths_map[alt_adj];
 	for (subpath_t& path_ : paths_map[adj]) {
 	  path_.push_back(adj);
 	}
   };
+  
+  id_t v_id;
+  subpaths_t curr_paths;
+  bidirected::VertexEnd side;
 
   while (!q.empty()) {
 
 	std::pair<bidirected::VertexEnd, id_t> side_id_pair = q.front();
-	bidirected::VertexEnd side = side_id_pair.first;
-	id_t v_id = side_id_pair.second;
-	//std::cout << "q.front: (" << side << ", " << v_id << ")\n";
+	side = side_id_pair.first;
+	v_id = side_id_pair.second;
+	std::cout << "q.front: (" << side << ", " << v_id << ")\n";
 
 	if (visited.count(side_id_pair)) {
 	  q.pop_front();
@@ -264,75 +331,44 @@ subpaths_t get_paths(id_t start_id, id_t stop_id, const bidirected::VariationGra
 	  continue;
 	}
 
-	bidirected::Vertex const& v = bi_vg.get_vertex(v_id);
+	//bidirected::Vertex const& v = bi_vg.get_vertex(v_id);
 
 	bool go_back{false};
 
 	{
-	  std::vector<side_n_id_t> to_adjacents;
-	  // if l look towards edges is connected to the right, otherwise look towards edges connected to the left
-	  // TODO: both sides are r
-	  const std::set<std::size_t>& to_adj_edge_idxs = get_edges_for_side(v, complement_side(side));
-	  for (auto e_idx: to_adj_edge_idxs) {
-		const bidirected::Edge& e = bi_vg.get_edge(e_idx);
-
-		e.get_v1_idx() == v_id ?
-		  to_adjacents.push_back(std::make_pair(e.get_v2_end(), e.get_v2_idx())) :
-		  to_adjacents.push_back(std::make_pair(e.get_v1_end(), e.get_v1_idx()));
-	  }
-
+	  std::vector<bidirected::side_n_id_t> to_adjacents = bi_vg.get_adj_vertices(v_id, complement_side(side));
 	  // populate the queue for the next iteration
-	  for (side_n_id_t adj: to_adjacents) {
-		unique_push_back_q(adj);
+	  for (auto [s,i]: to_adjacents) {
+		unique_push_back_q(std::make_pair(s,i));
 	  }
 	}
 
-
-	const std::set<std::size_t>& frm_adj_edges_idxs = get_edges_for_side(v, side);
+	//const std::set<std::size_t>& frm_adj_edges_idxs = get_edges_for_side(v, side);
 	  // side == bidirected::VertexEnd::l ? v.get_edges_l() : v.get_edges_r();
-
 	std::vector<side_n_id_t> frm_adjacents;
-	for (auto e_idx: frm_adj_edges_idxs) {
-	  const bidirected::Edge& e = bi_vg.get_edge(e_idx);
-
-	  e.get_v1_idx() == v_id ?
-		frm_adjacents.push_back(std::make_pair(e.get_v2_end(), e.get_v2_idx())) :
-		frm_adjacents.push_back(std::make_pair(e.get_v1_end(), e.get_v1_idx()));
+	for (auto [s, i] : bi_vg.get_adj_vertices(v_id, side) ) {
+	  frm_adjacents.push_back(std::make_pair(s,i));
 	}
 
-		// print adjacents
-	//std::cout << "Frm Adjacents:\n";
-	//for (auto adj: frm_adjacents) {
-	//  std::cout << "\t(" << adj.first << ", " << adj.second << ")\n";
-	//}
-
-
-	//std::cout << "\tadjacents:\n";
+	std::cout << "\tfrm adjacents:\n";
 	for (side_n_id_t adj: frm_adjacents) {
 	  // std::format("\t\tfrom: {}\n", adj.second);
-	  //std::cout << "\t\tadj: " << adj.first << ", " << adj.second << "\n";
+	  std::cout << "\t\tadj: " << adj.first << ", " << adj.second << "\n";
 	  bidirected::VertexEnd adj_side = adj.first;
 	  bidirected::VertexEnd alt_adj_side = complement_side(adj_side);
 
 
-	  if (adj.second > stop_id) { continue; }
+	  if (!in_flubble(adj.second)) { continue; }
 
 	  //std::cout << "\t\t" << adj_side << ", " << alt_adj_side << ", " << adj.second << "\n";
 	  side_n_id_t alt_adj = std::make_pair(alt_adj_side, adj.second);
 
-	  // print the paths_map keys
-	  //std::cout << "\t\tkeys:\n";
-	  //for (auto& [k, v]: paths_map) {
-	  //std::cout << "\t\t\t" << k.first << ", " << k.second << "\n";
-		//}
-
 
 	  // check whether adj is in paths_map
-	  if (paths_map.find(adj) == paths_map.end() && paths_map.find(alt_adj) == paths_map.end() )
-	  {
+	  if (paths_map.find(adj) == paths_map.end() && paths_map.find(alt_adj) == paths_map.end() ) {
 		// push from to queue and break
 		//std::cout << "\t\tpush front: " << adj.first << ", " << adj.second << "\n";
-		q.push_front(adj);
+		q.push_front(alt_adj);
 		go_back = true;
 		break;
 	  }
@@ -340,18 +376,15 @@ subpaths_t get_paths(id_t start_id, id_t stop_id, const bidirected::VariationGra
 	  // TODO: move this higher
 	  // there is a cycle
 	  if (in_path[adj].count(side_id_pair)) {
-		//std::cout << "\tskipping: cycle detected\n";
 		continue;
 	  }
-	  //std::cout << "\t\tnot a cycle\n";
-
 
 	  if (paths_map.find(adj) == paths_map.end() ) {
 		extend_paths(adj, alt_adj);
 	  }
 
-	  subpaths_t& in_paths = paths_map.at(adj);
-	  for (subpath_t& p: in_paths) {
+	  //subpaths_t& in_paths = paths_map.at(adj);
+	  for (subpath_t& p: paths_map.at(adj)) {
 		subpath_t p_ = p;
 		p_.push_back(side_id_pair);
 		curr_paths.push_back(p_);
@@ -364,7 +397,6 @@ subpaths_t get_paths(id_t start_id, id_t stop_id, const bidirected::VariationGra
 		  //std::cout << "\t\t\t" << x.first << " " << x.second << "\n";
 		  in_path[side_id_pair].insert(x);
 		}
-
 	  }
 	}
 
@@ -376,21 +408,60 @@ subpaths_t get_paths(id_t start_id, id_t stop_id, const bidirected::VariationGra
 	curr_paths.clear();
   }
 
-  side = compute_single_edge_side(bi_vg, stop_id);  
+   v_left = bi_vg.get_adj_vertices(stop_id, v_end::l);
+   v_right = bi_vg.get_adj_vertices(stop_id, v_end::r);
+
+   remove(v_left, [&](bidirected::side_n_id_t x) { return x.v_idx > stop_id; });
+   remove(v_right, [&](bidirected::side_n_id_t x) { return x.v_idx > stop_id; });
+
+   if (v_left.empty() && v_right.empty()) {
+	std::cerr << fn_name << " No paths can be found\n";
+  }
+   else if (v_left.empty() && !v_right.empty()) {
+	side = v_end::l;
+  }
+   else if (!v_left.empty() && v_right.empty()) {
+	side = v_end::r;
+  }
+   else {
+	std::cout  << fn_name << " Both sides have adj vertices\n";
+  }
+
+   std::cout << fn_name << " exit: " << side << " " << stop_id << " size "
+			 << paths_map[std::make_pair(side, stop_id)].size()
+			 << "\n";
+
+   std::cout << fn_name << " exit: " << complement_side(side )<< " " << stop_id << " size "
+			 << paths_map[std::make_pair(complement_side(side), stop_id)].size()
+			 << "\n";
+
+   //side = compute_single_edge_side(bi_vg, stop_id);
   side_n_id_t exit = std::make_pair(side, stop_id);
+
+
+
+  for (auto x: paths_map[std::make_pair(complement_side(side), stop_id)]) {
+	std::cout << fn_name << " path: ";
+	for (auto y: x) {
+	  std::cout << ""<<  y.first << "" << y.second << ", ";
+	  }
+  }
+  std::cout << "\n";
 
   // if no path has reached the exit, that is because
   // the opposite side
   if (paths_map[exit].empty()) {
-    extend_paths(exit, std::make_pair(complement_side(side), stop_id));
+	extend_paths(exit, std::make_pair(complement_side(side), stop_id));
   }
 
   //std::cout << "returning: " << side << " " << stop_id << "\n";
-  subpaths_t simplified_paths = simplify_paths(paths_map[exit]);
+  subpaths_t simplified_paths = simplify_paths(start_id, stop_id, paths_map[exit]);
+
+  std::cerr << fn_name << " simplified path count" << simplified_paths.size() << "\n";
+
 
   return simplified_paths;
 }
-
 
 
 /**
@@ -465,6 +536,7 @@ gen_vcf_records(const bidirected::VariationGraph& bd_vg,
 	  // every path should be supported by at least one haplotype
 	  if (path_haplotypes.empty()) {
 		std::cerr << "ERROR: path " << path_idx << " in flubble " << fl_idx << " has no haplotypes\n";
+		continue;
 	  }
 
 	  // because we want a VCF for each reference path then
@@ -478,7 +550,7 @@ gen_vcf_records(const bidirected::VariationGraph& bd_vg,
 		if (path_haplotypes.count(ref_id)) {
 
 		  has_ref = true;
-		  
+
 		  // the path contains the reference haplotype ref_id
 		  vcf::vcf_record vcf_rec;
 
@@ -498,9 +570,9 @@ gen_vcf_records(const bidirected::VariationGraph& bd_vg,
 			vcf_records[ref_id].push_back(vcf_rec);
 		  }
 		}
-	  }	  
+	  }
 	}
-	
+
 
 	if (!has_ref) {
 	  vcf::vcf_record vcf_rec;
@@ -515,7 +587,7 @@ gen_vcf_records(const bidirected::VariationGraph& bd_vg,
   return vcf_records;
 }
 
-  
+
 /**
  * Associate each path with a set of haplotypes
  *
@@ -566,8 +638,9 @@ find_path_haplotypes(const std::vector<subpaths_t>& all_paths,
   return haplotypes_per_path;
 }
 
+
 /**
- * 
+ *
  *
  */
 void call_variants(const tree::Tree& pvst_,
@@ -580,7 +653,7 @@ void call_variants(const tree::Tree& pvst_,
   std::vector<std::pair<std::size_t, std::size_t>> canonical_flubbles =
 	extract_canonical_flubbles(pvst_);
 
- 
+
   std::cout << fn_name << " Found " << canonical_flubbles.size() << " canonical flubbles\n";
 
   // walk paths in the digraph
@@ -591,50 +664,18 @@ void call_variants(const tree::Tree& pvst_,
   std::cout << fn_name << " Extracting paths for flubbles:\n";
   // extract flubble paths
   for (std::size_t i{} ; i < canonical_flubbles.size(); ++i) {
-	{
+	if (false) {
 	  std::cout << fn_name << " " << i
 				<< " start " << canonical_flubbles[i].first
 				<< " stop " << canonical_flubbles[i].second
 				<< "\n";
 	}
-	subpaths_t paths =	get_paths(canonical_flubbles[i].first,
+	subpaths_t paths = get_paths(canonical_flubbles[i].first,
 								 canonical_flubbles[i].second,
 								  bd_vg);
 	all_paths.push_back(paths);
   }
-  	/*
-  for (auto c_flubble: canonical_flubbles) {
-	if (app_config.verbosity() > 4) {
-	  std::cout << std::format("\tcanonical flubble: ({}, {})\n", c_flubble.first, c_flubble.second);
-	}
-
-	// std::size_t offset = 1;
-	// TODO: remove these assignments
-	std::size_t start = c_flubble.first;
-	std::size_t stop = c_flubble.second;
-
-	// limited DFS
 	
-
-
-	  {
-
-	  std::cout << "\tNumber of paths: " << paths.size() << std::endl;
-
-	  // print paths
-	  if (app_config.verbosity() > 4) {
-		std::cout << "\t";
-		for (auto p: paths) {
-		  for (side_n_id_t x: p) {
-			std::cout << x.first << " " << x.second << ",  ";
-		  }
-		  std::cout << "\n";
-		}
-		std::cout << std::endl;
-	  }
-	}
-  }
-	*/
   std::cout << fn_name << " Finding haplotypes\n";
   std::vector<std::vector<std::set<std::size_t>>> haplotypes_per_path =
 	find_path_haplotypes(all_paths, bd_vg);
@@ -642,7 +683,7 @@ void call_variants(const tree::Tree& pvst_,
   std::map<std::size_t, std::vector<vcf::vcf_record>> vcf_records =
 	gen_vcf_records(bd_vg, app_config, haplotypes_per_path, all_paths);
 
-  vcf::write_vcfs(vcf_records, bd_vg);
+  vcf::write_vcfs(vcf_records, bd_vg, app_config);
 
 }
 

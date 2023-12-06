@@ -15,6 +15,8 @@ namespace hg = handlegraph;
 
 namespace bidirected {
 
+  
+  
 /**
  * Path (or color)
  * ---------------
@@ -42,6 +44,10 @@ enum class VertexEnd {
 // operator << for VertexEnd
 std::ostream& operator<<(std::ostream& os, const VertexEnd& ve);
 
+struct side_n_id_t {
+  VertexEnd v_end;
+  std::size_t v_idx;
+};
 
 struct PathInfo {
   std::size_t path_id;
@@ -81,7 +87,12 @@ public:
   VertexEnd get_v1_end() const;
   std::size_t get_v2_idx() const;
   VertexEnd get_v2_end() const;
-
+  // get the other vertex and side connected to this edge
+  // does not check to confirm that the vertex is connected to this edge 
+  // TODO:
+  //   - nice to have:
+  //     * check that the vertex at vertex index is connected to this edge
+  side_n_id_t get_other_vertex(std::size_t vertex_index) const;
   
   // -----------
   // operator(s)
@@ -174,10 +185,16 @@ public:
   const Vertex& get_vertex(std::size_t index) const;
   Vertex& get_vertex_mut(std::size_t index);
   const Edge& get_edge(std::size_t index) const;
+  
+  // get adjacent vertex indexes to a vertex in a given direction
+  std::vector<side_n_id_t> get_adj_vertices(std::size_t vertex_index, VertexEnd vertex_end) const;
   std::unordered_set<std::size_t> get_start_nodes() const;
   std::unordered_set<std::size_t> get_end_nodes() const;
   const std::vector<path_t>& get_paths() const;
 
+  // TODO: maybe nice to have?
+  //std::set<std::size_t> get_edges(std::size_t vertex_index, VertexEnd vertex_end) const;
+  
   // ---------
   // setter(s)
   // ---------

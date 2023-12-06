@@ -11,9 +11,10 @@
 #include <sstream>
 #include <stdexcept>
 #include <args.hxx>
+#include <filesystem>
+
 
 #include "../core/core.hpp"
-
 
 
 namespace cli {
@@ -74,7 +75,8 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
   args::Group arguments("arguments");
   args::ValueFlag<std::string> input_gfa(parser, "gfa", "path to input gfa [required]", {'i', "input-gfa"}, args::Options::Required);
   args::ValueFlag<std::string> ref_list(parser, "ref_list", "path to txt file containing reference haplotypes [optional]", {'p', "path-list"});
-  args::PositionalList<std::string> pathsList(parser, "paths", "files to commit");
+  args::ValueFlag<std::string> chrom(parser, "chrom", "graph identifier, default is from GFA file. Makes chrom file in VCF [optional]", {'c', "chrom"});
+  args::PositionalList<std::string> pathsList(parser, "paths", "list of paths to use as reference haplotypes [optional]");
 
   parser.Parse();
 
@@ -82,6 +84,14 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
 
   // input gfa is already a c_str
   app_config.set_input_gfa(args::get(input_gfa));
+
+  if (chrom) {
+	app_config.set_chrom(std::move(args::get(chrom)));
+  }
+  else {
+	std::filesystem::path filePath(app_config.get_input_gfa());
+	app_config.set_chrom(filePath.stem().string());
+  }
 
   // either ref list or path list
   // if ref list is not set, then path list must be set

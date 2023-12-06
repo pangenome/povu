@@ -47,6 +47,7 @@ std::ostream& operator<<(std::ostream& os, const task_t& t);
 struct config {
   task_t task;
   std::string input_gfa;
+  std::string chrom;
 
   // general
   unsigned char v; // verbosity
@@ -64,6 +65,7 @@ struct config {
   // constructor(s)
   config() :
 	task(task_t::unset),
+	chrom(""), // default is empty string
 	v(0),
 	ref_input_format(input_format_t::unset),
 	reference_paths(std::vector<std::string>{})
@@ -74,6 +76,7 @@ struct config {
   // getter(s)
   // ---------
   std::string get_input_gfa() { return this->input_gfa; }
+  const std::string& get_chrom() const { return this->chrom; }
   std::vector<std::string> const& get_reference_paths() const { return this->reference_paths; }
   std::vector<std::string>* get_reference_ptr() { return &this->reference_paths; }
   const std::string& get_references_txt() const { return this->references_txt; }
@@ -84,6 +87,7 @@ struct config {
   // setter(s)
   // ---------
   // as it os from the user not the handlegraph stuff
+  void set_chrom(std::string&& s) { this->chrom = s; }
   void set_ref_input_format(input_format_t f) { this->ref_input_format = f; }
   void add_reference_path(std::string s) { this->reference_paths.push_back(s); }
   void set_reference_paths(std::vector<std::string>&& v) { this->reference_paths = std::move(v); }
