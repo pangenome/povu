@@ -1,6 +1,7 @@
+#include "../src/core/core.hpp"
 #include "../src/genomics/genomics.hpp"
 
-//
+
 TEST(GenomicsTest, ExtractCanonicalFlubbles) {
   std::vector<std::pair<std::size_t, std::size_t>> v = {
 	{2, 7},
@@ -22,7 +23,7 @@ TEST(GenomicsTest, ExtractCanonicalFlubbles) {
 	{34, 7},
   };
 
-  tree::Tree t = pvst::compute_pvst(v);
+  tree::Tree t = pvst::compute_pvst(v, test_config);
   std::vector<std::pair<std::size_t, std::size_t>> cfl =
 	genomics::extract_canonical_flubbles(t);
 

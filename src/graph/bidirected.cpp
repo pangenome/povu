@@ -1,11 +1,13 @@
-#include <cstddef>
-#include <cstring>
+#include <queue>
 #include <format>
-#include <iostream>
 #include <string>
 #include <vector>
-#include <unordered_set>
 #include <utility>
+#include <cstddef>
+#include <cstring>
+#include <iostream>
+#include <unordered_set>
+#include <map>
 
 #include "./bidirected.hpp"
 #include "../core/utils.hpp"
@@ -28,7 +30,35 @@ std::ostream& operator<<(std::ostream& os, const VertexEnd& ve) {
 
   return os;
 }
-  
+
+
+VertexEnd complement(VertexEnd s) {
+  return s == VertexEnd::l ? VertexEnd::r : VertexEnd::l;
+};
+
+
+/*
+ * Side and SideID
+ * ----
+ */
+bool operator<(const side_n_id_t& lhs, const side_n_id_t& rhs) {
+  if (lhs.v_idx < rhs.v_idx) {
+	return true;
+  }
+  else if (lhs.v_idx == rhs.v_idx) {
+	return lhs.v_end < rhs.v_end;
+  }
+  else {
+	return false;
+  }
+}
+
+// implement complement method for side_n_id_t
+side_n_id_t side_n_id_t::complement() const {
+  return {bidirected::complement(this->v_end), this->v_idx};
+}
+
+
 /*
  * Edge
  * ----
@@ -70,12 +100,10 @@ side_n_id_t Edge::get_other_vertex(std::size_t vertex_index) const {
   }
 }
 
-// << operator
 std::ostream& operator<<(std::ostream& os, const Edge& edge) {
   os << std::format("{{bidirected::Edge {}{} {}{} }}",
 					edge.v1_idx, (edge.v1_end == VertexEnd::l ? "+" : "-"),
 					edge.v2_idx, (edge.v2_end == VertexEnd::l ? "+" : "-"));
-
   return os;
 }
 
@@ -84,13 +112,11 @@ std::ostream& operator<<(std::ostream& os, const Edge& edge) {
  * Vertex
  * ------
  */
-
 Vertex::Vertex() {
   this->label = std::string();
   this->edges_l = std::set<std::size_t>();
   this->edges_r = std::set<std::size_t>();
 
-  //std::unordered_set<PathInfo> myset;
   this->paths = std::vector<PathInfo>();
   this->handle = std::string();
   this->is_reversed_ = false;
@@ -101,7 +127,6 @@ Vertex::Vertex(const std::string& label): label(label) {
   this->edges_r = std::set<std::size_t>();
 
   this->paths = std::vector<PathInfo>();
-  //this->paths = std::unordered_set<std::size_t>();
   this->handle = std::string();
   this->is_reversed_ = false;
 }
@@ -124,7 +149,7 @@ const std::string& Vertex::get_label() const {
 std::string Vertex::get_rc_label() const{
   return utils::reverse_complement(this->label);
 }
-  
+
 const std::string& Vertex::get_handle() const {
   return this->handle;
 }
@@ -136,7 +161,7 @@ const std::set<std::size_t>& Vertex::get_edges_l() const {
 const std::set<std::size_t>& Vertex::get_edges_r() const {
 	return this->edges_r;
 }
-  
+
 const std::vector<PathInfo>& Vertex::get_paths() const {
   return this->paths;
 }
@@ -163,11 +188,11 @@ void Vertex::add_path(std::size_t path_id, std::size_t step_index) {
   this->paths.push_back(PathInfo(path_id, step_index));
 }
 
+
 /*
  * Variation Graph
  * ---------------
  */
-
 VariationGraph::VariationGraph()
   : vertices(std::vector<Vertex>{}),
 	edges((std::vector<Edge>{})),
@@ -204,7 +229,7 @@ const Edge& VariationGraph::get_edge(std::size_t index) const {
 	return this->edges[index];
 }
 
-std::vector<side_n_id_t> VariationGraph::get_adj_vertices(std::size_t vertex_index, VertexEnd vertex_end) const {  
+std::vector<side_n_id_t> VariationGraph::get_adj_vertices(std::size_t vertex_index, VertexEnd vertex_end) const {
   std::vector<side_n_id_t> adj_vertices;
 
   if (vertex_end == VertexEnd::l) {
@@ -215,7 +240,7 @@ std::vector<side_n_id_t> VariationGraph::get_adj_vertices(std::size_t vertex_ind
   }
   else {
 	for (const auto& edge_index : this->vertices[vertex_index].get_edges_r()) {
-	  	  const Edge& e = this->get_edge(edge_index);
+		  const Edge& e = this->get_edge(edge_index);
 	  adj_vertices.push_back(e.get_other_vertex(vertex_index));
 	}
   }
@@ -231,10 +256,326 @@ std::unordered_set<std::size_t> VariationGraph::get_end_nodes() const {
   return this->end_nodes;
 }
 
+
+/**
+ * @brief Simplify paths by removing redundant nodes and instead representing it as a single node and strand through which the path passes
+ *
+ * @param all_paths a vector of paths
+ * @return std::vector<subpaths_t> a vector of simplified paths
+ */
+std::vector<std::vector<side_n_id_t>>
+simplify_paths(std::size_t start_id,
+			   std::size_t stop_id,
+			   const std::vector<std::vector<side_n_id_t>>& all_paths) {
+
+  std::string fn_name = "[povu::graph::VariationGraph::simplify_paths]";
+  if (false) {
+	std::cerr << fn_name << "\n";
+  }
+
+  std::vector<std::vector<side_n_id_t>> simplified_paths;
+  simplified_paths.reserve(all_paths.size());
+
+  auto in_flubble = [start_id, stop_id](id_t i) -> bool {
+	return i > start_id && i < stop_id;
+  };
+
+  for (std::size_t i{}; i < all_paths.size(); ++i) {
+	const std::vector<side_n_id_t>& path = all_paths[i];
+
+	if (path.size() % 2 != 0) {
+	  std::cout << "Expected even number of vertices in path, skipping path\n";
+	  // print path
+	  for (auto [side, id]: path) {
+		std::cout << side << " " << id << ", ";
+	  }
+	  std::cout << std::endl;
+
+	  continue;
+	}
+
+	std::vector<side_n_id_t> simplified_path;
+	simplified_path.reserve(path.size()/2);
+
+	for (std::size_t j{}; j < path.size(); j+=2) {
+
+	  auto [side1, id1] = path[j];
+	  auto [side2, id2] = path[j+1];
+
+	  if (side1 == side2) {
+		std::cout << "Expected different sides, skipping path\n";
+	  }
+
+	  if (id1 != id2) {
+		std::cout << "Expected same node id, skipping path\n";
+	  }
+
+	  if (!in_flubble(id2)) { continue; }
+
+	  simplified_path.push_back({side1, id2});
+	}
+
+	simplified_paths.push_back(simplified_path);
+  }
+
+  return simplified_paths;
+}
+
+
+std::vector<std::vector<side_n_id_t>>
+VariationGraph::get_paths(id_t start_id, id_t stop_id, bool compact) const {
+  std::string fn_name = "[povu::graph::VariationGraph::get_paths]";
+  if (false) {
+	std::cerr << fn_name << "\n";
+  }
+  auto in_flubble = [start_id, stop_id](id_t i) -> bool {
+	return i >= start_id && i <= stop_id;
+  };
+
+  // TODO: remove?
+  auto remove = [](std::vector<side_n_id_t>& v, std::function<bool(side_n_id_t)> condition){
+	v.erase(std::remove_if(v.begin(), v.end(), condition), v.end());
+  };
+
+  // a double ended queue to control the traversal of the region
+  std::deque<side_n_id_t> q;
+
+  // a set to keep track of the vertices we've seen
+  std::set<side_n_id_t> seen;
+
+  auto unique_push_back_q = [&](side_n_id_t e) {
+	if (seen.count(e) || !in_flubble(e.v_idx)) { return; }
+
+	//std::cout << "\t" << "lambda q push back: " << e.v_end << " " << e.v_idx << "\n";
+
+	q.push_back(e);
+	seen.insert(e);
+  };
+
+  // return the side to which all other vertices connected are greater than i
+  // it should be that each side has all vertices greater than i or less than i
+  auto greater_side = [&](id_t i) -> std::pair<VertexEnd, int> {
+	// vertices adjacent to the left of the vertex at i
+	std::vector<side_n_id_t> v_left = this->get_adj_vertices(i, VertexEnd::l);
+	// vertices adjacent to the right of the vertex at i
+	std::vector<side_n_id_t> v_right = this->get_adj_vertices(i, VertexEnd::r);
+
+	// check that all v_left are less than i
+	// or if vertex at i is inverted all v_left are greater than i
+	bool l_fwd = std::all_of(v_left.begin(), v_left.end(), [&](side_n_id_t x) { return x.v_idx < i; });
+	bool l_rse = std::all_of(v_left.begin(), v_left.end(), [&](side_n_id_t x) { return x.v_idx > i; });
+
+	if (!v_left.empty() && !(l_fwd ^ l_rse)) {
+	  return std::make_pair(VertexEnd::l, -1);
+	}
+
+	// check that all v_right are greater than start_idx
+	// or if vertex at start_id is inverted all v_right are less then start_idx
+	bool r_fwd = std::all_of(v_right.begin(), v_right.end(), [&](side_n_id_t x) { return x.v_idx > i; });
+	bool r_rse =std::all_of(v_right.begin(), v_right.end(), [&](side_n_id_t x) { return x.v_idx < i; });
+
+	if (!v_right.empty() && !(r_fwd ^ r_rse)) {
+	  return std::make_pair(VertexEnd::l, -2);
+	}
+
+	if (l_fwd && r_fwd) { // start vertex is not inverted
+	  return std::make_pair(VertexEnd::r, 0);
+	}
+	else if (l_rse && r_rse) { // start vertex is inverted
+	  return std::make_pair(VertexEnd::l, 0);
+	} else {
+	  return std::make_pair(VertexEnd::l, -3);
+	}
+  };
+
+  std::map<side_n_id_t, std::vector<std::vector<side_n_id_t>>> paths_map;
+  auto extend_paths = [&paths_map](side_n_id_t frm, side_n_id_t to) {
+	paths_map[to] = paths_map[frm];
+	for (std::vector<side_n_id_t>& path_ : paths_map[to]) {
+	  path_.push_back(to);
+	}
+  };
+
+  // ==================================
+
+  // ------------------------------------------------
+  // Handle the start of the path/flubble/SESE region
+  // ------------------------------------------------
+
+  // the start side facing (the rest of) the flubble
+  auto [start_side, status_code] = greater_side(start_id);
+  if (status_code < 0) {
+	std::cerr << fn_name << " ERROR: not valid flubble boundary (start) "
+			  << start_id << " -> " << stop_id
+			  << " status code "  << status_code << "\n";
+  }
+
+  const std::vector<side_n_id_t>& to_vertices = this->get_adj_vertices(start_id, start_side);
+  // initialize the visit queue with the first elements in the flubble
+  std::copy(to_vertices.begin(), to_vertices.end(), std::back_inserter(q));
+
+  // vertices seen before along the path to the key vertex
+  std::map<side_n_id_t, std::set<side_n_id_t>> in_path;
+  for (std::size_t i{start_id}; i < stop_id+1; ++i) {
+	in_path[{VertexEnd::l, i}] = {};
+	in_path[{VertexEnd::r, i}] = {};
+  }
+
+  in_path.at({start_side, start_id})
+	.insert({{v_end_t::l, start_id},
+			 {v_end_t::r, start_id}});
+
+  // the key is the vertex id and the value is a vector of (unique) paths
+  // leading up to the key vertex
+
+
+  // start by adding the start vertex as the only path to itself
+
+  paths_map[{start_side, start_id}] =
+	std::vector<std::vector<side_n_id_t>>{
+	{
+	  {complement(start_side), start_id},
+	  {start_side, start_id}
+	}
+  };
+
+
+  // a pair of side and vertex that has been visited
+  std::set<side_n_id_t> visited;
+  id_t v_id;
+  std::vector<std::vector<side_n_id_t>> curr_paths;
+  bidirected::VertexEnd side;
+
+  while (!q.empty()) {
+
+	side_n_id_t side_id_pair = q.front();
+	side = side_id_pair.v_end;
+	v_id = side_id_pair.v_idx;
+	//std::cout << "q.front: (" << side << ", " << v_id << ")\n";
+
+	if (visited.count(side_id_pair)) {
+	  q.pop_front();
+	  //std::cout << "skipping (already visited)\n";
+	  continue;
+	}
+
+	//bidirected::Vertex const& v = bi_vg.get_vertex(v_id);
+
+	bool go_back{false};
+
+	{
+	  std::vector<bidirected::side_n_id_t> to_adjacents = this->get_adj_vertices(v_id, complement(side));
+	  // populate the queue for the next iteration
+	  for (auto [s,i]: to_adjacents) {
+		unique_push_back_q({s,i});
+	  }
+	}
+
+	//const std::set<std::size_t>& frm_adj_edges_idxs = get_edges_for_side(v, side);
+	  // side == bidirected::VertexEnd::l ? v.get_edges_l() : v.get_edges_r();
+	std::vector<side_n_id_t> frm_adjacents;
+	for (auto [s, i] : this->get_adj_vertices(v_id, side) ) {
+	  frm_adjacents.push_back({s,i});
+	}
+
+	//std::cout << "\tfrm adjacents:\n";
+	for (side_n_id_t adj: frm_adjacents) {
+	  // std::format("\t\tfrom: {}\n", adj.second);
+	  //std::cout << "\t\tadj: " << adj.first << ", " << adj.second << "\n";
+	  auto [adj_side, adj_id] = adj;
+	  //bidirected::VertexEnd adj_side = adj.v_end;
+	  v_end_t alt_adj_side = complement(adj_side);
+
+
+	  if (!in_flubble(adj_id)) { continue; }
+
+	  //std::cout << "\t\t" << adj_side << ", " << alt_adj_side << ", " << adj.second << "\n";
+	  side_n_id_t alt_adj = adj.complement();
+
+	  // check whether adj is in paths_map
+	  if (paths_map.find(adj) == paths_map.end() && paths_map.find(alt_adj) == paths_map.end() ) {
+		// push from to queue and break
+		//std::cout << "\t\tpush front: " << adj.first << ", " << adj.second << "\n";
+		q.push_front(alt_adj);
+		go_back = true;
+		break;
+	  }
+
+	  // TODO: move this higher
+	  // there is a cycle
+	  if (in_path[adj].count(side_id_pair)) {
+		continue;
+	  }
+
+	  if (paths_map.find(adj) == paths_map.end() ) {
+		extend_paths(alt_adj, adj);
+	  }
+
+	  //subpaths_t& in_paths = paths_map.at(adj);
+	  for (std::vector<side_n_id_t>& p: paths_map.at(adj)) {
+		std::vector<side_n_id_t> p_ = p;
+		p_.push_back(side_id_pair);
+		curr_paths.push_back(p_);
+
+		// save that all these vertices are on at least one the paths to v_id
+		// populate in_path
+
+		//std::cout << "\t\tinserting:\n";
+		for (side_n_id_t x: p_) {
+		  //std::cout << "\t\t\t" << x.first << " " << x.second << "\n";
+		  in_path[side_id_pair].insert(x);
+		}
+	  }
+	}
+
+	if (!go_back) {
+	  paths_map[side_id_pair] = curr_paths;
+	  visited.insert(side_id_pair);
+	}
+
+	curr_paths.clear();
+  }
+
+  auto [stop_side, stop_status_code] = greater_side(stop_id);
+
+  if (stop_status_code < 0) {
+	std::cerr << fn_name << " ERROR: not valid flubble boundary (stop) "
+			  << start_id << " -> " << stop_id
+			  << " status code "  << status_code << "\n";
+  }
+
+
+  //std::cerr << fn_name << " exit: " << stop_side << stop_id << "\n";
+
+  side_n_id_t exit = {stop_side, stop_id};
+
+  // if no path has reached the exit, that is because the opposite side
+  if (paths_map[exit].empty()) {
+	extend_paths(exit.complement(), exit);
+  }
+
+  if (false) {
+  //std::cout << fn_name << " paths: " << complement(stop_side) << stop_id << "\n";
+	for (auto x: paths_map.at(exit) ) {
+	  std::cout << fn_name << " path: ";
+	  for (auto [s, i]: x) {
+		std::cout <<  s << i << ", ";
+	  }
+	}
+	std::cout << "\n";
+  }
+
+  if (compact) {
+	return simplify_paths(start_id, stop_id, paths_map[exit]);
+  }
+
+  return paths_map[exit];
+}
+
 const std::vector<path_t>& VariationGraph::get_paths() const {
   return this->paths;
 }
-  
+
 void VariationGraph::dbg_print() {
   std::cerr << "VariationGraph: " << std::endl;
   std::cerr << "\t" << "vertex count:  " << this->size() << std::endl;

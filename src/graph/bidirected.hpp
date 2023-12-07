@@ -15,8 +15,6 @@ namespace hg = handlegraph;
 
 namespace bidirected {
 
-  
-  
 /**
  * Path (or color)
  * ---------------
@@ -34,20 +32,28 @@ struct path_t {
    l (left) 5' or +
    r (left) 3' or -
  */
+// TODO: replace with struct or class to allow methods like complement
 enum class VertexEnd {
 	l,
 	r
 };
+typedef VertexEnd v_end_t;
 // -----------
 // operator(s)
 // -----------
-// operator << for VertexEnd
 std::ostream& operator<<(std::ostream& os, const VertexEnd& ve);
 
 struct side_n_id_t {
   VertexEnd v_end;
   std::size_t v_idx;
+
+  // prototype < operator
+  friend bool operator<(const side_n_id_t& lhs, const side_n_id_t& rhs);
+
+  // method complement
+  side_n_id_t complement() const;
 };
+
 
 struct PathInfo {
   std::size_t path_id;
@@ -79,7 +85,7 @@ public:
   Edge();
   Edge(std::size_t v1, VertexEnd v1_end, std::size_t v2, VertexEnd v2_end);
 
-  
+
   // ---------
   // getter(s)
   // ---------
@@ -88,12 +94,12 @@ public:
   std::size_t get_v2_idx() const;
   VertexEnd get_v2_end() const;
   // get the other vertex and side connected to this edge
-  // does not check to confirm that the vertex is connected to this edge 
+  // does not check to confirm that the vertex is connected to this edge
   // TODO:
   //   - nice to have:
   //     * check that the vertex at vertex index is connected to this edge
   side_n_id_t get_other_vertex(std::size_t vertex_index) const;
-  
+
   // -----------
   // operator(s)
   // -----------
@@ -135,13 +141,13 @@ public:
   bool is_reversed() const;
   const std::string& get_label() const;
   // rc is reverse complement
-  std::string get_rc_label() const; 
+  std::string get_rc_label() const;
   const std::string& get_handle() const;
   const std::set<std::size_t>& get_edges_l() const;
   const std::set<std::size_t>& get_edges_r() const;
   const std::vector<PathInfo>& get_paths() const;
 
-  
+
   // ---------
   // setter(s)
   // ---------
@@ -185,16 +191,28 @@ public:
   const Vertex& get_vertex(std::size_t index) const;
   Vertex& get_vertex_mut(std::size_t index);
   const Edge& get_edge(std::size_t index) const;
-  
+
+
+
+  /**
+   * @brief Get all paths between two nodes in the bidirected variation graph
+   *
+   * @param start_id the start node id
+   * @param stop_id the stop node id
+   * @param compact if true, remove redundant strand information in the path
+   * @return std::vector<subpaths_t> a vector of paths
+   */
+  std::vector<std::vector<side_n_id_t>> get_paths(id_t start_id, id_t stop_id, bool compact=true) const;
+
   // get adjacent vertex indexes to a vertex in a given direction
   std::vector<side_n_id_t> get_adj_vertices(std::size_t vertex_index, VertexEnd vertex_end) const;
   std::unordered_set<std::size_t> get_start_nodes() const;
   std::unordered_set<std::size_t> get_end_nodes() const;
-  const std::vector<path_t>& get_paths() const;
+  const std::vector<path_t>& get_paths() const; // TODO: rename to get_haplotypes
 
   // TODO: maybe nice to have?
   //std::set<std::size_t> get_edges(std::size_t vertex_index, VertexEnd vertex_end) const;
-  
+
   // ---------
   // setter(s)
   // ---------

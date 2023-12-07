@@ -45,10 +45,10 @@ void write_vcf(const std::string& ref_name,
 
 	// write the records
 	for (const vcf_record& vcf_rec : vcf_records) {
-	  
+
 	  vcf_file << app_config.get_chrom()
 			   << "\t" << (vcf_rec.pos == UNDEFINED_PATH_POS ? std::to_string(-1) : std::to_string(vcf_rec.pos))
-			   << "\t." 
+			   << "\t."
 			   << "\t" << vcf_rec.ref
 			   << "\t" << utils::concat_with(vcf_rec.alt, ',') << "\t.\t.\t.\tGT\t0/1\n";
 	}
@@ -72,7 +72,11 @@ void write_vcfs(const std::map<std::size_t,
 
   for (auto& [ref_id, vcf_recs]: vcf_records) {
 	std::string ref_name = path_id_name_map[ref_id];
-	std::cerr << fn_name << "writing vcf for " << ref_name << "\n";
+
+	if (app_config.verbosity() > 0) {
+	  std::cerr << fn_name << " writing vcf for " << ref_name << "\n";
+	}
+
 	write_vcf(ref_name, vcf_recs, app_config);
   }
 }

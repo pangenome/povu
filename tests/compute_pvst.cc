@@ -1,9 +1,11 @@
 #include <gtest/gtest.h>
 #include <iostream>
 
-//#include "../src/graph/graph.hpp"
-
 #include "../src/pvst/pvst.hpp"
+#include "../src/core/core.hpp"
+
+// global config (test config)
+core::config test_config;
 
 TEST(PVSTTest, AdjacentFlubbles) {
   std::vector<std::pair<std::size_t, std::size_t>> v = {
@@ -19,7 +21,7 @@ TEST(PVSTTest, AdjacentFlubbles) {
 		{19, 0},
   };
 
-  tree::Tree t = pvst::compute_pvst(v);
+  tree::Tree t = pvst::compute_pvst(v, test_config);
   t.print_dot(true);
   EXPECT_EQ(1, 1);
 }
@@ -50,7 +52,7 @@ TEST(PVSTTest, Redunduncies) {
 	{34, 7},
   };
 
-  tree::Tree t = pvst::compute_pvst(v);
+  tree::Tree t = pvst::compute_pvst(v, test_config);
     t.print_dot(true);
   EXPECT_EQ(1, 1);
 }
