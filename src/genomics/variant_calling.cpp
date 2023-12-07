@@ -140,7 +140,7 @@ extract_canonical_flubbles(const tree::Tree& pvst_) {
   return canonical_flubbles;
 }
 
-
+// TODO: move to vcf.hpp
 /**
  * @brief
  */
@@ -163,7 +163,7 @@ gen_vcf_records(
 	paths_map.insert(p.id, p.name);
   }
 
-  if (true) {
+  if (app_config.gen_undefined_vcf()) {
 	// add the undefined reference for flubbles that don't have the a reference
 	paths_map.insert(vcf::UNDEFINED_PATH_ID, vcf::UNDEFINED_PATH_LABEL);
 	reference_paths.push_back(vcf::UNDEFINED_PATH_LABEL);
@@ -242,7 +242,7 @@ gen_vcf_records(
 	  }
 	}
 
-	if (!has_ref) {
+	if (app_config.gen_undefined_vcf() && !has_ref) {
 	  vcf::vcf_record vcf_rec;
 	  vcf_rec.pos = vcf::UNDEFINED_PATH_POS;
 	  vcf_rec.ref = "";

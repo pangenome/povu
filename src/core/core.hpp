@@ -56,7 +56,7 @@ struct config {
   std::string references_txt; // the path to the file containing the reference paths
   input_format_t ref_input_format;
   std::vector<std::string> reference_paths;
-
+  bool undefined_vcf;
 
   // -------------
   // Contructor(s)
@@ -68,7 +68,8 @@ struct config {
 	chrom(""), // default is empty string
 	v(0),
 	ref_input_format(input_format_t::unset),
-	reference_paths(std::vector<std::string>{})
+	reference_paths(std::vector<std::string>{}),
+	undefined_vcf(false)
 	{}
 
 
@@ -81,7 +82,7 @@ struct config {
   std::vector<std::string>* get_reference_ptr() { return &this->reference_paths; }
   const std::string& get_references_txt() const { return this->references_txt; }
   std::size_t verbosity() const { return this->v; } // can we avoid this being a size_t?
-
+  bool gen_undefined_vcf() const { return this->undefined_vcf; }
 
   // ---------
   // setter(s)
@@ -96,6 +97,7 @@ struct config {
   void set_verbosity(unsigned char v) { this->v = v; }
   void set_input_gfa(std::string s) { this->input_gfa = s; }
   void set_task(task_t t) { this->task = t; }
+  void set_undefined_vcf(bool b) { this->undefined_vcf = b; }
 
   // --------
   // Other(s)
@@ -105,6 +107,8 @@ struct config {
 	std::cerr << "\t" << "verbosity: " << this->verbosity() << "\n";
 	std::cerr << "\t" << "task: " << this->task << std::endl;
 	std::cerr << "\t" << "input gfa: " << this->input_gfa << std::endl;
+	std::cerr << "\t" << "chrom: " << this->chrom << std::endl;
+	std::cerr << "\t" << "Generate undefined vcf: " << std::boolalpha << this->undefined_vcf << std::endl;
 	if (this->ref_input_format == input_format_t::file_path) {
 	  std::cerr << "\t" << "Reference paths file: " << this->references_txt << std::endl;
 	}

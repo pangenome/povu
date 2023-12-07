@@ -75,7 +75,8 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
   args::Group arguments("arguments");
   args::ValueFlag<std::string> input_gfa(parser, "gfa", "path to input gfa [required]", {'i', "input-gfa"}, args::Options::Required);
   args::ValueFlag<std::string> ref_list(parser, "ref_list", "path to txt file containing reference haplotypes [optional]", {'p', "path-list"});
-  args::ValueFlag<std::string> chrom(parser, "chrom", "graph identifier, default is from GFA file. Makes chrom file in VCF [optional]", {'c', "chrom"});
+  args::ValueFlag<std::string> chrom(parser, "chrom", "graph identifier, default is from GFA file. Chrom column in VCF [optional]", {'c', "chrom"});
+  args::Flag undefined_vcf(parser, "undefined_vcf", "Generate VCF file for flubbles without a reference path [default: false]", {'u', "undefined"});
   args::PositionalList<std::string> pathsList(parser, "paths", "list of paths to use as reference haplotypes [optional]");
 
   parser.Parse();
@@ -91,6 +92,10 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
   else {
 	std::filesystem::path filePath(app_config.get_input_gfa());
 	app_config.set_chrom(filePath.stem().string());
+  }
+
+  if (undefined_vcf) {
+	app_config.set_undefined_vcf(true);
   }
 
   // either ref list or path list
