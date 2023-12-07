@@ -30,19 +30,6 @@
 
 namespace genomics {
 
-/**
- * @brief Given a bidirected::VariationGraph and a subpath, return the string sequence
- */
-std::string path_to_seq(const bidirected::VariationGraph& bd_vg,
-						const std::vector<bidirected::side_n_id_t>& p) {
-  std::string seq = "";
-  for (auto [side, id]: p) {
-	bidirected::Vertex const& v = bd_vg.get_vertex(id);
-	seq += side == bidirected::VertexEnd::l ? v.get_label() : v.get_rc_label();
-  }
-
-  return seq;
-}
 
 /**
  * @brief get the edge indexes of a vertex on a given side
@@ -140,120 +127,6 @@ extract_canonical_flubbles(const tree::Tree& pvst_) {
   return canonical_flubbles;
 }
 
-// TODO: move to vcf.hpp
-/**
- * @brief
- */
-std::map<std::size_t, std::vector<vcf::vcf_record>>
-gen_vcf_records(
-  const bidirected::VariationGraph& bd_vg,
-  const std::vector<std::vector<std::set<std::size_t>>>& haplotypes,
-  const std::vector<std::vector<std::vector<bidirected::side_n_id_t>>>& all_paths,
-  const core::config& app_config
-  ) {
-
-  // all our VCF files will be in this map
-  std::map<std::size_t, std::vector<vcf::vcf_record>> vcf_records;
-
-  std::vector<std::string> reference_paths = app_config.get_reference_paths();
-
-  utils::TwoWayMap<std::size_t, std::string> paths_map; // path id to its name
-
-  for (auto p : bd_vg.get_paths()) {
-	paths_map.insert(p.id, p.name);
-  }
-
-  if (app_config.gen_undefined_vcf()) {
-	// add the undefined reference for flubbles that don't have the a reference
-	paths_map.insert(vcf::UNDEFINED_PATH_ID, vcf::UNDEFINED_PATH_LABEL);
-	reference_paths.push_back(vcf::UNDEFINED_PATH_LABEL);
-  }
-
-  //std::size_t num_flubbles = haplotypes.size();
-  std::size_t num_paths{};
-  // for each flubble
-  for (std::size_t fl_idx{}; fl_idx < all_paths.size(); ++fl_idx) {
-	num_paths = all_paths[fl_idx].size();
-
-	// does this flubble contain a reference path?
-	bool has_ref{false};
-
-	// while being strand aware
-	// spell all the sequences in the flubble as a vector of strings
-	// where each string is a path
-	std::vector<std::string> path_seqs;
-	for (std::size_t path_idx{}; path_idx < num_paths; ++path_idx) {
-	  const std::vector<bidirected::side_n_id_t>& p = all_paths[fl_idx][path_idx];
-	  path_seqs.push_back(path_to_seq(bd_vg, p));
-	}
-
-	// for each path in the flubble
-	// if the path is not a reference path
-	// then it is a variant
-	// and we need to add it to the vcf
-	// we look at the haplotypes that pass through the path
-	for (std::size_t path_idx{}; path_idx < num_paths; ++path_idx) {
-
-	  // get the haplotypes that pass through the path at path_idx
-	  std::set<std::size_t> path_haplotypes = haplotypes[fl_idx][path_idx];
-
-	  // not every path will be supported by at least one haplotype
-	  if (path_haplotypes.empty()) {
-		//std::cerr << "ERROR: path " << path_idx << " in flubble " << fl_idx << " has no haplotypes\n";
-		continue;
-	  }
-
-	  // because we want a VCF for each reference path then
-	  // for each reference path we check if it is in the set of haplotypes
-	  // for that path
-	  // if it is then remove it from the path seqs and the rest are variants
-	  // we then populate the vcf records map which contains
-	  // the vcf records for each reference path
-	  for (const std::string& ref_name : reference_paths) {
-		std::size_t ref_id = paths_map.get_key(ref_name);
-
-		if (path_haplotypes.count(ref_id)) {
-
-		  has_ref = true;
-
-		  // the path contains the reference haplotype ref_id
-		  vcf::vcf_record vcf_rec;
-
-		  // TODO: this is a hack, a path may differ internally by a little
-		  // use the intersection to determine this
-
-		  // get the position of that path in the reference whose id is ref_id
-		  auto [_, v_id] = all_paths[fl_idx][path_idx].front();
-		  bidirected::Vertex const& v = bd_vg.get_vertex(v_id);
-
-		  // TODO: can this loop be avoided?
-		  for (const bidirected::PathInfo& vertex_path : v.get_paths()) {
-
-			if (vertex_path.path_id == ref_id) {
-			  vcf_rec.pos = vertex_path.step_index;
-			}
-
-			vcf_rec.ref = path_seqs[path_idx];
-			vcf_rec.alt = utils::immutable_erase(path_seqs, path_idx);
-
-			vcf_records[ref_id].push_back(vcf_rec);
-		  }
-		}
-	  }
-	}
-
-	if (app_config.gen_undefined_vcf() && !has_ref) {
-	  vcf::vcf_record vcf_rec;
-	  vcf_rec.pos = vcf::UNDEFINED_PATH_POS;
-	  vcf_rec.ref = "";
-	  vcf_rec.alt = path_seqs;
-
-	  vcf_records[vcf::UNDEFINED_PATH_ID].push_back(vcf_rec);
-	}
-  }
-
-  return vcf_records;
-}
 
 
 /**
@@ -360,7 +233,7 @@ void call_variants(const tree::Tree& pvst_,
 	find_path_haplotypes(all_paths, bd_vg);
 
   std::map<std::size_t, std::vector<vcf::vcf_record>> vcf_records =
-	gen_vcf_records(bd_vg, haplotypes_per_path, all_paths, app_config);
+	vcf::gen_vcf_records(bd_vg, haplotypes_per_path, all_paths, app_config);
 
   vcf::write_vcfs(vcf_records, bd_vg, app_config);
 
