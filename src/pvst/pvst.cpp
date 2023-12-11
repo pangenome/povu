@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <bit>
 #include <cstddef>
 #include <iostream>
@@ -155,6 +156,7 @@ tree::Tree compute_pst(std::vector<std::size_t> classes) {
  * @param v[in] vector of tuples
  * @return tree::Tree the PST
 */
+
 tree::Tree compute_pvst(
   std::vector<std::tuple<std::size_t , std::size_t, std::size_t>> const& v) {
   // TODO this tree is lager than should be
@@ -314,6 +316,14 @@ tree::Tree compute_pvst(
   return t;
 }
 
+tree::Tree compute_pvst(std::vector<std::pair<std::size_t, std::size_t>> v, const core::config& app_config)   {
+    std::string fn_name = "[povu::pvst::compute_pvst]";
+	
+  std::vector<eq_n_id_t> v_;
+  std::transform(v.begin(), v.end(), v_.begin(), [](auto& p) -> eq_n_id_t { return {p.first, p.second}; });
+	return compute_pvst(v_, app_config);
+}
+  
 /**
  * @brief compute the pvst of a given vector of pairs
  *
@@ -321,7 +331,7 @@ tree::Tree compute_pvst(
  *          where each pair is (index, eq class)  
  * @return a tree
  */
-tree::Tree compute_pvst(std::vector<std::pair<std::size_t, std::size_t>> v, const core::config& app_config) {
+tree::Tree compute_pvst(std::vector<eq_n_id_t> v, const core::config& app_config) {
   std::string fn_name = "[povu::pvst::compute_pvst]";
   if (app_config.verbosity() > 3) { std::cerr << fn_name << "\n"; }
   
@@ -380,6 +390,11 @@ tree::Tree compute_pvst(std::vector<std::pair<std::size_t, std::size_t>> v, cons
 	bd_idx_str = std::to_string(bd_idx+1);
 
 
+	std::cerr << "be idx: " << be_idx << " bd idx: " << bd_idx
+			  << " current class: " << current_class
+			  << " bd idx str: " << bd_idx_str
+			  << std::endl;
+	
 	/*
 	std::cout << "i: " << i << " counter: " << counter
 			  << " cpid: " << current_parent_id << " be idx " << be_idx << " bd idx: " << bd_idx

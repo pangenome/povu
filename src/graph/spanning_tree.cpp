@@ -894,8 +894,7 @@ std::vector<Edge> Tree::compute_edge_stack() {
   return edge_stack;
 }
 
-std::vector<std::pair<std::size_t, std::size_t>>
-  Tree::compute_edge_stack2() {
+std::vector<std::pair<std::size_t, std::size_t>> Tree::compute_edge_stack2() {
 
   std::stack<std::pair<std::size_t, std::size_t>> s;
   // first is vertex, second is eq class of the vertex

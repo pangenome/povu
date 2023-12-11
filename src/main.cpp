@@ -47,22 +47,31 @@ int main(int argc, char *argv[]) {
 
   std::vector<std::pair<std::size_t, std::size_t>> v = st.compute_edge_stack2();
 
+  // print v
+  if (app_config.verbosity() > 2) { std::cerr << fn_name << " Printing edge stack\n"; }
+  for (auto e : v) {
+		std::cerr << e.first << " " << e.second << std::endl;
+	}
+  
+
   if (app_config.verbosity() > 2) { std::cerr << fn_name << " Computing PVST\n"; }
   tree::Tree t = pvst::compute_pvst(v, app_config);
   if (app_config.verbosity() > 4)  { std::cout << "\n\n" << "PVST" << "\n\n"; t.print_dot(true); }
 
 
-  if (app_config.verbosity() > 2)  { std::cerr << fn_name << " Calling variants\n"; }
-  genomics::call_variants(t, vg, app_config);
-
-
-  return 0;
-
-  u_graph::FlowGraph afg = u_graph::FlowGraph(st);
+    u_graph::FlowGraph afg = u_graph::FlowGraph(st);
   if (app_config.verbosity() > 2) { 
     std::cout << "\n\n" << "Annotated Flow Graph" << "\n\n";
     afg.print_dot();
   }
+
+
+  if (app_config.verbosity() > 2)  { std::cerr << fn_name << " Calling variants\n"; }
+  genomics::call_variants(t, vg, app_config);
+
+  
+  return 0;
+
 
   return 0;
 }
