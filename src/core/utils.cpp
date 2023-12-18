@@ -19,6 +19,14 @@ void print_with_comma(std::unordered_set<std::size_t>& iterable) {
   }
 }
 
+void print_with_comma(std::unordered_set<id_t>&& iterable) {
+  for (auto it = iterable.begin(); it != iterable.end(); ++it) {
+	std::cerr << *it;
+
+	if (std::next(it) != iterable.end()){ std::cerr << ", "; }
+  }
+}
+  
 std::string concat_with(const std::vector<std::string>& v, char c) {
   if (v.empty()) { return ""; } // means a deletion in the case of VCF
   return std::accumulate(

@@ -204,8 +204,7 @@ Vertex& BVariationGraph::get_vertex_mut(std::size_t i) {
 
 BVariationGraph::BVariationGraph(const bidirected::VariationGraph& g) {
 
-  this->vertices =
-	std::vector<biedged::Vertex>(g.size()*2, biedged::Vertex());
+  this->vertices = std::vector<biedged::Vertex>(g.size()*2, biedged::Vertex());
 
   auto new_l = [](std::size_t i) { return (2*(i+1)) - 2; };
   auto new_r = [](std::size_t i) { return (2*(i+1)) - 1; };
@@ -213,8 +212,7 @@ BVariationGraph::BVariationGraph(const bidirected::VariationGraph& g) {
   /*
 
    */
-  auto duplicate_vertices =
-	[this, g](bidirected::Vertex const& current_vg_vertex, std::size_t i_l, std::size_t i_r) {
+  auto duplicate_vertices = [this, g](bidirected::Vertex const& current_vg_vertex, std::size_t i_l, std::size_t i_r) {
 
 	  // --------------------
 	  // add vertices + and -
@@ -249,8 +247,7 @@ BVariationGraph::BVariationGraph(const bidirected::VariationGraph& g) {
   /*
 	add gray edges
   */
-  auto do_gray_edges =
-	[&](std::size_t v_idx, bidirected::Vertex const& current_vg_vertex, std::size_t i_l, std::size_t i_r) {
+  auto do_gray_edges = [&](std::size_t v_idx, bidirected::Vertex const& current_vg_vertex, std::size_t i_l, std::size_t i_r) {
 
 
 	  // add gray edges incident with the 5' (left/+) vertex
@@ -351,12 +348,12 @@ BVariationGraph::BVariationGraph(const bidirected::VariationGraph& g) {
   }
 
   // set start and stop vertices
-  for (auto i : g.get_start_nodes()) {
+  for (auto i : g.find_graph_start_nodes()) {
 	this->start_nodes.insert((2*(i+1)) - 2);
   }
 
 
-  for (auto i : g.get_end_nodes()) {
+  for (auto i : g.find_graph_end_nodes()) {
 	this->end_nodes.insert((2*(i+1)) - 1);
   }
 

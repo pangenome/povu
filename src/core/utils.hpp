@@ -11,6 +11,7 @@ namespace utils {
 // TODO: - generalize for other iterators
 //       - pass os stream to print to
 void print_with_comma(std::unordered_set<std::size_t>& iterable);
+void print_with_comma(std::unordered_set<id_t>&& iterable);
 std::string reverse_complement(const std::string& sequence);
 /**
  * Concatenates a vector of strings with a given character

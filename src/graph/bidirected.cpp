@@ -248,12 +248,24 @@ std::vector<side_n_id_t> VariationGraph::get_adj_vertices(std::size_t vertex_ind
   return adj_vertices;
 }
 
-std::unordered_set<std::size_t> VariationGraph::get_start_nodes() const {
-  return this->start_nodes;
+std::unordered_set<id_t> VariationGraph::find_graph_start_nodes() const {
+  std::unordered_set<id_t> graph_start_nodes;
+  for (id_t i = 0; i < this->size(); ++i) {
+	if (this->vertices.at(i).get_edges_l().empty()) {
+	  graph_start_nodes.insert(i);
+	}
+  }
+  return graph_start_nodes;
 }
 
-std::unordered_set<std::size_t> VariationGraph::get_end_nodes() const {
-  return this->end_nodes;
+std::unordered_set<id_t> VariationGraph::find_graph_end_nodes() const {
+  std::unordered_set<id_t> graph_end_nodes;
+  for (id_t i = 0; i < this->size(); ++i) {
+	if (this->vertices.at(i).get_edges_r().empty()) {
+	  graph_end_nodes.insert(i);
+	}
+  }
+  return graph_end_nodes;
 }
 
 
@@ -583,12 +595,21 @@ void VariationGraph::dbg_print() {
   std::cerr << "\t" << "edge count: " << this->edges.size() << std::endl;
   std::cerr << "\t" << "path count: " << this->paths.size() << std::endl;
 
-  std::cerr << "\t" << "start nodes: ";
-  utils::print_with_comma(this->start_nodes);
+  std::cerr << "\t" << "haplotype start nodes: ";
+  utils::print_with_comma(this->haplotype_start_nodes);
   std::cerr << "\n";
 
-  std::cerr << "\t" << "end nodes: ";
-  utils::print_with_comma(this->end_nodes);
+  std::cerr << "\t" << "haplotype end nodes: ";
+  utils::print_with_comma(this->haplotype_end_nodes);
+  std::cerr << "\n";
+
+
+  std::cerr << "\t" << "graph start nodes: ";
+  utils::print_with_comma(this->find_graph_start_nodes());
+  std::cerr << "\n";
+
+  std::cerr << "\t" << "graph end nodes: ";
+  utils::print_with_comma(this->find_graph_end_nodes());
   std::cerr << "\n";
 }
 
@@ -661,12 +682,12 @@ std::size_t VariationGraph::get_node_count() const {
 	return this->size();
 }
 
-void VariationGraph::add_start_node(std::size_t node_id) {
-  this->start_nodes.insert(node_id);
+void VariationGraph::add_haplotype_start_node(std::size_t node_id) {
+  this->haplotype_start_nodes.insert(node_id);
 }
 
-void VariationGraph::add_stop_node(std::size_t node_id) {
-  this->end_nodes.insert(node_id);
+void VariationGraph::add_haplotype_stop_node(std::size_t node_id) {
+  this->haplotype_end_nodes.insert(node_id);
 }
 
 handlegraph::nid_t VariationGraph::min_node_id() const {

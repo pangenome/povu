@@ -168,8 +168,15 @@ class VariationGraph {
 
   std::vector<path_t> paths;
 
-  std::unordered_set<std::size_t> start_nodes;
-  std::unordered_set<std::size_t> end_nodes;
+
+  //std::unordered_set<std::size_t> graph_start_nodes;
+  //std::unordered_set<std::size_t> graph_end_nodes;
+  
+  std::unordered_set<std::size_t> haplotype_start_nodes;
+  std::unordered_set<std::size_t> haplotype_end_nodes;
+  
+  //std::unordered_set<std::size_t> start_nodes;
+  //std::unordered_set<std::size_t> end_nodes;
 
   // for libHandleGraph
   // min and max vertex ids
@@ -206,10 +213,14 @@ public:
 
   // get adjacent vertex indexes to a vertex in a given direction
   std::vector<side_n_id_t> get_adj_vertices(std::size_t vertex_index, VertexEnd vertex_end) const;
-  std::unordered_set<std::size_t> get_start_nodes() const;
-  std::unordered_set<std::size_t> get_end_nodes() const;
+  //std::unordered_set<std::size_t> get_start_nodes() const;
+  //std::unordered_set<std::size_t> get_end_nodes() const;
   const std::vector<path_t>& get_paths() const; // TODO: rename to get_haplotypes
 
+  // TODO: these two can be combined into one method
+  std::unordered_set<id_t> find_graph_start_nodes() const;
+  std::unordered_set<id_t> find_graph_end_nodes() const;
+  
   // TODO: maybe nice to have?
   //std::set<std::size_t> get_edges(std::size_t vertex_index, VertexEnd vertex_end) const;
 
@@ -219,8 +230,10 @@ public:
   void append_vertex();   // adds an invalid vertex to the graph
   void add_vertex(const Vertex& vertex);
   void add_edge(std::size_t v1, VertexEnd v1_end, std::size_t v2, VertexEnd v2_end);
-  void add_start_node(std::size_t node_id);
-  void add_stop_node(std::size_t node_id);
+  
+  void add_haplotype_start_node(std::size_t node_id);
+  void add_haplotype_stop_node(std::size_t node_id);
+
   void set_min_id(std::size_t min_id);
   void set_max_id(std::size_t max_id);
 

@@ -115,15 +115,17 @@ extract_canonical_flubbles(const tree::Tree& pvst_) {
 	}
 
 	if (is_canonical_subtree) {
-	  std::cerr << "canonical subtree found: " << current_vertex << " " << max_child
-				<< " " << pvst_.get_meta(current_vertex) << " " << pvst_.get_meta(max_child) << std::endl;
 	  if (pvst_.get_meta(current_vertex) < pvst_.get_meta(max_child)) {
 		canonical_flubbles.push_back(
 		  std::make_pair(pvst_.get_meta(current_vertex) - 1, pvst_.get_meta(max_child) - 1 )
 		  );		
 	  }
 	  else {
-		std::cerr << "sus\n";
+		std::cerr << "sus canonical subtree found: " << current_vertex
+				  << " " << max_child
+				  << " " << pvst_.get_meta(current_vertex)
+				  << " " << pvst_.get_meta(max_child) << std::endl;
+
 	  }
 
 	}
@@ -232,7 +234,7 @@ void call_variants(const tree::Tree& pvst_,
   //std::cout << fn_name << " Extracting paths for flubbles:\n";
   // extract flubble paths
   for (std::size_t i{} ; i < canonical_flubbles.size(); ++i) {
-	if (true) {
+	if (false) {
 	  std::cout << fn_name << " flubble: " << i
 				<< " start: " << canonical_flubbles[i].first
 				<< " stop: " << canonical_flubbles[i].second

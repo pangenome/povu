@@ -1,14 +1,16 @@
 #ifndef CORE_HPP
 #define CORE_HPP
 
-#include "./constants.hpp"
-#include <algorithm>
+#include <map>
 #include <memory>
 #include <string>
-#include <utility>
-#include <map>
 #include <vector>
+#include <utility>
+#include <algorithm>
 #include <iostream>
+
+#include "./constants.hpp"
+#include "./typedefs.hpp"
 
 namespace core {
 /*

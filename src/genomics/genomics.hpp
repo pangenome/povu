@@ -1,20 +1,16 @@
 #include <vector>
 
+#include "../core/core.hpp"
 #include "../pvst/pvst.hpp"
 #include "../graph/tree.hpp"
 #include "../graph/digraph.hpp"
-#include "../core/core.hpp"
 #include "../graph/bidirected.hpp"
 
 
 namespace genomics {
-
-typedef std::size_t id_t; //
-typedef id_t vertex_id_t; //
 typedef std::pair<bidirected::VertexEnd, id_t> side_n_id_t; // TODO: replace with struct
 typedef std::vector<side_n_id_t> subpath_t;
 typedef std::vector<subpath_t> subpaths_t;
-
   
 // TODO: make use of this or delete
 enum variant_type {
@@ -26,25 +22,22 @@ enum variant_type {
 	CNV,
 	BND
 };
-  
+
+// TODO which version of VCF is best?
 enum output_format {
-	VCF, // which version of VCF?
+	VCF, //  currently outputs v4.2 
 	PAF, // not yet supported
 };
 
-
-//void call_variants(tree::Tree pvst_, digraph::DiGraph dg, core::config app_config);
-
 void call_variants(const tree::Tree& pvst_, const bidirected::VariationGraph& bd_vg, const core::config& app_config);
 std::vector<std::pair<std::size_t, std::size_t>> extract_canonical_flubbles(const tree::Tree& pvst_);
-  
 } // namespace genomics
 
 namespace vcf {
 
 const std::string UNDEFINED_PATH_LABEL = "undefined";
-const std::size_t UNDEFINED_PATH_ID = core::constants::SIZE_T_MAX;
-const std::size_t UNDEFINED_PATH_POS = core::constants::SIZE_T_MAX;
+const std::size_t UNDEFINED_PATH_ID = core::constants::INVALID_ID;
+const std::size_t UNDEFINED_PATH_POS = core::constants::INVALID_ID;
 
 struct vcf_record {
   std::string chrom;
@@ -75,5 +68,4 @@ bool print_vcf(std::vector<std::vector<std::size_t>> paths,
 			   std::size_t ref_path_id);
 
 void print_vcf_header(std::string ref_name);
-
 } // namespace vcf

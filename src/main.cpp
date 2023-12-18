@@ -64,10 +64,10 @@ int main(int argc, char *argv[]) {
   }
   
   // print v
-  if (app_config.verbosity() > 4) { std::cerr << fn_name << " Printing edge stack\n"; }
-  for (auto e : v) {
-	std::cerr << e.eq_class << " " << e.v_id << std::endl;
-	}
+  //if (app_config.verbosity() > 4) { std::cerr << fn_name << " Printing edge stack\n"; }
+  //for (auto e : v) {
+  //std::cerr << e.eq_class << " " << e.v_id << std::endl;
+  //}
 
   if (app_config.verbosity() > 2) { std::cerr << fn_name << " Computing PVST\n"; }
   tree::Tree t = pvst::compute_pvst(v, app_config);

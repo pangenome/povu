@@ -361,8 +361,8 @@ bidirected::VariationGraph to_vg(const char* filename) {
 		handlegraph::nid_t start_id = std::stoull(*std::begin(path.segment_names)) - offset_value;
 		handlegraph::nid_t end_id = std::stoull(*std::rbegin(path.segment_names)) - offset_value;
 
-		vg.add_start_node(start_id);
-		vg.add_stop_node(end_id);
+		vg.add_haplotype_start_node(start_id);
+		vg.add_haplotype_stop_node(end_id);
 		
 		for (auto& s : path.segment_names) {
 		  
