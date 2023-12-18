@@ -37,6 +37,7 @@ public:
   // --------------
   Vertex(); // a null vertex
   Vertex(std::size_t id); // root constructor sets the parent to a max value
+  Vertex(std::size_t id, bool is_dummy);
   //Vertex(std::size_t id, std::size_t eq_class); // root constructor sets the parent to a max value
   Vertex(std::size_t id, std::size_t parent_id);
 
@@ -75,8 +76,8 @@ public:
  */
 class Tree {
   std::vector<Vertex> vertices;
-  static const std::size_t root_idx_{}; // root is always at index 0
-
+  //static const std::size_t root_idx_{}; // root idx can change
+  std::size_t root_idx_;
 public:
   // --------------
   // constructor(s)
@@ -121,8 +122,14 @@ public:
   bool add_vertex(std::size_t parent_id, std::size_t id, std::size_t eq_class);
   bool add_vertex(std::size_t parent_id, std::size_t id, std::size_t eq_class, std::string& meta);
   bool add_vertex(std::size_t parent_id, std::size_t id, std::size_t eq_class, std::string& meta, bool is_dummy);
+
+  // add a root to the tree
+  // 
+  // bool add_root(std::size_t id, std::size_t eq_class, std::string& meta, bool is_dummy);
+
   bool remove_vertex(std::size_t id);
 
+  bool set_root(std::size_t id);
 
   // -----------------
   // display method(s)

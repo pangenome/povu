@@ -4,16 +4,17 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <sys/types.h>
 #include <vector>
 #include <list>
 
-#include "../graph/tree.hpp"
 #include "./pvst.hpp"
+#include "../graph/tree.hpp"
 #include "../core/core.hpp"
 
-
-
 namespace pvst {
+const std::size_t INVALID_ID = core::constants::UNDEFINED_SIZE_T;
+
 /**
  * @brief compute_pst
  *
@@ -31,7 +32,7 @@ tree::Tree compute_pst(std::vector<std::size_t> classes) {
   auto get_class = [&classes](std::size_t i) -> std::size_t {
 	return classes[i];
   };
-  
+
   // a map of equivalence classes to a vector of their positions in the edge stack
   std::map<size_t, std::vector<size_t>> pos_map;
   for (std::size_t i{}; i < classes.size(); ++i) {
@@ -46,7 +47,7 @@ tree::Tree compute_pst(std::vector<std::size_t> classes) {
   // a vector of bools with a t or f on whether a class is nesting or not
   // values are true when we are in a SESE region
   std::vector<bool> nesting(classes.size(), false);
-  
+
   // the value of pos map at the current index
   std::vector<std::size_t> temp{};
   // get the current position in the edge stack of the current equivalence class
@@ -67,7 +68,7 @@ tree::Tree compute_pst(std::vector<std::size_t> classes) {
   std::size_t prev_pos;
 
   std::size_t parent_idx{}; // TODO: replace with p
-  
+
   // a lambda that takes a parent index and updates the tree
   auto update_tree = [&](std::size_t parent) -> void {
 	t.add_vertex(parent, counter, curr_class);
@@ -79,7 +80,7 @@ tree::Tree compute_pst(std::vector<std::size_t> classes) {
 	curr_class = get_class(i);
 
 	temp = pos_map[curr_class];
-	
+
 	// if the class only has one element, then it is not a SESE region
 	if (temp.size() == 1) { continue; }
 
@@ -108,7 +109,7 @@ tree::Tree compute_pst(std::vector<std::size_t> classes) {
 	  // or
 	  //
 	  // we expect the last node to have the same class as the current class if not add it because we
-      // have two nodes with the same class after:
+	  // have two nodes with the same class after:
 	  //  - a nesting region 2 ... 2 2
 	  if (pos < temp.size() - 1
 		|| t.get_vertex(counter -1).get_class() != curr_class) {
@@ -128,7 +129,7 @@ tree::Tree compute_pst(std::vector<std::size_t> classes) {
 	  else if (pos < temp.size() - 1) {
 		std::size_t p = t.get_parent(curr_idx);
 		update_tree(p);
-	  }  
+	  }
 	  else {
 		// that is the last time we are seeing the previous class
 		// so we are exiting the SESE region
@@ -139,7 +140,7 @@ tree::Tree compute_pst(std::vector<std::size_t> classes) {
 	prev_class = curr_class;
 	prev_pos = pos;
   }
-  
+
   return t;
 }
 
@@ -152,13 +153,12 @@ tree::Tree compute_pst(std::vector<std::size_t> classes) {
  *   - the second element is the one node
  *   - the third element is the other edge
  *
- * 
+ *
  * @param v[in] vector of tuples
  * @return tree::Tree the PST
 */
 
-tree::Tree compute_pvst(
-  std::vector<std::tuple<std::size_t , std::size_t, std::size_t>> const& v) {
+tree::Tree compute_pvst(std::vector<std::tuple<std::size_t, std::size_t, std::size_t>> const& v) {
   // TODO this tree is lager than should be
   tree::Tree t = tree::Tree();
 
@@ -176,7 +176,7 @@ tree::Tree compute_pvst(
   auto get_tgt = [&v](std::size_t i) -> std::size_t {
 	return std::get<2>(v[i]);
   };
-  
+
   // a map of equivalence classes to a vector of their positions in the edge stack
   std::map<size_t, std::vector<size_t>> pos_map;
   for (std::size_t i{}; i < v.size(); ++i) {
@@ -193,7 +193,7 @@ tree::Tree compute_pvst(
   // a vector of bools with a t or f on whether a class is nesting or not
   // values are true when we are in a SESE region
   std::vector<bool> nesting(v.size(), false);
-  
+
   // the value of pos map at the current index
   std::vector<std::size_t> temp{};
   // get the current position in the edge stack of the current equivalence class
@@ -215,14 +215,14 @@ tree::Tree compute_pvst(
 
   // the parent index of the current node, not always pointing to the parent of
   // the current node
-  std::size_t parent_idx{}; 
+  std::size_t parent_idx{};
 
   // source and target of the current edge as strings
   std::string src;
   std::string tgt;
 
   std::set<std::size_t> seen;
-  
+
   // a lambda that takes a parent index and updates the tree
   auto update_tree = [&](std::size_t parent, std::string& meta, bool update_curr_idx = true) -> void {
 	// convert meta to a size_t and if check if it has been seen
@@ -231,7 +231,7 @@ tree::Tree compute_pvst(
 	std::size_t meta_size_t = std::stoull(meta);
 	if (seen.find(meta_size_t) != seen.end()) { return; }
 	seen.insert(meta_size_t);
-	
+
 	t.add_vertex(parent, counter, curr_class, meta);
 
 
@@ -241,8 +241,8 @@ tree::Tree compute_pvst(
 	  t.get_vertex_mut(parent).set_meta(t.get_vertex(counter).get_meta());
 	  t.get_vertex_mut(counter).set_meta(std::move(temp));
 	}
-	
-	
+
+
 	if (update_curr_idx) { curr_idx = counter; }
 	++counter;
   };
@@ -253,7 +253,7 @@ tree::Tree compute_pvst(
 	tgt = std::to_string(get_tgt(i));
 
 	temp = pos_map[curr_class];
-	
+
 	pos = find_pos(i);
 
 	if (t.empty()) {
@@ -277,7 +277,7 @@ tree::Tree compute_pvst(
 	  parent_idx = t.get_parent(curr_idx);
 	  update_tree(parent_idx, tgt);
 	  update_tree(parent_idx, src);
-	  
+
 	}
 	else if (prev_class != curr_class) {
 	  // we may entering a new SESE region
@@ -294,7 +294,7 @@ tree::Tree compute_pvst(
 	  // this is not the last time we are seeing the current class
 	  //else if (pos < temp.size() - 1) { }
 	  // the previous class is not the parent of the current class
-      // rather they are just adjacent
+	  // rather they are just adjacent
 	  // e.g 9 9 10 10 or 8 9
 	  else {
 		parent_idx = t.get_parent(curr_idx);
@@ -312,233 +312,209 @@ tree::Tree compute_pvst(
 	prev_class = curr_class;
 	prev_pos = pos;
   }
-  
+
   return t;
 }
 
 tree::Tree compute_pvst(std::vector<std::pair<std::size_t, std::size_t>> v, const core::config& app_config)   {
-    std::string fn_name = "[povu::pvst::compute_pvst]";
-	
-  std::vector<eq_n_id_t> v_;
-  std::transform(v.begin(), v.end(), v_.begin(), [](auto& p) -> eq_n_id_t { return {p.first, p.second}; });
-	return compute_pvst(v_, app_config);
+  std::string fn_name = "[povu::pvst::compute_pvst]";
+
+  std::vector<core::eq_n_id_t> v_;
+  std::transform(v.begin(), v.end(),
+				v_.begin(), [](auto& p) -> core::eq_n_id_t { return {p.second, p.first}; });
+  return compute_pvst(v_, app_config);
 }
-  
+
+
+
 /**
- * @brief compute the pvst of a given vector of pairs
+ * @brief compute the pvst of a given vector of eq_n_id_t values
  *
  * @param v a vector of pairs
- *          where each pair is (index, eq class)  
+ *          where each pair is (index, eq class)
  * @return a tree
  */
-tree::Tree compute_pvst(std::vector<eq_n_id_t> v, const core::config& app_config) {
+tree::Tree compute_pvst(std::vector<core::eq_n_id_t> v, const core::config& app_config) {
   std::string fn_name = "[povu::pvst::compute_pvst]";
   if (app_config.verbosity() > 3) { std::cerr << fn_name << "\n"; }
-  
+
   tree::Tree t = tree::Tree();
 
   // lambda to map back an index from the biedged and dummies vertex idx to the
   // bidirected idx
   auto bidirected_idx = [](std::size_t x) -> std::size_t {
-	x = x - 1;
+	--x; // we added 1 because we added a dummy start node before bi-edging
 	return x % 2 == 0 ? ((x + 2) / 2) - 1 : ((x + 1) / 2) - 1;
   };
 
-	
-  //for (auto i: v) {
-//	std::cout << i.first << " b " << bidirected_idx(i.first) << " " << i.second << std::endl; 
-  //}
-
   // a map of equivalence classes to a vector of their positions in the edge stack
   std::map<size_t, std::vector<size_t>> pos_map;
+  std::map<size_t, bool> nesting;
   for (std::size_t i{}; i < v.size(); ++i) {
-	pos_map[v[i].second].push_back(i);
+	pos_map[v[i].eq_class].push_back(i);
+	nesting[v[i].eq_class] = false;
   }
 
   // print pos_map
-  /*
-  std::cout << "pos_map\n";
-  for (auto i: pos_map) {
-	std::cout << i.first << ": ";
-	for (auto j: i.second) { std::cout << j << ", "; }
-	std::cout << std::endl;
+  if (false) {
+	std::cout << "pos_map\n";
+	for (auto i: pos_map) {
+	  std::cout << i.first << ": ";
+	  for (auto j: i.second) { std::cout << j << ", "; }
+	  std::cout << std::endl;
+	}
   }
-  */
 
-  std::string bd_idx_str;
+  std::string bd_idx_str{};
 
   std::size_t
-	current_parent_class{},
-	current_parent_id{},
-	current_class{},
-	prev_class{},
+	current_class{}, //
+	counter{}, // a counter to keep track of the number of vertices in the tree
 	bd_idx{}, // bidirected index
-	be_idx{}  // biedged index
+	be_idx{},  // biedged index
+	i{}, // a position in the edge stack (v)
+	p_id{INVALID_ID}, // parent id of the current vertex in the tree
+	p_class // parent class
 	;
 
-  tree::Vertex p_v;
-  
-  std::size_t counter{}, i{};
+  tree::Vertex p_v; // parent vertex
+  // tree::Vertex prt_v;
+
+  auto is_root =[&](id_t id) -> bool {
+	return p_id == INVALID_ID || t.get_root().get_id() == id;
+  };
 
   while (i < v.size()) {
 
-
-	
-	be_idx = v[i].first;
-    bd_idx = bidirected_idx(be_idx);
-	current_class = v[i].second;
+	be_idx = v[i].v_id;
+	bd_idx = bidirected_idx(be_idx);
+	current_class = v[i].eq_class;
 	bd_idx_str = std::to_string(bd_idx+1);
 
-
-	std::cerr << "be idx: " << be_idx << " bd idx: " << bd_idx
-			  << " current class: " << current_class
-			  << " bd idx str: " << bd_idx_str
-			  << std::endl;
+	if (!t.empty()) {
+	  std::cout << "root: " << t.get_root().get_id() << std::endl;
+	}
 	
-	/*
-	std::cout << "i: " << i << " counter: " << counter
-			  << " cpid: " << current_parent_id << " be idx " << be_idx << " bd idx: " << bd_idx
-			  << std::endl;
-	*/
-	
-	// ----------------------
-	// handle the root vertex
-	// ----------------------
+	if (true) {
+	  std::cerr << "i: " << i
 
-	//
-	{
-	  if (i==0 && t.empty()) {
-		t.add_vertex(core::constants::UNDEFINED_SIZE_T, counter, current_class, bd_idx_str);
-		current_parent_class = current_class;
-		current_parent_id = i;
-		++counter;
-		++i;
-		continue;
-	  }
-	  else if (i==0 && !t.empty()) {
-		throw std::runtime_error("adding vertices to a rootless tree");
-	  }
+				<< " counter " << counter
+						<< " p_id: " << p_id
+		//<< " be idx: " << be_idx
+		//<< " bd idx: " << bd_idx
+				<< " current class: " << current_class
+
+		//<< " bd idx str: " << bd_idx_str
+				<< std::endl;
 	}
 
-	// ------------------
-	// add other vertices
-	// ------------------
-	{
-	  t.add_vertex(current_parent_id, counter, current_class, bd_idx_str);
-	}	
+	// TODO: is it necessary to check if i == 0? or the state of the tree?
 
-    // ------------------
+	if (t.empty()) { // add root
+	  t.add_vertex(INVALID_ID, counter, current_class, bd_idx_str);
+	}
+	else { // add other vertices
+	  t.add_vertex(p_id, counter, current_class, bd_idx_str);
+	}
+
+	// ---------------------------
 	// update/determine the parent
-	// ------------------
-
+	// ---------------------------
 
 	std::vector<std::size_t> const& ps = pos_map[current_class];
-	
-	std::list<std::size_t> positions;
-	for (auto p: ps) {
-	  positions.push_back(p);
-	}
-	
-	if (positions.size () == 1) {
-	  ++counter;
-	  ++i;
-	  continue; }
 
-	bool foo{false};
+	// if this eq class shows up more than once
+	if (ps.size() > 1) {
+	  // in this case the eq class nests something
+	  std::list<std::size_t> positions;
+	  std::copy(ps.begin(), ps.end(), std::back_inserter(positions));
 
-	for (auto it = positions.begin(); it != positions.end(); ++it) {
-	  if (std::next(it) == positions.end()) { break; }
+	  for (auto it = positions.begin(); it != positions.end(); ++it) {
 
-	  if (*it == i && it != positions.begin() &&
-		  (*it  - *std::prev(it ) > 1) &&
-		((*std::next(it) - *it ) > 1) ) {
-		// add a dummy parent?
+		// detect a bubble chain
+		// handle bubble chains
+		if (*it == i && std::next(it) != positions.end() && it != positions.begin()
+			//&& (*it  - *std::prev(it ) > 1)
+			&& ((*std::next(it) - *it ) > 1) ) {
+		  // add a dummy parent?
 
-		auto prt_v = t.get_vertex(current_parent_id);
-
-		if (!prt_v.is_dummy()) {
-
-		  //bool h{false};
-		  std::vector<std::size_t> children_found;
-		  for (auto c : prt_v.get_children()) {
-			// check whether the string contains _d
+		  tree::Vertex& prt_v = t.get_vertex_mut(p_id);
 		  
-			if (!t.get_vertex(c).is_dummy() ) {
-			  //h = true;
+		  if (!prt_v.is_dummy()) {
+			
+			if (is_root(p_id)) {
+			  std::string m = prt_v.get_meta();
 			  ++counter;
+			  t.add_vertex(INVALID_ID, counter, prt_v.get_class(), m, true);
+			  t.set_root(counter);
+			  std::cout << "ctr" << counter << std::endl;
+			t.get_vertex_mut(p_id).set_parent(counter);
+			  prt_v.set_parent(counter);
+			  std::cout << prt_v.get_parent() << " p " << t.get_vertex(p_id).get_parent() << std::endl;
+			  
+			  t.get_vertex_mut(counter).add_child(p_id);
+			  t.add_vertex(p_id, counter, current_class, bd_idx_str, true);
 
-			  std::string dummy_str = std::to_string(prt_v.get_id() + 1);
-			  t.add_vertex(current_parent_id, counter,
-						   prt_v.get_class(), dummy_str, true);
-			  break;
+			  p_class = prt_v.get_class();
+			}
+			else {
+			  id_t grand_p_id = t.get_parent(prt_v.get_id());
+			  tree::Vertex& grand_prt_v = t.get_vertex_mut(grand_p_id);
+
+			  t.get_vertex_mut(grand_p_id).remove_child(p_id);
+			  std::string m = grand_prt_v.get_meta();
+			  ++counter;
+			  t.add_vertex(grand_p_id, counter, grand_prt_v.get_class(), m, true);
+			  t.get_vertex_mut(counter).add_child(p_id);
+
+
+			  p_class = grand_prt_v.get_class();
+			}
+
+			p_id = counter;
+			
+		  }
+		  else {
+			if (!is_root(prt_v.get_id())) {
+			  p_id = prt_v.get_parent();
 			}
 		  }
 
-		  for (auto c : prt_v.get_children()) {
-			// check whether the string contains _d
-		  
-			if (!t.get_vertex(c).is_dummy()) {
-			  t.get_vertex_mut(c).set_parent(counter);
-			  t.get_vertex_mut(counter).add_child(c);
-			  children_found.push_back(c);
-			  //prt_v.remove_child(c);
-			}
-		  }
-
-		  for (auto c : children_found) {
-			//std::cout << "\t remove "<< c << "\n";
-			t.get_vertex_mut(current_parent_id).remove_child(c);
-		  }
+		  ++counter;
+		  t.add_vertex(p_id, counter, current_class, bd_idx_str, true);
+		  nesting[current_class] = false;
 		}
-
-		// move up the tree to find a non dummy parent
-		while (t.get_vertex(current_parent_id).is_dummy() ) {
-		  current_parent_id = t.get_parent(current_parent_id);
-		}
-		
-		//std::cout << "\tcpid "<< current_parent_id << " " << counter<< "\n";
-		++counter;
-		std::string dummy_str = std::to_string( (bidirected_idx(v[i].first) + 1));
-
-		t.add_vertex(current_parent_id, counter, current_class, dummy_str, true);
-
-		current_parent_id = counter;
-		++i;
-		++counter;
-		foo = true;
-		// update all the 
 	  }
 	}
 
-	if (foo) {
-	  //std::cout << "foo was true" << "\n";
-	  continue;
-	}
 	
-	if (positions.back() == i) {
-		// this is the last time we are seeing this class
-		//std::cout << "up " << i << "\n";
-		// go up
-		std::size_t parent_id = t.get_parent(current_parent_id);
-		p_v = t.get_vertex(parent_id);
-		
-		current_parent_class = p_v.get_class();
-		current_parent_id = p_v.get_id();
-	}
-	else if (current_class != v[i+1].second) {
-	  // go down
-	  //std::cout << "down " << i << "\n";
-	  current_parent_class = current_class;
-	  current_parent_id = i;	  
+	
+	if ((!nesting[current_class] && ps.size() > 1) ||
+		(!nesting[current_class] && i+1 < v.size() && current_class != v[i+1].eq_class)) {
+	  std::cout << "down\n";
+	  nesting[current_class] = true;
+	  p_class = current_class;
+	  p_id = counter;
 	}
 
-	//prev_class = current_class;
-	++counter;
 	
+	if (ps.back() == i || (!t.get_vertex(counter).is_dummy() && current_class == p_class && i+1 < v.size() && current_class != v[i+1].eq_class)) {
+	  	  	  std::cout << "flip\n";
+	  nesting[current_class] = false;
+	}
+
+	if (!nesting[p_class] && !is_root(p_id)) {
+	  	  std::cout << "up\n";
+	  // this is the last time we are seeing this class; go up // get the parent's parent
+	  p_id = t.get_parent(p_id);
+	  p_v = t.get_vertex(p_id);
+	  p_class = p_v.get_class();
+	}
+
 	++i;
+	++counter;
   }
-  
-  
+
   return t;
-}  
+}
 } // namespace pvst

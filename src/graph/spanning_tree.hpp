@@ -382,7 +382,7 @@ public:
   std::vector<Edge> compute_edge_stack();
 
   // added after biedging
-  std::vector<std::pair<std::size_t, std::size_t>> compute_edge_stack2();
+  std::vector<core::eq_n_id_t> compute_edge_stack2();
 
   // I/O
   void print_dot();

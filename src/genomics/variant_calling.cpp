@@ -62,6 +62,13 @@ bidirected::VertexEnd compute_single_edge_side(const bidirected::VariationGraph&
 // TODO: this can be done while constructing the PVST
 std::vector<std::pair<std::size_t, std::size_t>>
 extract_canonical_flubbles(const tree::Tree& pvst_) {
+
+  std::string fn_name{"[povu::genomics::extract_canonical_flubbles]"};
+
+  if (true) {
+	std::cerr << fn_name << std::endl;
+  }
+  
   tree::Vertex const& root = pvst_.get_root();
 
   // subtree set
@@ -92,7 +99,7 @@ extract_canonical_flubbles(const tree::Tree& pvst_) {
 	max_child = core::constants::SIZE_T_MIN;
 
 	for (std::size_t child: children) {
-	  std::set<std::size_t> const& c =  pvst_.get_children(child);
+	  std::set<std::size_t> const& c = pvst_.get_children(child);
 	  std::size_t child_eq_class = pvst_.get_class(child);
 
 	  if (!end_found && child > max_child && parent_eq_class == child_eq_class) {
@@ -110,9 +117,15 @@ extract_canonical_flubbles(const tree::Tree& pvst_) {
 	if (is_canonical_subtree) {
 	  std::cerr << "canonical subtree found: " << current_vertex << " " << max_child
 				<< " " << pvst_.get_meta(current_vertex) << " " << pvst_.get_meta(max_child) << std::endl;
-	  canonical_flubbles.push_back(
-		std::make_pair(pvst_.get_meta(current_vertex) - 1, pvst_.get_meta(max_child) - 1 )
-		);
+	  if (pvst_.get_meta(current_vertex) < pvst_.get_meta(max_child)) {
+		canonical_flubbles.push_back(
+		  std::make_pair(pvst_.get_meta(current_vertex) - 1, pvst_.get_meta(max_child) - 1 )
+		  );		
+	  }
+	  else {
+		std::cerr << "sus\n";
+	  }
+
 	}
   }
 
@@ -205,7 +218,10 @@ void call_variants(const tree::Tree& pvst_,
 	extract_canonical_flubbles(pvst_);
 
 
-  //std::cout << fn_name << " Found " << canonical_flubbles.size() << " canonical flubbles\n";
+  if (true) {
+	std::cerr << fn_name << " Found " << canonical_flubbles.size() << " canonical flubbles\n";
+  }
+  //
 
   // walk paths in the digraph
   // while looping over canonical_flubbles

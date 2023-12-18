@@ -894,32 +894,33 @@ std::vector<Edge> Tree::compute_edge_stack() {
   return edge_stack;
 }
 
-std::vector<std::pair<std::size_t, std::size_t>> Tree::compute_edge_stack2() {
+std::vector<core::eq_n_id_t> Tree::compute_edge_stack2() {
 
   std::stack<std::pair<std::size_t, std::size_t>> s;
   // first is vertex, second is eq class of the vertex
-  std::vector<std::pair<std::size_t, std::size_t>> v;
+  std::vector<core::eq_n_id_t> v;
   
   for (std::size_t j{}; j < this->size(); j++) {
 	std::size_t i = this->get_sorted(j);
-	std::size_t k = this->get_sorted_g(i);
+	std::size_t v_id = this->get_sorted_g(i);
 
 	// the 0th vertex has no parent and will throw an exception
 	// if we try to get its parent
 	// this should be fixed somehow but for now we just skip it
-	if (k > 0) {
-	  	Edge const& parent_edge = this->get_parent_edge(k);
+	if (v_id > 0) {
+	  	Edge const& parent_edge = this->get_parent_edge(v_id);
 		//std::cout << "parent: " << parent_edge.get_class()
 		//		  << " " << parent_edge.get_color()
 		//		  << std::endl;
 		if (parent_edge.get_color() == core::color::black) {
-		  v.push_back(std::make_pair(k, parent_edge.get_class()));  
-		  s.push(std::make_pair(k, parent_edge.get_class()));  
+		  v.push_back({ parent_edge.get_class(), v_id});
+		  //v.push_back(std::make_pair(v_id, parent_edge.get_class()));  
+		  s.push(std::make_pair(v_id, parent_edge.get_class()));  
 		}
 		
 	}
 
-	std::set<size_t> obes = this->get_obe_idxs(k);
+	std::set<size_t> obes = this->get_obe_idxs(v_id);
 	for (auto o : obes) {
 	  BackEdge& be  = this->get_backedge(o);
 	  if (be.is_capping_backedge()) { continue; }	  		
@@ -928,9 +929,10 @@ std::vector<std::pair<std::size_t, std::size_t>> Tree::compute_edge_stack2() {
 	  //			<< std::endl;
 
 	  if (be.get_color() == core::color::black) {
-		v.push_back(std::make_pair(k, be.get_class()));  
-		  s.push(std::make_pair(k, be.get_class()));  
-		}
+		v.push_back({be.get_class(), v_id});
+		//v.push_back(std::make_pair(v_id, be.get_class()));  
+		s.push(std::make_pair(v_id, be.get_class()));  
+	  }
 	}		
   }
 

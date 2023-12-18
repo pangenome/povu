@@ -43,34 +43,43 @@ int main(int argc, char *argv[]) {
   // compute the cycle equivalence classes of the spanning tree
   if (app_config.verbosity() > 2) { std::cerr << fn_name << " Finding cycle equivalent classes\n"; }
   algorithms::cycle_equiv(st);
-  if (app_config.verbosity() > 4) {	st.print_dot(); }
+  if (app_config.verbosity() > 4) {
+	std::cout << "\n\n" << "Annotated Spanning Tree" << "\n\n";
+	st.print_dot();
+  }
 
-  std::vector<std::pair<std::size_t, std::size_t>> v = st.compute_edge_stack2();
+  std::vector<core::eq_n_id_t> v = st.compute_edge_stack2();
 
-  // print v
-  if (app_config.verbosity() > 2) { std::cerr << fn_name << " Printing edge stack\n"; }
-  for (auto e : v) {
-		std::cerr << e.first << " " << e.second << std::endl;
-	}
+    // lambda to map back an index from the biedged and dummies vertex idx to the
+  // bidirected idx
+  //auto bidirected_idx = [](std::size_t x) -> std::size_t {
+  //x = x - 1;
+  //return x % 2 == 0 ? ((x + 2) / 2) - 1 : ((x + 1) / 2) - 1;
+  //};
   
+  u_graph::FlowGraph afg = u_graph::FlowGraph(st);
+  if (app_config.verbosity() > 2) { 
+    std::cout << "\n\n" << "Annotated Flow Graph" << "\n\n";
+    afg.print_dot();
+  }
+  
+  // print v
+  if (app_config.verbosity() > 4) { std::cerr << fn_name << " Printing edge stack\n"; }
+  for (auto e : v) {
+	std::cerr << e.eq_class << " " << e.v_id << std::endl;
+	}
 
   if (app_config.verbosity() > 2) { std::cerr << fn_name << " Computing PVST\n"; }
   tree::Tree t = pvst::compute_pvst(v, app_config);
   if (app_config.verbosity() > 4)  { std::cout << "\n\n" << "PVST" << "\n\n"; t.print_dot(true); }
 
-
-    u_graph::FlowGraph afg = u_graph::FlowGraph(st);
-  if (app_config.verbosity() > 2) { 
-    std::cout << "\n\n" << "Annotated Flow Graph" << "\n\n";
-    afg.print_dot();
-  }
-
+  //return 0;
 
   if (app_config.verbosity() > 2)  { std::cerr << fn_name << " Calling variants\n"; }
   genomics::call_variants(t, vg, app_config);
 
   
-  return 0;
+  //return 0;
 
 
   return 0;

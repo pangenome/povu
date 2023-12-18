@@ -11,38 +11,36 @@
 #include <iostream>
 
 namespace core {
-
 /*
- * black edge is default
- * TODO: pick a better default
- * gray edge is a bi-edge
+ * =============
+ * Utility types
+ * =============
  */
-enum color { gray, black };
-
-// implement << operator for color
-std::ostream& operator<<(std::ostream& os, const color& c);
-
-  
 typedef std::pair<std::size_t, std::size_t> size_t_pair;
 
+  
+/*
+ * =========
+ * App types
+ * =========
+ */
 
+// rename to task_e
 enum class task_t {
   call, // call variants
   unset // unset
 };
 
+// rename to input_format_e
 enum class input_format_t {
 	file_path,
 	params,  // CLI params
 	unset // unset
 };
-
-// TODO: move to source file
-// implement << operator for tasks
 std::ostream& operator<<(std::ostream& os, const task_t& t);
 
-/*
- * app config
+/**
+ * @brief app config
  */
 struct config {
   task_t task;
@@ -124,5 +122,29 @@ struct config {
 
 };
 
+/*
+ * ===================
+ * Graph related types
+ * ===================
+ */
+  
+
+/*
+ * black edge is default
+ * TODO: pick a better default
+ * gray edge is a bi-edge
+ */
+enum color { gray, black };
+
+// implement << operator for color
+std::ostream& operator<<(std::ostream& os, const color& c);
+
+// Eq class and node id
+struct eq_n_id_t {
+  std::size_t eq_class;
+  std::size_t v_id;
+};
+
+  
 } // namespace core
 #endif

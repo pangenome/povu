@@ -31,6 +31,14 @@ Vertex::Vertex(std::size_t id) :
   children(std::set<std::size_t>{}),
   is_valid_(true),
   is_dummy_node_(false) {}
+
+Vertex::Vertex(std::size_t id, bool is_dummy) :
+  id(id),
+  class_(core::constants::UNDEFINED_SIZE_T),
+  parent(core::constants::UNDEFINED_SIZE_T),
+  children(std::set<std::size_t>{}),
+  is_valid_(true),
+  is_dummy_node_(is_dummy) {}
   
 Vertex::Vertex(std::size_t id, std::size_t parent_id) :
   id(id),
@@ -98,10 +106,10 @@ void Vertex::set_class(std::size_t class_) {
 
 // constructor(s)
 
-Tree::Tree() : vertices(std::vector<tree::Vertex>{}) {}
+  Tree::Tree() : vertices(std::vector<tree::Vertex>{}), root_idx_(0) {}
 
 Tree::Tree(std::size_t n, bool artificial_root) :
-  vertices(std::vector<Vertex>(n, Vertex()))
+  vertices(std::vector<Vertex>(n, Vertex())), root_idx_(0)
 {
   if (artificial_root) {
     this->vertices[0] = Vertex(0);
@@ -193,12 +201,13 @@ bool Tree::add_vertex(
   ) {
   // if the tree is empty, add a root, a tree is empty is parent id is
   // undefined and id is 0 and vertices is empty
-  if (this->vertices.empty() && parent_id == core::constants::UNDEFINED_SIZE_T && id == 0) {
-	Vertex root = Vertex(id);
+  if (parent_id == core::constants::UNDEFINED_SIZE_T) {
+	Vertex root = Vertex(id, is_dummy);
 	root.set_class(eq_class);
 	root.set_meta(std::move(meta));
 	//this->vertices.push_back();
 	//this->vertices[0] = root;
+	this->root_idx_ = id;
 	this->vertices.push_back(root);
 	return true;
   }
@@ -226,7 +235,11 @@ bool Tree::remove_vertex(std::size_t id) {
   return true;
 }
 
-
+bool Tree::set_root(std::size_t id) {
+  if (!this->vertices[id].is_valid()) { return false; }
+  this->root_idx_ = id;
+  return true;
+}
   
 std::set<std::size_t> const& Tree::get_children(std::size_t v) const {
   return this->vertices.at(v).get_children();
