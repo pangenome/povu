@@ -17,6 +17,11 @@ Run
 ./bin/povu 
 ```
 
+Example
+```
+./bin/povu -v 2 call -i test_data/LPA.max120.gfa  --  HG02572__LPA__tig00000001
+```
+
 ## Development
 
 Compile with debug symbols
