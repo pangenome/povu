@@ -1,5 +1,9 @@
 build/
 bin/
+Debug/
+Testing/
+.cache/
 *.vcf
 *.dot
 *.png
+*.svg
