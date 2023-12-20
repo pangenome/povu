@@ -1,6 +1,7 @@
 #include <fstream>
 #include <cstddef>
 #include <iostream>
+#include <ostream>
 #include <stack>
 #include <queue>
 #include <string>
@@ -97,7 +98,7 @@ void write_vcfs(const std::map<std::size_t,
   }
 }
 
-// TODO: move to vcf.hpp
+// TODO: rewrite to reduce complexity
 /**
  * @brief
  */
@@ -133,7 +134,7 @@ std::map<std::size_t, std::vector<vcf::vcf_record>> gen_vcf_records(
 
 	// does this flubble contain a reference path?
 	bool has_ref{false};
-
+	
 	// while being strand aware
 	// spell all the sequences in the flubble as a vector of strings
 	// where each string is a path
@@ -188,12 +189,11 @@ std::map<std::size_t, std::vector<vcf::vcf_record>> gen_vcf_records(
 			if (vertex_path.path_id == ref_id) {
 			  vcf_rec.pos = vertex_path.step_index;
 			}
+		  }		  
+		  vcf_rec.ref = path_seqs[path_idx];
+		  vcf_rec.alt = utils::immutable_erase(path_seqs, path_idx);
 
-			vcf_rec.ref = path_seqs[path_idx];
-			vcf_rec.alt = utils::immutable_erase(path_seqs, path_idx);
-
-			vcf_records[ref_id].push_back(vcf_rec);
-		  }
+		  vcf_records[ref_id].push_back(vcf_rec);
 		}
 	  }
 	}

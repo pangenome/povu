@@ -60,14 +60,15 @@ bidirected::VertexEnd compute_single_edge_side(const bidirected::VariationGraph&
 }
 
 // TODO: this can be done while constructing the PVST
-std::vector<std::pair<std::size_t, std::size_t>> extract_canonical_flubbles(const tree::Tree& pvst_) {
+std::vector<std::pair<std::size_t, std::size_t>> extract_canonical_flubbles(
+  const tree::Tree& pvst_,
+  const core::config& app_config
+  ) {
 
   std::string fn_name{"[povu::genomics::extract_canonical_flubbles]"};
 
-  if (true) {
-	std::cerr << fn_name << std::endl;
-  }
-  
+  if (app_config.verbosity() > 3) { std::cerr << fn_name << "\n"; }
+
   tree::Vertex const& root = pvst_.get_root();
 
   // subtree set
@@ -117,7 +118,7 @@ std::vector<std::pair<std::size_t, std::size_t>> extract_canonical_flubbles(cons
 	  if (pvst_.get_meta(current_vertex) < pvst_.get_meta(max_child)) {
 		canonical_flubbles.push_back(
 		  std::make_pair(pvst_.get_meta(current_vertex) - 1, pvst_.get_meta(max_child) - 1 )
-		  );		
+		  );
 	  }
 	  else {
 		std::cerr << "sus canonical subtree found: " << current_vertex
@@ -215,19 +216,14 @@ void call_variants(const tree::Tree& pvst_,
   if (app_config.verbosity() > 3) { std::cerr << fn_name << "\n"; }
 
   //output_format of = output_format::VCF;
-  std::vector<std::pair<std::size_t, std::size_t>> canonical_flubbles =
-	extract_canonical_flubbles(pvst_);
+  std::vector<std::pair<std::size_t, std::size_t>> canonical_flubbles = extract_canonical_flubbles(pvst_, app_config);
 
-
-  if (true) {
+  if (app_config.verbosity() > 3) {
 	std::cerr << fn_name << " Found " << canonical_flubbles.size() << " canonical flubbles\n";
   }
-  //
 
   // walk paths in the digraph
   // while looping over canonical_flubbles
-
-
   std::vector<std::vector<std::vector<bidirected::side_n_id_t>>> all_paths;
 
   //std::cout << fn_name << " Extracting paths for flubbles:\n";
