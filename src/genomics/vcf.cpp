@@ -101,8 +101,7 @@ void write_vcfs(const std::map<std::size_t,
 /**
  * @brief
  */
-std::map<std::size_t, std::vector<vcf::vcf_record>>
-gen_vcf_records(
+std::map<std::size_t, std::vector<vcf::vcf_record>> gen_vcf_records(
   const bidirected::VariationGraph& bd_vg,
   const std::vector<std::vector<std::set<std::size_t>>>& haplotypes,
   const std::vector<std::vector<std::vector<bidirected::side_n_id_t>>>& all_paths,

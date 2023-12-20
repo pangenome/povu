@@ -60,8 +60,7 @@ bidirected::VertexEnd compute_single_edge_side(const bidirected::VariationGraph&
 }
 
 // TODO: this can be done while constructing the PVST
-std::vector<std::pair<std::size_t, std::size_t>>
-extract_canonical_flubbles(const tree::Tree& pvst_) {
+std::vector<std::pair<std::size_t, std::size_t>> extract_canonical_flubbles(const tree::Tree& pvst_) {
 
   std::string fn_name{"[povu::genomics::extract_canonical_flubbles]"};
 

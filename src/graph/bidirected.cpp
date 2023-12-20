@@ -377,8 +377,9 @@ VariationGraph::get_paths(id_t start_id, id_t stop_id, bool compact) const {
 	bool l_fwd = std::all_of(v_left.begin(), v_left.end(), [&](side_n_id_t x) { return x.v_idx < i; });
 	bool l_rse = std::all_of(v_left.begin(), v_left.end(), [&](side_n_id_t x) { return x.v_idx > i; });
 
+
 	if (!v_left.empty() && !(l_fwd ^ l_rse)) {
-	  return std::make_pair(VertexEnd::l, -1);
+	  return std::make_pair(VertexEnd::l, 1); // TODO: loop boundary
 	}
 
 	// check that all v_right are greater than start_idx
@@ -395,7 +396,11 @@ VariationGraph::get_paths(id_t start_id, id_t stop_id, bool compact) const {
 	}
 	else if (l_rse && r_rse) { // start vertex is inverted
 	  return std::make_pair(VertexEnd::l, 0);
-	} else {
+	}
+	else if (l_fwd && r_rse) {
+	  return std::make_pair(VertexEnd::r, 2); // TODO: loop boundary
+	}
+	else {
 	  return std::make_pair(VertexEnd::l, -3);
 	}
   };
@@ -416,6 +421,9 @@ VariationGraph::get_paths(id_t start_id, id_t stop_id, bool compact) const {
 
   // the start side facing (the rest of) the flubble
   auto [start_side, status_code] = greater_side(start_id);
+
+
+   
   if (status_code < 0) {
 	std::cerr << fn_name << " ERROR: not valid flubble boundary (start) "
 			  << start_id << " -> " << stop_id
@@ -553,8 +561,12 @@ VariationGraph::get_paths(id_t start_id, id_t stop_id, bool compact) const {
   if (stop_status_code < 0) {
 	std::cerr << fn_name << " ERROR: not valid flubble boundary (stop) "
 			  << start_id << " -> " << stop_id
-			  << " status code "  << status_code << "\n";
+			  << " status code "  << stop_status_code << "\n";
   }
+
+  //if (stop_status_code == 2) {
+  //std::cout << fn_name << stop_side << stop_status_code<< "\n";
+  //}
 
 
   //std::cerr << fn_name << " exit: " << stop_side << stop_id << "\n";
