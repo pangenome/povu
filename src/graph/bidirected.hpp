@@ -1,7 +1,6 @@
 #ifndef BIDIRECTED_HPP
 #define BIDIRECTED_HPP
 
-
 #include <cstddef>
 #include <string>
 #include <vector>
@@ -27,15 +26,14 @@ struct path_t {
   // TODO: use methods here instead of accessing directly
 };
 
-
 /**
    l (left) 5' or +
    r (left) 3' or -
  */
 // TODO: replace with struct or class to allow methods like complement
 enum class VertexEnd {
-	l,
-	r
+  l,
+  r
 };
 typedef VertexEnd v_end_t;
 // -----------
@@ -53,7 +51,6 @@ struct side_n_id_t {
   // method complement
   side_n_id_t complement() const;
 };
-
 
 struct PathInfo {
   std::size_t path_id;
@@ -171,10 +168,10 @@ class VariationGraph {
 
   //std::unordered_set<std::size_t> graph_start_nodes;
   //std::unordered_set<std::size_t> graph_end_nodes;
-  
+
   std::unordered_set<std::size_t> haplotype_start_nodes;
   std::unordered_set<std::size_t> haplotype_end_nodes;
-  
+
   //std::unordered_set<std::size_t> start_nodes;
   //std::unordered_set<std::size_t> end_nodes;
 
@@ -199,8 +196,6 @@ public:
   Vertex& get_vertex_mut(std::size_t index);
   const Edge& get_edge(std::size_t index) const;
 
-
-
   /**
    * @brief Get all paths between two nodes in the bidirected variation graph
    *
@@ -220,9 +215,10 @@ public:
   // TODO: these two can be combined into one method
   std::unordered_set<id_t> find_graph_start_nodes() const;
   std::unordered_set<id_t> find_graph_end_nodes() const;
-  
+
   // TODO: maybe nice to have?
   //std::set<std::size_t> get_edges(std::size_t vertex_index, VertexEnd vertex_end) const;
+
 
   // ---------
   // setter(s)
@@ -230,7 +226,7 @@ public:
   void append_vertex();   // adds an invalid vertex to the graph
   void add_vertex(const Vertex& vertex);
   void add_edge(std::size_t v1, VertexEnd v1_end, std::size_t v2, VertexEnd v2_end);
-  
+
   void add_haplotype_start_node(std::size_t node_id);
   void add_haplotype_stop_node(std::size_t node_id);
 
@@ -245,22 +241,22 @@ public:
 
 
   /*
-	Library implementations
-	=======================
+    Library implementations
+    =======================
 
-	- HandleGraph
-	- MutableHandleGraph
-	- MutablePathHandleGraph
+    - HandleGraph
+    - MutableHandleGraph
+    - MutablePathHandleGraph
   */
 
   /*
-	 HandleGraph
-	 -----------
+     HandleGraph
+     -----------
 
-	Partially implements HandleGraph
+    Partially implements HandleGraph
 
-	Implemented:
-	 -
+    Implemented:
+     -
    */
 
 
@@ -271,7 +267,7 @@ public:
   // returns the node_id as a handle
   // TODO: not applicable, make applidable
   handlegraph::handle_t get_handle(const handlegraph::nid_t& node_id,
-								   bool is_reverse = false) const;
+                                   bool is_reverse = false) const;
 
   /// Get the ID from a handle
   // same as a size_t cast
@@ -282,7 +278,7 @@ public:
 
   /// Invert the orientation of a handle (potentially without getting its ID)
   /*
-	since vertex doesn't have orientation yet this will change the incidence of the edges
+    since vertex doesn't have orientation yet this will change the incidence of the edges
   edges incident with the l side will be incident with the r side and vice versa
    */
   handlegraph::handle_t flip(const handlegraph::handle_t& handle);
@@ -307,24 +303,24 @@ public:
 
   // TODO: implement
   bool follow_edges_impl(const handlegraph::handle_t& handle,
-						 bool go_left,
-						 const std::function<bool(const handlegraph::handle_t&)>& iteratee) const;
+                         bool go_left,
+                         const std::function<bool(const handlegraph::handle_t&)>& iteratee) const;
 
 
   // TODO: implement
   bool for_each_handle_impl(const std::function<bool(const handlegraph::handle_t&)>& iteratee,
-							bool parallel = false) const;
+                            bool parallel = false) const;
 
 
-	/*
-	  MutableHandleGraph
-	  -------------------
+    /*
+      MutableHandleGraph
+      -------------------
 
-	partially implements MutableHandleGraph
+    partially implements MutableHandleGraph
 
-	Implemented:
-	 - handlegraph::handle_t create_handle(const std::string& sequence);
-	 - handlegraph::handle_t create_handle(const std::string& sequence, const handlegraph::nid_t& id);
+    Implemented:
+     - handlegraph::handle_t create_handle(const std::string& sequence);
+     - handlegraph::handle_t create_handle(const std::string& sequence, const handlegraph::nid_t& id);
    */
 
 
@@ -332,57 +328,56 @@ public:
   handlegraph::handle_t create_handle(const std::string& sequence);
 
   handlegraph::handle_t create_handle(const std::string& sequence,
-									  const handlegraph::nid_t& id);
+                                      const handlegraph::nid_t& id);
 
   // this seems to assume a biedged representation
   void create_edge(const handlegraph::handle_t& left, const handlegraph::handle_t& right);
 
   /*
-	MutablePathHandleGraph
-	----------------------
+    MutablePathHandleGraph
+    ----------------------
 
-	partially implements MutablePathHandleGraph
+    partially implements MutablePathHandleGraph
 
-	Implemented:
-	 - create_path_handle
+    Implemented:
+     - create_path_handle
    */
 
    /**
-	 * Create a path with the given name. The caller must ensure that no path
-	 * with the given name exists already, or the behavior is undefined.
-	 * Returns a handle to the created empty path. Handles to other paths must
-	 * remain valid.
-	 */
+     * Create a path with the given name. The caller must ensure that no path
+     * with the given name exists already, or the behavior is undefined.
+     * Returns a handle to the created empty path. Handles to other paths must
+     * remain valid.
+     */
   hg::path_handle_t create_path_handle(const std::string& name,
-									   bool is_circular = false);
+                                       bool is_circular = false);
 
 
   /**
    * Renames a path. Existing path_handle_t's may become invalidated..
    */
   hg::path_handle_t rename_path(const hg::path_handle_t& path_handle,
-								const std::string& new_name);
+                                const std::string& new_name);
 
-	/**
-	 * Append a visit to a node to the given path. Returns a handle to the new
-	 * final step on the path which is appended. If the path is cirular, the new
-	 * step is placed between the steps considered "last" and "first" by the
-	 * method path_begin. Handles to prior steps on the path, and to other paths,
-	 * must remain valid.
-	 */
+    /**
+     * Append a visit to a node to the given path. Returns a handle to the new
+     * final step on the path which is appended. If the path is cirular, the new
+     * step is placed between the steps considered "last" and "first" by the
+     * method path_begin. Handles to prior steps on the path, and to other paths,
+     * must remain valid.
+     */
   hg::step_handle_t append_step(const hg::path_handle_t& path,
-								const hg::handle_t& to_append);
+                                const hg::handle_t& to_append);
 
   /**
-	 * Make a path circular or non-circular. If the path is becoming circular, the
-	 * last step is joined to the first step. If the path is becoming linear, the
-	 * step considered "last" is unjoined from the step considered "first" according
-	 * to the method path_begin.
-	 */
+     * Make a path circular or non-circular. If the path is becoming circular, the
+     * last step is joined to the first step. If the path is becoming linear, the
+     * step considered "last" is unjoined from the step considered "first" according
+     * to the method path_begin.
+     */
   void set_circularity(const hg::path_handle_t& path, bool circular);
 
 };
-
 
 }; // namespace bidirected
 #endif

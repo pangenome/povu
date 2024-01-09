@@ -1,31 +1,31 @@
-#include "./core/core.hpp"
+#include <string>
+#include <format>
+
+#include "./algorithms/cycle_equiv.hpp"
 #include "./cli/cli.hpp"
-#include "./io/io.hpp"
+#include "./core/core.hpp"
+#include "./genomics/genomics.hpp"
 #include "./graph/bidirected.hpp"
 #include "./graph/biedged.hpp"
 #include "./graph/spanning_tree.hpp"
-#include "./algorithms/cycle_equiv.hpp"
-#include "./pvst/pvst.hpp"
-#include "./genomics/genomics.hpp"
-#include "graph/tree.hpp"
-
-
+#include "./graph/tree.hpp"
 #include "./graph/u_graph.hpp"
-#include <string>
+#include "./io/io.hpp"
+#include "./pvst/pvst.hpp"
 
 
 int main(int argc, char *argv[]) {
+  std::string fn_name = std::format("[povu::main::{}]", __func__);
+
   core::config app_config;
   cli::cli(argc, argv, app_config);
 
   if (app_config.verbosity()) { app_config.dbg_print(); }
 
-  std::string fn_name{"[povu::main]"};
-  
   if (app_config.verbosity() > 2)  { std::cerr << fn_name << " Reading graph\n"; }
 
   // read the input gfa into a bidirected variation graph
-  bidirected::VariationGraph vg = io::from_gfa::to_vg(app_config.get_input_gfa().c_str());
+  bidirected::VariationGraph vg = io::from_gfa::to_vg(app_config.get_input_gfa().c_str(), app_config);
   if (app_config.verbosity() > 1) { vg.dbg_print(); }
 
   if (app_config.verbosity() > 2) { std::cerr << fn_name << " Bi-edging" << "\n"; }
@@ -44,30 +44,17 @@ int main(int argc, char *argv[]) {
   if (app_config.verbosity() > 2) { std::cerr << fn_name << " Finding cycle equivalent classes\n"; }
   algorithms::cycle_equiv(st);
   if (app_config.verbosity() > 4) {
-	std::cout << "\n\n" << "Annotated Spanning Tree" << "\n\n";
-	st.print_dot();
+    std::cout << "\n\n" << "Annotated Spanning Tree" << "\n\n";
+    st.print_dot();
   }
 
   std::vector<core::eq_n_id_t> v = st.compute_edge_stack2();
 
-    // lambda to map back an index from the biedged and dummies vertex idx to the
-  // bidirected idx
-  //auto bidirected_idx = [](std::size_t x) -> std::size_t {
-  //x = x - 1;
-  //return x % 2 == 0 ? ((x + 2) / 2) - 1 : ((x + 1) / 2) - 1;
-  //};
-  
   u_graph::FlowGraph afg = u_graph::FlowGraph(st);
-  if (app_config.verbosity() > 2) { 
+  if (app_config.verbosity() > 2) {
     std::cout << "\n\n" << "Annotated Flow Graph" << "\n\n";
     afg.print_dot();
   }
-  
-  // print v
-  //if (app_config.verbosity() > 4) { std::cerr << fn_name << " Printing edge stack\n"; }
-  //for (auto e : v) {
-  //std::cerr << e.eq_class << " " << e.v_id << std::endl;
-  //}
 
   if (app_config.verbosity() > 2) { std::cerr << fn_name << " Computing PVST\n"; }
   tree::Tree t = pvst::compute_pvst(v, app_config);
@@ -78,7 +65,7 @@ int main(int argc, char *argv[]) {
   if (app_config.verbosity() > 2)  { std::cerr << fn_name << " Calling variants\n"; }
   genomics::call_variants(t, vg, app_config);
 
-  
+
   //return 0;
 
 

@@ -20,7 +20,7 @@ namespace core {
  */
 typedef std::pair<std::size_t, std::size_t> size_t_pair;
 
-  
+
 /*
  * =========
  * App types
@@ -35,9 +35,9 @@ enum class task_t {
 
 // rename to input_format_e
 enum class input_format_t {
-	file_path,
-	params,  // CLI params
-	unset // unset
+    file_path,
+    params,  // CLI params
+    unset // unset
 };
 std::ostream& operator<<(std::ostream& os, const task_t& t);
 
@@ -64,14 +64,13 @@ struct config {
 
   // constructor(s)
   config() :
-	task(task_t::unset),
-	chrom(""), // default is empty string
-	v(0),
-	ref_input_format(input_format_t::unset),
-	reference_paths(std::vector<std::string>{}),
-	undefined_vcf(false)
-	{}
-
+    task(task_t::unset),
+    chrom(""), // default is empty string
+    v(0),
+    ref_input_format(input_format_t::unset),
+    reference_paths(std::vector<std::string>{}),
+    undefined_vcf(false)
+    {}
 
   // ---------
   // getter(s)
@@ -103,25 +102,24 @@ struct config {
   // Other(s)
   // --------
   void dbg_print() {
-	std::cerr << "CLI parameters: " << std::endl;
-	std::cerr << "\t" << "verbosity: " << this->verbosity() << "\n";
-	std::cerr << "\t" << "task: " << this->task << std::endl;
-	std::cerr << "\t" << "input gfa: " << this->input_gfa << std::endl;
-	std::cerr << "\t" << "chrom: " << this->chrom << std::endl;
-	std::cerr << "\t" << "Generate undefined vcf: " << std::boolalpha << this->undefined_vcf << std::endl;
-	if (this->ref_input_format == input_format_t::file_path) {
-	  std::cerr << "\t" << "Reference paths file: " << this->references_txt << std::endl;
-	}
+    std::cerr << "CLI parameters: " << std::endl;
+    std::cerr << "\t" << "verbosity: " << this->verbosity() << "\n";
+    std::cerr << "\t" << "task: " << this->task << std::endl;
+    std::cerr << "\t" << "input gfa: " << this->input_gfa << std::endl;
+    std::cerr << "\t" << "chrom: " << this->chrom << std::endl;
+    std::cerr << "\t" << "Generate undefined vcf: " << std::boolalpha << this->undefined_vcf << std::endl;
+    if (this->ref_input_format == input_format_t::file_path) {
+      std::cerr << "\t" << "Reference paths file: " << this->references_txt << std::endl;
+    }
 
-	std::cerr << "\t" << "Reference paths (" << this->reference_paths.size() << "): ";
-	for (auto it = this->reference_paths.begin(); it != this->reference_paths.end(); ++it) {
-	  std::cout << *it;
-	  if (std::next(it) != this->reference_paths.end()) { std::cout << ", "; }
-	}
+    std::cerr << "\t" << "Reference paths (" << this->reference_paths.size() << "): ";
+    for (auto it = this->reference_paths.begin(); it != this->reference_paths.end(); ++it) {
+      std::cerr << *it;
+      if (std::next(it) != this->reference_paths.end()) { std::cout << ", "; }
+    }
 
-	std::cout << std::endl;
-	}
-
+    std::cerr << std::endl;
+    }
 };
 
 /*
@@ -129,7 +127,7 @@ struct config {
  * Graph related types
  * ===================
  */
-  
+
 
 /*
  * black edge is default
@@ -147,6 +145,5 @@ struct eq_n_id_t {
   std::size_t v_id;
 };
 
-  
 } // namespace core
 #endif
