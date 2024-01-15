@@ -220,9 +220,9 @@ public:
   //std::set<std::size_t> get_edges(std::size_t vertex_index, VertexEnd vertex_end) const;
 
 
-  // ---------
-  // setter(s)
-  // ---------
+  // ---------------------
+  // setter(s) & modifiers
+  // ---------------------
   void append_vertex();   // adds an invalid vertex to the graph
   void add_vertex(const Vertex& vertex);
   void add_edge(std::size_t v1, VertexEnd v1_end, std::size_t v2, VertexEnd v2_end);
@@ -232,6 +232,9 @@ public:
 
   void set_min_id(std::size_t min_id);
   void set_max_id(std::size_t max_id);
+
+  // sort by in degree on the left side of the
+  void sort();
 
 
   // ----

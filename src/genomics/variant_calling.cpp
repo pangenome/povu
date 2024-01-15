@@ -60,10 +60,8 @@ bidirected::VertexEnd compute_single_edge_side(const bidirected::VariationGraph&
 }
 
 // TODO: this can be done while constructing the PVST
-std::vector<std::pair<std::size_t, std::size_t>> extract_canonical_flubbles(
-  const tree::Tree& pvst_,
-  const core::config& app_config
-  ) {
+std::vector<std::pair<std::size_t, std::size_t>> extract_canonical_flubbles(const tree::Tree& pvst_,
+                                                                            const core::config& app_config) {
 
   std::string fn_name{"[povu::genomics::extract_canonical_flubbles]"};
 
@@ -80,62 +78,63 @@ std::vector<std::pair<std::size_t, std::size_t>> extract_canonical_flubbles(
   std::queue<std::size_t> q;
   q.push(root.get_id());
 
-  std::size_t max_child{core::constants::SIZE_T_MIN};
-  bool is_canonical_subtree = true;
+  std::size_t max_child { core::constants::SIZE_T_MIN };
+  bool is_canonical_subtree { true };
+
   while (!q.empty()) {
-	current_vertex = q.front();
-	q.pop();
+    current_vertex = q.front();
+    q.pop();
 
-	//std::cout << "current vertex: " << current_vertex << std::endl;
+    //std::cout << "current vertex: " << current_vertex << std::endl;
 
-	std::set<std::size_t> const& children = pvst_.get_children(current_vertex);
-	std::size_t parent_eq_class = pvst_.get_class(current_vertex);
+    std::set<std::size_t> const& children = pvst_.get_children(current_vertex);
+    std::size_t parent_eq_class = pvst_.get_class(current_vertex);
 
-	if (children.empty()) { continue; }
+    if (children.empty()) { continue; }
 
-	is_canonical_subtree = true;
-	bool end_found{false};
+    is_canonical_subtree = true;
+    bool end_found { false };
 
-	max_child = core::constants::SIZE_T_MIN;
+    max_child = core::constants::SIZE_T_MIN;
 
-	for (std::size_t child: children) {
-	  std::set<std::size_t> const& c = pvst_.get_children(child);
-	  std::size_t child_eq_class = pvst_.get_class(child);
+    for (std::size_t child: children) {
+      std::set<std::size_t> const& c = pvst_.get_children(child);
+      std::size_t child_eq_class = pvst_.get_class(child);
 
-	  if (!end_found && child > max_child && parent_eq_class == child_eq_class) {
-		max_child = child;
-		end_found = true;
-	  }
+      if (!end_found && child > max_child && parent_eq_class == child_eq_class) {
+        max_child = child;
+        end_found = true;
+      }
 
-	  // all the children are leaves
-	  if (!c.empty()) {
-		q.push(child);
-		is_canonical_subtree = false;
-	  }
-	}
+      // all the children are leaves
+      if (!c.empty()) {
+        q.push(child);
+        is_canonical_subtree = false;
+      }
+    }
 
-	if (is_canonical_subtree) {
-	  if (pvst_.get_meta(current_vertex) < pvst_.get_meta(max_child)) {
-		canonical_flubbles.push_back(
-		  std::make_pair(pvst_.get_meta(current_vertex) - 1, pvst_.get_meta(max_child) - 1 )
-		  );
-	  }
-	  else {
-		std::cerr << "sus canonical subtree found: " << current_vertex
-				  << " " << max_child
-				  << " " << pvst_.get_meta(current_vertex)
-				  << " " << pvst_.get_meta(max_child) << std::endl;
+    if (is_canonical_subtree) {
+      if (pvst_.get_meta(current_vertex) < pvst_.get_meta(max_child)) {
+        canonical_flubbles.push_back(
+          std::make_pair(pvst_.get_meta(current_vertex) - 1, pvst_.get_meta(max_child) - 1 )
+          );
+      }
+      else {
+        std::cerr << "sus canonical subtree found: " << current_vertex
+                  << " " << max_child
+                  << " " << pvst_.get_meta(current_vertex)
+                  << " " << pvst_.get_meta(max_child) << std::endl;
 
-	  }
+      }
 
-	}
+    }
   }
 
   // loop over canonical subtrees and print
   /*
   std::cout << "Canonical subtrees:" << std::endl;
   for (auto subtree: canonical_flubbles) {
-	std::cout << subtree.first << " " << subtree.second << std::endl;
+    std::cout << subtree.first << " " << subtree.second << std::endl;
   }
   */
 
@@ -161,44 +160,44 @@ find_path_haplotypes(
   std::vector<std::vector<std::set<std::size_t>>> haplotypes_per_path;
 
   for (std::size_t fl_idx{}; fl_idx < all_paths.size(); ++fl_idx) {
-	const std::vector<std::vector<bidirected::side_n_id_t>>& c_flubble_paths = all_paths[fl_idx];
+    const std::vector<std::vector<bidirected::side_n_id_t>>& c_flubble_paths = all_paths[fl_idx];
 
 
 
-	std::vector<std::set<std::size_t>> h;
+    std::vector<std::set<std::size_t>> h;
 
-	for (const std::vector<bidirected::side_n_id_t>& c_flubble_path: c_flubble_paths) {
+    for (const std::vector<bidirected::side_n_id_t>& c_flubble_path: c_flubble_paths) {
 
-	  // for each path in the flubble
-	  // find the haplotype
-	  // add the haplotype to the path
-	  std::set<std::size_t> curr_haplotypes;
-	  std::set<std::size_t> intersect;
-	  std::set<std::size_t> temp;
-	  std::vector<std::vector<std::size_t>> haplotypes_per_path;
-	  for (auto [side, v_id]: c_flubble_path) {
-		// find the haplotype
-		const std::vector<bidirected::PathInfo>& path_info = bd_vg.get_vertex(v_id).get_paths();
+      // for each path in the flubble
+      // find the haplotype
+      // add the haplotype to the path
+      std::set<std::size_t> curr_haplotypes;
+      std::set<std::size_t> intersect;
+      std::set<std::size_t> temp;
+      std::vector<std::vector<std::size_t>> haplotypes_per_path;
+      for (auto [side, v_id]: c_flubble_path) {
+        // find the haplotype
+        const std::vector<bidirected::PathInfo>& path_info = bd_vg.get_vertex(v_id).get_paths();
 
-		for (auto [path_id, _]: path_info) {
-		  curr_haplotypes.insert(path_id);
-		}
+        for (auto [path_id, _]: path_info) {
+          curr_haplotypes.insert(path_id);
+        }
 
-		if (intersect.empty()) {
-		  intersect = curr_haplotypes;
-		}
+        if (intersect.empty()) {
+          intersect = curr_haplotypes;
+        }
 
-		std::set_intersection(curr_haplotypes.begin(), curr_haplotypes.end(),
-							  intersect.begin(), intersect.end(),
-							  std::inserter(temp, temp.begin()));
-		intersect = temp;
-		temp.clear();
-	  }
+        std::set_intersection(curr_haplotypes.begin(), curr_haplotypes.end(),
+                              intersect.begin(), intersect.end(),
+                              std::inserter(temp, temp.begin()));
+        intersect = temp;
+        temp.clear();
+      }
 
-	  h.push_back(intersect);
-	}
+      h.push_back(intersect);
+    }
 
-	haplotypes_per_path.push_back(h);
+    haplotypes_per_path.push_back(h);
   }
 
   return haplotypes_per_path;
@@ -210,8 +209,8 @@ find_path_haplotypes(
  *
  */
 void call_variants(const tree::Tree& pvst_,
-				   const bidirected::VariationGraph& bd_vg,
-				   const core::config& app_config) {
+                   const bidirected::VariationGraph& bd_vg,
+                   const core::config& app_config) {
   std::string fn_name = "[povu::genomics::call_variants]";
   if (app_config.verbosity() > 3) { std::cerr << fn_name << "\n"; }
 
@@ -219,7 +218,7 @@ void call_variants(const tree::Tree& pvst_,
   std::vector<std::pair<std::size_t, std::size_t>> canonical_flubbles = extract_canonical_flubbles(pvst_, app_config);
 
   if (app_config.verbosity() > 3) {
-	std::cerr << fn_name << " Found " << canonical_flubbles.size() << " canonical flubbles\n";
+    std::cerr << fn_name << " Found " << canonical_flubbles.size() << " canonical flubbles\n";
   }
 
   // walk paths in the digraph
@@ -229,26 +228,26 @@ void call_variants(const tree::Tree& pvst_,
   //std::cout << fn_name << " Extracting paths for flubbles:\n";
   // extract flubble paths
   for (std::size_t i{} ; i < canonical_flubbles.size(); ++i) {
-	if (false) {
-	  std::cout << fn_name << " flubble: " << i
-				<< " start: " << canonical_flubbles[i].first
-				<< " stop: " << canonical_flubbles[i].second
-				<< "\n";
-	}
+    if (false) {
+      std::cout << fn_name << " flubble: " << i
+                << " start: " << canonical_flubbles[i].first
+                << " stop: " << canonical_flubbles[i].second
+                << "\n";
+    }
 
-	std::vector<std::vector<bidirected::side_n_id_t>>
-	  paths = bd_vg.get_paths(canonical_flubbles[i].first,
-							   canonical_flubbles[i].second);
+    std::vector<std::vector<bidirected::side_n_id_t>>
+      paths = bd_vg.get_paths(canonical_flubbles[i].first,
+                               canonical_flubbles[i].second);
 
-	all_paths.push_back(paths);
+    all_paths.push_back(paths);
   }
 
   //std::cout << fn_name << " Finding haplotypes\n";
   std::vector<std::vector<std::set<std::size_t>>> haplotypes_per_path =
-	find_path_haplotypes(all_paths, bd_vg);
+    find_path_haplotypes(all_paths, bd_vg);
 
   std::map<std::size_t, std::vector<vcf::vcf_record>> vcf_records =
-	vcf::gen_vcf_records(bd_vg, haplotypes_per_path, all_paths, app_config);
+    vcf::gen_vcf_records(bd_vg, haplotypes_per_path, all_paths, app_config);
 
   vcf::write_vcfs(vcf_records, bd_vg, app_config);
 

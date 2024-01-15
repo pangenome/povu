@@ -13,28 +13,31 @@ namespace utils {
 
 void print_with_comma(std::unordered_set<std::size_t>& iterable) {
   for (auto it = iterable.begin(); it != iterable.end(); ++it) {
-	std::cerr << *it;
+    std::cerr << *it;
 
-	if (std::next(it) != iterable.end()){ std::cerr << ", "; }
+    if (std::next(it) != iterable.end()){ std::cerr << ", "; }
   }
 }
 
 void print_with_comma(std::unordered_set<id_t>&& iterable) {
   for (auto it = iterable.begin(); it != iterable.end(); ++it) {
-	std::cerr << *it;
+    std::cerr << *it;
 
-	if (std::next(it) != iterable.end()){ std::cerr << ", "; }
+    if (std::next(it) != iterable.end()){ std::cerr << ", "; }
   }
 }
-  
+
+  /*
 std::string concat_with(const std::vector<std::string>& v, char c) {
   if (v.empty()) { return ""; } // means a deletion in the case of VCF
   return std::accumulate(
-	std::next(v.begin()), v.end(), v.front(),
-	[&c](const std::string& a, const std::string& b) -> std::string {
-	  return a + c + b; 
-	});
+    std::next(v.begin()), v.end(), v.front(),
+    [&c](const std::string& a, const std::string& b) -> std::string {
+      return a + c + b;
+    });
 }
+*/
+
 
 char complement(char nucleotide) {
   switch (nucleotide) {
@@ -42,7 +45,7 @@ char complement(char nucleotide) {
   case 'T': return 'A';
   case 'C': return 'G';
   case 'G': return 'C';
-	// You might want to handle cases like 'N' for unknown nucleotides
+    // You might want to handle cases like 'N' for unknown nucleotides
   default: return nucleotide;
   }
 }
@@ -51,7 +54,7 @@ std::string reverse_complement(const std::string& sequence) {
   std::string rc_sequence;
 
   for (auto it = sequence.rbegin(); it != sequence.rend(); ++it) {
-	rc_sequence += complement(*it);
+    rc_sequence += complement(*it);
   }
 
   return rc_sequence;
@@ -72,7 +75,7 @@ std::string today() {
     // Create a stringstream to store the formatted date and time
     std::stringstream dateTimeStream;
     dateTimeStream << year
-                   << std::setw(2) << std::setfill('0') << month 
+                   << std::setw(2) << std::setfill('0') << month
                    << std::setw(2) << std::setfill('0') << day;
 
     return dateTimeStream.str();
@@ -82,5 +85,5 @@ std::vector<std::string> immutable_erase(std::vector<std::string> v, std::size_t
   v.erase(v.begin()+idx, v.begin()+idx+1);
   return v;
 }
-  
+
 } // namespace utils

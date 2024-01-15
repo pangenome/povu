@@ -300,7 +300,6 @@ bidirected::VariationGraph to_vg(const char* filename, const core::config& app_c
   std::size_t edge_count = line_counts['L'];
   std::size_t path_count = line_counts['P'];
 
-
   /*
     Build the digraph
     -----------------

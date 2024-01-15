@@ -21,8 +21,8 @@ namespace cli {
 
 #define FILE_ERROR(name)                                                       \
   {                                                                            \
-	std::string e = "Error, Failed to open the file" + name; \
-	throw std::invalid_argument(e);                                              \
+    std::string e = "Error, Failed to open the file" + name; \
+    throw std::invalid_argument(e);                                              \
   }
 
 
@@ -87,15 +87,15 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
   app_config.set_input_gfa(args::get(input_gfa));
 
   if (chrom) {
-	app_config.set_chrom(std::move(args::get(chrom)));
+    app_config.set_chrom(std::move(args::get(chrom)));
   }
   else {
-	std::filesystem::path filePath(app_config.get_input_gfa());
-	app_config.set_chrom(filePath.stem().string());
+    std::filesystem::path filePath(app_config.get_input_gfa());
+    app_config.set_chrom(filePath.stem().string());
   }
 
   if (undefined_vcf) {
-	app_config.set_undefined_vcf(true);
+    app_config.set_undefined_vcf(true);
   }
 
   // either ref list or path list
@@ -103,22 +103,22 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
   // -------------
 
   if (ref_list && std::begin(pathsList) != std::end(pathsList)) {
-	std::cerr << "[cli::call_handler]Error: cannot set both ref_list and path_list" << std::endl;
-	std::exit(1);
+    std::cerr << "[cli::call_handler]Error: cannot set both ref_list and path_list" << std::endl;
+    std::exit(1);
   }
   else if (ref_list) {
-	app_config.set_ref_input_format(core::input_format_t::file_path);
-	app_config.set_reference_txt_path(std::move(args::get(ref_list)));
-	std::vector<std::string> ref_paths;
-	read_lines_to_vector_str(app_config.get_references_txt(), &ref_paths);
-	app_config.set_reference_paths(std::move(ref_paths));
+    app_config.set_ref_input_format(core::input_format_t::file_path);
+    app_config.set_reference_txt_path(std::move(args::get(ref_list)));
+    std::vector<std::string> ref_paths;
+    read_lines_to_vector_str(app_config.get_references_txt(), &ref_paths);
+    app_config.set_reference_paths(std::move(ref_paths));
   }
   else {
-	app_config.set_ref_input_format(core::input_format_t::params);
-	// assume pathsList is not empty
-	for (auto &&path : pathsList) {
-	  app_config.add_reference_path(path);
-	}
+    app_config.set_ref_input_format(core::input_format_t::params);
+    // assume pathsList is not empty
+    for (auto &&path : pathsList) {
+      app_config.add_reference_path(path);
+    }
   }
 }
 
@@ -129,35 +129,40 @@ int cli(int argc, char **argv, core::config& app_config) {
   args::ArgumentParser p("Use cycle equivalence call variants");
   args::Group commands(p, "commands");
   args::Command commit(commands, "call", "call",
-					   [&](args::Subparser &parser) { call_handler(parser, app_config); });
+                       [&](args::Subparser &parser) { call_handler(parser, app_config); });
 
   args::Group arguments(p, "arguments", args::Group::Validators::DontCare, args::Options::Global);
-  args::Flag version(arguments, "version", "show the ...", {"version"});
-  args::ValueFlag<int> verbosity(arguments, "verbosity", "Level out output", {'v', "verbosity"});
+  args::Flag version(arguments, "version", "the current version of povu", {"version"});
+  args::ValueFlag<int> verbosity(arguments, "verbosity", "Level of output", {'v', "verbosity"});
+  args::ValueFlag<std::string> pvst_path(arguments, "pvst_file_name", "PVST output file path", {'t', "pvst-path"});
   args::HelpFlag h(arguments, "help", "help", {'h', "help"});
 
 
   try {
-	p.ParseCLI(argc, argv);
+    p.ParseCLI(argc, argv);
   }
   catch (args::Help) {
-	std::cout << p;
+    std::cout << p;
   }
   catch (args::Error& e) {
-	// only run this if the user is not requesting to print the version
-	if (!version) {
-	  std::cerr << e.what() << std::endl << p;
-	  return 1;
-	}
+    // only run this if the user is not requesting to print the version
+    if (!version) {
+      std::cerr << e.what() << std::endl << p;
+      return 1;
+    }
   }
 
   if (version) {
-	std::cout << VERSION << std::endl;
-	std::exit(0);
+    std::cout << VERSION << std::endl;
+    std::exit(0);
+  }
+
+  if (pvst_path) {
+    app_config.set_pvst_path(args::get(pvst_path));
   }
 
   if (args::get(verbosity)) {
-	app_config.set_verbosity(args::get(verbosity));
+    app_config.set_verbosity(args::get(verbosity));
   }
 
   return 0;

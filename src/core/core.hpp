@@ -8,6 +8,8 @@
 #include <utility>
 #include <algorithm>
 #include <iostream>
+#include <optional>
+#include <filesystem>
 
 #include "./constants.hpp"
 #include "./typedefs.hpp"
@@ -48,6 +50,7 @@ struct config {
   task_t task;
   std::string input_gfa;
   std::string chrom;
+  std::optional<std::filesystem::path> pvst_path;
 
   // general
   unsigned char v; // verbosity
@@ -66,6 +69,7 @@ struct config {
   config() :
     task(task_t::unset),
     chrom(""), // default is empty string
+    pvst_path(std::nullopt),
     v(0),
     ref_input_format(input_format_t::unset),
     reference_paths(std::vector<std::string>{}),
@@ -76,6 +80,7 @@ struct config {
   // getter(s)
   // ---------
   std::string get_input_gfa() { return this->input_gfa; }
+  std::optional<std::filesystem::path> get_pvst_path() { return this->pvst_path; }
   const std::string& get_chrom() const { return this->chrom; }
   std::vector<std::string> const& get_reference_paths() const { return this->reference_paths; }
   std::vector<std::string>* get_reference_ptr() { return &this->reference_paths; }
@@ -95,6 +100,7 @@ struct config {
   void set_references_txt(std::string s) { this->references_txt = s; }
   void set_verbosity(unsigned char v) { this->v = v; }
   void set_input_gfa(std::string s) { this->input_gfa = s; }
+  void set_pvst_path(std::string s) { this->pvst_path = s; }
   void set_task(task_t t) { this->task = t; }
   void set_undefined_vcf(bool b) { this->undefined_vcf = b; }
 

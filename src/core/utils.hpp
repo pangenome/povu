@@ -7,17 +7,29 @@
 #include <unordered_set>
 
 namespace utils {
-  
+
 // TODO: - generalize for other iterators
 //       - pass os stream to print to
 void print_with_comma(std::unordered_set<std::size_t>& iterable);
 void print_with_comma(std::unordered_set<id_t>&& iterable);
 std::string reverse_complement(const std::string& sequence);
+
 /**
  * Concatenates a vector of strings with a given character
- */ 
-std::string concat_with (const std::vector<std::string>& v, char c);
+ */
+//std::string concat_with (const std::vector<std::string>& v, char c);
 //template <typename T> std::string concat_with(const T& v, char delim);
+
+template <typename T> std::string concat_with(const T& v, char delim) {
+  if (v.empty()) { return ""; }
+
+  std::string s {};
+  for (auto x: v) { s = s + x + delim; }
+  return s.substr(0, s.length()-1);
+}
+
+
+
 /**
  * Returns the current date in the format YYYYMMDD
  */

@@ -28,6 +28,8 @@ int main(int argc, char *argv[]) {
   bidirected::VariationGraph vg = io::from_gfa::to_vg(app_config.get_input_gfa().c_str(), app_config);
   if (app_config.verbosity() > 1) { vg.dbg_print(); }
 
+  vg.sort();
+
   if (app_config.verbosity() > 2) { std::cerr << fn_name << " Bi-edging" << "\n"; }
   // convert the bidirected variation graph into a biedged variation graph
   biedged::BVariationGraph bg(vg);
@@ -60,14 +62,16 @@ int main(int argc, char *argv[]) {
   tree::Tree t = pvst::compute_pvst(v, app_config);
   if (app_config.verbosity() > 4)  { std::cout << "\n\n" << "PVST" << "\n\n"; t.print_dot(true); }
 
-  //return 0;
+
+  t.print_dot(true);
+
+
+  if (app_config.get_pvst_path().has_value()) {
+    pvst::to_text(t, app_config.get_pvst_path().value());
+  }
 
   if (app_config.verbosity() > 2)  { std::cerr << fn_name << " Calling variants\n"; }
   genomics::call_variants(t, vg, app_config);
-
-
-  //return 0;
-
 
   return 0;
 }

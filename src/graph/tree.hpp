@@ -14,7 +14,7 @@ namespace tree {
  * Vertex
  * ------
  *
- */  
+ */
 class Vertex {
   // TODO: make sure id is the same as the index in the di_graph or u_graph or have
   // a way of mapping to the index
@@ -58,7 +58,7 @@ public:
   std::string get_meta() const;
 
 
-  // ---------
+ // ---------
   // setter(s)
   // ---------
   void set_parent(std::size_t child_id);
@@ -97,6 +97,7 @@ public:
   // given the id of the vertex
   // returns the set of children of the vertex
   std::set<std::size_t> const& get_children(std::size_t id) const;
+
   std::size_t get_class(std::size_t id) const;
   std::size_t get_meta(std::size_t id) const;
   Vertex const& get_vertex(std::size_t id) const;
@@ -124,7 +125,7 @@ public:
   bool add_vertex(std::size_t parent_id, std::size_t id, std::size_t eq_class, std::string& meta, bool is_dummy);
 
   // add a root to the tree
-  // 
+  //
   // bool add_root(std::size_t id, std::size_t eq_class, std::string& meta, bool is_dummy);
 
   bool remove_vertex(std::size_t id);
@@ -134,10 +135,12 @@ public:
   // -----------------
   // display method(s)
   // -----------------
-  
+
   // dot format output of the tree
   void print_dot(bool with_classes=false);
 };
+
+
 
 } // namespace tree
 

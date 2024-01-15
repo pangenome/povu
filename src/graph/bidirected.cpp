@@ -1,13 +1,15 @@
-#include <queue>
-#include <format>
-#include <string>
-#include <vector>
-#include <utility>
 #include <cstddef>
 #include <cstring>
+#include <format>
 #include <iostream>
-#include <unordered_set>
+#include <iterator>
 #include <map>
+#include <queue>
+#include <string>
+#include <sys/types.h>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 #include "./bidirected.hpp"
 #include "../core/utils.hpp"
@@ -55,7 +57,6 @@ bool operator<(const side_n_id_t& lhs, const side_n_id_t& rhs) {
 side_n_id_t side_n_id_t::complement() const {
   return {bidirected::complement(this->v_end), this->v_idx};
 }
-
 
 /*
  * Edge
@@ -246,21 +247,27 @@ std::vector<side_n_id_t> VariationGraph::get_adj_vertices(std::size_t vertex_ind
 
 std::unordered_set<id_t> VariationGraph::find_graph_start_nodes() const {
   std::unordered_set<id_t> graph_start_nodes;
+  //std::cerr << "find_graph_start_nodes" << std::endl;
   for (id_t i = 0; i < this->size(); ++i) {
     if (this->vertices.at(i).get_edges_l().empty()) {
+      //std::cerr << i << " " << std::endl;
       graph_start_nodes.insert(i);
     }
   }
+  //  std::cerr << std::endl;
   return graph_start_nodes;
 }
 
 std::unordered_set<id_t> VariationGraph::find_graph_end_nodes() const {
   std::unordered_set<id_t> graph_end_nodes;
+  //std::cerr << "find_graph_end_nodes" << std::endl;
   for (id_t i = 0; i < this->size(); ++i) {
     if (this->vertices.at(i).get_edges_r().empty()) {
+      //        std::cerr << i << " " << std::endl;
       graph_end_nodes.insert(i);
     }
   }
+  //std::cerr << std::endl;
   return graph_end_nodes;
 }
 
@@ -324,7 +331,6 @@ simplify_paths(std::size_t start_id,
 
  return simplified_paths;
 }
-
 
 std::vector<std::vector<side_n_id_t>>
 VariationGraph::get_paths(id_t start_id, id_t stop_id, bool compact) const {
@@ -640,6 +646,72 @@ void VariationGraph::set_min_id(std::size_t min_id) {
 
 void VariationGraph::set_max_id(std::size_t max_id) {
   this->max_id = max_id;
+}
+
+void VariationGraph::sort() {
+  std::unordered_set<id_t> starts { find_graph_start_nodes() };
+  std::unordered_set<id_t> ends { find_graph_end_nodes() };
+
+  // left and right side degrees
+  std::vector<std::pair<std::size_t, std::size_t>> deg;
+  deg.reserve(this->size());
+
+  for (id_t i = 0; i < this->size(); ++i) {
+    deg.push_back(std::make_pair(this->get_vertex(i).get_edges_l().size(),
+                                 this->vertices.at(i).get_edges_r().size()));
+  }
+
+  std::set<std::size_t> seen; // seen vertices
+  // TODO: do we need seen edges?
+
+  std::queue<side_n_id_t> q;
+
+  for (id_t idx: starts) { q.push({ VertexEnd::l, idx}); }
+
+  // a pair of id and sort order
+  std::vector<std::pair<id_t, id_t>> sort_v {};
+
+  id_t counter { 0 };
+
+  while (!q.empty()) {
+    auto [side, v] = q.front();
+    q.pop();
+
+    if (seen.find(v) != seen.end()) { continue; }
+
+    sort_v.push_back(std::make_pair(v, counter));
+
+    ++counter;
+
+    Vertex const& v_ref = this->get_vertex(v);
+    std::set<std::size_t> out_edges = side == VertexEnd::l ? v_ref.get_edges_r() : v_ref.get_edges_l();
+
+    // TODO: what if you reach the same vertex from different sides therefore affecting its degree?
+
+    for (std::size_t e_idx: out_edges) {
+      auto [side_, v_] = this->get_edge(e_idx).get_other_vertex(v);
+
+      //std::cerr << "v: " << v << side << " -> v_: " << v_ << side_ << std::endl;
+
+      if (v_ == v) { continue; } // self loop
+
+      std::size_t d = side_ == VertexEnd::l ? --deg.at(v_).first : --deg.at(v_).second;
+
+      if (d == 0 && seen.find(v_) == seen.end()) {
+        q.push({ side_, v_ });
+        seen.insert(v);
+      }
+    }
+  }
+
+  /*
+  // print sort_v
+  std::cerr << "sort_v: ";
+  for (auto [id, order]: sort_v) {
+    std::cerr << "(" << id << ", " << order << "), ";
+  }
+  std::cerr << std::endl;
+*/
 }
 
 // HandleGraph

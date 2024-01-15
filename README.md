@@ -14,7 +14,7 @@ cmake -H. -Bbuild && cmake --build build -- -j 3
 
 Run
 ```
-./bin/povu 
+./bin/povu
 ```
 
 Example
@@ -33,3 +33,18 @@ A release version (default)
 ```
 cmake -DCMAKE_BUILD_TYPE=Release -H. -Bbuild && cmake --build build -- -j 3
 ```
+## PVST
+
+You can use `-t` to generate a tree in `.pvst` format.
+
+A PVST file is a tab separated plain text file made up of 5 columns.
+
+|---------------------------|------------------------------------------------------------------------------------------------|
+| type                      | description                                                                                    |
+|---------------------------|------------------------------------------------------------------------------------------------|
+| unsigned numeric          | vertex id (can be zero)                                                                        |
+| list of unsigned numerics | child nodes in comma separated values                                                          |
+| character                 | A value indicating whether the node is a true vertex or a dummy vertex                         |
+| unsigned numeric          | the equivalence class of the vertex                                                            |
+| unsigned numeric          | the id of the vertex in the GFA file (multiple different vertex ids can share the same GFA id) |
+|---------------------------|------------------------------------------------------------------------------------------------|
