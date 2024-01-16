@@ -11,25 +11,32 @@ namespace genomics {
 typedef std::pair<bidirected::VertexEnd, id_t> side_n_id_t; // TODO: replace with struct
 typedef std::vector<side_n_id_t> subpath_t;
 typedef std::vector<subpath_t> subpaths_t;
-  
+
 // TODO: make use of this or delete
 enum variant_type {
-	SNP,
-	DEL,
-	INS,
-	INV,
-	DUP,
-	CNV,
-	BND
+    SNP,
+    DEL,
+    INS,
+    INV,
+    DUP,
+    CNV,
+    BND
 };
 
 // TODO which version of VCF is best?
 enum output_format {
-	VCF, //  currently outputs v4.2 
-	PAF, // not yet supported
+    VCF, //  currently outputs v4.2
+    PAF, // not yet supported
 };
 
 void call_variants(const tree::Tree& pvst_, const bidirected::VariationGraph& bd_vg, const core::config& app_config);
+
+/**
+  * @brief Extracts the canonical flubbles from the PVST.
+  *
+  * @param pvst_ The PVST.
+  * @return A vector of pairs of vertex ids that represent the canonical flubbles.
+ */
 std::vector<std::pair<std::size_t, std::size_t>> extract_canonical_flubbles(const tree::Tree& pvst_);
 } // namespace genomics
 
@@ -61,11 +68,11 @@ gen_vcf_records(
   const core::config& app_config);
 
 void write_vcfs(const std::map<std::size_t, std::vector<vcf_record>>& vcf_records,
-				const bidirected::VariationGraph& bd_vg, const core::config& app_config);
+                const bidirected::VariationGraph& bd_vg, const core::config& app_config);
 bool print_vcf(std::vector<std::vector<std::size_t>> paths,
-			   digraph::DiGraph dg,
-			   std::string ref_path_name,
-			   std::size_t ref_path_id);
+               digraph::DiGraph dg,
+               std::string ref_path_name,
+               std::size_t ref_path_id);
 
 void print_vcf_header(std::string ref_name);
 } // namespace vcf

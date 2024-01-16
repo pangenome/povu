@@ -471,7 +471,7 @@ spanning_tree::Tree BVariationGraph::compute_spanning_tree() const {
   while (!visited.empty()) {
     current_vertex = visited.top();
 
-    //std::cout << "current_vertex: " << current_vertex << std::endl;
+    // std::cout << "current_vertex: " << current_vertex << std::endl;
 
     if (!seen.count(current_vertex)) {
       t.set_dfs_num(current_vertex, counter);

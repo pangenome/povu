@@ -50,6 +50,7 @@ std::map<char, uint64_t> gfa_line_counts(const char* filename) {
   return counts;
 }
 
+
 /**
  * This fn assumes source (src) and sink (snk) are the same value so no need to
  * pass it twice or check.
@@ -250,8 +251,6 @@ std::cout << "error setting path" << std::endl;
 
   return dg;
 }
-
-
 
 
 /**

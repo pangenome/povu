@@ -1,35 +1,34 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
-#include <functional>
-#include <iostream>
-#include <stack>
-#include <queue>
-#include <string>
-#include <map>
-#include <set>
-#include <unordered_set>
-#include <vector>
-#include <utility>
 #include <ctime>
-#include <iomanip>
 #include <deque>
 #include <format>
-#include <sstream>
 #include <fstream>
+#include <functional>
+#include <iomanip>
+#include <iostream>
+#include <map>
+#include <queue>
+#include <set>
+#include <sstream>
+#include <stack>
+#include <string>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 #include "./genomics.hpp"
-#include "../pvst/pvst.hpp"
-#include "../core/core.hpp"
-#include "../graph/tree.hpp"
-#include "../graph/digraph.hpp"
 #include "../core/constants.hpp"
-#include "../graph/bidirected.hpp"
+#include "../core/core.hpp"
 #include "../core/utils.hpp"
+#include "../graph/bidirected.hpp"
+#include "../graph/digraph.hpp"
+#include "../graph/tree.hpp"
+#include "../pvst/pvst.hpp"
 
 
 namespace genomics {
-
 
 /**
  * @brief get the edge indexes of a vertex on a given side
@@ -60,10 +59,9 @@ bidirected::VertexEnd compute_single_edge_side(const bidirected::VariationGraph&
 }
 
 // TODO: this can be done while constructing the PVST
-std::vector<std::pair<std::size_t, std::size_t>> extract_canonical_flubbles(const tree::Tree& pvst_,
-                                                                            const core::config& app_config) {
-
-  std::string fn_name{"[povu::genomics::extract_canonical_flubbles]"};
+std::vector<std::pair<std::size_t, std::size_t>>
+extract_canonical_flubbles(const tree::Tree& pvst_, const core::config& app_config) {
+  std::string fn_name{std::format("[povu::genomics::{}]", __func__) };
 
   if (app_config.verbosity() > 3) { std::cerr << fn_name << "\n"; }
 
@@ -85,7 +83,8 @@ std::vector<std::pair<std::size_t, std::size_t>> extract_canonical_flubbles(cons
     current_vertex = q.front();
     q.pop();
 
-    //std::cout << "current vertex: " << current_vertex << std::endl;
+    // std::cout << "current vertex: " << current_vertex << std::endl;
+
 
     std::set<std::size_t> const& children = pvst_.get_children(current_vertex);
     std::size_t parent_eq_class = pvst_.get_class(current_vertex);
@@ -94,11 +93,10 @@ std::vector<std::pair<std::size_t, std::size_t>> extract_canonical_flubbles(cons
 
     is_canonical_subtree = true;
     bool end_found { false };
-
     max_child = core::constants::SIZE_T_MIN;
 
     for (std::size_t child: children) {
-      std::set<std::size_t> const& c = pvst_.get_children(child);
+      const std::set<std::size_t>& c = pvst_.get_children(child);
       std::size_t child_eq_class = pvst_.get_class(child);
 
       if (!end_found && child > max_child && parent_eq_class == child_eq_class) {
@@ -120,13 +118,17 @@ std::vector<std::pair<std::size_t, std::size_t>> extract_canonical_flubbles(cons
           );
       }
       else {
-        std::cerr << "sus canonical subtree found: " << current_vertex
-                  << " " << max_child
+        // TODO: print this always because it is dangerous to silently fail
+        if (app_config.verbosity() > 3) {
+        std::cerr << "child count : " << children.size() << std::endl;
+        std::cerr << "v: " << current_vertex << " " << max_child << std::endl;
+        std::cerr << "sus canonical subtree found: " << pvst_.get_vertex( current_vertex ).get_id()
+                  << " " << pvst_.get_vertex( max_child ).get_id()
                   << " " << pvst_.get_meta(current_vertex)
-                  << " " << pvst_.get_meta(max_child) << std::endl;
-
+                  << " " << pvst_.get_meta(max_child)
+                  << std::endl;
+        }
       }
-
     }
   }
 
