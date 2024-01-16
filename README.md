@@ -33,13 +33,13 @@ A release version (default)
 ```
 cmake -DCMAKE_BUILD_TYPE=Release -H. -Bbuild && cmake --build build -- -j 3
 ```
-## PVST
 
-You can use `-t` to generate a tree in `.pvst` format.
+## Pangenome Variation Structure Tree (PVST)
 
-A PVST file is a tab separated plain text file made up of 5 columns.
+You can use `-t` to generate the PVST in `.pvst` format which is a is a tab
+separated plain text file made up of 5 columns as described below
 
-|---------------------------|------------------------------------------------------------------------------------------------|
+
 | type                      | description                                                                                    |
 |---------------------------|------------------------------------------------------------------------------------------------|
 | unsigned numeric          | vertex id (can be zero)                                                                        |
@@ -47,4 +47,3 @@ A PVST file is a tab separated plain text file made up of 5 columns.
 | character                 | A value indicating whether the node is a true vertex or a dummy vertex                         |
 | unsigned numeric          | the equivalence class of the vertex                                                            |
 | unsigned numeric          | the id of the vertex in the GFA file (multiple different vertex ids can share the same GFA id) |
-|---------------------------|------------------------------------------------------------------------------------------------|
