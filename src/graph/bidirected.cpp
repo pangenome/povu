@@ -5,6 +5,7 @@
 #include <iterator>
 #include <map>
 #include <queue>
+#include <deque>
 #include <string>
 #include <sys/types.h>
 #include <unordered_set>
@@ -99,6 +100,10 @@ side_n_id_t Edge::get_other_vertex(std::size_t vertex_index) const {
   }
 }
 
+void Edge::set_v1_idx(std::size_t v1_idx) { this->v1_idx = v1_idx; }
+void Edge::set_v2_idx(std::size_t v2_idx) { this->v2_idx = v2_idx; }
+
+
 std::ostream& operator<<(std::ostream& os, const Edge& edge) {
   os << std::format("{{bidirected::Edge {}{} {}{} }}",
                     edge.v1_idx, (edge.v1_end == VertexEnd::l ? "+" : "-"),
@@ -191,16 +196,16 @@ void Vertex::add_path(std::size_t path_id, std::size_t step_index) {
  * ---------------
  */
 VariationGraph::VariationGraph()
-  : vertices(std::vector<Vertex>{}),
-    edges((std::vector<Edge>{})),
-    paths(std::vector<path_t>{})
+    : vertices(std::vector<Vertex>{}),
+      edges((std::vector<Edge>{})),
+      paths(std::vector<path_t>{})
 {}
 
-VariationGraph::VariationGraph(
-  std::size_t vertex_count, std::size_t edge_count, std::size_t path_count)
-  : vertices(std::vector<Vertex>{}),
-    edges(std::vector<Edge>{}),
-    paths(std::vector<path_t>{})
+VariationGraph::VariationGraph(std::size_t vertex_count, std::size_t edge_count,
+                               std::size_t path_count)
+    : vertices(std::vector<Vertex>{}),
+      edges(std::vector<Edge>{}),
+      paths(std::vector<path_t>{})
 {
   this->vertices.reserve(vertex_count);
   this->edges.reserve(edge_count);
@@ -623,6 +628,24 @@ void VariationGraph::dbg_print() {
   std::cerr << "\n";
 }
 
+
+void VariationGraph::print_dot() const {
+  std::cout << "digraph G {" << std::endl;
+  std::cout << "\trankdir=LR;" << std::endl;
+  std::cout << "\tnode [shape=record];" << std::endl;
+
+  for (std::size_t i{}; i < this->size(); ++i) {
+    std::cout << std::format("\t{} [label=\"{}\"];\n", i, i);
+  }
+
+  for (std::size_t i{}; i < this->edges.size(); ++i) {
+    const Edge& e = this->get_edge(i);
+    std::cout << "  " << e.get_v1_idx() << " -> " << e.get_v2_idx() << ";" << std::endl;
+  }
+
+  std::cout << "}" << std::endl;
+}
+
 // setters & modifiers
 // -------------------
 void VariationGraph::append_vertex() {
@@ -661,26 +684,26 @@ void VariationGraph::sort() {
                                  this->vertices.at(i).get_edges_r().size()));
   }
 
-  std::set<std::size_t> seen; // seen vertices
-  // TODO: do we need seen edges?
+  std::set<std::size_t> seen; // seen vertices TODO: do we need seen edges?
 
-  std::queue<side_n_id_t> q;
+  std::deque<side_n_id_t> q;
 
-  for (id_t idx: starts) { q.push({ VertexEnd::l, idx}); }
+  std::vector<id_t> sort_order(this->size(), 0);
+
+  for (id_t idx : starts) { q.push_back({ VertexEnd::l, idx}); }
 
   // a pair of id and sort order
   std::vector<std::pair<id_t, id_t>> sort_v {};
-
-  id_t counter { 0 };
+  id_t counter {};
 
   while (!q.empty()) {
     auto [side, v] = q.front();
-    q.pop();
+    q.pop_front();
 
     if (seen.find(v) != seen.end()) { continue; }
 
     sort_v.push_back(std::make_pair(v, counter));
-
+    sort_order.at(v) = counter;
     ++counter;
 
     Vertex const& v_ref = this->get_vertex(v);
@@ -691,27 +714,66 @@ void VariationGraph::sort() {
     for (std::size_t e_idx: out_edges) {
       auto [side_, v_] = this->get_edge(e_idx).get_other_vertex(v);
 
-      //std::cerr << "v: " << v << side << " -> v_: " << v_ << side_ << std::endl;
+      // std::cerr << "v: " << v << side << " -> v_: " << v_ << side_ << std::endl;
 
       if (v_ == v) { continue; } // self loop
 
       std::size_t d = side_ == VertexEnd::l ? --deg.at(v_).first : --deg.at(v_).second;
 
       if (d == 0 && seen.find(v_) == seen.end()) {
-        q.push({ side_, v_ });
+        q.push_front({ side_, v_ });
         seen.insert(v);
       }
     }
   }
 
-  /*
-  // print sort_v
-  std::cerr << "sort_v: ";
-  for (auto [id, order]: sort_v) {
-    std::cerr << "(" << id << ", " << order << "), ";
+  std::vector<Vertex> new_vertices(this->size());
+  std::vector<Edge> new_edges;
+  // copy edges into new edges
+  new_edges.reserve(this->edges.size());
+  for (std::size_t i{}; i < this->edges.size(); i++) {
+    new_edges.push_back(this->edges[i]);
   }
-  std::cerr << std::endl;
-*/
+
+  for (std::size_t i{}; i < this->size(); i++) {
+    new_vertices[sort_order[i]] = this->vertices[i];
+    Vertex &v = new_vertices[sort_order[i]];
+
+    for (std::size_t e_l : v.get_edges_l()) {
+      if (this->edges[e_l].get_v1_idx() == i) {
+        new_edges[e_l].set_v1_idx(sort_order[i]);
+      }
+
+      // not an else in case of self loop
+      if (this->edges[e_l].get_v2_idx() == i) {
+        new_edges[e_l].set_v2_idx(sort_order[i]);
+      }
+    }
+
+
+    for (std::size_t e_r : v.get_edges_r()) {
+      if (this->edges[e_r].get_v1_idx() == i) {
+        new_edges[e_r].set_v1_idx(sort_order[i]);
+      }
+
+      // not an else in case of self loop
+      if (this->edges[e_r].get_v2_idx() == i) {
+        new_edges[e_r].set_v2_idx(sort_order[i]);
+      }
+    }
+  }
+
+  this->vertices = new_vertices;
+  this->edges = new_edges;
+
+  /*
+    // print sort_v
+    std::cerr << "sort_v: ";
+    for (auto [id, order]: sort_v) {
+      std::cerr << "(" << id << ", " << order << "), " << "\n";
+    }
+    std::cerr << std::endl;
+  */
 }
 
 // HandleGraph

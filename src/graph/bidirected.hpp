@@ -97,6 +97,14 @@ public:
   //     * check that the vertex at vertex index is connected to this edge
   side_n_id_t get_other_vertex(std::size_t vertex_index) const;
 
+  // ---------
+  // setter(s)
+  // ---------
+  void set_v1_idx(std::size_t v1_idx);
+  // void set_v1_end(VertexEnd v1_end);
+  void set_v2_idx(std::size_t v2_idx);
+  // void set_v2_end(VertexEnd v2_end);
+
   // -----------
   // operator(s)
   // -----------
@@ -164,6 +172,9 @@ class VariationGraph {
   std::vector<Edge> edges;
 
   std::vector<path_t> paths;
+
+  // the sort order of the vertices at idx i is sort_order[i]
+  //std::vector<std::size_t> sort_order;
 
 
   //std::unordered_set<std::size_t> graph_start_nodes;
@@ -241,6 +252,7 @@ public:
   // misc
   // ----
   void dbg_print();
+  void print_dot() const;
 
 
   /*

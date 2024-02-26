@@ -126,7 +126,7 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
 
 int cli(int argc, char **argv, core::config& app_config) {
 
-  args::ArgumentParser p("Use cycle equivalence call variants");
+  args::ArgumentParser p("Use cycle equivalence to call variants");
   args::Group commands(p, "commands");
   args::Command commit(commands, "call", "call",
                        [&](args::Subparser &parser) { call_handler(parser, app_config); });

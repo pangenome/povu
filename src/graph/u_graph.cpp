@@ -78,7 +78,7 @@ FlowGraph::FlowGraph(digraph::DiGraph const& di_graph) {
   std::size_t size = di_graph.size();
 
   //std::cout << "size: " << size << std::endl;
-  
+
   // initialize the flow graph
   // with a dummy start and stop node and connect them
   std::vector<Vertex> d(size+2, Vertex());
@@ -88,7 +88,7 @@ FlowGraph::FlowGraph(digraph::DiGraph const& di_graph) {
   std::size_t dummy_start_node_idx = 0;
   std::size_t dummy_stop_node_idx = size+1;
   std::size_t offset = 1;
-  
+
 
   std::size_t edge_idx = this->edges.size();
 
@@ -103,35 +103,35 @@ FlowGraph::FlowGraph(digraph::DiGraph const& di_graph) {
    */
   // connect all digraph start nodes to flow graph dummy start node
   for (auto const& start_node : di_graph.starts()) {
-	//std::cout << "start node" << start_node << std::endl;
+    //std::cout << "start node" << start_node << std::endl;
     this->set_start_node(start_node);
     continue;
 
     //edge_idx = this->edges.size();
     //this->edges.push_back(u_graph::Edge{0, start_node+1});
     //this->adj_list[0].add_edge_idx(edge_idx, start_node+1);
-	//this->edges.push_back(u_graph::Edge{0, start_node});
+    //this->edges.push_back(u_graph::Edge{0, start_node});
     //this->adj_list[0].add_edge_idx(edge_idx, start_node);
     // no inc because zero index
     //this->adj_list[start_node].add_edge_idx(edge_idx, 0);
   }
 
   /*
-	handle the middle of the graph
+    handle the middle of the graph
    */
   /*
     handle the ends of the graph
    */
   for (std::size_t i{}; i < size; ++i) {
-	digraph::Vertex const& v = di_graph.get_vertex(i);
-	if (v.get_handle() == "" || (v.out().empty() && v.in().empty())) {
-	  continue;
-	}
-	
+    digraph::Vertex const& v = di_graph.get_vertex(i);
+    if (v.get_handle() == "" || (v.out().empty() && v.in().empty())) {
+      continue;
+    }
+
     for (auto const& edge : di_graph.get_vertex(i).out()) {
-	  //std::cout <<"i: " << i << "edge: " << edge.to() << std::endl;
-	  // add_edge takes two default args: edge weight and inc
-	  this->add_edge(i, edge.to(), edge.get_color());
+      //std::cout <<"i: " << i << "edge: " << edge.to() << std::endl;
+      // add_edge takes two default args: edge weight and inc
+      this->add_edge(i, edge.to(), edge.get_color());
     }
   }
 
@@ -140,19 +140,19 @@ FlowGraph::FlowGraph(digraph::DiGraph const& di_graph) {
    */
   // connect all digraph end nodes to stop node
   for (auto const& stop_node : di_graph.stops()) {
-	//std::cout << "stop node" << stop_node << std::endl;
+    //std::cout << "stop node" << stop_node << std::endl;
     this->set_stop_node(stop_node);
     continue;
 
     //edge_idx = this->edges.size();
 
 
-	//this->edges.push_back(u_graph::Edge{stop_node, this->stop_node_internal_idx()});
+    //this->edges.push_back(u_graph::Edge{stop_node, this->stop_node_internal_idx()});
 
     //this->adj_list[this->stop_node_internal_idx()].add_edge_idx(edge_idx, stop_node);
     //this->adj_list[stop_node].add_edge_idx(edge_idx, this->stop_node_internal_idx());
 
-	
+
     //this->edges.push_back(u_graph::Edge{stop_node+1, this->stop_node_internal_idx()});
 
     //this->adj_list[this->stop_node_internal_idx()].add_edge_idx(edge_idx, stop_node+1);
@@ -179,32 +179,28 @@ FlowGraph::FlowGraph(spanning_tree::Tree& t) {
   this->adj_list = std::move(d);
   //std::size_t edge_idx = this->edges.size(); // == 0
 
-
   //this->edges.push_back(u_graph::Edge{0, initial_len - 1});
-
-
 
   //this->adj_list[0].add_edge_idx(edge_idx, initial_len - 1);
   //this->adj_list[initial_len - 1].add_edge_idx(edge_idx, 0);
   //std::size_t edge_idx = this->edges.size(); // == 0
 
-    for (std::size_t j{}; j < t.size(); ++j) {
-      std::size_t i = t.get_sorted(j);
+  for (std::size_t j{}; j < t.size(); ++j) {
+    std::size_t i = t.get_sorted(j);
 
-      for (auto edge : t.get_child_edges(i)) {
-        foo(i, edge.get_child(), edge.get_color(), edge.get_class());
-      }
-
-      for (auto bee : t.get_obe_w_id(i)) {
-        spanning_tree::BackEdge be = t.get_backedge_given_id(bee.first);
-        if (!be.is_capping_backedge()) {
-          foo(i, be.get_tgt(), be.get_color(), be.get_class());
-        }
-      }
+    for (auto edge : t.get_child_edges(i)) {
+      foo(i, edge.get_child(), edge.get_color(), edge.get_class());
     }
 
-    //std::cout << "internal " << this->size_internal() << std::endl;
+    for (auto bee : t.get_obe_w_id(i)) {
+      spanning_tree::BackEdge be = t.get_backedge_given_id(bee.first);
+      if (!be.is_capping_backedge()) {
+        foo(i, be.get_tgt(), be.get_color(), be.get_class());
+      }
+    }
+  }
 
+  //std::cout << "internal " << this->size_internal() << std::endl;
 }
 
 std::size_t FlowGraph::size_internal() {
@@ -408,7 +404,7 @@ spanning_tree::Tree FlowGraph::compute_spanning_tree_two(digraph::DiGraph const&
       std::size_t a = adj.v_idx;
 
       bool x {false};
-      
+
       if (current_vertex != this->start_node_id && a != this->stop_node_internal_idx()) {
         if  (current_vertex == this->stop_node_internal_idx()) {continue;}
         for (auto e : g.get_vertex(current_vertex - 1 ).out()) {
@@ -424,15 +420,15 @@ spanning_tree::Tree FlowGraph::compute_spanning_tree_two(digraph::DiGraph const&
       } else if (current_vertex == this->start_node_id && a == this->stop_node_internal_idx()) {
         t.add_be(current_vertex, a, edge.get_weight(), false, edge.get_color());
       }
-      
+
       if (g.starts().count(current_vertex)) {
-      
+
       }
       else if (g.stops().count(current_vertex)) {
-      
+
       }
       else {
-        
+
       }
 
       if ( x && seen.find(a) == seen.end()) {
@@ -609,7 +605,7 @@ tree::Tree FlowGraph::construct_pst(std::vector<Edge> const& v) const {
         }
       }
       else {
-		// why check if i > 0?
+        // why check if i > 0?
         if (i > 0 && v[i] == v[i-1] && res != temp.size() - 1) {
           std::size_t p = t.get_parent(cr_idx);
 
@@ -886,7 +882,7 @@ Edge Stack
 void FlowGraph::print_dot() {
   std::cout << std::format(
     "graph G {{\n"
-    "\trankdir = TB;\n"
+    "\trankdir = LR;\n"
     "\tnode[shape = circle];\n"
     "\tedge [arrowhead=vee];\n"
     "\t{} [label=\"S\", color=\"green\"];\n"

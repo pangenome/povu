@@ -323,6 +323,8 @@ public:
   // setters
   // -------
 
+  //void topo_sort();
+
   // takes an index in toposort
   // and a vertex and sets the vertex as value in the toposort
   // vector
@@ -333,31 +335,31 @@ public:
   // vector
   void set_sort_g(std::size_t idx, std::size_t vertex);
 
-  
+
   // set the dfs number of a vertex
   void set_dfs_num(std::size_t vertex, std::size_t dfs_num);
 
 
   std::size_t add_be(std::size_t frm,
-					 std::size_t to,
-					 bool capping_be=false,
-					 core::color color=core::color::black);
+                     std::size_t to,
+                     bool capping_be=false,
+                     core::color color=core::color::black);
 
   std::size_t add_be(std::size_t frm,
-					 std::size_t to,
-					 std::size_t weight,
-					 bool capping_be=false,
-					 core::color color=core::color::black);
+                     std::size_t to,
+                     std::size_t weight,
+                     bool capping_be=false,
+                     core::color color=core::color::black);
 
   void add_tree_edge(std::size_t frm,
-					 std::size_t to,
-					 core::color color=core::color::black);
+                     std::size_t to,
+                     core::color color=core::color::black);
 
   // returns the tree edge index
   std::size_t add_tree_edge(std::size_t frm,
-							std::size_t to,
-							std::size_t weight,
-							core::color color=core::color::black);
+                            std::size_t to,
+                            std::size_t weight,
+                            core::color color=core::color::black);
 
   void set_hi(std::size_t vertex, std::size_t val);
 

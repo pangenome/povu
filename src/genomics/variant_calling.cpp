@@ -58,21 +58,24 @@ bidirected::VertexEnd compute_single_edge_side(const bidirected::VariationGraph&
   return v.get_edges_r().size() == 1 ? bidirected::VertexEnd::r : bidirected::VertexEnd::l;
 }
 
+/**
+ * @brief extract subtrees with only leaves as their children
+ *
+ * @param pvst_
+ * @param app_config
+ */
 // TODO: this can be done while constructing the PVST
 std::vector<std::pair<std::size_t, std::size_t>>
 extract_canonical_flubbles(const tree::Tree& pvst_, const core::config& app_config) {
-  std::string fn_name{std::format("[povu::genomics::{}]", __func__) };
+  std::string fn_name{ std::format("[povu::genomics::{}]", __func__) };
 
   if (app_config.verbosity() > 3) { std::cerr << fn_name << "\n"; }
 
   tree::Vertex const& root = pvst_.get_root();
 
-  // subtree set
-
   std::vector<std::pair<std::size_t, std::size_t>> canonical_flubbles;
   std::size_t current_vertex;
 
-  // create a new queue
   std::queue<std::size_t> q;
   q.push(root.get_id());
 
@@ -83,9 +86,6 @@ extract_canonical_flubbles(const tree::Tree& pvst_, const core::config& app_conf
     current_vertex = q.front();
     q.pop();
 
-    // std::cout << "current vertex: " << current_vertex << std::endl;
-
-
     std::set<std::size_t> const& children = pvst_.get_children(current_vertex);
     std::size_t parent_eq_class = pvst_.get_class(current_vertex);
 
@@ -93,14 +93,17 @@ extract_canonical_flubbles(const tree::Tree& pvst_, const core::config& app_conf
 
     is_canonical_subtree = true;
     bool end_found { false };
-    max_child = core::constants::SIZE_T_MIN;
+    max_child = current_vertex;
 
     for (std::size_t child: children) {
       const std::set<std::size_t>& c = pvst_.get_children(child);
       std::size_t child_eq_class = pvst_.get_class(child);
 
-      if (!end_found && child > max_child && parent_eq_class == child_eq_class) {
+      if (child > max_child) {
         max_child = child;
+      }
+
+      if (!end_found && parent_eq_class == child_eq_class) {
         end_found = true;
       }
 
@@ -112,36 +115,26 @@ extract_canonical_flubbles(const tree::Tree& pvst_, const core::config& app_conf
     }
 
     if (is_canonical_subtree) {
-      if (pvst_.get_meta(current_vertex) < pvst_.get_meta(max_child)) {
+      if (pvst_.get_meta(current_vertex) < pvst_.get_meta(max_child) && parent_eq_class == pvst_.get_class(max_child)) {
         canonical_flubbles.push_back(
           std::make_pair(pvst_.get_meta(current_vertex) - 1, pvst_.get_meta(max_child) - 1 )
           );
       }
       else {
-        // TODO: print this always because it is dangerous to silently fail
-        if (app_config.verbosity() > 3) {
-        std::cerr << "child count : " << children.size() << std::endl;
-        std::cerr << "v: " << current_vertex << " " << max_child << std::endl;
-        std::cerr << "sus canonical subtree found: " << pvst_.get_vertex( current_vertex ).get_id()
-                  << " " << pvst_.get_vertex( max_child ).get_id()
-                  << " " << pvst_.get_meta(current_vertex)
-                  << " " << pvst_.get_meta(max_child)
-                  << std::endl;
+        std::cerr << "sus canonical subtree: ";
+        if (parent_eq_class != pvst_.get_class(max_child)) {
+          std::cerr << std::format("parent eq class neq max child eq class (parent {} max child {})\n", current_vertex, max_child);
+        }
+        else if (max_child <= current_vertex) {
+          std::cerr << std::format("max child <= current vertex (parent {} max child {})\n", current_vertex, max_child);
+        }
+        else {
+          std::cerr << std::format("other: (parent {} max child {})\n", current_vertex, max_child);
         }
       }
     }
   }
 
-  // loop over canonical subtrees and print
-  /*
-  std::cout << "Canonical subtrees:" << std::endl;
-  for (auto subtree: canonical_flubbles) {
-    std::cout << subtree.first << " " << subtree.second << std::endl;
-  }
-  */
-
-  // use canonical subtrees to make a vector of pairs of flubble starts and stops
-  //std::vector<std::pair<std::size_t, std::size_t>> canonical_flubbles;
   return canonical_flubbles;
 }
 

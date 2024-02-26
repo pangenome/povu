@@ -357,7 +357,6 @@ void BVariationGraph::print_dot() const {
     "\trankdir=LR;\n" <<
     "\tnode [shape=circle];\n";
 
-  //
   for (std::size_t v_idx{}; v_idx < this->vertices.size(); ++v_idx) {
     std::cout <<
       std::format("\t{} [label=\"{}{}\"]\n",
@@ -461,17 +460,14 @@ spanning_tree::Tree BVariationGraph::compute_spanning_tree() const {
   std::set<std::size_t> seen;
   std::stack<std::size_t> visited;
 
-  std::size_t start_node_id{};
-
-  std::size_t current_vertex{start_node_id};
+  std::size_t start_node_id {};
+  std::size_t current_vertex { start_node_id };
   visited.push(current_vertex);
 
-  std::size_t counter{0};
+  std::size_t counter {};
 
   while (!visited.empty()) {
     current_vertex = visited.top();
-
-    // std::cout << "current_vertex: " << current_vertex << std::endl;
 
     if (!seen.count(current_vertex)) {
       t.set_dfs_num(current_vertex, counter);
@@ -484,7 +480,8 @@ spanning_tree::Tree BVariationGraph::compute_spanning_tree() const {
 
     // TODO: simplify below for loop
     // - replace f with not_explored
-    // bool not_explored{false}; // the current vertex has not been explored
+    // bool not_explored{false};
+    // the current vertex has not been explored
     bool f{false};
     Vertex const& v =  this->get_vertex(current_vertex);
 
