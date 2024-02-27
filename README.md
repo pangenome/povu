@@ -44,6 +44,31 @@ separated plain text file made up of 5 columns as described below
 |---------------------------|------------------------------------------------------------------------------------------------|
 | unsigned numeric          | vertex id (can be zero)                                                                        |
 | list of unsigned numerics | child nodes in comma separated values                                                          |
-| character                 | A value indicating whether the node is a true vertex or a dummy vertex                         |
+| character                 | A value indicating whether the node is a true vertex or a dummy vertex (D for dummy, T for true)                         |
 | unsigned numeric          | the equivalence class of the vertex                                                            |
 | unsigned numeric          | the id of the vertex in the GFA file (multiple different vertex ids can share the same GFA id) |
+
+### Example
+
+![graph](docs/images/vg7.png)
+![pvst](docs/images/pvst7.png)
+
+```
+0		T	6	1
+1		T	6	2
+2	0,1,3	D	6	1
+3	10,14,15,4	D	6	2
+4	5,9	T	4	3
+5	6,7,8	T	2	4
+6		T	1	5
+7		T	3	6
+8		T	2	7
+9		T	4	8
+10	11,12,13	T	7	9
+11		T	0	10
+12		T	8	11
+13		T	7	12
+14		T	6	13
+15		T	6	14
+
+```

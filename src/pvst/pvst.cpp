@@ -2,6 +2,7 @@
 #include <bit>
 #include <cmath>
 #include <cstddef>
+#include <format>
 #include <iostream>
 #include <map>
 #include <string>
@@ -23,9 +24,10 @@ namespace pvst {
 /**
  * @brief compute the pvst of a given vector of eq_n_id_t values
  *
- * @param v a vector of pairs
- *          where each pair is (index, eq class)
- * @return a tree
+ * @param v a vector of pairs where each pair is (index, eq class)
+ * @param app_config the application configuration
+ *
+ * @return a PVST tree
  */
 tree::Tree compute_pvst(std::vector<core::eq_n_id_t> v, const core::config& app_config) {
   std::string fn_name = "[povu::pvst::compute_pvst]";
@@ -78,26 +80,14 @@ tree::Tree compute_pvst(std::vector<core::eq_n_id_t> v, const core::config& app_
   };
 
   while (i < v.size()) {
-
     be_idx = v[i].v_id;
     bd_idx = bidirected_idx(be_idx);
     current_class = v[i].eq_class;
     bd_idx_str = std::to_string(bd_idx+1);
 
-    if (false && !t.empty()) {
-      std::cout << "root: " << t.get_root().get_id() << std::endl;
-    }
-
     if (false) {
-      std::cerr << "i: " << i
-                << " counter " << counter
-                << " p_id: " << p_id
-                << " be idx: " << be_idx
-                << " bd idx: " << bd_idx_str
-                << " current class: " << current_class
-
-        //<< " bd idx str: " << bd_idx_str
-                << std::endl;
+       std::cerr << std::format("i: {} counter {} p_id: {} be idx: {} bd idx: {} current class: {}\n",
+                                i, counter, p_id, be_idx, bd_idx, current_class);
     }
 
     // TODO: is it necessary to check if i == 0? or the state of the tree?
@@ -117,34 +107,41 @@ tree::Tree compute_pvst(std::vector<core::eq_n_id_t> v, const core::config& app_
 
     // if this eq class shows up more than once
     if (ps.size() > 1) {
-      // in this case the eq class nests something
+      // in this case the eq class nests something or is in a bubble chain
       std::list<std::size_t> positions;
       std::copy(ps.begin(), ps.end(), std::back_inserter(positions));
 
       for (auto it = positions.begin(); it != positions.end(); ++it) {
 
-        // detect a bubble chain
-        // handle bubble chains
-        if (*it == i && std::next(it) != positions.end() && it != positions.begin()
-            //&& (*it  - *std::prev(it ) > 1)
-            && ((*std::next(it) - *it ) > 1) ) {
-          // add a dummy parent?
-
-          //std::cout << "xxx\n";
-
+        // detect & handle nesting and bubble chains
+        if (*it == i && std::next(it) != positions.end() && it != positions.begin() && ((*std::next(it) - *it ) > 1) ) {
+          // std::cout << "nesting\n";
           tree::Vertex& prt_v = t.get_vertex_mut(p_id);
 
           if (!prt_v.is_dummy()) {
-
             if (is_root(p_id)) {
+              // std::cerr << "prt is root\n";
               std::string m = prt_v.get_meta();
               ++counter;
               t.add_vertex(INVALID_ID, counter, prt_v.get_class(), m, true);
               t.set_root(counter);
-              // std::cout << "ctr" << counter << std::endl;
-            t.get_vertex_mut(p_id).set_parent(counter);
+              // std::cerr << "p id " << p_id << " ctr " << counter << std::endl;
+              t.get_vertex_mut(p_id).set_parent(counter);
               prt_v.set_parent(counter);
               // std::cout << prt_v.get_parent() << " p " << t.get_vertex(p_id).get_parent() << std::endl;
+
+              // std::cerr << "children count: " << t.get_vertex_mut(p_id).get_children().size() << std::endl;
+
+              auto children = t.get_vertex_mut(p_id).get_children();
+
+              for (auto c:  children) {
+                t.get_vertex_mut(c).set_parent(counter);
+                t.get_vertex_mut(counter).add_child(c);
+              }
+
+              for (auto c:  children) {
+                t.get_vertex_mut(p_id).remove_child(c);
+              }
 
               t.get_vertex_mut(counter).add_child(p_id);
               t.add_vertex(p_id, counter, current_class, bd_idx_str, true);
@@ -152,6 +149,7 @@ tree::Tree compute_pvst(std::vector<core::eq_n_id_t> v, const core::config& app_
               p_class = prt_v.get_class();
             }
             else {
+              // std::cerr << "prt not root\n";
               id_t grand_p_id = t.get_parent(prt_v.get_id());
               tree::Vertex& grand_prt_v = t.get_vertex_mut(grand_p_id);
 
@@ -161,12 +159,10 @@ tree::Tree compute_pvst(std::vector<core::eq_n_id_t> v, const core::config& app_
               t.add_vertex(grand_p_id, counter, grand_prt_v.get_class(), m, true);
               t.get_vertex_mut(counter).add_child(p_id);
 
-
               p_class = grand_prt_v.get_class();
             }
 
             p_id = counter;
-
           }
           else {
             if (!is_root(prt_v.get_id())) {
@@ -181,7 +177,6 @@ tree::Tree compute_pvst(std::vector<core::eq_n_id_t> v, const core::config& app_
       }
     }
 
-
     bool foo{false}; // when parent and child are in the same eq class
 
     if ((!nesting[current_class] && ps.size() > 1) || (!nesting[current_class] && i+1 < v.size() && current_class != v[i+1].eq_class)) {
@@ -193,7 +188,7 @@ tree::Tree compute_pvst(std::vector<core::eq_n_id_t> v, const core::config& app_
     }
 
     if (ps.back() == i || (!t.get_vertex(counter).is_dummy() && foo && i+1 < v.size() && current_class != v[i+1].eq_class)) {
-      //std::cout << "flip\n";
+      // std::cout << "flip\n";
       nesting[current_class] = false;
     }
 
@@ -230,7 +225,7 @@ void to_text(tree::Tree const& pvst, std::filesystem::path const& output_path) {
 
     f << v.get_id()  << "\t";
     f << (utils::concat_with(c_,  ',')) << "\t";
-    f << (v.is_dummy() ? "T" : "D") << "\t";
+    f << (v.is_dummy() ? "D" : "T") << "\t";
     f << v.get_class() << "\t";
     f << v.get_meta() << "\n";
   }

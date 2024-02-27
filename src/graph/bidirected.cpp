@@ -635,7 +635,7 @@ void VariationGraph::print_dot() const {
   std::cout << "\tnode [shape=record];" << std::endl;
 
   for (std::size_t i{}; i < this->size(); ++i) {
-    std::cout << std::format("\t{} [label=\"{}\"];\n", i, i);
+    std::cout << std::format("\t{} [label=\"{}\"];\n", i, i+1);
   }
 
   for (std::size_t i{}; i < this->edges.size(); ++i) {

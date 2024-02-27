@@ -39,7 +39,10 @@ int main(int argc, char *argv[]) {
   if (app_config.verbosity() > 2) { std::cerr << fn_name << " Bi-edging" << "\n"; }
   // convert the bidirected variation graph into a biedged variation graph
   biedged::BVariationGraph bg(vg);
-  if (app_config.verbosity() > 4) { bg.print_dot(); }
+  if (app_config.verbosity() > 4) {
+    std::cout << "\n\n" << "Biedged" << "\n\n";
+    bg.print_dot();
+  }
   bg.componetize();
   if (app_config.verbosity() > 4) { std::cout << "\n\n" << "Componetized biedged" << "\n\n";
     bg.print_dot();

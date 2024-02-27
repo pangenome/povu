@@ -5,5 +5,3 @@ Testing/
 .cache/
 *.vcf
 *.dot
-*.png
-*.svg

@@ -21,7 +21,7 @@ namespace cli {
 
 #define FILE_ERROR(name)                                                       \
   {                                                                            \
-    std::string e = "Error, Failed to open the file" + name; \
+    std::string e = "Error, Failed to open the file " + name; \
     throw std::invalid_argument(e);                                              \
   }
 
