@@ -132,9 +132,10 @@ int cli(int argc, char **argv, core::config& app_config) {
                        [&](args::Subparser &parser) { call_handler(parser, app_config); });
 
   args::Group arguments(p, "arguments", args::Group::Validators::DontCare, args::Options::Global);
-  args::Flag version(arguments, "version", "the current version of povu", {"version"});
+  args::Flag version(arguments, "version", "The current version of povu", {"version"});
   args::ValueFlag<int> verbosity(arguments, "verbosity", "Level of output", {'v', "verbosity"});
   args::ValueFlag<std::string> pvst_path(arguments, "pvst_file_name", "PVST output file path", {'t', "pvst-path"});
+  args::Flag no_sort(arguments, "no_sort", "Disable sorting (not recommended)", {'n', "no-sort"});
   args::HelpFlag h(arguments, "help", "help", {'h', "help"});
 
 
@@ -163,6 +164,10 @@ int cli(int argc, char **argv, core::config& app_config) {
 
   if (args::get(verbosity)) {
     app_config.set_verbosity(args::get(verbosity));
+  }
+
+  if (no_sort) {
+    app_config.set_sort(false);
   }
 
   return 0;

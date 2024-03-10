@@ -264,7 +264,9 @@ std::cout << "error setting path" << std::endl;
 bidirected::VariationGraph to_vg(const char* filename, const core::config& app_config) {
   std::string fn_name = std::format("[povu::io::{}]", __func__);
 
+  #ifdef DEBUG
   if (app_config.verbosity() > 2) { std::cout << fn_name << std::endl; }
+  #endif
 
   gfak::GFAKluge gg = gfak::GFAKluge();
 
@@ -309,7 +311,7 @@ bidirected::VariationGraph to_vg(const char* filename, const core::config& app_c
 
   // the node count and max and min ids are not necessarily the same
   // this is based on ids and node count not being the same
-   bidirected::VariationGraph vg(max_nodes, edge_count, path_count);
+  bidirected::VariationGraph vg(max_nodes, edge_count, path_count);
 
   // we want to start counting from 0 so we have to have an offset_value which would subtruct from the min_id
   // this is because the input graph is not guaranteed to start from 0

@@ -340,12 +340,12 @@ BVariationGraph::BVariationGraph(const bidirected::VariationGraph& g) {
   }
 
   // set start and stop vertices
-  for (auto i : g.find_graph_start_nodes()) {
+  for (auto i : g.graph_start_nodes()) {
     this->start_nodes.insert((2*(i+1)) - 2);
   }
 
 
-  for (auto i : g.find_graph_end_nodes()) {
+  for (auto i : g.graph_end_nodes()) {
     this->end_nodes.insert((2*(i+1)) - 1);
   }
 

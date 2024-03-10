@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <cstddef>
 #include <format>
 #include <string>
 
@@ -14,27 +16,67 @@
 #include "./pvst/pvst.hpp"
 
 
-int main(int argc, char *argv[]) {
+/**
+  * @brief reads the input gfa into a bidirected variation graph, and returns the components
+  *
+  * Given a bidirected::VariationGraph return each component as a map of id_t to component
+  * each component is a bidirected::component which contains a bidirected::VariationGraph
+  *
+  * @param app_config
+  * @return std::map<id_t, bidirected::component>
+ *
+ */
+std::map<id_t, bidirected::component> read_and_componetize(const core::config& app_config) {
   std::string fn_name = std::format("[povu::main::{}]", __func__);
-
-  core::config app_config;
-  cli::cli(argc, argv, app_config);
-
-  if (app_config.verbosity()) { app_config.dbg_print(); }
 
   if (app_config.verbosity() > 2)  { std::cerr << fn_name << " Reading graph\n"; }
 
   // read the input gfa into a bidirected variation graph
-  bidirected::VariationGraph vg = io::from_gfa::to_vg(app_config.get_input_gfa().c_str(), app_config);
+  bidirected::VariationGraph vg =
+    io::from_gfa::to_vg(app_config.get_input_gfa().c_str(), app_config);
+
   if (app_config.verbosity() > 1) {
     vg.dbg_print();
   }
 
-  vg.sort();
-  if (app_config.verbosity() > 4) { std::cout << "\n\n" << "Variation Graph (sorted)" << "\n\n";
+  if (app_config.verbosity() > 4) { std::cout << "\n\n" << "Variation Graph (unsorted)" << "\n\n";
     vg.print_dot();
   }
 
+  std::map<id_t, bidirected::component> components = vg.count_components(app_config);
+  return components;
+}
+
+/**
+  * @brief takes a variation graph which should be in a single component and returns the
+  *        calls variants on it
+  *
+  * @param app_config the configuration
+  * @param vg the variation graph
+  */
+void bar(core::config& app_config, bidirected::VariationGraph vg) {
+  std::string fn_name = std::format("[povu::main::{}]", __func__);
+
+  if (app_config.verbosity() > 1) {
+    vg.dbg_print();
+  }
+
+  if (app_config.verbosity() > 2)  { std::cerr << fn_name << " Sorting graph\n"; }
+
+
+  if (app_config.sort()) {
+    vg.sort();
+  }
+
+
+
+  if (app_config.verbosity() > 1) {
+    vg.dbg_print();
+  }
+
+  if (app_config.verbosity() > 4) { std::cout << "\n\n" << "Variation Graph (sorted)" << "\n\n";
+    vg.print_dot();
+  }
 
   if (app_config.verbosity() > 2) { std::cerr << fn_name << " Bi-edging" << "\n"; }
   // convert the bidirected variation graph into a biedged variation graph
@@ -81,6 +123,35 @@ int main(int argc, char *argv[]) {
 
   if (app_config.verbosity() > 2)  { std::cerr << fn_name << " Calling variants\n"; }
   genomics::call_variants(t, vg, app_config);
+
+  return;
+}
+
+/**
+ * @brief main function
+ *
+ * @param argc
+ * @param argv
+ * @return int
+ */
+int main(int argc, char *argv[]) {
+  std::string fn_name = std::format("[povu::main::{}]", __func__);
+
+  core::config app_config;
+  cli::cli(argc, argv, app_config);
+
+  if (app_config.verbosity()) { app_config.dbg_print(); }
+
+  std::map<id_t, bidirected::component> components = read_and_componetize(app_config);
+
+  if (app_config.verbosity() > 2)  {
+    std::cerr << std::format("{} Number of components: {}\n", fn_name, components.size());
+  }
+
+  for (auto const &[_, v] : components) {
+    bar(app_config, v.vg);
+    break;
+  }
 
   return 0;
 }

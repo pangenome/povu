@@ -3,12 +3,14 @@
 
 #include <cstddef>
 #include <string>
+#include <sys/types.h>
 #include <vector>
 #include <unordered_set>
 #include <set>
+#include <map>
 
 #include <handlegraph/handle_graph.hpp>
-
+#include "../core/core.hpp"
 
 namespace hg = handlegraph;
 
@@ -40,6 +42,7 @@ typedef VertexEnd v_end_t;
 // operator(s)
 // -----------
 std::ostream& operator<<(std::ostream& os, const VertexEnd& ve);
+VertexEnd complement(VertexEnd ve);
 
 struct side_n_id_t {
   VertexEnd v_end;
@@ -159,10 +162,16 @@ public:
   // returns the new value
   bool toggle_reversed();
   void add_edge(std::size_t edge_index, VertexEnd vertex_end);
+  void clear_edges();
+  // void set_label(const std::string& label);
+  void set_handle(const std::string& handle);
+  void set_handle(id_t id);
 
   // It is up to the user to make sure that the path_id is not already in the "set"
   void add_path(std::size_t path_id, std::size_t step_index);
 };
+
+struct component;
 
 /**
    A variation graph as a bidirected graph
@@ -171,14 +180,16 @@ class VariationGraph {
   std::vector<Vertex> vertices;
   std::vector<Edge> edges;
 
-  std::vector<path_t> paths;
+  // TODO: make this a map for easier work with components
+  // we want unique path IDs for the entire graph
+  std::map<id_t, path_t> paths;
+  //std::vector<path_t> paths;
 
   // the sort order of the vertices at idx i is sort_order[i]
   //std::vector<std::size_t> sort_order;
 
-
-  //std::unordered_set<std::size_t> graph_start_nodes;
-  //std::unordered_set<std::size_t> graph_end_nodes;
+  std::unordered_set<std::size_t> graph_start_nodes_;
+  std::unordered_set<std::size_t> graph_end_nodes_;
 
   std::unordered_set<std::size_t> haplotype_start_nodes;
   std::unordered_set<std::size_t> haplotype_end_nodes;
@@ -221,11 +232,19 @@ public:
   std::vector<side_n_id_t> get_adj_vertices(std::size_t vertex_index, VertexEnd vertex_end) const;
   //std::unordered_set<std::size_t> get_start_nodes() const;
   //std::unordered_set<std::size_t> get_end_nodes() const;
-  const std::vector<path_t>& get_paths() const; // TODO: rename to get_haplotypes
+  std::vector<path_t> get_paths() const; // TODO: rename to get_haplotypes // return a reference to the map
+  const path_t& get_path(std::size_t path_id) const;
 
   // TODO: these two can be combined into one method
-  std::unordered_set<id_t> find_graph_start_nodes() const;
-  std::unordered_set<id_t> find_graph_end_nodes() const;
+  // // TODO: remove DEPRECATED
+  // std::unordered_set<id_t> find_graph_start_nodes() const;
+  // std::unordered_set<id_t> find_graph_end_nodes() const;
+
+  std::unordered_set<std::size_t> const& graph_start_nodes() const;
+  std::unordered_set<std::size_t> const& graph_end_nodes() const;
+
+  std::unordered_set<std::size_t> const& find_haplotype_start_nodes() const;
+  std::unordered_set<std::size_t> const& find_haplotype_end_nodes() const;
 
   // TODO: maybe nice to have?
   //std::set<std::size_t> get_edges(std::size_t vertex_index, VertexEnd vertex_end) const;
@@ -235,8 +254,22 @@ public:
   // setter(s) & modifiers
   // ---------------------
   void append_vertex();   // adds an invalid vertex to the graph
-  void add_vertex(const Vertex& vertex);
+  /**
+    * @brief Add a vertex to the graph
+    *
+    * @param vertex the vertex to add
+    * @return std::size_t the index of the vertex in the graph
+   */
+  std::size_t add_vertex(const Vertex& vertex);
+
+
+  void add_edge(const Edge& edge); // handles the case where one or both of the vertices are invalid
   void add_edge(std::size_t v1, VertexEnd v1_end, std::size_t v2, VertexEnd v2_end);
+
+  void add_path(const path_t& path);
+
+  void add_graph_start_node(std::size_t node_id);
+  void add_graph_end_node(std::size_t node_id);
 
   void add_haplotype_start_node(std::size_t node_id);
   void add_haplotype_stop_node(std::size_t node_id);
@@ -246,6 +279,9 @@ public:
 
   // sort by in degree on the left side of the
   void sort();
+
+  std::map<id_t, component> count_components(const core::config& app_config);
+
 
 
   // ----
@@ -393,6 +429,52 @@ public:
   void set_circularity(const hg::path_handle_t& path, bool circular);
 
 };
+
+
+struct component {
+  id_t idx; // a unique identifier of the component
+
+  std::set<id_t> starts; // tips at the start of a graph
+  std::set<id_t> ends; // tips at the end of a graph
+
+  // tips that are not haplotype start nodes. Will be deleted from the variation graph
+  std::set<id_t> orphan_tips;
+
+  std::set<id_t> non_tip_hap_starts; // haplotype start nodes that are not tips
+
+  std::vector<id_t> vertices;
+
+  VariationGraph vg;
+
+  // ------------
+  // Constructors
+  // ------------
+
+  component()
+    : idx(0),
+      starts(std::set<id_t>()), ends(std::set<id_t>()), orphan_tips(std::set<id_t>()), non_tip_hap_starts(std::set<id_t>()),
+      vertices(std::vector<id_t>()) {}
+
+  component(id_t idx)
+    : idx(idx),
+      starts(std::set<id_t>()), ends(std::set<id_t>()), orphan_tips(std::set<id_t>()), non_tip_hap_starts(std::set<id_t>()),
+      vertices(std::vector<id_t>()) {}
+
+  component(id_t idx,
+            const std::set<id_t>& starts, const std::set<id_t>& ends, const std::set<id_t>& orphan_tips, const std::set<id_t>& non_tip_hap_starts,
+            const std::vector<id_t>& vertices)
+      : idx(idx), starts(starts), ends(ends), orphan_tips(orphan_tips), non_tip_hap_starts(non_tip_hap_starts),
+        vertices(vertices) {}
+
+  // -------
+  // Getters
+  // -------
+
+  // friend declaration for operator<<
+  friend std::ostream& operator<<(std::ostream& os, const component& comp);
+};
+
+
 
 }; // namespace bidirected
 #endif

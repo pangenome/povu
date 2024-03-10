@@ -1,6 +1,7 @@
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
+#include <iostream>
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -28,7 +29,14 @@ template <typename T> std::string concat_with(const T& v, char delim) {
   return s.substr(0, s.length()-1);
 }
 
+template <typename T> void print_with_comma(std::ostream& os, const T& v, char delim) {
+  if (v.empty()) { return; }
 
+  for (auto it {v.begin()}; it != v.end(); ++it) {
+    os << *it;
+    if (std::next(it) != v.end()) { os << delim << " "; }
+  }
+}
 
 /**
  * Returns the current date in the format YYYYMMDD

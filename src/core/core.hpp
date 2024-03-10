@@ -4,6 +4,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <unistd.h>
 #include <vector>
 #include <utility>
 #include <algorithm>
@@ -13,6 +14,7 @@
 
 #include "./constants.hpp"
 #include "./typedefs.hpp"
+#include "utils.hpp"
 
 namespace core {
 /*
@@ -55,6 +57,9 @@ struct config {
   // general
   unsigned char v; // verbosity
 
+  //
+  bool sort_; // sort the graph (default: true)
+
   // references
   std::string references_txt; // the path to the file containing the reference paths
   input_format_t ref_input_format;
@@ -71,6 +76,7 @@ struct config {
     chrom(""), // default is empty string
     pvst_path(std::nullopt),
     v(0),
+    sort_(true),
     ref_input_format(input_format_t::unset),
     reference_paths(std::vector<std::string>{}),
     undefined_vcf(false)
@@ -79,13 +85,14 @@ struct config {
   // ---------
   // getter(s)
   // ---------
-  std::string get_input_gfa() { return this->input_gfa; }
+  std::string get_input_gfa() const { return this->input_gfa; }
   std::optional<std::filesystem::path> get_pvst_path() { return this->pvst_path; }
   const std::string& get_chrom() const { return this->chrom; }
   std::vector<std::string> const& get_reference_paths() const { return this->reference_paths; }
   std::vector<std::string>* get_reference_ptr() { return &this->reference_paths; }
   const std::string& get_references_txt() const { return this->references_txt; }
   std::size_t verbosity() const { return this->v; } // can we avoid this being a size_t?
+  bool sort() const { return this->sort_; }
   bool gen_undefined_vcf() const { return this->undefined_vcf; }
 
   // ---------
@@ -99,6 +106,7 @@ struct config {
   void set_reference_txt_path(std::string&& s) { this->references_txt = std::move(s); }
   void set_references_txt(std::string s) { this->references_txt = s; }
   void set_verbosity(unsigned char v) { this->v = v; }
+  void set_sort(bool b) { this->sort_ = b; }
   void set_input_gfa(std::string s) { this->input_gfa = s; }
   void set_pvst_path(std::string s) { this->pvst_path = s; }
   void set_task(task_t t) { this->task = t; }
@@ -110,6 +118,7 @@ struct config {
   void dbg_print() {
     std::cerr << "CLI parameters: " << std::endl;
     std::cerr << "\t" << "verbosity: " << this->verbosity() << "\n";
+    std::cerr << "\t" << "sort: " << (this->sort() ? "yes" : "no") << "\n";
     std::cerr << "\t" << "task: " << this->task << std::endl;
     std::cerr << "\t" << "input gfa: " << this->input_gfa << std::endl;
     std::cerr << "\t" << "chrom: " << this->chrom << std::endl;
@@ -119,10 +128,8 @@ struct config {
     }
 
     std::cerr << "\t" << "Reference paths (" << this->reference_paths.size() << "): ";
-    for (auto it = this->reference_paths.begin(); it != this->reference_paths.end(); ++it) {
-      std::cerr << *it;
-      if (std::next(it) != this->reference_paths.end()) { std::cout << ", "; }
-    }
+    utils::print_with_comma(std::cerr, this->reference_paths, ',');
+
 
     std::cerr << std::endl;
     }

@@ -1,3 +1,4 @@
+#include <concepts>
 #include <cstddef>
 #include <cstring>
 #include <format>
@@ -5,6 +6,7 @@
 #include <iterator>
 #include <map>
 #include <queue>
+#include <stack>
 #include <deque>
 #include <string>
 #include <sys/types.h>
@@ -12,11 +14,39 @@
 #include <utility>
 #include <vector>
 
+
 #include "./bidirected.hpp"
 #include "../core/utils.hpp"
 #include "../core/utils.hpp"
 
 namespace bidirected {
+
+// Definition of operator<< outside the struct
+std::ostream& operator<<(std::ostream& os, const component& comp) {
+  os << "Component index: " << comp.idx << std::endl;
+
+  os << "Starts: ";
+  utils::print_with_comma(os, comp.starts, ',');
+  os << std::endl;
+
+  os << "Ends: ";
+  utils::print_with_comma(os, comp.ends, ',');
+  os << std::endl;
+
+  os << "Orphan tips: ";
+  utils::print_with_comma(os, comp.orphan_tips, ',');
+  os << std::endl;
+
+  os << "Non-tip haplotype starts: ";
+  utils::print_with_comma(os, comp.non_tip_hap_starts, ',');
+  os << std::endl;
+
+  os << "Vertices: ";
+  utils::print_with_comma(os, comp.vertices, ',');
+  os << std::endl;
+  return os;
+}
+
 /*
  * VertexEnd
  * ---------
@@ -186,10 +216,21 @@ void Vertex::add_edge(std::size_t edge_index, VertexEnd vertex_end) {
   }
 }
 
+void Vertex::clear_edges() {
+  this->edges_l.clear();
+  this->edges_r.clear();
+}
+
 void Vertex::add_path(std::size_t path_id, std::size_t step_index) {
   this->paths.push_back(PathInfo(path_id, step_index));
 }
 
+void Vertex::set_handle(const std::string& handle) {
+  this->handle = handle;
+}
+void Vertex::set_handle(id_t id) {
+  this->handle = std::to_string(id);
+}
 
 /*
  * Variation Graph
@@ -198,21 +239,21 @@ void Vertex::add_path(std::size_t path_id, std::size_t step_index) {
 VariationGraph::VariationGraph()
     : vertices(std::vector<Vertex>{}),
       edges((std::vector<Edge>{})),
-      paths(std::vector<path_t>{})
+      paths(std::map<id_t, path_t>{})
 {}
 
+// TODO: to remove path_count?
 VariationGraph::VariationGraph(std::size_t vertex_count, std::size_t edge_count,
                                std::size_t path_count)
     : vertices(std::vector<Vertex>{}),
       edges(std::vector<Edge>{}),
-      paths(std::vector<path_t>{})
+      paths(std::map<id_t, path_t>{})
 {
   this->vertices.reserve(vertex_count);
   this->edges.reserve(edge_count);
-  this->paths.reserve(path_count);
 }
 
-// getters
+// Getters
 // -------
 std::size_t VariationGraph::size() const {
   // TODO: should this use some counter instead?
@@ -250,32 +291,21 @@ std::vector<side_n_id_t> VariationGraph::get_adj_vertices(std::size_t vertex_ind
   return adj_vertices;
 }
 
-std::unordered_set<id_t> VariationGraph::find_graph_start_nodes() const {
-  std::unordered_set<id_t> graph_start_nodes;
-  //std::cerr << "find_graph_start_nodes" << std::endl;
-  for (id_t i = 0; i < this->size(); ++i) {
-    if (this->vertices.at(i).get_edges_l().empty()) {
-      //std::cerr << i << " " << std::endl;
-      graph_start_nodes.insert(i);
-    }
-  }
-  //  std::cerr << std::endl;
-  return graph_start_nodes;
+std::unordered_set<std::size_t> const& VariationGraph::graph_start_nodes() const {
+  return this->graph_start_nodes_;
 }
 
-std::unordered_set<id_t> VariationGraph::find_graph_end_nodes() const {
-  std::unordered_set<id_t> graph_end_nodes;
-  //std::cerr << "find_graph_end_nodes" << std::endl;
-  for (id_t i = 0; i < this->size(); ++i) {
-    if (this->vertices.at(i).get_edges_r().empty()) {
-      //        std::cerr << i << " " << std::endl;
-      graph_end_nodes.insert(i);
-    }
-  }
-  //std::cerr << std::endl;
-  return graph_end_nodes;
+std::unordered_set<std::size_t> const& VariationGraph::graph_end_nodes() const {
+  return this->graph_end_nodes_;
 }
 
+std::unordered_set<std::size_t> const& VariationGraph::find_haplotype_start_nodes() const {
+  return this->haplotype_start_nodes;
+}
+
+std::unordered_set<std::size_t> const& VariationGraph::find_haplotype_end_nodes() const {
+  return this->haplotype_end_nodes;
+}
 
 /**
  * @brief Simplify paths by removing redundant nodes and instead representing it as a single node and strand through which the path passes
@@ -599,8 +629,19 @@ VariationGraph::get_paths(id_t start_id, id_t stop_id, bool compact) const {
   return paths_map[exit];
 }
 
-const std::vector<path_t>& VariationGraph::get_paths() const {
-  return this->paths;
+std::vector<path_t> VariationGraph::get_paths() const {
+  std::string fn_name = std::format("[povu::bidirected::{}]", __func__);
+  std::vector<path_t> paths_;
+
+  for (auto [_, v]: this->paths) {
+    paths_.push_back(v);
+  }
+
+  return paths_;
+}
+
+const path_t& VariationGraph::get_path(std::size_t path_id) const {
+  return this->paths.at(path_id);
 }
 
 void VariationGraph::dbg_print() {
@@ -620,11 +661,11 @@ void VariationGraph::dbg_print() {
 
 
   std::cerr << "\t" << "graph start nodes: ";
-  utils::print_with_comma(this->find_graph_start_nodes());
+  utils::print_with_comma(std::cerr, this->graph_start_nodes(), ',');
   std::cerr << "\n";
 
   std::cerr << "\t" << "graph end nodes: ";
-  utils::print_with_comma(this->find_graph_end_nodes());
+  utils::print_with_comma(std::cerr, this->graph_end_nodes(), ',');
   std::cerr << "\n";
 }
 
@@ -652,8 +693,16 @@ void VariationGraph::append_vertex() {
   this->vertices.push_back(Vertex());
 }
 
-void VariationGraph::add_vertex(const Vertex& vertex) {
+std::size_t VariationGraph::add_vertex(const Vertex& vertex) {
   this->vertices.push_back(vertex);
+  return this->vertices.size() - 1;
+}
+
+void VariationGraph::add_edge(const Edge& edge) {
+  std::size_t edge_idx = this->edges.size();
+  this->edges.push_back(edge);
+  this->get_vertex_mut(edge.get_v1_idx()).add_edge(edge_idx, edge.get_v1_end());
+  this->get_vertex_mut(edge.get_v2_idx()).add_edge(edge_idx, edge.get_v2_end());
 }
 
 void VariationGraph::add_edge(std::size_t v1, VertexEnd v1_end, std::size_t v2, VertexEnd v2_end) {
@@ -661,6 +710,16 @@ void VariationGraph::add_edge(std::size_t v1, VertexEnd v1_end, std::size_t v2, 
   this->edges.push_back(Edge(v1, v1_end, v2, v2_end));
   this->get_vertex_mut(v1).add_edge(edge_idx, v1_end);
   this->get_vertex_mut(v2).add_edge(edge_idx, v2_end);
+}
+
+void VariationGraph::add_path(const path_t& path) {
+  std::string fn_name = std::format("[povu::bidirected::{}]", __func__);
+
+  if (this->paths.find(path.id) != this->paths.end()) {
+    throw std::invalid_argument(std::format("{} path id {} already exists in the graph.", fn_name, path.id));
+  }
+
+  this->paths[path.id] = path_t{path.name, path.id, path.is_circular};
 }
 
 void VariationGraph::set_min_id(std::size_t min_id) {
@@ -671,9 +730,373 @@ void VariationGraph::set_max_id(std::size_t max_id) {
   this->max_id = max_id;
 }
 
+
+
+/**
+  * Tarjan's algorithm for finding strongly connected components
+  *
+  * @param vg
+  * @return
+ */
+void scc_from_tip(const VariationGraph &vg, std::unordered_set<id_t> &visited,
+                  std::unordered_set<id_t> &explored,
+                  std::vector<std::size_t> &low_link,
+                  std::size_t &vertex_count,
+                  std::size_t &pre_visit_counter,
+                std::size_t tip) {
+  std::string fn_name = std::format("[povu::bidirected::{}]", __func__);
+
+  std::stack<side_n_id_t> s;
+
+  vg.get_vertex(tip).get_edges_l().size() == 0 ? s.push({VertexEnd::l, tip}) : s.push({VertexEnd::r, tip});
+  visited.insert(tip);
+
+  while (!s.empty()) {
+    auto [side, v] = s.top();
+    low_link[v] = pre_visit_counter++;
+
+    bool is_vtx_explored{true};
+
+    if (explored.find(v) != explored.end()) {
+      std::cerr << fn_name << " ERROR: vertex " << v << " already explored\n";
+      s.pop();
+      continue;
+    }
+
+    Vertex const& v_ref = vg.get_vertex(v);
+    std::set<std::size_t> out_edges = side == VertexEnd::l ? v_ref.get_edges_r() : v_ref.get_edges_l();
+
+    for (std::size_t e_idx : out_edges) {
+      id_t adj_v = vg.get_edge(e_idx).get_other_vertex(v).v_idx;
+      if (adj_v != v && visited.find(adj_v) == visited.end()) {
+        s.push({ vg.get_edge(e_idx).get_other_vertex(v).v_end , adj_v});
+        visited.insert(adj_v);
+        is_vtx_explored = false;
+      }
+    }
+
+    if (is_vtx_explored) {
+      explored.insert(v);
+      s.pop();
+      vertex_count++;
+
+      for (std::size_t e_idx : out_edges) {
+        id_t adj_v = vg.get_edge(e_idx).get_other_vertex(v).v_idx;
+        low_link[v] = std::min(low_link[v], low_link[adj_v]);
+      }
+    }
+  }
+}
+
+
+void scc(const VariationGraph &vg, const std::vector<std::size_t>& tips) {
+  std::string fn_name = std::format("[povu::bidirected::{}]", __func__);
+
+  // a vector of low link values i.e. the smallest vertex id reachable from the
+  // current vertex
+  // low_llink[i] is the low link value of vertex i
+  // low_link[i] = min(dfs_num[i], min(low_link[j] for j in adjacents[i]))
+  std::vector<std::size_t> low_link(vg.size(), core::constants::UNDEFINED_SIZE_T);
+
+  std::unordered_set<id_t> visited, explored;
+  std::stack<side_n_id_t> s;
+  std::size_t vertex_count{};
+  std::size_t pre_visit_counter {};
+
+  for (std::size_t t : tips) {
+    if (visited.find(t) == visited.end()) {
+      scc_from_tip(vg, visited, explored, low_link, vertex_count, pre_visit_counter, t);
+    }
+  }
+
+  // scc_map for each low link value, store the vertices with that low link value
+  std::map<std::size_t, std::vector<std::size_t>> scc_map;
+  for (std::size_t i{}; i < low_link.size(); ++i) {
+
+    if (low_link[i] == core::constants::UNDEFINED_SIZE_T) {
+      std::cerr << fn_name << " ERROR: low link value for vertex " << i << " is undefined\n";
+      exit(1);
+    }
+
+    if (scc_map.find(low_link[i]) == scc_map.end()) {
+      scc_map[low_link[i]] = std::vector<std::size_t>{i};
+    } else {
+      scc_map[low_link[i]].push_back(i);
+    }
+  }
+}
+
+std::size_t dfs(const VariationGraph &vg) {
+  std::string fn_name = std::format("[povu::bidirected::{}]", __func__);
+
+  std::size_t vertex_count {};
+
+  std::unordered_set<id_t> visited, explored;
+  std::stack<id_t> s;
+
+  std::size_t f = *vg.graph_start_nodes().begin();
+  s.push(f);
+  visited.insert(f);
+
+  auto update = [&](id_t e_idx, id_t curr_v, bool &is_vtx_explored) {
+    id_t adj_v = vg.get_edge(e_idx).get_other_vertex(curr_v).v_idx;
+    if (adj_v != curr_v && visited.find(adj_v) == visited.end()) {
+      s.push(adj_v);
+      visited.insert(adj_v);
+      is_vtx_explored = false;
+    }
+  };
+
+  while (!s.empty()) {
+    id_t v = s.top();
+    bool is_vtx_explored{true};
+
+    if (explored.find(v) != explored.end()) {
+      std::cerr << fn_name << " ERROR: vertex " << v << " already explored\n";
+      s.pop();
+      continue;
+    }
+
+    std::set<std::size_t> const& e_l = vg.get_vertex(v).get_edges_l();
+    std::set<std::size_t> const& e_r = vg.get_vertex(v).get_edges_r();
+
+    for (auto e: e_l) { update(e, v, is_vtx_explored); }
+    for (auto e: e_r) { update(e, v, is_vtx_explored); }
+
+    if (is_vtx_explored) {
+      explored.insert(v);
+      s.pop();
+      vertex_count++;
+    }
+  }
+
+  std::cerr << fn_name << " " << vertex_count << " " << vg.size() << std::endl;
+
+  return vertex_count;
+}
+
+std::vector<std::size_t> sort(const VariationGraph &vg) {
+  std::string fn_name = std::format("[povu::bidirected::{}]", __func__);
+
+  std::unordered_set<std::size_t> starts { vg.graph_start_nodes() };
+  std::unordered_set<std::size_t> ends { vg.graph_end_nodes() };
+
+  // left and right side degrees
+  std::vector<std::pair<std::size_t, std::size_t>> deg;
+  deg.reserve(vg.size());
+
+  for (id_t i = 0; i < vg.size(); ++i) {
+    deg.push_back(std::make_pair(vg.get_vertex(i).get_edges_l().size(), vg.get_vertex(i).get_edges_r().size()));
+  }
+
+  std::set<std::size_t> seen; // seen vertices TODO: do we need seen edges?
+  std::vector<std::size_t> sort_order(vg.size(), core::constants::UNDEFINED_SIZE_T);
+
+  // a pair of id and sort order
+  std::vector<std::pair<id_t, id_t>> sort_v;
+  sort_v.reserve(vg.size());
+
+  // the side is the side from which the vertex was/would have been reached
+  // the vertex is the vertex id
+  std::deque<side_n_id_t> q;
+  for (id_t idx : starts) {  q.push_back({ deg[idx].first == 0 ? VertexEnd::l : VertexEnd::r , idx}); }
+
+  id_t counter {};
+
+  while (!q.empty()) {
+    auto [side, v] = q.front();
+    q.pop_front();
+
+    if (seen.find(v) != seen.end()) { continue; }
+
+    sort_v.push_back(std::make_pair(v, counter));
+    sort_order.at(v) = counter;
+    ++counter;
+
+    Vertex const& v_ref = vg.get_vertex(v);
+    std::set<std::size_t> out_edges = side == VertexEnd::l ? v_ref.get_edges_r() : v_ref.get_edges_l();
+
+    // TODO: what if you reach the same vertex from different sides therefore affecting its degree?
+    for (std::size_t e_idx: out_edges) {
+      auto [side_, v_] = vg.get_edge(e_idx).get_other_vertex(v);
+
+      if (v_ == v) { continue; } // self loop
+
+      std::size_t d = side_ == VertexEnd::l ? --deg.at(v_).first : --deg.at(v_).second;
+
+      std::set<std::size_t> const& eee = side_ == VertexEnd::l ? vg.get_vertex(v_).get_edges_l() : vg.get_vertex(v_).get_edges_r();
+
+      if (d == 0 && seen.find(v_) == seen.end()) {
+        q.push_front({ side_, v_ });
+        seen.insert(v);
+      }
+    }
+  }
+
+  if (vg.size() != counter + 1) {
+    std::cerr << std::format("{} ERROR: graph size {} not equal to vertices found {}", fn_name, vg.size(), counter + 1)
+              << std::endl;
+    exit(1);
+  }
+
+  return sort_order;
+}
+
+
+std::map<id_t, component> VariationGraph::count_components(const core::config& app_config) {
+  std::string fn_name = std::format("[povu::bidirected::{}]", __func__);
+
+  if (app_config.verbosity() > 4) {
+    std::cerr << fn_name << std::endl;
+  }
+
+  std::unordered_set<id_t> visited, explored;
+  std::size_t component_count {};
+  std::stack<id_t> s;
+
+  s.push(0);
+  visited.insert(0);
+
+  std::map<id_t, component> component_map;
+
+  auto update = [&](id_t e_idx, id_t curr_v, bool& is_vtx_explored) {
+    id_t adj_v = this->get_edge(e_idx).get_other_vertex(curr_v).v_idx;
+    if (adj_v != curr_v && visited.find(adj_v) == visited.end()) {
+      s.push(adj_v);
+      visited.insert(adj_v);
+      is_vtx_explored = false;
+    }
+  };
+
+  std::unordered_set<std::size_t> const& hap_starts = this->find_haplotype_start_nodes();
+  std::unordered_set<std::size_t> const& hap_ends = this->find_haplotype_end_nodes();
+
+  bidirected::VariationGraph curr_vg;
+  std::set<std::size_t> curr_paths;
+  std::set<std::size_t> curr_edges;
+
+  std::map<std::size_t, std::size_t> vertex_map; // old to new vertex indexes
+
+  while (!s.empty()) {
+    id_t v = s.top();
+    bool is_vtx_explored { true };
+
+    std::set<std::size_t> const& e_l = this->get_vertex(v).get_edges_l();
+    std::set<std::size_t> const& e_r = this->get_vertex(v).get_edges_r();
+
+    for (auto e: e_l) { update(e, v, is_vtx_explored); }
+    for (auto e: e_r) { update(e, v, is_vtx_explored); }
+
+    if (is_vtx_explored) {
+      explored.insert(v);
+      s.pop();
+
+      for (auto p : this->get_vertex(v).get_paths()) {
+        curr_paths.insert(p.path_id);
+      }
+
+      std::size_t v_ = curr_vg.add_vertex(this->get_vertex(v));
+      Vertex& v_mut = curr_vg.get_vertex_mut(v_);
+      v_mut.clear_edges();
+      v_mut.set_handle(v_+1);
+      vertex_map[v] = v_;
+
+      if (component_map.find(component_count) == component_map.end() ) {
+        component_map[component_count] = component(component_count);
+      }
+
+      if (e_l.empty() || e_r.empty()) { // v is a tip
+        // component_map.at(component_count).tips.insert(v);
+        if (hap_starts.find(v) != hap_starts.end()) {
+          component_map.at(component_count).starts.insert(v_);
+          curr_vg.add_graph_start_node(v_);
+        }
+        else if (hap_ends.find(v) != hap_ends.end()) {
+          component_map.at(component_count).ends.insert(v_);
+          curr_vg.add_graph_end_node(v_);
+        }
+        else {
+          component_map.at(component_count).orphan_tips.insert(v_);
+        }
+      }
+      else { // v is not a tip
+        if (hap_starts.find(v) != hap_starts.end() || hap_ends.find(v) != hap_ends.end() ) {
+          // v is a non-tip haplotype start
+          component_map.at(component_count).non_tip_hap_starts.insert(v_);
+        }
+      }
+
+      for (auto e: e_l) { curr_edges.insert(e); }
+      for (auto e: e_r) { curr_edges.insert(e); }
+
+      component_map.at(component_count).vertices.push_back(v);
+    }
+
+    if (s.empty()) {
+      // add edges to curr_vg
+      //std::cerr << fn_name << " edges b4 " << this->edges.size() << " found " << curr_edges.size() << std::endl;
+
+      for (auto e: curr_edges) {
+
+        if (false) {
+          std::cerr << "adding edge "
+            //<< e
+          << " v1: "        << this->get_edge(e).get_v1_idx()
+                  << " v1n: "       << vertex_map[this->get_edge(e).get_v1_idx()]
+                  << " v1_end: "    << this->get_edge(e).get_v1_end()
+          << " v2 "         << this->get_edge(e).get_v2_idx()
+                  << " v2n: "       << vertex_map[this->get_edge(e).get_v2_idx()]
+                  << " v2_end: "    << this->get_edge(e).get_v2_end()
+                  << std::endl;
+        }
+
+        curr_vg.add_edge(
+          vertex_map[this->get_edge(e).get_v1_idx()], this->get_edge(e).get_v1_end(),
+          vertex_map[this->get_edge(e).get_v2_idx()], this->get_edge(e).get_v2_end());
+      }
+      curr_edges.clear();
+
+      // add paths to curr_vg
+      for (auto p: curr_paths) {
+        curr_vg.add_path(this->get_path(p));
+      }
+      curr_paths.clear();
+
+      component_map.at(component_count).vg = curr_vg;
+
+      bidirected::dfs(curr_vg);
+      bidirected::sort(curr_vg);
+
+      ++component_count;
+      curr_vg = bidirected::VariationGraph();
+
+      for (id_t i = 0; i < this->size(); ++i) {
+        if (explored.find(i) == explored.end()) {
+          s.push(i);
+          break;
+        }
+      }
+    }
+  }
+
+  if (false) {
+    std::cerr << "cc " << component_count << "\n";
+
+    for (const auto& [k, v]: component_map) {
+      std::cerr << "component " << k << ": ";
+      std::cerr << v << "\n\n";
+    }
+  }
+
+  return component_map;
+}
+
+
 void VariationGraph::sort() {
-  std::unordered_set<id_t> starts { find_graph_start_nodes() };
-  std::unordered_set<id_t> ends { find_graph_end_nodes() };
+  std::string fn_name = std::format("[povu::bidirected::{}]", __func__);
+
+  std::unordered_set<std::size_t> starts { this->graph_start_nodes() };
+  std::unordered_set<std::size_t> ends { this->graph_end_nodes() };
 
   // left and right side degrees
   std::vector<std::pair<std::size_t, std::size_t>> deg;
@@ -688,9 +1111,9 @@ void VariationGraph::sort() {
 
   std::deque<side_n_id_t> q;
 
-  std::vector<id_t> sort_order(this->size(), 0);
+  std::vector<id_t> sort_order(this->size(), core::constants::UNDEFINED_SIZE_T);
 
-  for (id_t idx : starts) { q.push_back({ VertexEnd::l, idx}); }
+  for (id_t idx : starts) {  q.push_back({ deg[idx].first == 0 ? VertexEnd::l : VertexEnd::r , idx}); }
 
   // a pair of id and sort order
   std::vector<std::pair<id_t, id_t>> sort_v {};
@@ -704,6 +1127,7 @@ void VariationGraph::sort() {
 
     sort_v.push_back(std::make_pair(v, counter));
     sort_order.at(v) = counter;
+
     ++counter;
 
     Vertex const& v_ref = this->get_vertex(v);
@@ -727,8 +1151,35 @@ void VariationGraph::sort() {
     }
   }
 
+  std::cerr << std::format("{} Regenerating graph with sort order\n", fn_name);
+
+  if (this->size() != counter + 1) {
+    std::cerr << std::format("{} ERROR: graph size {} not equal to vertices found {}", fn_name, this->size(), counter + 1)
+              << std::endl;
+    //exit(1);
+  }
+
   std::vector<Vertex> new_vertices(this->size());
   std::vector<Edge> new_edges;
+
+  std::unordered_set<std::size_t> const& h_start_nodes = this->find_haplotype_start_nodes();
+  std::unordered_set<std::size_t> const& h_end_nodes = this->find_haplotype_end_nodes();
+
+  std::unordered_set<std::size_t> const& g_start_nodes = this->graph_start_nodes();
+  std::unordered_set<std::size_t> const& g_end_nodes = this->graph_end_nodes();
+
+
+  for (auto x: h_start_nodes) {
+    std::cerr << "h_start_nodes: " << x << std::endl;
+  }
+
+  std::unordered_set<std::size_t> new_haplotype_start_nodes;
+  std::unordered_set<std::size_t> new_haplotype_end_nodes;
+
+  std::unordered_set<std::size_t> new_graph_start_nodes;
+  std::unordered_set<std::size_t> new_graph_end_nodes;
+
+
   // copy edges into new edges
   new_edges.reserve(this->edges.size());
   for (std::size_t i{}; i < this->edges.size(); i++) {
@@ -736,7 +1187,31 @@ void VariationGraph::sort() {
   }
 
   for (std::size_t i{}; i < this->size(); i++) {
+    std::cerr << "i: " << i << " sort order " << sort_order[i] << std::endl;
+
     new_vertices[sort_order[i]] = this->vertices[i];
+    new_vertices[sort_order[i]].set_handle(sort_order[i] + 1);
+
+    if (g_start_nodes.count(i)) {
+      std::cerr << "g found " << i << " in start nodes sort id: " << sort_order[i] << std::endl;
+      new_graph_start_nodes.insert(sort_order[i]);
+    }
+    if (g_end_nodes.count(i)) {
+      std::cerr << "g found " << i << " in end nodes sort id: " << sort_order[i] << std::endl;
+      new_graph_end_nodes.insert(sort_order[i]);
+    }
+
+    if (h_start_nodes.count(i)) {
+      std::cerr << "found " << i << " in start nodes sort id: " << sort_order[i] << std::endl;
+      new_haplotype_start_nodes.insert(sort_order[i]);
+    }
+
+    if (h_end_nodes.count(i)) {
+      std::cerr << "found " << i << " in end nodes sort id: "  << sort_order[i] << std::endl;
+      new_haplotype_end_nodes.insert(sort_order[i]);
+    }
+
+
     Vertex &v = new_vertices[sort_order[i]];
 
     for (std::size_t e_l : v.get_edges_l()) {
@@ -749,7 +1224,6 @@ void VariationGraph::sort() {
         new_edges[e_l].set_v2_idx(sort_order[i]);
       }
     }
-
 
     for (std::size_t e_r : v.get_edges_r()) {
       if (this->edges[e_r].get_v1_idx() == i) {
@@ -765,7 +1239,10 @@ void VariationGraph::sort() {
 
   this->vertices = new_vertices;
   this->edges = new_edges;
-
+  this->haplotype_start_nodes = new_haplotype_start_nodes;
+  this->haplotype_end_nodes = new_haplotype_end_nodes;
+  this->graph_start_nodes_ = new_graph_start_nodes;
+  this->graph_end_nodes_ = new_graph_end_nodes;
   /*
     // print sort_v
     std::cerr << "sort_v: ";
@@ -816,6 +1293,14 @@ std::string VariationGraph::get_sequence(const handlegraph::handle_t& handle) co
 
 std::size_t VariationGraph::get_node_count() const {
     return this->size();
+}
+
+void VariationGraph::add_graph_start_node(std::size_t node_id) {
+  this->graph_start_nodes_.insert(node_id);
+}
+
+void VariationGraph::add_graph_end_node(std::size_t node_id) {
+  this->graph_end_nodes_.insert(node_id);
 }
 
 void VariationGraph::add_haplotype_start_node(std::size_t node_id) {
@@ -884,11 +1369,10 @@ VariationGraph::create_handle(const std::string& sequence, const handlegraph::ni
 //  MutablePathHandleGraph
 // -----------------------
 
-handlegraph::path_handle_t
-VariationGraph::create_path_handle(const std::string& name, bool is_circular) {
+handlegraph::path_handle_t VariationGraph::create_path_handle(const std::string& name, bool is_circular) {
   handlegraph::path_handle_t h;
   std::size_t path_id = this->paths.size();
-  this->paths.push_back(path_t({name, path_id, is_circular}));
+  this->add_path(path_t({name, path_id, is_circular}));
 
   strncpy(h.data, std::to_string(path_id).c_str(), sizeof(h.data));
 
