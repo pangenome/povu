@@ -705,11 +705,13 @@ void VariationGraph::add_edge(const Edge& edge) {
   this->get_vertex_mut(edge.get_v2_idx()).add_edge(edge_idx, edge.get_v2_end());
 }
 
-void VariationGraph::add_edge(std::size_t v1, VertexEnd v1_end, std::size_t v2, VertexEnd v2_end) {
+std::size_t VariationGraph::add_edge(std::size_t v1, VertexEnd v1_end, std::size_t v2, VertexEnd v2_end) {
   std::size_t edge_idx = this->edges.size();
   this->edges.push_back(Edge(v1, v1_end, v2, v2_end));
   this->get_vertex_mut(v1).add_edge(edge_idx, v1_end);
   this->get_vertex_mut(v2).add_edge(edge_idx, v2_end);
+
+  return edge_idx;
 }
 
 void VariationGraph::add_path(const path_t& path) {
@@ -738,7 +740,8 @@ void VariationGraph::set_max_id(std::size_t max_id) {
   * @param vg
   * @return
  */
-void scc_from_tip(const VariationGraph &vg, std::unordered_set<id_t> &visited,
+void scc_from_tip(const VariationGraph &vg,
+                  std::unordered_set<id_t> &visited,
                   std::unordered_set<id_t> &explored,
                   std::vector<std::size_t> &low_link,
                   std::size_t &vertex_count,
@@ -763,8 +766,12 @@ void scc_from_tip(const VariationGraph &vg, std::unordered_set<id_t> &visited,
       continue;
     }
 
-    Vertex const& v_ref = vg.get_vertex(v);
-    std::set<std::size_t> out_edges = side == VertexEnd::l ? v_ref.get_edges_r() : v_ref.get_edges_l();
+    // Vertex const& v_ref = vg.get_vertex(v);
+    const std::set<std::size_t> &out_edges = side == VertexEnd::l ?
+      vg.get_vertex(v).get_edges_r() :
+      vg.get_vertex(v).get_edges_l();
+
+    // std::cerr << fn_name << " Tip " << v << " Size of out_edges " << out_edges.size() << std::endl;
 
     for (std::size_t e_idx : out_edges) {
       id_t adj_v = vg.get_edge(e_idx).get_other_vertex(v).v_idx;
@@ -815,7 +822,7 @@ void scc(const VariationGraph &vg, const std::vector<std::size_t>& tips) {
 
     if (low_link[i] == core::constants::UNDEFINED_SIZE_T) {
       std::cerr << fn_name << " ERROR: low link value for vertex " << i << " is undefined\n";
-      exit(1);
+      // exit(1);
     }
 
     if (scc_map.find(low_link[i]) == scc_map.end()) {
@@ -942,7 +949,6 @@ std::vector<std::size_t> sort(const VariationGraph &vg) {
   return sort_order;
 }
 
-
 std::map<id_t, component> VariationGraph::count_components(const core::config& app_config) {
   std::string fn_name = std::format("[povu::bidirected::{}]", __func__);
 
@@ -977,6 +983,8 @@ std::map<id_t, component> VariationGraph::count_components(const core::config& a
 
   std::map<std::size_t, std::size_t> vertex_map; // old to new vertex indexes
 
+ std::vector<std::size_t> tips;
+
   while (!s.empty()) {
     id_t v = s.top();
     bool is_vtx_explored { true };
@@ -996,6 +1004,11 @@ std::map<id_t, component> VariationGraph::count_components(const core::config& a
       }
 
       std::size_t v_ = curr_vg.add_vertex(this->get_vertex(v));
+
+      if (v_ == 284) {
+        std::cerr << fn_name << " vertex " << v << " -> " << v_ << std::endl;
+      }
+
       Vertex& v_mut = curr_vg.get_vertex_mut(v_);
       v_mut.clear_edges();
       v_mut.set_handle(v_+1);
@@ -1007,6 +1020,8 @@ std::map<id_t, component> VariationGraph::count_components(const core::config& a
 
       if (e_l.empty() || e_r.empty()) { // v is a tip
         // component_map.at(component_count).tips.insert(v);
+        tips.push_back(v_);
+
         if (hap_starts.find(v) != hap_starts.end()) {
           component_map.at(component_count).starts.insert(v_);
           curr_vg.add_graph_start_node(v_);
@@ -1035,24 +1050,18 @@ std::map<id_t, component> VariationGraph::count_components(const core::config& a
     if (s.empty()) {
       // add edges to curr_vg
       //std::cerr << fn_name << " edges b4 " << this->edges.size() << " found " << curr_edges.size() << std::endl;
+ std::cerr << fn_name << " component " << component_count << " size " << curr_vg.size() << std::endl;
 
       for (auto e: curr_edges) {
 
-        if (false) {
-          std::cerr << "adding edge "
-            //<< e
-          << " v1: "        << this->get_edge(e).get_v1_idx()
-                  << " v1n: "       << vertex_map[this->get_edge(e).get_v1_idx()]
-                  << " v1_end: "    << this->get_edge(e).get_v1_end()
-          << " v2 "         << this->get_edge(e).get_v2_idx()
-                  << " v2n: "       << vertex_map[this->get_edge(e).get_v2_idx()]
-                  << " v2_end: "    << this->get_edge(e).get_v2_end()
-                  << std::endl;
-        }
 
-        curr_vg.add_edge(
-          vertex_map[this->get_edge(e).get_v1_idx()], this->get_edge(e).get_v1_end(),
-          vertex_map[this->get_edge(e).get_v2_idx()], this->get_edge(e).get_v2_end());
+        std::size_t e_idx = curr_vg.add_edge(vertex_map[this->get_edge(e).get_v1_idx()],
+                         this->get_edge(e).get_v1_end(),
+                         vertex_map[this->get_edge(e).get_v2_idx()],
+                         this->get_edge(e).get_v2_end());
+
+
+
       }
       curr_edges.clear();
 
@@ -1064,8 +1073,11 @@ std::map<id_t, component> VariationGraph::count_components(const core::config& a
 
       component_map.at(component_count).vg = curr_vg;
 
-      bidirected::dfs(curr_vg);
-      bidirected::sort(curr_vg);
+      // bidirected::dfs(curr_vg);
+      // bidirected::sort(curr_vg);
+
+      scc(curr_vg, tips);
+      tips.clear();
 
       ++component_count;
       curr_vg = bidirected::VariationGraph();

@@ -148,6 +148,8 @@ int main(int argc, char *argv[]) {
     std::cerr << std::format("{} Number of components: {}\n", fn_name, components.size());
   }
 
+  return 0;
+
   for (auto const &[_, v] : components) {
     bar(app_config, v.vg);
     break;

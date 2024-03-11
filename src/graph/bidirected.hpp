@@ -264,7 +264,7 @@ public:
 
 
   void add_edge(const Edge& edge); // handles the case where one or both of the vertices are invalid
-  void add_edge(std::size_t v1, VertexEnd v1_end, std::size_t v2, VertexEnd v2_end);
+  std::size_t add_edge(std::size_t v1, VertexEnd v1_end, std::size_t v2, VertexEnd v2_end);
 
   void add_path(const path_t& path);
 
