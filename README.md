@@ -1,6 +1,32 @@
 # povu
 Variant caller based on cycle equivalence
 
+## Install
+
+### Compile from source
+
+1. Fetch the source code
+```
+git clone --recursive git@github.com:pangenome/domibubble.git
+```
+
+2. Choose a suitable compilation method
+
+Compile for development (with debug symbols)
+```
+cmake -DCMAKE_BUILD_TYPE=Debug  -H. -Bbuild && cmake --build build -- -j 3
+```
+
+Compile for use (optimized binary)
+```
+cmake -H. -Bbuild && cmake --build build -- -j 3
+```
+
+3. Check that the binary is installed in `./bin`
+```
+./bin/povu
+```
+
 # Input
 Input GFA
 
