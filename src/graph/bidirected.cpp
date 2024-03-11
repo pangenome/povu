@@ -4,6 +4,7 @@
 #include <iostream>
 #include <iterator>
 #include <map>
+#include <ostream>
 #include <stack>
 #include <deque>
 #include <string>
@@ -722,6 +723,10 @@ void VariationGraph::add_path(const path_t& path) {
   this->paths[path.id] = path_t{path.name, path.id, path.is_circular};
 }
 
+void VariationGraph::set_raw_paths(std::vector<std::vector<side_n_id_t>> &raw_paths) {
+  this->raw_paths = raw_paths;
+}
+
 void VariationGraph::set_min_id(std::size_t min_id) {
   this->min_id = min_id;
 }
@@ -966,6 +971,39 @@ std::vector<std::size_t> sort(const VariationGraph &vg) {
   return sort_order;
 }
 
+void VariationGraph::validate_haplotype_paths() {
+
+  for (auto raw_path : this->raw_paths) {
+    for (std::size_t i{}; i < raw_path.size() - 1; i++) {
+      auto [s1, v1] = raw_path[i];
+      auto [s2, v2] = raw_path[i+1];
+
+      std::set<std::size_t> const &s1_edges =
+        s1 == VertexEnd::r ? this->get_vertex(v1).get_edges_l() : this->get_vertex(v1).get_edges_r();
+
+      std::set<std::size_t> const &s2_edges =
+        s2 == VertexEnd::r ? this->get_vertex(v2).get_edges_l() : this->get_vertex(v2).get_edges_r();
+
+      // look in their intersection
+
+      for (auto e_idx : s1_edges) {
+        Edge const& e = this->get_edge(e_idx);
+        bool v_valid =
+          (e.get_v1_idx() == v1 && e.get_v2_idx() == v2) ||
+           (e.get_v1_idx() == v2 && e.get_v2_idx() == v1);
+        bool s_valid =
+          (e.get_v1_end() == complement(s1) && e.get_v2_end() == complement(s2)) ||
+          (e.get_v1_end() == complement(s1) && e.get_v2_end() == complement(s2));
+
+
+        s_valid && v_valid;
+      }
+
+    }
+  }
+
+}
+
 std::map<id_t, component> VariationGraph::count_components(const core::config& app_config) {
   std::string fn_name = std::format("[povu::bidirected::{}]", __func__);
   if (app_config.verbosity() > 4) { std::cerr << fn_name << std::endl; }
@@ -1092,9 +1130,11 @@ std::map<id_t, component> VariationGraph::count_components(const core::config& a
         tips.push_back(hs);
       }
 
-      //std::cerr << "\n" << fn_name << "Tips: \n";
-      //utils::print_with_comma(std::cerr, tips, ',');
-      //std::cerr << "\n";
+      // std::cerr << "\n" << fn_name << "Tips: \n";
+      // utils::print_with_comma(std::cerr, tips, ',');
+      // std::cerr << "\n";
+
+      std::cerr << fn_name << " component id: " << component_count << std::endl;
 
       bidirected::dfs(curr_vg, tips); // for debugging/validating
       scc(curr_vg, tips);

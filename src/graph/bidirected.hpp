@@ -183,7 +183,9 @@ class VariationGraph {
   // TODO: make this a map for easier work with components
   // we want unique path IDs for the entire graph
   std::map<id_t, path_t> paths;
-  //std::vector<path_t> paths;
+  // std::vector<path_t> paths;
+
+  std::vector<std::vector<side_n_id_t>> raw_paths;
 
   // the sort order of the vertices at idx i is sort_order[i]
   //std::vector<std::size_t> sort_order;
@@ -249,6 +251,7 @@ public:
   // TODO: maybe nice to have?
   //std::set<std::size_t> get_edges(std::size_t vertex_index, VertexEnd vertex_end) const;
 
+  void validate_haplotype_paths();
 
   // ---------------------
   // setter(s) & modifiers
@@ -266,7 +269,8 @@ public:
   void add_edge(const Edge& edge); // handles the case where one or both of the vertices are invalid
   std::size_t add_edge(std::size_t v1, VertexEnd v1_end, std::size_t v2, VertexEnd v2_end);
 
-  void add_path(const path_t& path);
+  void add_path(const path_t &path);
+  void set_raw_paths(std::vector<std::vector<side_n_id_t>> &raw_paths);
 
   void add_graph_start_node(std::size_t node_id);
   void add_graph_end_node(std::size_t node_id);

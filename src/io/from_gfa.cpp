@@ -381,35 +381,54 @@ bidirected::VariationGraph to_vg(const char* filename, const core::config& app_c
   // ---------
   // do this by associating each node with a path
   if (path_count > 0) {
+    std::vector<std::vector<bidirected::side_n_id_t>> raw_paths;
+    std::vector<bidirected::side_n_id_t> raw_path;
+
     gg.for_each_path_line_in_file(
-      filename,
-      [&](const gfak::path_elem& path) {
-        handlegraph::path_handle_t p_h =
-          vg.create_path_handle(path.name,
-                                *std::begin(path.segment_names) == *std::rbegin(path.segment_names));
-        path_pos = 0;
+        filename, [&](const gfak::path_elem &path) {
+          handlegraph::path_handle_t p_h = vg.create_path_handle(
+              path.name, *std::begin(path.segment_names) ==
+                             *std::rbegin(path.segment_names));
+          path_pos = 0;
 
-        handlegraph::nid_t start_id = std::stoull(*std::begin(path.segment_names)) - offset_value;
-        handlegraph::nid_t end_id = std::stoull(*std::rbegin(path.segment_names)) - offset_value;
+          handlegraph::nid_t start_id =
+              std::stoull(*std::begin(path.segment_names)) - offset_value;
+          handlegraph::nid_t end_id =
+              std::stoull(*std::rbegin(path.segment_names)) - offset_value;
 
-        vg.add_haplotype_start_node(start_id);
-        vg.add_haplotype_stop_node(end_id);
+          vg.add_haplotype_start_node(start_id);
+          vg.add_haplotype_stop_node(end_id);
 
-        for (auto& s : path.segment_names) {
-          handlegraph::nid_t id = std::stoull(s) - offset_value;
+          for (std::size_t i{}; i < path.segment_names.size(); ++i) {
+            const std::string &s = path.segment_names[i];
+            bool orientation = path.orientations[i];
 
-          /*
-            this can be done through handleGraph's append_step but this is preferable in my
-            because it also sets the step value
-            which is usable for variant calling
-          */
+            handlegraph::nid_t id = std::stoull(s) - offset_value;
 
-          bidirected::Vertex& v = vg.get_vertex_mut(id);
-          v.add_path(std::stoll(p_h.data), path_pos);
+            bidirected::side_n_id_t side_n_id =
+                bidirected::side_n_id_t{orientation ? bidirected::VertexEnd::r
+                                                    : bidirected::VertexEnd::l,
+                                        std::stoull(s) - offset_value};
 
-          path_pos += v.get_label().length();
-        }
-      });
+            raw_path.push_back(side_n_id);
+
+
+            /*
+              this can be done through handleGraph's append_step but this is
+              preferable in my because it also sets the step value which is
+              usable for variant calling
+            */
+
+            bidirected::Vertex &v = vg.get_vertex_mut(id);
+            v.add_path(std::stoll(p_h.data), path_pos);
+
+            path_pos += v.get_label().length();
+          }
+          raw_paths.push_back(raw_path);
+          raw_path.clear();
+        });
+
+     vg.set_raw_paths(raw_paths);
   }
 
   //std::cout << "Paths added " << std::endl;
