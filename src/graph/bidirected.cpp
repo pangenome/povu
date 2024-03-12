@@ -47,6 +47,32 @@ std::ostream& operator<<(std::ostream& os, const component& comp) {
 }
 
 /*
+ * Orientation
+ * ------------
+ */
+// >> and << might be better than + and -
+std::ostream& operator<<(std::ostream& os, const orientation_t& o) {
+  switch (o) {
+  case orientation_t::forward:
+  os << "+";
+  break;
+  case orientation_t::reverse:
+  os << "-";
+  break;
+  }
+
+  return os;
+}
+
+/*
+ * id and orientation
+ * -----------------
+ */
+std::ostream& operator<<(std::ostream& os, const id_n_orientation_t& x) {
+  os << x.v_idx << x.orientation;
+  return os;
+}
+/*
  * VertexEnd
  * ---------
  */
@@ -185,6 +211,10 @@ const std::string& Vertex::get_handle() const {
   return this->handle;
 }
 
+const std::string& Vertex::get_name() const {
+  return this->name_;
+}
+
 const std::set<std::size_t>& Vertex::get_edges_l() const {
     return this->edges_l;
 }
@@ -229,6 +259,10 @@ void Vertex::set_handle(const std::string& handle) {
 }
 void Vertex::set_handle(id_t id) {
   this->handle = std::to_string(id);
+}
+
+void Vertex::set_name(const std::string& name) {
+  this->name_ = name;
 }
 
 /*
@@ -642,6 +676,9 @@ std::vector<path_t> VariationGraph::get_paths() const {
 const path_t& VariationGraph::get_path(std::size_t path_id) const {
   return this->paths.at(path_id);
 }
+std::size_t VariationGraph::get_path_count() const {
+  return this->paths.size();
+}
 
 void VariationGraph::dbg_print() {
   std::cerr << "VariationGraph: " << std::endl;
@@ -723,7 +760,7 @@ void VariationGraph::add_path(const path_t& path) {
   this->paths[path.id] = path_t{path.name, path.id, path.is_circular};
 }
 
-void VariationGraph::set_raw_paths(std::vector<std::vector<side_n_id_t>> &raw_paths) {
+void VariationGraph::set_raw_paths(std::vector<std::vector<id_n_orientation_t>> &raw_paths) {
   this->raw_paths = raw_paths;
 }
 
@@ -823,16 +860,28 @@ void scc(const VariationGraph &vg, const std::vector<std::size_t>& tips) {
   for (std::size_t t : tips) {
     if (visited.find(t) == visited.end()) {
       scc_from_tip(vg, visited, explored, low_link, vertex_count, pre_visit_counter, t);
+    } else {
+      std::cerr << fn_name << " ERROR: tip " << vg.get_vertex(t).get_name() << " already visited\n";
     }
   }
 
+
+  for (std::size_t i{}; i < low_link.size(); ++i) {
+    if (low_link[i] == core::constants::UNDEFINED_SIZE_T) {
+      std::cerr << std::format("{} Restart on {} ({})\n",
+                               fn_name, i, vg.get_vertex(i).get_name());
+      scc_from_tip(vg, visited, explored, low_link, vertex_count, pre_visit_counter, i);
+      // exit(1);
+    }
+  }
 
   // scc_map for each low link value, store the vertices with that low link value
   std::map<std::size_t, std::vector<std::size_t>> scc_map;
   for (std::size_t i{}; i < low_link.size(); ++i) {
 
     if (low_link[i] == core::constants::UNDEFINED_SIZE_T) {
-      std::cerr << std::format("{} ERROR: low link value for vertex {} is undefined\n", fn_name, i);
+      std::cerr << std::format("{} ERROR: low link value for vertex {} ({}) is undefined\n",
+                               fn_name, i, vg.get_vertex(i).get_name());
       // exit(1);
     }
 
@@ -896,7 +945,7 @@ std::size_t dfs(const VariationGraph &vg, const std::vector<std::size_t>& tips) 
 
   if (vertex_count != vg.size()) {
     std::cerr << fn_name << " ERROR: vertex_count " << vertex_count << " != vg.size() " << vg.size() << std::endl;
-    // exit(1)
+    exit(1);
   }
 
   //std::cerr << fn_name << " " << vertex_count << " " << vg.size() << std::endl;
@@ -971,54 +1020,78 @@ std::vector<std::size_t> sort(const VariationGraph &vg) {
   return sort_order;
 }
 
-void VariationGraph::validate_haplotype_paths() {
-
-  for (auto raw_path : this->raw_paths) {
+bool VariationGraph::validate_haplotype_paths() {
+  for (std::size_t path_idx{}; path_idx < this->raw_paths.size(); path_idx++) {
+    std::vector<bidirected::id_n_orientation_t> const &raw_path = this->raw_paths[path_idx];
     for (std::size_t i{}; i < raw_path.size() - 1; i++) {
-      auto [s1, v1] = raw_path[i];
-      auto [s2, v2] = raw_path[i+1];
+      bool x{false};
+      auto [v1, o1] = raw_path[i];
+      auto [v2, o2] = raw_path[i+1];
 
       std::set<std::size_t> const &s1_edges =
-        s1 == VertexEnd::r ? this->get_vertex(v1).get_edges_l() : this->get_vertex(v1).get_edges_r();
+        o1 == bidirected::orientation_t::forward ?
+        this->get_vertex(v1).get_edges_r() : this->get_vertex(v1).get_edges_l();
 
       std::set<std::size_t> const &s2_edges =
-        s2 == VertexEnd::r ? this->get_vertex(v2).get_edges_l() : this->get_vertex(v2).get_edges_r();
+        o2 == bidirected::orientation_t::forward ?
+        this->get_vertex(v2).get_edges_l() : this->get_vertex(v2).get_edges_r();
 
-      // look in their intersection
+      std::set<std::size_t> intersection; // shared edges between v1 and v2
+      std::set_intersection(s1_edges.begin(), s1_edges.end(),
+                            s2_edges.begin(), s2_edges.end(),
+                            std::inserter(intersection, intersection.begin()));
 
-      for (auto e_idx : s1_edges) {
+      for (std::size_t e_idx : intersection) {
         Edge const& e = this->get_edge(e_idx);
         bool v_valid =
           (e.get_v1_idx() == v1 && e.get_v2_idx() == v2) ||
-           (e.get_v1_idx() == v2 && e.get_v2_idx() == v1);
+          (e.get_v1_idx() == v2 && e.get_v2_idx() == v1);
+
+        VertexEnd s1 = o1 == bidirected::orientation_t::forward ? VertexEnd::r : VertexEnd::l;
+        VertexEnd s2 = o2 == bidirected::orientation_t::forward ? VertexEnd::l : VertexEnd::r;
+
         bool s_valid =
-          (e.get_v1_end() == complement(s1) && e.get_v2_end() == complement(s2)) ||
-          (e.get_v1_end() == complement(s1) && e.get_v2_end() == complement(s2));
+          (e.get_v1_end() == s1 && e.get_v2_end() == s2) ||
+          (e.get_v1_end() == s2 && e.get_v2_end() == s1);
 
-
-        s_valid && v_valid;
+        x = x || (s_valid && v_valid);
       }
 
+      if (!x) {
+        std::cerr << "ERROR: path " << path_idx << " is not valid at " << raw_path[i] << "," << raw_path[i+1] << std::endl;
+        //std::cerr << std::format("ERROR: path {} is not valid at {}, {}", path_idx, raw_path[i], raw_path[i+1] ) << std::endl;
+        exit(1);
+      }
     }
   }
 
+  return true;
 }
 
-std::map<id_t, component> VariationGraph::count_components(const core::config& app_config) {
+std::map<std::size_t, component> VariationGraph::count_components(const core::config& app_config) {
   std::string fn_name = std::format("[povu::bidirected::{}]", __func__);
   if (app_config.verbosity() > 4) { std::cerr << fn_name << std::endl; }
 
-  std::unordered_set<id_t> visited, explored;
-  std::size_t component_count {};
-  std::stack<id_t> s;
+  std::set<std::size_t> visited, explored;
+  std::size_t component_count{};
+  std::stack<std::size_t> s;
 
   s.push(0);
   visited.insert(0);
 
-  std::map<id_t, component> component_map;
+  std::map<std::size_t, component> component_map;
 
-  auto update = [&](id_t e_idx, id_t curr_v, bool& is_vtx_explored) {
-    id_t adj_v = this->get_edge(e_idx).get_other_vertex(curr_v).v_idx;
+  std::unordered_set<std::size_t> const& hap_starts = this->find_haplotype_start_nodes();
+  std::unordered_set<std::size_t> const& hap_ends = this->find_haplotype_end_nodes();
+
+  bidirected::VariationGraph curr_vg;
+  std::set<std::size_t> curr_paths;
+  std::set<std::size_t> curr_edges;
+  std::map<std::size_t, std::size_t> vertex_map; // old to new vertex indexes
+  std::vector<std::size_t> tips;
+
+  auto update = [&](std::size_t e_idx, std::size_t curr_v, bool& is_vtx_explored) {
+    std::size_t adj_v = this->get_edge(e_idx).get_other_vertex(curr_v).v_idx;
     if (adj_v != curr_v && visited.find(adj_v) == visited.end()) {
       s.push(adj_v);
       visited.insert(adj_v);
@@ -1026,30 +1099,15 @@ std::map<id_t, component> VariationGraph::count_components(const core::config& a
     }
   };
 
-  std::unordered_set<std::size_t> const& hap_starts = this->find_haplotype_start_nodes();
-  std::unordered_set<std::size_t> const& hap_ends = this->find_haplotype_end_nodes();
-
-  std::cerr << fn_name << "Hap starts:\n";
-  utils::print_with_comma(std::cerr, hap_starts, ',');
-  std::cerr << std::endl;
-
-  bidirected::VariationGraph curr_vg;
-  std::set<std::size_t> curr_paths;
-  std::set<std::size_t> curr_edges;
-
-  std::map<std::size_t, std::size_t> vertex_map; // old to new vertex indexes
-
-  std::vector<std::size_t> tips;
-
   while (!s.empty()) {
-    id_t v = s.top();
+    std::size_t v = s.top();
     bool is_vtx_explored { true };
 
     std::set<std::size_t> const& e_l = this->get_vertex(v).get_edges_l();
     std::set<std::size_t> const& e_r = this->get_vertex(v).get_edges_r();
 
-    for (auto e: e_l) { update(e, v, is_vtx_explored); }
-    for (auto e: e_r) { update(e, v, is_vtx_explored); }
+    for (std::size_t e_idx: e_l) { update(e_idx, v, is_vtx_explored); }
+    for (std::size_t e_idx: e_r) { update(e_idx, v, is_vtx_explored); }
 
     if (is_vtx_explored) {
       explored.insert(v);
@@ -1059,104 +1117,104 @@ std::map<id_t, component> VariationGraph::count_components(const core::config& a
         curr_paths.insert(p.path_id);
       }
 
-      std::size_t v_ = curr_vg.add_vertex(this->get_vertex(v));
-      Vertex& v_mut = curr_vg.get_vertex_mut(v_);
-      v_mut.clear_edges();
-      v_mut.set_handle(v_+1);
-      vertex_map[v] = v_;
-
-      if (component_map.find(component_count) == component_map.end() ) {
-        component_map[component_count] = component(component_count);
-      }
-
-      if (e_l.empty() || e_r.empty()) { // v is a tip
-        // component_map.at(component_count).tips.insert(v);
-        // tips.push_back(v_);
-
-        if (hap_starts.find(v) != hap_starts.end()) {
-          component_map.at(component_count).starts.insert(v_);
-          curr_vg.add_graph_start_node(v_);
+     std::size_t v_ = curr_vg.add_vertex(this->get_vertex(v));
+     Vertex& v_mut = curr_vg.get_vertex_mut(v_);
+     v_mut.clear_edges();
+     v_mut.set_handle(v_+1);
+     if (vertex_map.find(v) == vertex_map.end()) {
+        vertex_map[v] = v_;
+        if (v_ == 284) {
+          std::cerr << "component: " << component_count << " v " << v << " -> " << v_ << std::endl;
         }
-        else if (hap_ends.find(v) != hap_ends.end()) {
-          component_map.at(component_count).ends.insert(v_);
-          curr_vg.add_graph_end_node(v_);
-        }
-        else {
-          component_map.at(component_count).orphan_tips.insert(v_);
-        }
-      }
-      else { // v is not a tip
-        if (hap_starts.find(v) != hap_starts.end() || hap_ends.find(v) != hap_ends.end()) {
-          // v is a non-tip haplotype start
-          component_map.at(component_count).non_tip_hap_starts.insert(v_);
-        }
-      }
+        //
+     } else {
+       std::cerr << "ERROR: vertex_map already contains " << v << std::endl;
+     }
 
-      for (auto e: e_l) { curr_edges.insert(e); }
-      for (auto e: e_r) { curr_edges.insert(e); }
 
-      component_map.at(component_count).vertices.push_back(v);
+     if (component_map.find(component_count) == component_map.end() ) {
+       component_map[component_count] = component(component_count);
+     }
+
+     if (e_l.empty() || e_r.empty()) { // v is a tip
+       // component_map.at(component_count).tips.insert(v);
+       // tips.push_back(v_);
+
+       if (hap_starts.find(v) != hap_starts.end()) {
+         component_map.at(component_count).starts.insert(v_);
+         curr_vg.add_graph_start_node(v_);
+       }
+       else if (hap_ends.find(v) != hap_ends.end()) {
+         component_map.at(component_count).ends.insert(v_);
+         curr_vg.add_graph_end_node(v_);
+       }
+       else {
+         component_map.at(component_count).orphan_tips.insert(v_);
+       }
+     }
+     else { // v is not a tip
+       if (hap_starts.find(v) != hap_starts.end() || hap_ends.find(v) != hap_ends.end()) {
+         // v is a non-tip haplotype start
+         component_map.at(component_count).non_tip_hap_starts.insert(v_);
+       }
+     }
+
+     for (auto e: e_l) { curr_edges.insert(e); }
+     for (auto e: e_r) { curr_edges.insert(e); }
+
+     component_map.at(component_count).vertices.push_back(v);
     }
 
     if (s.empty()) {
       for (auto e: curr_edges) {
         std::size_t e_idx =
-          curr_vg.add_edge(
-            vertex_map[this->get_edge(e).get_v1_idx()], this->get_edge(e).get_v1_end(),
-            vertex_map[this->get_edge(e).get_v2_idx()], this->get_edge(e).get_v2_end());
+          curr_vg.add_edge(vertex_map[this->get_edge(e).get_v1_idx()], this->get_edge(e).get_v1_end(),
+                           vertex_map[this->get_edge(e).get_v2_idx()], this->get_edge(e).get_v2_end());
       }
-      curr_edges.clear();
+     curr_edges.clear();
 
-      // add paths to curr_vg
-      for (auto p: curr_paths) {
-        curr_vg.add_path(this->get_path(p));
+     // add paths to curr_vg
+     for (auto p: curr_paths) {
+       curr_vg.add_path(this->get_path(p));
+     }
+     curr_paths.clear();
+
+     component_map.at(component_count).vg = curr_vg;
+
+     // std::cerr << fn_name << " component " << component_count << " size " << curr_vg.size() << std::endl;
+     // bidirected::sort(curr_vg);
+
+     for (auto hs: component_map.at(component_count).vg.graph_start_nodes()) { tips.push_back(hs); }
+     for (auto hs: component_map.at(component_count).non_tip_hap_starts) { tips.push_back(hs); }
+     for (auto hs: component_map.at(component_count).vg.graph_end_nodes()) { tips.push_back(hs); }
+
+     std::cerr << fn_name << " component id: " << component_count << std::endl;
+     // print tips
+     std::cerr << "prints tips : \n";
+     for (auto t: tips) {
+       std::cerr << curr_vg.get_vertex(t).get_name() << ", ";
+     }
+
+     if (false) {
+        std::cerr << component_map.at(component_count) << std::endl;
+        std::cerr << "Tips: \n";
+        utils::print_with_comma(std::cerr, tips, ',');
+        std::cerr << "\n";
       }
-      curr_paths.clear();
 
-      component_map.at(component_count).vg = curr_vg;
+     bidirected::dfs(curr_vg, tips); // for debugging/validating
+     scc(curr_vg, tips);
+     tips.clear();
 
-      // std::cerr << fn_name << " component " << component_count << " size " << curr_vg.size() << std::endl;
-      // bidirected::sort(curr_vg);
-
-      for (auto hs: component_map.at(component_count).vg.graph_start_nodes()) {
-        tips.push_back(hs);
-      }
-
-      for (auto hs: component_map.at(component_count).vg.graph_end_nodes()) {
-        tips.push_back(hs);
-      }
-
-      for (auto hs: component_map.at(component_count).non_tip_hap_starts) {
-        tips.push_back(hs);
-      }
-
-      // std::cerr << "\n" << fn_name << "Tips: \n";
-      // utils::print_with_comma(std::cerr, tips, ',');
-      // std::cerr << "\n";
-
-      std::cerr << fn_name << " component id: " << component_count << std::endl;
-
-      bidirected::dfs(curr_vg, tips); // for debugging/validating
-      scc(curr_vg, tips);
-      tips.clear();
-
-      ++component_count;
-      curr_vg = bidirected::VariationGraph();
-
-      for (id_t i = 0; i < this->size(); ++i) {
-        if (explored.find(i) == explored.end()) {
-          s.push(i);
+     ++component_count;
+     curr_vg = bidirected::VariationGraph();
+      for (std::size_t v_idx{}; v_idx < this->size(); ++v_idx) {
+        if (explored.find(v_idx) == explored.end()) {
+          s.push(v_idx);
+          visited.insert(v_idx);
           break;
         }
       }
-    }
-  }
-
-  if (false) {
-    std::cerr << "Component id: " << component_count << "\n";
-    for (const auto& [k, v]: component_map) {
-      std::cerr << "component " << k << ": ";
-      std::cerr << v << "\n\n";
     }
   }
 

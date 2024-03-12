@@ -28,6 +28,13 @@ struct path_t {
   // TODO: use methods here instead of accessing directly
 };
 
+// TODO: replace with struct or class to allow methods like complement
+enum class orientation_t {
+  forward,
+  reverse
+};
+std::ostream& operator<<(std::ostream& os, const orientation_t& o);
+
 /**
    l (left) 5' or +
    r (left) 3' or -
@@ -43,6 +50,12 @@ typedef VertexEnd v_end_t;
 // -----------
 std::ostream& operator<<(std::ostream& os, const VertexEnd& ve);
 VertexEnd complement(VertexEnd ve);
+
+struct id_n_orientation_t {
+  std::size_t v_idx;
+  orientation_t orientation;
+};
+std::ostream& operator<<(std::ostream& os, const id_n_orientation_t& x);
 
 struct side_n_id_t {
   VertexEnd v_end;
@@ -134,6 +147,8 @@ class Vertex {
   std::string handle;
   bool is_reversed_;
 
+  std::string name_; // sequence name in the GFA file
+
 public:
   // --------------
   // constructor(s)
@@ -151,6 +166,7 @@ public:
   // rc is reverse complement
   std::string get_rc_label() const;
   const std::string& get_handle() const;
+  const std::string& get_name() const;
   const std::set<std::size_t>& get_edges_l() const;
   const std::set<std::size_t>& get_edges_r() const;
   const std::vector<PathInfo>& get_paths() const;
@@ -166,6 +182,7 @@ public:
   // void set_label(const std::string& label);
   void set_handle(const std::string& handle);
   void set_handle(id_t id);
+  void set_name(const std::string& name);
 
   // It is up to the user to make sure that the path_id is not already in the "set"
   void add_path(std::size_t path_id, std::size_t step_index);
@@ -185,7 +202,8 @@ class VariationGraph {
   std::map<id_t, path_t> paths;
   // std::vector<path_t> paths;
 
-  std::vector<std::vector<side_n_id_t>> raw_paths;
+  // TODO: associate with paths above, maybe make it a map as well or merge them into one
+  std::vector<std::vector<id_n_orientation_t>> raw_paths;
 
   // the sort order of the vertices at idx i is sort_order[i]
   //std::vector<std::size_t> sort_order;
@@ -236,6 +254,7 @@ public:
   //std::unordered_set<std::size_t> get_end_nodes() const;
   std::vector<path_t> get_paths() const; // TODO: rename to get_haplotypes // return a reference to the map
   const path_t& get_path(std::size_t path_id) const;
+  std::size_t get_path_count() const;
 
   // TODO: these two can be combined into one method
   // // TODO: remove DEPRECATED
@@ -248,10 +267,14 @@ public:
   std::unordered_set<std::size_t> const& find_haplotype_start_nodes() const;
   std::unordered_set<std::size_t> const& find_haplotype_end_nodes() const;
 
+
+
   // TODO: maybe nice to have?
   //std::set<std::size_t> get_edges(std::size_t vertex_index, VertexEnd vertex_end) const;
 
-  void validate_haplotype_paths();
+  /**
+   */
+  bool validate_haplotype_paths();
 
   // ---------------------
   // setter(s) & modifiers
@@ -270,7 +293,7 @@ public:
   std::size_t add_edge(std::size_t v1, VertexEnd v1_end, std::size_t v2, VertexEnd v2_end);
 
   void add_path(const path_t &path);
-  void set_raw_paths(std::vector<std::vector<side_n_id_t>> &raw_paths);
+  void set_raw_paths(std::vector<std::vector<id_n_orientation_t>> &raw_paths);
 
   void add_graph_start_node(std::size_t node_id);
   void add_graph_end_node(std::size_t node_id);
@@ -284,7 +307,7 @@ public:
   // sort by in degree on the left side of the
   void sort();
 
-  std::map<id_t, component> count_components(const core::config& app_config);
+  std::map<std::size_t, component> count_components(const core::config& app_config);
 
 
 

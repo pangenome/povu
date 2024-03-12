@@ -26,7 +26,7 @@
   * @return std::map<id_t, bidirected::component>
  *
  */
-std::map<id_t, bidirected::component> read_and_componetize(const core::config& app_config) {
+std::map<std::size_t, bidirected::component> read_and_componetize(const core::config& app_config) {
   std::string fn_name = std::format("[povu::main::{}]", __func__);
 
   if (app_config.verbosity() > 2)  { std::cerr << fn_name << " Reading graph\n"; }
@@ -36,14 +36,22 @@ std::map<id_t, bidirected::component> read_and_componetize(const core::config& a
     io::from_gfa::to_vg(app_config.get_input_gfa().c_str(), app_config);
 
   if (app_config.verbosity() > 1) {
+    if (app_config.verbosity() > 2)  { std::cerr << fn_name << " Finished reading graph:\n"; }
     vg.dbg_print();
+  }
+
+  { // validate the haplotype paths
+    if (app_config.verbosity() > 2)  { std::cerr << fn_name << " Validating paths\n"; }
+    if (vg.validate_haplotype_paths()) {
+      std::cerr << fn_name << " Haplotype paths are valid" << "\n";
+    }
   }
 
   if (app_config.verbosity() > 4) { std::cout << "\n\n" << "Variation Graph (unsorted)" << "\n\n";
     vg.print_dot();
   }
 
-  std::map<id_t, bidirected::component> components = vg.count_components(app_config);
+  std::map<std::size_t, bidirected::component> components = vg.count_components(app_config);
   return components;
 }
 
@@ -142,7 +150,7 @@ int main(int argc, char *argv[]) {
 
   if (app_config.verbosity()) { app_config.dbg_print(); }
 
-  std::map<id_t, bidirected::component> components = read_and_componetize(app_config);
+  std::map<std::size_t, bidirected::component> components = read_and_componetize(app_config);
 
   if (app_config.verbosity() > 2)  {
     std::cerr << std::format("{} Number of components: {}\n", fn_name, components.size());

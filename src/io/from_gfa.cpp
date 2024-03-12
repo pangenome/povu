@@ -327,6 +327,7 @@ bidirected::VariationGraph to_vg(const char* filename, const core::config& app_c
       filename,
       [&](const gfak::sequence_elem& s) {
         vg.create_handle(s.sequence, std::stoll(s.name) - offset_value);
+        vg.get_vertex_mut(std::stoll(s.name) - offset_value).set_name(s.name);
       });
   }
 
@@ -381,8 +382,8 @@ bidirected::VariationGraph to_vg(const char* filename, const core::config& app_c
   // ---------
   // do this by associating each node with a path
   if (path_count > 0) {
-    std::vector<std::vector<bidirected::side_n_id_t>> raw_paths;
-    std::vector<bidirected::side_n_id_t> raw_path;
+    std::vector<std::vector<bidirected::id_n_orientation_t>> raw_paths;
+    std::vector<bidirected::id_n_orientation_t> raw_path;
 
     gg.for_each_path_line_in_file(
         filename, [&](const gfak::path_elem &path) {
@@ -405,13 +406,12 @@ bidirected::VariationGraph to_vg(const char* filename, const core::config& app_c
 
             handlegraph::nid_t id = std::stoull(s) - offset_value;
 
-            bidirected::side_n_id_t side_n_id =
-                bidirected::side_n_id_t{orientation ? bidirected::VertexEnd::r
-                                                    : bidirected::VertexEnd::l,
-                                        std::stoull(s) - offset_value};
+            bidirected::id_n_orientation_t id_n_orientation =
+              bidirected::id_n_orientation_t{
+              std::stoull(s) - offset_value,
+              orientation ? bidirected::orientation_t::forward : bidirected::orientation_t::reverse};
 
-            raw_path.push_back(side_n_id);
-
+            raw_path.push_back(id_n_orientation);
 
             /*
               this can be done through handleGraph's append_step but this is
