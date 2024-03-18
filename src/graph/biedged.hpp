@@ -4,6 +4,7 @@
 #include "../core/core.hpp"
 #include "./bidirected.hpp"
 #include "./spanning_tree.hpp"
+#include <cstddef>
 
 namespace biedged {
 
@@ -24,7 +25,7 @@ struct unordered_pair{
   std::size_t r;
 
   unordered_pair(std::size_t l,std::size_t r):
-	l(std::min(l,r)), r(std::max(l,r)) {}
+    l(std::min(l,r)), r(std::max(l,r)) {}
 
   // spaceship operator
   friend constexpr auto operator<=>(unordered_pair, unordered_pair) = default;
@@ -44,9 +45,9 @@ struct PathInfo {
    r (left) 3' or -
  */
 enum class VertexType {
-	l,
-	r,
-	dummy
+    l,
+    r,
+    dummy
 };
 
 // implement << operator for VertexType
@@ -62,6 +63,7 @@ class Edge {
   VertexType v2_type;   // not necessary but should allow for easy methods
   core::color c;
 
+  // TODO: remove?
   std::string label; // or sequence only applicable to black edges
 
 public:
@@ -115,9 +117,12 @@ class Vertex {
   // 2 BEC vertices have the same handle
   std::string handle;
   bool is_reversed_;
+  // std::size_t bidirected_idx // index of the vertex in the bidirected graph
 
   // index of the vertex in the vertex vector
   std::size_t vertex_idx;
+
+
 
 public:
   // --------------
@@ -169,7 +174,18 @@ public:
   // ------------
   // constructors
   // ------------
-  BVariationGraph(const bidirected::VariationGraph& g);
+  /**
+    * @brief Construct a bi-edged graph from a bidirected variation graph
+    *
+    * the dummy vertices are dummy start and stop nodes
+    *
+    *
+    *
+    *
+    * @g the bidirected variation graph
+    * @add_dummy_vertices if false, do not dummy vertices to the graph
+    */
+  BVariationGraph(const bidirected::VariationGraph& g, bool add_dummy_vertices=true);
 
   // -------
   // getters
@@ -182,13 +198,13 @@ public:
   // -------
   // setters
   // -------
-  void add_edge(std::size_t v1,  VertexType v1_type,
-				std::size_t v2, VertexType v2_type,
-				core::color c);
+  std::size_t add_edge(std::size_t v1,  VertexType v1_type,
+                       std::size_t v2, VertexType v2_type,
+                       core::color c);
 
-  void add_edge(std::size_t v1, VertexType v1_type,
-				std::size_t v2, VertexType v2_type,
-				core::color c, std::string label);
+  std::size_t add_edge(std::size_t v1, VertexType v1_type,
+                std::size_t v2, VertexType v2_type,
+                core::color c, std::string label);
 
   void add_vertex(std::string handle_str, VertexType vertex_type);
   bool replace_vertex(std::size_t vertex_idx, std::string handle_str, VertexType vertex_type);
@@ -205,7 +221,7 @@ public:
   // ----
 
   // If the graph is not a single SCC, then make it one.
-  void componetize();
+  void componetize(); // TODO: remove
   spanning_tree::Tree compute_spanning_tree() const;
 };
 

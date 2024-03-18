@@ -26,7 +26,7 @@
   * @return std::map<id_t, bidirected::component>
  *
  */
-std::map<std::size_t, bidirected::component> read_and_componetize(const core::config& app_config) {
+std::vector<bidirected::VariationGraph> read_and_componetize(const core::config& app_config) {
   std::string fn_name = std::format("[povu::main::{}]", __func__);
 
   if (app_config.verbosity() > 2)  { std::cerr << fn_name << " Reading graph\n"; }
@@ -40,19 +40,14 @@ std::map<std::size_t, bidirected::component> read_and_componetize(const core::co
     vg.dbg_print();
   }
 
-  { // validate the haplotype paths
+  if (false) { // validate the haplotype paths
     if (app_config.verbosity() > 2)  { std::cerr << fn_name << " Validating paths\n"; }
     if (vg.validate_haplotype_paths()) {
       std::cerr << fn_name << " Haplotype paths are valid" << "\n";
     }
   }
 
-  if (app_config.verbosity() > 4) { std::cout << "\n\n" << "Variation Graph (unsorted)" << "\n\n";
-    vg.print_dot();
-  }
-
-  std::map<std::size_t, bidirected::component> components = vg.count_components(app_config);
-  return components;
+  return bidirected::componetize(vg, app_config);
 }
 
 /**
@@ -73,7 +68,7 @@ void bar(core::config& app_config, bidirected::VariationGraph vg) {
 
 
   if (app_config.sort()) {
-    vg.sort();
+    // vg.sort();
   }
 
 
@@ -136,6 +131,35 @@ void bar(core::config& app_config, bidirected::VariationGraph vg) {
 }
 
 /**
+  * @brief takes a variation graph which should be in a single component and computes its SESE regions
+  *
+  *
+  * @param app_config the configuration
+  * @param vg the variation graph
+  */
+void compute_sese_regions(const bidirected::VariationGraph &vg, core::config& app_config) {
+  std::string fn_name = std::format("[povu::main::{}]", __func__);
+
+  if (app_config.verbosity() > 4) { std::cout << "\n\n" << "Variation Graph (unsorted)" << "\n\n";
+    vg.print_dot();
+  }
+
+  // convert the bidirected variation graph into a biedged variation graph
+  if (app_config.verbosity() > 2) { std::cerr << fn_name << " Bi-edging" << "\n"; }
+  biedged::BVariationGraph bg(vg); // will add dummy vertices
+  if (app_config.verbosity() > 4) { std::cout << "\n\n" << "Biedged" << "\n\n";
+    bg.print_dot();
+  }
+
+  // compute the spanning tree of the biedged variation graph
+  if (app_config.verbosity() > 2) { std::cerr << fn_name << " Computing spanning tree\n"; }
+  spanning_tree::Tree st = bg.compute_spanning_tree();
+  if (app_config.verbosity() > 4) { std::cout << "\n\n" << "Spanning Tree" << "\n\n";
+    st.print_dot();
+  }
+}
+
+/**
  * @brief main function
  *
  * @param argc
@@ -150,17 +174,14 @@ int main(int argc, char *argv[]) {
 
   if (app_config.verbosity()) { app_config.dbg_print(); }
 
-  std::map<std::size_t, bidirected::component> components = read_and_componetize(app_config);
+  std::vector<bidirected::VariationGraph> components = read_and_componetize(app_config);
 
   if (app_config.verbosity() > 2)  {
     std::cerr << std::format("{} Number of components: {}\n", fn_name, components.size());
   }
 
-  return 0;
-
-  for (auto const &[_, v] : components) {
-    bar(app_config, v.vg);
-    break;
+  for (std::size_t i = 0; i < components.size(); i++) {
+    compute_sese_regions(components[i], app_config);
   }
 
   return 0;

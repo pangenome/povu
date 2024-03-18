@@ -67,6 +67,7 @@ struct side_n_id_t {
   // method complement
   side_n_id_t complement() const;
 };
+std::ostream& operator<<(std::ostream& os, const side_n_id_t& x);
 
 struct PathInfo {
   std::size_t path_id;
@@ -126,6 +127,7 @@ public:
   // -----------
   friend std::ostream& operator<<(std::ostream& os, const Edge& e);
 };
+
 
 /**
    a vertex is invalid if it lacks either a label or a handle
@@ -190,9 +192,11 @@ public:
 
 struct component;
 
+
+
 /**
-   A variation graph as a bidirected graph
- */
+  * A variation graph as a bidirected graph
+  */
 class VariationGraph {
   std::vector<Vertex> vertices;
   std::vector<Edge> edges;
@@ -200,22 +204,24 @@ class VariationGraph {
   // TODO: make this a map for easier work with components
   // we want unique path IDs for the entire graph
   std::map<id_t, path_t> paths;
-  // std::vector<path_t> paths;
 
   // TODO: associate with paths above, maybe make it a map as well or merge them into one
   std::vector<std::vector<id_n_orientation_t>> raw_paths;
 
-  // the sort order of the vertices at idx i is sort_order[i]
-  //std::vector<std::size_t> sort_order;
+  // a.k.a tips
+  std::set<std::size_t> tips_;
 
-  std::unordered_set<std::size_t> graph_start_nodes_;
-  std::unordered_set<std::size_t> graph_end_nodes_;
+  // graph start nodes are vertices with edges adjacent to only one side, the right side or the left side
+  // the side is the one without any incident edges
+  std::set<std::size_t> graph_start_nodes_;
+  std::set<std::size_t> graph_end_nodes_;
 
-  std::unordered_set<std::size_t> haplotype_start_nodes;
-  std::unordered_set<std::size_t> haplotype_end_nodes;
-
-  //std::unordered_set<std::size_t> start_nodes;
-  //std::unordered_set<std::size_t> end_nodes;
+  // we store the side which would visit a black edge
+  // haplotype start nodes are vertices which start paths according to the P lines in a GFA file
+  // start side is the side from which the path starts
+  // e.g. 5+ will have a start side of 5 left and 5- will have a start side of 5 right
+  std::set<side_n_id_t> haplotype_start_nodes_;
+  std::set<side_n_id_t> haplotype_end_nodes_;
 
   // for libHandleGraph
   // min and max vertex ids
@@ -256,18 +262,18 @@ public:
   const path_t& get_path(std::size_t path_id) const;
   std::size_t get_path_count() const;
 
-  // TODO: these two can be combined into one method
-  // // TODO: remove DEPRECATED
-  // std::unordered_set<id_t> find_graph_start_nodes() const;
-  // std::unordered_set<id_t> find_graph_end_nodes() const;
+  std::set<std::size_t> const& tips() const;
 
-  std::unordered_set<std::size_t> const& graph_start_nodes() const;
-  std::unordered_set<std::size_t> const& graph_end_nodes() const;
+  // graph start nodes are tips that are haplotype starts or ends
+  // if strict is true, only return tips which are haplotype start or end nodes
+  // i.e. non orphan tips
+  // TODO: implement strict
+  std::set<std::size_t> graph_start_nodes(bool strict=false) const;
+  std::set<std::size_t> graph_end_nodes(bool strict=false) const;
 
-  std::unordered_set<std::size_t> const& find_haplotype_start_nodes() const;
-  std::unordered_set<std::size_t> const& find_haplotype_end_nodes() const;
-
-
+  // TODO: remove the find part? replace with get?
+  std::set<side_n_id_t> const& find_haplotype_start_nodes() const;
+  std::set<side_n_id_t> const& find_haplotype_end_nodes() const;
 
   // TODO: maybe nice to have?
   //std::set<std::size_t> get_edges(std::size_t vertex_index, VertexEnd vertex_end) const;
@@ -295,11 +301,13 @@ public:
   void add_path(const path_t &path);
   void set_raw_paths(std::vector<std::vector<id_n_orientation_t>> &raw_paths);
 
-  void add_graph_start_node(std::size_t node_id);
-  void add_graph_end_node(std::size_t node_id);
+  void add_tip(std::size_t node_id);
 
-  void add_haplotype_start_node(std::size_t node_id);
-  void add_haplotype_stop_node(std::size_t node_id);
+  bool add_graph_start_node(std::size_t node_id);
+  bool add_graph_end_node(std::size_t node_id);
+
+  void add_haplotype_start_node(side_n_id_t i);
+  void add_haplotype_stop_node(side_n_id_t i);
 
   void set_min_id(std::size_t min_id);
   void set_max_id(std::size_t max_id);
@@ -457,6 +465,7 @@ public:
 
 };
 
+std::vector<VariationGraph> componetize(const VariationGraph &vg, const core::config& app_config);
 
 struct component {
   id_t idx; // a unique identifier of the component
