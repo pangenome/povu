@@ -11,7 +11,8 @@
 
 namespace biedged {
 
-/* VertexType
+/*
+  VertexType
  */
 
 // implement << operator for VertexType
@@ -81,6 +82,20 @@ std::size_t Edge::get_v2_idx() const {
 
 core::color Edge::get_color() const {
   return this->c;
+}
+
+std::size_t Edge::get_other_vertex(std::size_t vertex_index) const {
+  std::string fn_name = std::format("[povu::biedged::{}]", __func__);
+  if (vertex_index == this->v1_idx) {
+    return this->v2_idx;
+  }
+  else if (vertex_index == this->v2_idx) {
+    return this->v1_idx;
+  }
+  else {
+    throw std::invalid_argument(
+                                std::format("{} Vertex {} is not part of edge", fn_name, vertex_index));
+  }
 }
 
 const std::string& Edge::get_label() const {
@@ -168,6 +183,9 @@ std::size_t BVariationGraph::add_edge(std::size_t v1, VertexType v1_type,
                                       std::size_t v2, VertexType v2_type,
                                       core::color c) {
   this->edges.push_back(Edge(v1, v1_type, v2, v2_type, c));
+  this->get_vertex_mut(v1).add_edge(this->edges.size() - 1, c);
+  this->get_vertex_mut(v2).add_edge(this->edges.size() - 1, c);
+
   return this->edges.size() - 1;
 }
 
@@ -175,6 +193,9 @@ std::size_t BVariationGraph::add_edge(std::size_t v1, VertexType v1_type,
                                       std::size_t v2, VertexType v2_type,
                                       core::color c, std::string label) {
   this->edges.push_back(Edge(v1, v1_type, v2, v2_type, c, label));
+  this->get_vertex_mut(v1).add_edge(this->edges.size() - 1, c);
+  this->get_vertex_mut(v2).add_edge(this->edges.size() - 1, c);
+
   return this->edges.size() - 1;
 }
 
@@ -203,7 +224,7 @@ Vertex& BVariationGraph::get_vertex_mut(std::size_t i) {
     return vertices.at(i);
 }
 
-BVariationGraph::BVariationGraph(const bidirected::VariationGraph& g, bool add_dummy_vertices) {
+BVariationGraph::BVariationGraph(const bidirected::VariationGraph &g, bool add_dummy_vertices) {
 
   std::size_t biedged_size = g.size() * 2 + (add_dummy_vertices ? 2 : 0);
 
@@ -275,11 +296,10 @@ BVariationGraph::BVariationGraph(const bidirected::VariationGraph& g, bool add_d
           //continue;
         }
 
-        std::size_t gray_e_idx =
-          this->add_edge(new_v1, v1_type, i_l, VertexType::l,core::color::gray);
+        std::size_t gray_e_idx = this->add_edge(new_v1, v1_type, i_l, VertexType::l,core::color::gray);
 
-        this->get_vertex_mut(new_v1).add_edge(gray_e_idx, core::color::gray);
-        this->get_vertex_mut(i_l).add_edge(gray_e_idx, core::color::gray);
+        //this->get_vertex_mut(new_v1).add_edge(gray_e_idx, core::color::gray);
+        //this->get_vertex_mut(i_l).add_edge(gray_e_idx, core::color::gray);
       }
 
       // add gray edges incident with the 3' (right/-) vertex
@@ -320,10 +340,8 @@ BVariationGraph::BVariationGraph(const bidirected::VariationGraph& g, bool add_d
                        new_v2, v2_type,
                        core::color::gray);
 
-        this->get_vertex_mut(i_r).add_edge(
-          this->edges.size() - 1, core::color::gray);
-        this->get_vertex_mut(new_v2).add_edge(
-          this->edges.size() - 1, core::color::gray);
+        //this->get_vertex_mut(i_r).add_edge(this->edges.size() - 1, core::color::gray);
+        //this->get_vertex_mut(new_v2).add_edge(this->edges.size() - 1, core::color::gray);
       }
 
     return;
@@ -369,7 +387,6 @@ BVariationGraph::BVariationGraph(const bidirected::VariationGraph& g, bool add_d
 }
 
 void BVariationGraph::print_dot() const {
-  //
   std::cout << "graph G {\n" <<
     "\trankdir=LR;\n" <<
     "\tnode [shape=circle];\n";
@@ -399,171 +416,70 @@ void BVariationGraph::print_dot() const {
   std::cout << "}" << std::endl;
 }
 
-void BVariationGraph::componetize() {
-  this->vertices.insert(this->vertices.begin(), Vertex("d_s", 0, VertexType::dummy));
-  this->vertices.push_back(Vertex("d_e", this->size(), VertexType::dummy));
-
-
-  // ------------------------------
-  // Update vertex indices in edges
-  // ------------------------------
-  for (std::size_t e_idx{}; e_idx < this->edges.size(); ++e_idx) {
-    Edge& e = this->edges.at(e_idx);
-
-    e.set_v1_idx(e.get_v1_idx() + 1);
-    e.set_v2_idx(e.get_v2_idx() + 1);
-  }
-
-
-  // ---------------------------------
-  // Update vertex indices in vertices
-  // ---------------------------------
-  for (std::size_t v_idx{1}; v_idx < this->vertices.size()-1; ++v_idx) {
-    Vertex& v = this->get_vertex_mut(v_idx);
-    v.set_vertex_idx(v.get_vertex_idx() + 1);
-  }
-
-
-  // -------------------------------------
-  // connect dummy start to start vertices
-  // -------------------------------------
-  for (std::size_t s : this->start_nodes) {
-    this->add_edge(
-      0, VertexType::dummy,
-      s+1, VertexType::l,
-      core::color::gray);
-
-    this->get_vertex_mut(0)
-      .add_edge(this->edges.size() - 1, core::color::gray);
-    this->get_vertex_mut(s+1)
-      .add_edge(this->edges.size() - 1, core::color::gray);
-  }
-
-
-  // -----------------------------------
-  // connect dummy stop to stop vertices
-  // -----------------------------------
-  for (std::size_t s : this->end_nodes) {
-    this->add_edge(
-      this->size() - 1, VertexType::dummy,
-      s+1, VertexType::l,
-      core::color::gray);
-
-    this->get_vertex_mut(this->size() - 1)
-      .add_edge(this->edges.size() - 1, core::color::gray);
-    this->get_vertex_mut(s+1)
-      .add_edge(this->edges.size() - 1, core::color::gray);
-  }
-
-
-  // ---------------------------------
-  // connect dummy start to dummy stop
-  // ---------------------------------
-  this->add_edge(
-    0, VertexType::dummy,
-    this->size() - 1, VertexType::dummy,
-    core::color::gray);
-
-  this->get_vertex_mut(0)
-    .add_edge(this->edges.size() - 1, core::color::gray);
-  this->get_vertex_mut(this->size() -1)
-    .add_edge(this->edges.size() - 1, core::color::gray);
-}
-
 spanning_tree::Tree BVariationGraph::compute_spanning_tree() const {
   std::string fn_name = std::format("[povu::biedged::{}]", __func__);
 
   spanning_tree::Tree t = spanning_tree::Tree(this->size());
 
-  std::set<std::size_t> visited;
+  std::size_t v_idx {}; // set start node to 0
   std::stack<std::size_t> s;
+  s.push(v_idx);
 
-  std::size_t start_node_id {};
-  std::size_t current_vertex { start_node_id };
-  s.push(current_vertex);
-
+  std::set<std::size_t> visited;
   std::size_t counter {};
 
   while (!s.empty()) {
-    current_vertex = s.top();
+    v_idx = s.top();
 
-    if (!visited.count(current_vertex)) {
-      t.set_dfs_num(current_vertex, counter);
-      t.set_sort(counter, current_vertex);
-      t.set_sort_g(current_vertex, counter);
+    if (visited.find(v_idx) == visited.end()) {
+      t.set_dfs_num(v_idx, counter);
+      t.set_sort(counter, v_idx);
+      t.set_sort_g(v_idx, counter);
+      t.get_vertex_mut(v_idx).set_name(this->get_vertex(v_idx).get_handle()) ;
       ++counter;
     }
 
-    visited.insert(current_vertex);
+    visited.insert(v_idx);
 
-    // TODO: simplify below for loop
-    // - replace f with not_explored
-    // bool not_explored{false};
-    // the current vertex has not been explored
     bool explored{true};
-    Vertex const &v = this->get_vertex(current_vertex);
+    Vertex const &v = this->get_vertex(v_idx);
 
     std::set<size_t> adj_edges = v.get_grey_edges();
+    // if (v.get_black_edge() != core::constants::UNDEFINED_SIZE_T) { adj_edges.insert(v.get_black_edge()); }
     if (v.get_type() != VertexType::dummy) { adj_edges.insert(v.get_black_edge()); }
 
-    // target vertex, edge index
-    std::vector<std::pair<std::size_t, std::size_t>> adj_vertices;
-    for (std::size_t e_idx : adj_edges) {
-      Edge e = this->edges.at(e_idx);
-      std::size_t adj_v_idx = e.get_v1_idx() == current_vertex ? e.get_v2_idx() : e.get_v1_idx();
-      adj_vertices.push_back( std::make_pair(adj_v_idx, e_idx) );
-    }
-
-    std::sort(
-      adj_vertices.begin(),
-      adj_vertices.end(),
-      [](std::pair<std::size_t, std::size_t> const& a, std::pair<std::size_t, std::size_t> const& b) {
-        return a.first < b.first;
-      });
-
-    // TODO: better condition here for speedup
     for (auto e_idx : adj_edges) {
-
-      Edge e = this->edges.at(e_idx);
-      std::size_t adj_v_idx = e.get_v1_idx() == current_vertex ? e.get_v2_idx() : e.get_v1_idx();
-
-      //std::size_t adj_v_idx = el.first;
-      //std::size_t e_idx = el.second;
-
-
-
-      //Edge e = this->edges.at(e_idx);
-
-      // std::cout << "to: "<< adj_v_idx  << " e_idx: " << e.get_color() << " e_idx: " << e_idx << std::endl;
-
-      //std::size_t adj_v_idx = e.get_v1_idx() == current_vertex ? e.get_v2_idx() : e.get_v1_idx();
-      //std::size_t a = adj.v_idx;
-
-      //if (a < current_vertex) { continue; }
+      const Edge &e = this->edges.at(e_idx);
+      std::size_t adj_v_idx = e.get_other_vertex(v_idx);
 
       if (visited.find(adj_v_idx) == visited.end()) {
-        t.add_tree_edge(current_vertex, adj_v_idx, e.get_color());
+        t.add_tree_edge(v_idx, adj_v_idx, e.get_color());
         s.push(adj_v_idx);
         explored = false;
         break;
       }
       else if (
-        !t.is_root(current_vertex) &&
-        t.get_parent(current_vertex) != adj_v_idx &&
-        !t.has_child(current_vertex, adj_v_idx) &&
-        !t.has_ibe(current_vertex, adj_v_idx) &&
-        !t.has_obe(current_vertex, adj_v_idx)
+        !t.is_root(v_idx) &&
+        t.get_parent(v_idx) != adj_v_idx &&
+        !t.has_child(v_idx, adj_v_idx) &&
+        !t.has_ibe(v_idx, adj_v_idx) &&
+        !t.has_obe(v_idx, adj_v_idx)
       ) {
         // TODO: why the has child and not parent test?
-        //std::cout << "adding back edge: " << current_vertex << " -> " << a << std::endl;
-        t.add_be(current_vertex, adj_v_idx, false, e.get_color());
+        //std::cout << "adding back edge: " << v_idx << " -> " << a << std::endl;
+        t.add_be(v_idx, adj_v_idx, false, e.get_color());
       }
     }
 
     if (explored) { s.pop(); }
   }
 
-  std::cerr << fn_name << " counter " << counter << std::endl;
+  for (std::size_t i{}; i < this->size(); ++i) {
+    if (t.get_vertex(i).is_null()) {
+      throw std::logic_error(std::format("{}: vertex {} is null. {}/{} vertices explored\n",
+                                         fn_name, i, counter, this->size()));
+    }
+  }
 
   return t;
 }

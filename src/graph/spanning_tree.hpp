@@ -2,6 +2,7 @@
 #define SPANNING_TREE_HPP
 
 #include <cstddef>
+#include <string>
 #include <vector>
 #include <set>
 #include <memory>
@@ -28,6 +29,7 @@ typedef std::list<Bracket> BracketList;
 class Edge {
   std::size_t id_; // (recent class)
 
+  // rename from src to tgt
   std::size_t src; // target vertex
   std::size_t tgt; // source vertex
 
@@ -37,12 +39,13 @@ class Edge {
   std::size_t class_; // equivalnce class id
 
   // TODO: is size used?
-// not used in tree edge
+  // not used in tree edge
   std::size_t size;      // (recent size) size of the bracket list
   // std::size_t recent_class; // (recent class) id of the topmost backedge
 
   std::size_t backedge_id; // TODO: used??
-// not used in tree edge
+
+  // not used in tree edge
   // std::size_t id; // (recent class)
   //Bracket* b; // if it is a backedge
   bool null_;
@@ -50,20 +53,28 @@ class Edge {
   core::color color_;
 
 public:
-
+  // --------------
+  // constructor(s)
+  // --------------
   Edge();
   Edge(std::size_t id, std::size_t src, std::size_t tgt, core::color c=core::color::black);
 
+  // ---------
+  // getter(s)
+  // ---------
   std::size_t id() const;
-  std::size_t get_parent() const;
   std::size_t get_child() const;
-
   core::color get_color() const;
+  std::size_t get_parent() const;
+
 
   // FIXME: we need both because of a non const call that depends on the non const
   std::size_t get_class() const;
   std::size_t get_class_idx();
 
+  // ---------
+  // setter(s)
+  // ---------
   void set_class_idx(std::size_t c); // deprecated replaced by set_class
   void set_class(std::size_t c);
 };
@@ -181,6 +192,8 @@ class Vertex {
   std::set<size_t> obe; // out back edges
   std::set<size_t> ibe;  // in back edges
 
+  std::string name_ {}; // id/name of the vertex in the input GFA
+
   /*
    dfs_num of the highest node originating from an outgoing backedge from this
    vertex or from a child of this vertex
@@ -190,24 +203,34 @@ class Vertex {
   bool null_;
 
 public:
+  // --------------
   // constructor(s)
+  // --------------
   Vertex(); // creates a root with parent id set to and id of zero
   Vertex(std::size_t id, std::size_t parent_id);
 
+  // ---------
+  // getter(s)
+  // ---------
   bool is_root() const;
   bool is_leaf() const;
   std::size_t dfs_num() const;
   std::size_t parent() const; // TODO: remove
   std::size_t hi() const; // TODO: remove
+  std::string const& name() const;
 
   std::set<size_t> const& get_obe() const;
   std::set<size_t> const& get_ibe() const;
+  bool is_null() const;
 
   // get the index of the edge that points to the parent in the tree
   size_t const& get_parent_idx() const; // TODO: rename to get_parent_edge_idx
 
   std::set<size_t> const& get_children() const;
 
+  // ---------
+  // setter(s)
+  // ---------
   void add_obe(std::size_t obe_id);
   void add_ibe(std::size_t ibe_id);
   void add_child(std::size_t e_id);
@@ -215,7 +238,7 @@ public:
 
   // the index of the parent node in the tree vertex
   void set_parent(std::size_t n_id);
-
+  void set_name(std::string const&name);
   void set_hi(std::size_t val);
   // the dfs num of the node
   void set_dfs_num(std::size_t idx);
@@ -244,9 +267,11 @@ class Tree {
   // and the value is the index in the tree
   std::vector<std::size_t> sort_g;
 
-  static const size_t root_node_index{0};
+  // TODO: replace sort and sort_g with a two way map or remove both
 
-  // std::size_t list_size_; // TODO: remove
+  static const size_t root_node_index {}; // 0
+
+
   std::size_t equiv_class_count_;
 
 public:

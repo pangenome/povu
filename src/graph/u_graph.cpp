@@ -185,8 +185,8 @@ FlowGraph::FlowGraph(spanning_tree::Tree& t) {
   //this->adj_list[initial_len - 1].add_edge_idx(edge_idx, 0);
   //std::size_t edge_idx = this->edges.size(); // == 0
 
-  for (std::size_t j{}; j < t.size(); ++j) {
-    std::size_t i = t.get_sorted(j);
+  for (std::size_t i{}; i < t.size(); ++i) {
+    //std::size_t i = t.get_sorted(j);
 
     for (auto edge : t.get_child_edges(i)) {
       foo(i, edge.get_child(), edge.get_color(), edge.get_class());

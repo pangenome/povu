@@ -3,7 +3,6 @@
 
 #include "./pst.hpp"
 #include "../graph/spanning_tree.hpp"
-#include "../graph/u_graph.hpp"
 
 namespace pst {
 /*
@@ -47,7 +46,7 @@ tree::Tree compute_pst(spanning_tree::Tree &st) {
   tree::Tree t = tree::Tree(st.size());
   std::stack<std::size_t> vertex_stack{}; // stack of vertices
   std::stack<std::size_t> seen{};
- 
+
   // go over the nodes in reverse topological order (dfs_num) which may not be
   // equal to node ids
 
@@ -71,14 +70,14 @@ tree::Tree compute_pst(spanning_tree::Tree &st) {
     } else {
       //std::cout << "popping: " << v << std::endl;
       //vertex_stack.pop();
-      
+
     }
 
-    
+
   }
 
   return t;
-   
+
   for (std::size_t r{st.size() - 1}; r > 0; --r) {
     // the vertex id of the vertex at the topological sort index r
     std::size_t v = st.get_sorted(r);

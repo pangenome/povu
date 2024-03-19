@@ -14,6 +14,8 @@
 #include "./graph/u_graph.hpp"
 #include "./io/io.hpp"
 #include "./pvst/pvst.hpp"
+#include "./vst/pst.hpp"
+
 
 
 /**
@@ -88,7 +90,7 @@ void bar(core::config& app_config, bidirected::VariationGraph vg) {
     std::cout << "\n\n" << "Biedged" << "\n\n";
     bg.print_dot();
   }
-  bg.componetize();
+  //bg.componetize();
   if (app_config.verbosity() > 4) { std::cout << "\n\n" << "Componetized biedged" << "\n\n";
     bg.print_dot();
   }
@@ -155,6 +157,13 @@ void compute_sese_regions(const bidirected::VariationGraph &vg, core::config& ap
   if (app_config.verbosity() > 2) { std::cerr << fn_name << " Computing spanning tree\n"; }
   spanning_tree::Tree st = bg.compute_spanning_tree();
   if (app_config.verbosity() > 4) { std::cout << "\n\n" << "Spanning Tree" << "\n\n";
+    st.print_dot();
+  }
+
+  // compute the cycle equivalence classes of the spanning tree
+  if (app_config.verbosity() > 2) { std::cerr << fn_name << " Finding cycle equivalent classes\n"; }
+  algorithms::cycle_equiv(st);
+  if (app_config.verbosity() > 4) { std::cout << "\n\n" << "Annotated Spanning Tree" << "\n\n";
     st.print_dot();
   }
 }

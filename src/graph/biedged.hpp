@@ -78,10 +78,11 @@ public:
   // -------
   // getters
   // -------
-  const std::string& get_label() const;
+  core::color get_color() const;
   std::size_t get_v1_idx() const;
   std::size_t get_v2_idx() const;
-  core::color get_color() const;
+  const std::string& get_label() const;
+  std::size_t get_other_vertex(std::size_t vertex_index) const;
 
 
   // -------
@@ -115,14 +116,12 @@ class Vertex {
 
   // from libHandleGraph
   // 2 BEC vertices have the same handle
-  std::string handle;
+  std::string handle; // the name of the vertex in the input GFA
   bool is_reversed_;
   // std::size_t bidirected_idx // index of the vertex in the bidirected graph
 
   // index of the vertex in the vertex vector
   std::size_t vertex_idx;
-
-
 
 public:
   // --------------
@@ -187,6 +186,7 @@ public:
     */
   BVariationGraph(const bidirected::VariationGraph& g, bool add_dummy_vertices=true);
 
+
   // -------
   // getters
   // -------
@@ -219,9 +219,6 @@ public:
   // ----
   // misc
   // ----
-
-  // If the graph is not a single SCC, then make it one.
-  void componetize(); // TODO: remove
   spanning_tree::Tree compute_spanning_tree() const;
 };
 

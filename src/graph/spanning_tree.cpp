@@ -1,19 +1,17 @@
-#include <algorithm>
 #include <cstddef>
-#include <exception>
 #include <format>
 #include <iostream>
 #include <limits>
+#include <map>
 #include <set>
 #include <stack>
 #include <stdexcept>
 #include <string>
 #include <sys/types.h>
 #include <tuple>
-#include <type_traits>
 #include <utility>
 #include <vector>
-#include <map>
+
 
 #include "../core/core.hpp"
 #include "./spanning_tree.hpp"
@@ -127,6 +125,7 @@ Vertex::Vertex(std::size_t id, std::size_t parent_id):
   null_(false){}
 
 // getters
+std::string const& Vertex::name() const { return this->name_; }
 std::size_t  Vertex::hi() const { return this->hi_; }
 std::size_t  Vertex::dfs_num() const { return this->dfs_num_; }
 bool Vertex::is_leaf() const { return this->children.empty(); }
@@ -141,6 +140,7 @@ bool Vertex::is_root() const {
     this->dfs_num() == 0 &&
     this->parent_id == std::numeric_limits<size_t>::max();
 }
+bool Vertex::is_null() const { return this->null_; }
 
 // setters
 void Vertex::unset_null(){ this->null_ = false;}
@@ -148,6 +148,7 @@ void Vertex::add_obe(std::size_t obe_id) { this->obe.insert(obe_id); }
 void Vertex::add_ibe(std::size_t ibe_id) { this->ibe.insert(ibe_id); }
 void Vertex::add_child(std::size_t e_id) { this->children.insert(e_id); }
 void Vertex::set_parent(std::size_t n_id) { this->parent_id = n_id; }
+void Vertex::set_name(std::string const& name) { this->name_ = name; }
 void Vertex::set_hi(std::size_t val) { this->hi_ = val; }
 void Vertex::set_dfs_num(std::size_t idx) { this->dfs_num_ = idx; }
 
@@ -949,16 +950,16 @@ std::vector<core::eq_n_id_t> Tree::compute_edge_stack2() {
 void Tree::print_dot() {
   std::cout << std::format(
     "graph G {{\n"
-    "\trankdir = TB;\n"
+    "\trankdir = LR;\n"
     "\tnode[shape = circle];\n"
     "\tedge [arrowhead=vee];\n"
   );
 
+  // TODO: why we do we need sorted here?
   for (std::size_t j{}; j < this->size(); j++){
     std::size_t i = this->get_sorted(j);
-    std::cout << std::format("\t{} [label = \"{} {}_s\"];\n", i, i, j) ;
+    std::cout << std::format("\t{} [label = \"{} {}_s\"];\n", i, this->get_vertex(i).name(), j) ;
   }
-
 
   for (std::size_t j{}; j < this->size(); j++) {
 

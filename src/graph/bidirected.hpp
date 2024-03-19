@@ -99,7 +99,6 @@ public:
   Edge();
   Edge(std::size_t v1, VertexEnd v1_end, std::size_t v2, VertexEnd v2_end);
 
-
   // ---------
   // getter(s)
   // ---------
