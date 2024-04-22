@@ -5,7 +5,25 @@
 #include "../graph/tree.hpp"
 #include "../graph/digraph.hpp"
 #include "../graph/bidirected.hpp"
+#include "../graph/spanning_tree.hpp"
 
+namespace graph_operations {
+
+using namespace graph_types;
+
+struct node {
+    //std::vector<std::size_t> ids;
+    std::set<std::pair<std::size_t, std::size_t>> ids;
+    std::size_t id;
+    std::set<std::size_t> children;
+    std::size_t parent {core::constants::UNDEFINED_SIZE_T};
+};
+
+  //void find_seses(spanning_tree::Tree st, const std::vector<std::size_t>& v);
+
+std::vector<std::tuple<std::size_t, VertexType, std::size_t, VertexType>>
+foo(spanning_tree::Tree st, const std::vector<std::size_t>& v, const core::config& app_config);
+}
 
 namespace genomics {
 typedef std::pair<bidirected::VertexEnd, id_t> side_n_id_t; // TODO: replace with struct

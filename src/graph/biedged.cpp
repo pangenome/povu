@@ -2,42 +2,26 @@
 #include <format>
 #include <iostream>
 #include <iterator>
+#include <stdexcept>
 #include <string>
 #include <vector>
 #include <stack>
 
 #include "./biedged.hpp"
-#include "./bidirected.hpp"
+
 
 namespace biedged {
 
-/*
-  VertexType
- */
-
-// implement << operator for VertexType
-std::ostream& operator<<(std::ostream& os, const VertexType& vt) {
-    switch (vt) {
-    case VertexType::l:
-    os << "+";
-    break;
-    case VertexType::r:
-    os << "-";
-    break;
-    default:
-    os << "*";
-    break;
-    }
-
-    return os;
-}
+using namespace graph_types;
 
 /*
+  ====
   Edge
+  ====
 */
-Edge::Edge(std::size_t v1, VertexType v1_type,
-           std::size_t v2, VertexType v2_type,
-           core::color c)
+Edge::Edge(std::size_t v1, v_type v1_type,
+           std::size_t v2, v_type v2_type,
+           color c)
   : v1_idx(v1), v1_type(v1_type), v2_idx(v2), v2_type(v2_type), c(c)
 {
   std::string fn_name = "[povu::graph::biedged::Edge]";
@@ -46,7 +30,7 @@ Edge::Edge(std::size_t v1, VertexType v1_type,
     throw std::invalid_argument(std::format("{} Self-loops are not allowed {} {}", fn_name, v1, v2));
   }
 
-  if (c == core::color::black) {
+  if (c == color::black) {
     // throw an argument error if the edge is black and no label is provided
     throw std::invalid_argument(fn_name + " edges must have a label");
   }
@@ -54,9 +38,9 @@ Edge::Edge(std::size_t v1, VertexType v1_type,
   this->label = std::string();
 }
 
-Edge::Edge(std::size_t v1, VertexType v1_type,
-           std::size_t v2, VertexType v2_type,
-           core::color c, std::string label)
+Edge::Edge(std::size_t v1, v_type v1_type,
+           std::size_t v2, v_type v2_type,
+           color c, std::string label)
   : v1_idx(v1), v1_type(v1_type), v2_idx(v2), v2_type(v2_type), c(c), label(label)
 {
   std::string fn_name = "[povu::graph::biedged::Edge]";
@@ -65,7 +49,7 @@ Edge::Edge(std::size_t v1, VertexType v1_type,
     throw std::invalid_argument(fn_name + " Self-loops are not allowed");
   }
 
-  if (c == core::color::gray) {
+  if (c == color::gray) {
     // throw an argument error if the edge is gray and a label is provided
     throw std::invalid_argument(fn_name + " Gray edges cannot have a label");
   }
@@ -80,8 +64,12 @@ std::size_t Edge::get_v2_idx() const {
     return this->v2_idx;
 }
 
-core::color Edge::get_color() const {
+color Edge::get_color() const {
   return this->c;
+}
+
+std::size_t Edge::get_eq_class() const {
+  return this->eq_class;
 }
 
 std::size_t Edge::get_other_vertex(std::size_t vertex_index) const {
@@ -93,13 +81,16 @@ std::size_t Edge::get_other_vertex(std::size_t vertex_index) const {
     return this->v1_idx;
   }
   else {
-    throw std::invalid_argument(
-                                std::format("{} Vertex {} is not part of edge", fn_name, vertex_index));
+    throw std::invalid_argument(std::format("{} Vertex {} is not part of edge", fn_name, vertex_index));
   }
 }
 
 const std::string& Edge::get_label() const {
     return this->label;
+}
+
+void Edge::set_eq_class(std::size_t eq_class) {
+  this->eq_class = eq_class;
 }
 
 void Edge::set_v1_idx(std::size_t i) {
@@ -111,34 +102,28 @@ void Edge::set_v2_idx(std::size_t i) {
 }
 
 std::ostream& operator<<(std::ostream& os, const Edge& e) {
-    os << "Edge(" << e.v1_idx << ", "
-       << (e.v1_type == VertexType::l ? "-" : "+")
-       << e.v2_idx << ", "
-       << (e.v2_type == VertexType::l ? "-" : "+")
-       << e.c << ")";
-    return os;
+  os << "Edge (" << e.v1_idx << ", " << e.v1_type << e.v2_idx << ", " << e.v2_type << e.c << ")";
+  return os;
 }
 
 /*
+  ======
   Vertex
+  ======
 */
 Vertex::Vertex() :
   black_edge(core::constants::UNDEFINED_SIZE_T),
   grey_edges(std::set<std::size_t>()),
-  paths(std::vector<PathInfo>()),
-  type(VertexType::l),
+  type(v_type::l),
   handle(std::string()),
-  is_reversed_(false),
   vertex_idx(0)
 {}
 
-Vertex::Vertex(const std::string& id, std::size_t vertex_idx, VertexType vertex_type) :
+Vertex::Vertex(const std::string& id, std::size_t vertex_idx, v_type vertex_type) :
   black_edge(core::constants::UNDEFINED_SIZE_T),
   grey_edges(std::set<std::size_t>()),
-  paths(std::vector<PathInfo>()),
   type(vertex_type),
   handle(id),
-  is_reversed_(false),
   vertex_idx(vertex_idx)
 {}
 
@@ -147,7 +132,7 @@ const std::string& Vertex::get_handle() const {
     return this->handle;
 }
 
-std::set<std::size_t> Vertex::get_grey_edges() const {
+std::set<std::size_t> const& Vertex::get_grey_edges() const {
     return this->grey_edges;
 }
 
@@ -155,19 +140,27 @@ std::size_t Vertex::get_black_edge() const {
     return this->black_edge;
 }
 
+std::set<std::size_t> Vertex::get_neighbours() const {
+  std::set<std::size_t> neighbours { this->get_grey_edges().begin(), this->get_grey_edges().end() };
+  if (this->get_black_edge() != core::constants::UNDEFINED_SIZE_T) {
+    neighbours.insert(this->get_black_edge());
+  }
+  return neighbours;
+}
+
 std::size_t Vertex::get_vertex_idx() const {
   return this->vertex_idx;
 }
 
-void Vertex::add_edge(std::size_t edge_idx, core::color c) {
-  if (c == core::color::black) {
+void Vertex::add_edge(std::size_t edge_idx, color c) {
+  if (c == color::black) {
     black_edge = edge_idx;
   } else {
     grey_edges.insert(edge_idx);
   }
 }
 
-VertexType Vertex::get_type() const {
+v_type Vertex::get_type() const {
     return type;
 }
 
@@ -176,55 +169,27 @@ void Vertex::set_vertex_idx(std::size_t i) {
 }
 
 /*
-  BVariationGraph
- */
+  =========================================
+  BVariationGraph (Biedged Variation Graph)
+  =========================================
+*/
 
-std::size_t BVariationGraph::add_edge(std::size_t v1, VertexType v1_type,
-                                      std::size_t v2, VertexType v2_type,
-                                      core::color c) {
-  this->edges.push_back(Edge(v1, v1_type, v2, v2_type, c));
-  this->get_vertex_mut(v1).add_edge(this->edges.size() - 1, c);
-  this->get_vertex_mut(v2).add_edge(this->edges.size() - 1, c);
-
-  return this->edges.size() - 1;
-}
-
-std::size_t BVariationGraph::add_edge(std::size_t v1, VertexType v1_type,
-                                      std::size_t v2, VertexType v2_type,
-                                      core::color c, std::string label) {
-  this->edges.push_back(Edge(v1, v1_type, v2, v2_type, c, label));
-  this->get_vertex_mut(v1).add_edge(this->edges.size() - 1, c);
-  this->get_vertex_mut(v2).add_edge(this->edges.size() - 1, c);
-
-  return this->edges.size() - 1;
-}
-
-void BVariationGraph::add_vertex(std::string handle_str, VertexType vertex_type) {
-  vertices.push_back(Vertex(handle_str, vertices.size(), vertex_type));
-}
-
-bool BVariationGraph::replace_vertex(std::size_t vertex_idx, std::string handle_str, VertexType vertex_type) {
-    if (this->get_vertex(vertex_idx).get_handle() != "") {
-        return false;
-    }
-
-    this->get_vertex_mut(vertex_idx) = Vertex(handle_str, vertex_idx, vertex_type);
-    return true;
-}
-
-const biedged::Vertex& BVariationGraph::get_vertex(std::size_t i) const {
-    return vertices.at(i);
-}
-
-std::size_t BVariationGraph::size() const {
-    return vertices.size();
-}
-
-Vertex& BVariationGraph::get_vertex_mut(std::size_t i) {
-    return vertices.at(i);
-}
+/*
+  Constructor(s)
+*/
 
 BVariationGraph::BVariationGraph(const bidirected::VariationGraph &g, bool add_dummy_vertices) {
+  std::string fn_name = std::format("[povu::BVariationGraph::{}]", __func__);
+
+  if (add_dummy_vertices) {
+    if (g.graph_start_nodes().empty()) {
+      throw std::domain_error(fn_name + " : graph has no start nodes");
+    }
+
+    if (g.graph_end_nodes().empty()) {
+      throw std::domain_error(fn_name + " : graph has no end nodes");
+    }
+  }
 
   std::size_t biedged_size = g.size() * 2 + (add_dummy_vertices ? 2 : 0);
 
@@ -243,8 +208,8 @@ BVariationGraph::BVariationGraph(const bidirected::VariationGraph &g, bool add_d
     // --------------------
 
     {
-      this->vertices.push_back(Vertex(current_vg_vertex.get_name(), i_l, VertexType::l));
-      this->vertices.push_back(Vertex(current_vg_vertex.get_name(), i_r, VertexType::r));
+      this->vertices.push_back(Vertex(current_vg_vertex.get_name(), i_l, v_type::l));
+      this->vertices.push_back(Vertex(current_vg_vertex.get_name(), i_r, v_type::r));
     }
 
     // ----------------
@@ -252,13 +217,13 @@ BVariationGraph::BVariationGraph(const bidirected::VariationGraph &g, bool add_d
     // ----------------
     {
       std::size_t e_idx =
-        this->add_edge(i_l, VertexType::l,
-                       i_r, VertexType::r,
-                       core::color::black,
+        this->add_edge(i_l, v_type::l,
+                       i_r, v_type::r,
+                       color::black,
                        current_vg_vertex.get_label());
 
-      this->get_vertex_mut(i_l).add_edge(e_idx, core::color::black);
-      this->get_vertex_mut(i_r).add_edge(e_idx, core::color::black);
+      this->get_vertex_mut(i_l).add_edge(e_idx, color::black);
+      this->get_vertex_mut(i_r).add_edge(e_idx, color::black);
     }
   };
 
@@ -273,16 +238,16 @@ BVariationGraph::BVariationGraph(const bidirected::VariationGraph &g, bool add_d
         const bidirected::Edge &e = g.get_edge(e_idx);
 
         std::size_t new_v1{};
-        VertexType v1_type{};
+        v_type v1_type{};
 
         if (e.get_v1_idx() == v_idx) {
-          new_v1 = e.get_v2_end() == bidirected::VertexEnd::r ? new_r(e.get_v2_idx()) : new_l(e.get_v2_idx());
-          // std::cout << "neq " << new_v1 << "\n";
-          v1_type = e.get_v2_end() == bidirected::VertexEnd::l ? VertexType::r : VertexType::l;
+          auto [l, r] =  common_fns::frm_bidirected_idx(e.get_v2_idx());
+          new_v1 = e.get_v2_end() == v_end::r ? r : l;
+          v1_type = e.get_v2_end() == v_end::l ? v_type::r : v_type::l;
         } else {
-          new_v1 = e.get_v1_end() == bidirected::VertexEnd::l ? new_l(e.get_v1_idx()) : new_r(e.get_v1_idx());
-          // std::cout << "nneq " << new_v1 << "\n";
-          v1_type = e.get_v1_end() == bidirected::VertexEnd::l ? VertexType::l : VertexType::r;
+          auto [l, r] =  common_fns::frm_bidirected_idx(e.get_v1_idx());
+          new_v1 = e.get_v1_end() == v_end::l ? l : r;
+          v1_type = e.get_v1_end() == v_end::l ? v_type::l : v_type::r;
         }
 
         if (added_edges.count(unordered_pair(new_v1, i_l))) { continue; }
@@ -296,10 +261,10 @@ BVariationGraph::BVariationGraph(const bidirected::VariationGraph &g, bool add_d
           //continue;
         }
 
-        std::size_t gray_e_idx = this->add_edge(new_v1, v1_type, i_l, VertexType::l,core::color::gray);
+        std::size_t gray_e_idx = this->add_edge(new_v1, v1_type, i_l, v_type::l,color::gray);
 
-        //this->get_vertex_mut(new_v1).add_edge(gray_e_idx, core::color::gray);
-        //this->get_vertex_mut(i_l).add_edge(gray_e_idx, core::color::gray);
+        //this->get_vertex_mut(new_v1).add_edge(gray_e_idx, color::gray);
+        //this->get_vertex_mut(i_l).add_edge(gray_e_idx, color::gray);
       }
 
       // add gray edges incident with the 3' (right/-) vertex
@@ -308,86 +273,183 @@ BVariationGraph::BVariationGraph(const bidirected::VariationGraph &g, bool add_d
         bidirected::Edge e = g.get_edge(e_idx);
 
         std::size_t new_v2{};
-        VertexType v2_type;
+        v_type v2_type;
 
         if (e.get_v2_idx() == v_idx){
-          new_v2 = e.get_v1_end() == bidirected::VertexEnd::l ? new_l(e.get_v1_idx()) : new_r(e.get_v1_idx());
-          v2_type = e.get_v1_end() == bidirected::VertexEnd::l ? VertexType::l : VertexType::r;
+          auto [l, r] =  common_fns::frm_bidirected_idx(e.get_v1_idx());
+          new_v2 = e.get_v1_end() ==  v_end::l ? l : r;
+          v2_type = e.get_v1_end() == v_end::l ? v_type::l : v_type::r;
         }
         else {
-          new_v2 =
-            e.get_v2_end() == bidirected::VertexEnd::l ?
-            new_l(e.get_v2_idx()) :
-            new_r(e.get_v2_idx());
-
-          v2_type =
-            e.get_v2_end() == bidirected::VertexEnd::l ? VertexType::l : VertexType::r;
+          auto [l, r] =  common_fns::frm_bidirected_idx(e.get_v2_idx());
+          new_v2 = e.get_v2_end() == v_end::l ?  l : r;
+          v2_type = e.get_v2_end() == v_end::l ? v_type::l : v_type::r;
         }
 
         if (added_edges.count(unordered_pair(i_r, new_v2))) { continue; }
 
         added_edges.insert(unordered_pair(i_r, new_v2));
 
-                if (new_v2 == i_r) {
-                  std::cout << "i_r "<< new_v2 << std::endl;
+        if (new_v2 == i_r) {
+          std::cout << "i_r "<< new_v2 << std::endl;
         }
 
-                if (new_v2 == i_r) {
-                  continue;
-                }
+        if (new_v2 == i_r) { continue; }
 
-        this->add_edge(i_r, VertexType::r,
-                       new_v2, v2_type,
-                       core::color::gray);
+        this->add_edge(i_r, v_type::r, new_v2, v2_type, color::gray);
 
-        //this->get_vertex_mut(i_r).add_edge(this->edges.size() - 1, core::color::gray);
-        //this->get_vertex_mut(new_v2).add_edge(this->edges.size() - 1, core::color::gray);
+        //this->get_vertex_mut(i_r).add_edge(this->edges.size() - 1, color::gray);
+        //this->get_vertex_mut(new_v2).add_edge(this->edges.size() - 1, color::gray);
       }
 
     return;
   };
 
-  if (add_dummy_vertices) { // add dummy start
-    this->vertices.push_back(Vertex("d_s", 0, VertexType::dummy));
-  }
-
-  for (std::size_t i = 0; i < g.size(); ++i) {
-    duplicate_vertices(g.get_vertex(i), new_l(i) , new_r(i));
-  }
-
-  if (add_dummy_vertices) { // add grey edges from dummy start to graph starts
-    for (auto i : g.graph_start_nodes()) {
-      VertexType vt = g.get_vertex(i).get_edges_l().empty() ? VertexType::l : VertexType::r ;
-      std::size_t v2 = vt == VertexType::l ? new_l(i) : new_r(i);
-
-      this->add_edge(0, VertexType::dummy, v2, vt, core::color::gray);
-    }
-  }
-
-  for (std::size_t i = 0; i < g.size(); ++i) {
-    do_gray_edges(i, g.get_vertex(i),  new_l(i) , new_r(i));
-  }
-
+  // add dummy vertex to make it all one SCC
   if (add_dummy_vertices) {
-    // add dummy end
-    this->vertices.push_back(Vertex("d_e", this->size(), VertexType::dummy));
+    this->dummy_vertices_.push_back(0);
+    this->vertices.push_back(Vertex("d_s", 0, v_type::dummy));
+  }
 
-    // add grey edges from graph ends to dummy end
-    for (auto i : g.graph_end_nodes()) {
-      VertexType vt = g.get_vertex(i).get_edges_r().empty() ? VertexType::r : VertexType::l ;
-      std::size_t v1 = vt == VertexType::l ? new_l(i) : new_r(i);
-      this->add_edge(v1, vt, this->size() - 1, VertexType::dummy, core::color::gray);
-    }
+  // add duplicate vertices and black edges
+  for (std::size_t i = 0; i < g.size(); ++i) {
+    auto [l, r] =  common_fns::frm_bidirected_idx(i);
+    duplicate_vertices(g.get_vertex(i), l , r);
+  }
 
-    // add an egde between the dummy start and the dummy end
-    if (add_dummy_vertices) {
-      this->add_edge(0, VertexType::dummy, this->size() - 1, VertexType::dummy, core::color::gray);
+  // add gray edges between duplicated vertices
+  for (std::size_t i = 0; i < g.size(); ++i) {
+    auto [l, r] =  common_fns::frm_bidirected_idx(i);
+    do_gray_edges(i, g.get_vertex(i),  l , r);
+  }
+
+  // connect dummy vertices to tips
+  if (add_dummy_vertices) {
+    for (auto [side, id] : g.tips()) {
+      v_type vt = side == v_end::l ? v_type::l : v_type::r;
+      auto [l, r] =  common_fns::frm_bidirected_idx(id);
+      std::size_t v1 = vt == v_type::l ? l : r;
+
+      this->add_edge(0, v_type::dummy, v1, vt, color::gray);
     }
   }
 }
 
+/*
+  Getters
+*/
+
+std::set<std::pair<color, std::size_t>> BVariationGraph::get_neighbours(std::size_t vertex_idx) const {
+  std::set<std::pair<color, std::size_t>> neighbours;
+  Vertex const& v = this->get_vertex(vertex_idx);
+
+  for (auto e_idx : v.get_grey_edges()) {
+    const Edge& e = this->get_edge(e_idx);
+    std::size_t other_vertex = e.get_other_vertex(vertex_idx);
+    std::pair<color, std::size_t> p = std::make_pair(color::gray, other_vertex);
+    neighbours.insert(p);
+  }
+
+  std::size_t black_e_idx = v.get_black_edge();
+  if (black_e_idx != core::constants::UNDEFINED_SIZE_T) {
+  neighbours.insert(std::make_pair(
+      color::black,
+      this->get_edge(black_e_idx).get_other_vertex(vertex_idx)));
+  }
+
+
+  return neighbours;
+}
+
+const biedged::Vertex& BVariationGraph::get_vertex(std::size_t i) const {
+  return vertices.at(i);
+}
+
+const std::vector<size_t>& BVariationGraph::get_dummy_vertices() const {
+  return this->dummy_vertices_;
+}
+
+std::size_t BVariationGraph::size() const {
+  return vertices.size();
+}
+
+Vertex& BVariationGraph::get_vertex_mut(std::size_t i) {
+  return vertices.at(i);
+}
+
+const std::vector<Edge>& BVariationGraph::get_all_edges() const {
+  return this->edges;
+}
+
+Edge& BVariationGraph::get_edge_mut(std::size_t e_idx) {
+  return this->edges.at(e_idx);
+}
+
+const Edge& BVariationGraph::get_edge(std::size_t edge_idx) const {
+  return this->edges.at(edge_idx);
+}
+
+
+/*
+  Setters
+*/
+
+std::size_t BVariationGraph::add_edge(std::size_t v1, v_type v1_type,
+                                      std::size_t v2, v_type v2_type,
+                                      color c) {
+  this->edges.push_back(Edge(v1, v1_type, v2, v2_type, c));
+  this->get_vertex_mut(v1).add_edge(this->edges.size() - 1, c);
+  this->get_vertex_mut(v2).add_edge(this->edges.size() - 1, c);
+
+  return this->edges.size() - 1;
+}
+
+std::size_t BVariationGraph::add_edge(std::size_t v1, v_type v1_type,
+                                      std::size_t v2, v_type v2_type,
+                                      color c, std::string label) {
+  this->edges.push_back(Edge(v1, v1_type, v2, v2_type, c, label));
+  this->get_vertex_mut(v1).add_edge(this->edges.size() - 1, c);
+  this->get_vertex_mut(v2).add_edge(this->edges.size() - 1, c);
+
+  return this->edges.size() - 1;
+}
+
+void BVariationGraph::add_vertex(std::string handle_str, v_type vertex_type) {
+  vertices.push_back(Vertex(handle_str, vertices.size(), vertex_type));
+}
+
+bool BVariationGraph::replace_vertex(std::size_t vertex_idx, std::string handle_str, v_type vertex_type) {
+  if (this->get_vertex(vertex_idx).get_handle() != "") {
+    return false;
+  }
+
+  this->get_vertex_mut(vertex_idx) = Vertex(handle_str, vertex_idx, vertex_type);
+  return true;
+}
+
+void BVariationGraph::update_eq_classes(spanning_tree::Tree& st) {
+  const std::map<std::size_t, std::pair<spanning_tree::EdgeType, std::size_t>>& m = st.get_g_edge_idx_map();
+
+  for (auto& [e_idx, v] : m) {
+    auto [e_type, t_e_idx] = v;
+
+    std::size_t eq_class = (e_type == spanning_tree::EdgeType::tree_edge)
+      ? st.get_tree_edge(v.second).get_class()
+      : st.get_backedge(v.second).get_class();
+
+    auto e = this->get_edge_mut(e_idx);
+
+    this->get_edge_mut(e_idx).set_eq_class(eq_class);
+  }
+}
+
+/*
+  Misc
+*/
+
 void BVariationGraph::print_dot() const {
-  std::cout << "graph G {\n" <<
+  std::cout <<
+    "graph G {\n" <<
     "\trankdir=LR;\n" <<
     "\tnode [shape=circle];\n";
 
@@ -396,20 +458,22 @@ void BVariationGraph::print_dot() const {
       std::format("\t{} [label=\"{}{}\"]\n",
                   v_idx,
                   this->get_vertex(v_idx).get_handle(),
-                  (this->get_vertex(v_idx).get_type() == VertexType::l ? "+" : "-") );
+                  (this->get_vertex(v_idx).get_type() == v_type::l ? "+" : "-") );
   }
 
   //
   for (std::size_t e_idx{}; e_idx < this->edges.size() ; ++e_idx) {
     auto e = this->edges.at(e_idx);
-    if (e.get_color() == core::color::black) {
+    if (e.get_color() == color::black) {
       std::cout <<
-        std::format("\t{} -- {} [color=\"black\"; label=\"{}\"];\n",
-                    e.get_v1_idx(), e.get_v2_idx(), e.get_label());
+        std::format("\t{} -- {} [color=\"black\"; label=\"{} {}\"];\n",
+                    e.get_v1_idx(), e.get_v2_idx(), e.get_label(),
+                    (e.get_eq_class() == core::constants::UNDEFINED_SIZE_T ? "" : std::to_string(e.get_eq_class())) );
     }
     else {
       std::cout <<
-        std::format("\t{} -- {} [color=\"gray\"];\n", e.get_v1_idx(), e.get_v2_idx());
+        std::format("\t{} -- {} [color=\"gray\" label=\"{}\"];\n", e.get_v1_idx(), e.get_v2_idx(),
+                    (e.get_eq_class() == core::constants::UNDEFINED_SIZE_T ? "" : std::to_string(e.get_eq_class())));
     }
   }
 
@@ -433,6 +497,7 @@ spanning_tree::Tree BVariationGraph::compute_spanning_tree() const {
 
     if (visited.find(v_idx) == visited.end()) {
       t.set_dfs_num(v_idx, counter);
+      t.set_vertex_type(v_idx, this->get_vertex(v_idx).get_type());
       t.set_sort(counter, v_idx);
       t.set_sort_g(v_idx, counter);
       t.get_vertex_mut(v_idx).set_name(this->get_vertex(v_idx).get_handle()) ;
@@ -446,14 +511,14 @@ spanning_tree::Tree BVariationGraph::compute_spanning_tree() const {
 
     std::set<size_t> adj_edges = v.get_grey_edges();
     // if (v.get_black_edge() != core::constants::UNDEFINED_SIZE_T) { adj_edges.insert(v.get_black_edge()); }
-    if (v.get_type() != VertexType::dummy) { adj_edges.insert(v.get_black_edge()); }
+    if (v.get_type() != v_type::dummy) { adj_edges.insert(v.get_black_edge()); }
 
     for (auto e_idx : adj_edges) {
       const Edge &e = this->edges.at(e_idx);
       std::size_t adj_v_idx = e.get_other_vertex(v_idx);
 
       if (visited.find(adj_v_idx) == visited.end()) {
-        t.add_tree_edge(v_idx, adj_v_idx, e.get_color());
+        t.add_tree_edge(v_idx, adj_v_idx, e_idx, e.get_color());
         s.push(adj_v_idx);
         explored = false;
         break;
@@ -467,7 +532,7 @@ spanning_tree::Tree BVariationGraph::compute_spanning_tree() const {
       ) {
         // TODO: why the has child and not parent test?
         //std::cout << "adding back edge: " << v_idx << " -> " << a << std::endl;
-        t.add_be(v_idx, adj_v_idx, false, e.get_color());
+        t.add_be(v_idx, adj_v_idx, e_idx, false, e.get_color());
       }
     }
 

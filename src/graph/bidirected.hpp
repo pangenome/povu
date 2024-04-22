@@ -2,31 +2,23 @@
 #define BIDIRECTED_HPP
 
 #include <cstddef>
+#include <map>
+#include <set>
 #include <string>
 #include <sys/types.h>
 #include <vector>
-#include <unordered_set>
-#include <set>
-#include <map>
 
 #include <handlegraph/handle_graph.hpp>
 #include "../core/core.hpp"
+#include "../core/constants.hpp"
+#include "../common/common.hpp"
 
 namespace hg = handlegraph;
 
 namespace bidirected {
 
-/**
- * Path (or color)
- * ---------------
- */
-struct path_t {
-  std::string name; // name as pertains the GFA file
-  std::size_t id; // numerical id to be associated with handle
-  bool is_circular; // is the path circular?
+using namespace graph_types;
 
-  // TODO: use methods here instead of accessing directly
-};
 
 // TODO: replace with struct or class to allow methods like complement
 enum class orientation_t {
@@ -35,39 +27,12 @@ enum class orientation_t {
 };
 std::ostream& operator<<(std::ostream& os, const orientation_t& o);
 
-/**
-   l (left) 5' or +
-   r (left) 3' or -
- */
-// TODO: replace with struct or class to allow methods like complement
-enum class VertexEnd {
-  l,
-  r
-};
-typedef VertexEnd v_end_t;
-// -----------
-// operator(s)
-// -----------
-std::ostream& operator<<(std::ostream& os, const VertexEnd& ve);
-VertexEnd complement(VertexEnd ve);
-
 struct id_n_orientation_t {
   std::size_t v_idx;
   orientation_t orientation;
 };
 std::ostream& operator<<(std::ostream& os, const id_n_orientation_t& x);
 
-struct side_n_id_t {
-  VertexEnd v_end;
-  std::size_t v_idx;
-
-  // prototype < operator
-  friend bool operator<(const side_n_id_t& lhs, const side_n_id_t& rhs);
-
-  // method complement
-  side_n_id_t complement() const;
-};
-std::ostream& operator<<(std::ostream& os, const side_n_id_t& x);
 
 struct PathInfo {
   std::size_t path_id;
@@ -81,16 +46,19 @@ struct PathInfo {
 };
 
 /**
-   Each edge connects a pair of vertices.
-   An edge is + incident or - incident to each vertex which is a VertexEnd
-   the pair is vertex id and vertex incident side
-   all edges in this graph are gray and have no labels
+ * Each edge connects a pair of vertices.
+ * An edge is + incident or - incident to each vertex which is a VertexEnd
+ * the pair is vertex id and vertex incident side
+ * all edges in this graph are gray and have no labels
  */
 class Edge {
   std::size_t v1_idx;
   VertexEnd v1_end;
   std::size_t v2_idx;
   VertexEnd v2_end;
+
+  // the equivalence class of the edge
+  std::size_t eq_class {core::constants::UNDEFINED_SIZE_T};
 
 public:
   // --------------
@@ -112,6 +80,7 @@ public:
   //   - nice to have:
   //     * check that the vertex at vertex index is connected to this edge
   side_n_id_t get_other_vertex(std::size_t vertex_index) const;
+  std::size_t get_eq_class() const;
 
   // ---------
   // setter(s)
@@ -120,6 +89,7 @@ public:
   // void set_v1_end(VertexEnd v1_end);
   void set_v2_idx(std::size_t v2_idx);
   // void set_v2_end(VertexEnd v2_end);
+  void set_eq_class(std::size_t eq_class);
 
   // -----------
   // operator(s)
@@ -129,7 +99,7 @@ public:
 
 
 /**
-   a vertex is invalid if it lacks either a label or a handle
+ * a vertex is invalid if it lacks either a label or a handle
  */
 class Vertex {
   std::string label; // or sequence
@@ -149,6 +119,9 @@ class Vertex {
   bool is_reversed_;
 
   std::string name_; // sequence name in the GFA file
+
+  // the equivalence class of the vertex
+  std::size_t eq_class {core::constants::UNDEFINED_SIZE_T};
 
 public:
   // --------------
@@ -171,6 +144,7 @@ public:
   const std::set<std::size_t>& get_edges_l() const;
   const std::set<std::size_t>& get_edges_r() const;
   const std::vector<PathInfo>& get_paths() const;
+  std::size_t get_eq_class() const;
 
 
   // ---------
@@ -187,6 +161,8 @@ public:
 
   // It is up to the user to make sure that the path_id is not already in the "set"
   void add_path(std::size_t path_id, std::size_t step_index);
+  void set_eq_class(std::size_t eq_class);
+
 };
 
 struct component;
@@ -194,8 +170,8 @@ struct component;
 
 
 /**
-  * A variation graph as a bidirected graph
-  */
+ * A variation graph as a bidirected graph
+ */
 class VariationGraph {
   std::vector<Vertex> vertices;
   std::vector<Edge> edges;
@@ -207,13 +183,13 @@ class VariationGraph {
   // TODO: associate with paths above, maybe make it a map as well or merge them into one
   std::vector<std::vector<id_n_orientation_t>> raw_paths;
 
-  // a.k.a tips
-  std::set<std::size_t> tips_;
+  // vertices with incident edges on only one side
+  std::set<side_n_id_t> tips_;
 
   // graph start nodes are vertices with edges adjacent to only one side, the right side or the left side
   // the side is the one without any incident edges
-  std::set<std::size_t> graph_start_nodes_;
-  std::set<std::size_t> graph_end_nodes_;
+  //std::set<std::size_t> graph_start_nodes_;
+  //std::set<std::size_t> graph_end_nodes_;
 
   // we store the side which would visit a black edge
   // haplotype start nodes are vertices which start paths according to the P lines in a GFA file
@@ -240,8 +216,15 @@ public:
   // ---------
   std::size_t size() const; // the number of vertices in the graph valid or not
   const Vertex& get_vertex(std::size_t index) const;
+
+  const Vertex& get_vertex_by_name(std::string n) const;
+  std::size_t get_vertex_idx_by_name(std::string n) const;
+
+
   Vertex& get_vertex_mut(std::size_t index);
   const Edge& get_edge(std::size_t index) const;
+  Edge& get_edge_mut(std::size_t index);
+  const std::vector<Edge>& get_all_edges() const;
 
   /**
    * @brief Get all paths between two nodes in the bidirected variation graph
@@ -261,14 +244,20 @@ public:
   const path_t& get_path(std::size_t path_id) const;
   std::size_t get_path_count() const;
 
-  std::set<std::size_t> const& tips() const;
+  std::set<side_n_id_t> const& tips() const;
+
+  // tips that are not hap starts or hap ends
+  // by definition they are not part of any path as well
+  std::set<side_n_id_t> get_orphan_tips() const;
 
   // graph start nodes are tips that are haplotype starts or ends
   // if strict is true, only return tips which are haplotype start or end nodes
   // i.e. non orphan tips
   // TODO: implement strict
-  std::set<std::size_t> graph_start_nodes(bool strict=false) const;
-  std::set<std::size_t> graph_end_nodes(bool strict=false) const;
+  std::set<side_n_id_t> graph_start_nodes(bool strict=false) const;
+
+  // if strict is false it allows orphan tips
+  std::set<side_n_id_t> graph_end_nodes(bool strict=false) const;
 
   // TODO: remove the find part? replace with get?
   std::set<side_n_id_t> const& find_haplotype_start_nodes() const;
@@ -278,6 +267,7 @@ public:
   //std::set<std::size_t> get_edges(std::size_t vertex_index, VertexEnd vertex_end) const;
 
   /**
+   * @brief Get the minimum vertex id
    */
   bool validate_haplotype_paths();
 
@@ -300,10 +290,10 @@ public:
   void add_path(const path_t &path);
   void set_raw_paths(std::vector<std::vector<id_n_orientation_t>> &raw_paths);
 
-  void add_tip(std::size_t node_id);
+  void add_tip(std::size_t node_id, VertexEnd end);
 
-  bool add_graph_start_node(std::size_t node_id);
-  bool add_graph_end_node(std::size_t node_id);
+  //bool add_graph_start_node(std::size_t node_id);
+  //bool add_graph_end_node(std::size_t node_id);
 
   void add_haplotype_start_node(side_n_id_t i);
   void add_haplotype_stop_node(side_n_id_t i);
@@ -312,11 +302,12 @@ public:
   void set_max_id(std::size_t max_id);
 
   // sort by in degree on the left side of the
-  void sort();
+  // void sort();
 
   std::map<std::size_t, component> count_components(const core::config& app_config);
 
-
+  void set_vertex_eq_class(std::size_t v_idx, std::size_t eq_class);
+  void set_edge_eq_class(std::size_t e_idx, std::size_t eq_class);
 
   // ----
   // misc

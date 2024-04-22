@@ -1,19 +1,12 @@
 #include <algorithm>
 #include <cstddef>
-#include <cstdint>
-#include <format>
-#include <iostream>
 #include <limits>
 #include <unistd.h>
 #include <utility>
 #include <vector>
-#include <map>
-#include <stack>
 
-//#include "./vst.hpp"
-#include "../graph/tree.hpp"
-//#include "../graph/u_graph.hpp"
 #include "../graph/spanning_tree.hpp"
+#include "../core/constants.hpp"
 
 namespace algorithms {
 // TODO: move to constants
@@ -22,24 +15,24 @@ namespace algorithms {
   ---------
 */
 const std::size_t SIZE_T_MAX = std::numeric_limits<size_t>::max();
-  
+using core::constants::UNDEFINED_SIZE_T;
+using core::constants::INVALID_ID;
 
 /**
  * Compute the equivalance class of a given vertex
  */
-void handle_vertex(spanning_tree::Tree& t, std::size_t r) {
+void handle_vertex(spanning_tree::Tree& t, std::size_t v) {
 
-  std::size_t v = t.get_sorted(r);
+  //std::size_t v = t.get_sorted(r);
 
   /*
    * compute v.hi
    * ------------
    */
-  std::set<std::size_t> obe = t.get_obe(v);
 
-  std::size_t hi_0 {SIZE_T_MAX};
+  std::size_t hi_0 {UNDEFINED_SIZE_T};
+  std::set<std::size_t> obe = t.get_obe(v);
   for (auto be: obe) {
-    // if (t.get_vertex(be).dfs_num() < hi_0) { hi_0 = t.get_vertex(be).dfs_num(); }
     hi_0 = std::min(hi_0, t.get_vertex(be).dfs_num());
   }
 
@@ -48,6 +41,9 @@ void handle_vertex(spanning_tree::Tree& t, std::size_t r) {
   // its hi value is hi_1 and the dfs num of that vertex is hi_child
   // children are empty for dummy stop node
 
+  std::size_t hi_1 {UNDEFINED_SIZE_T};
+
+
   std::set<std::size_t> children = t.get_children(v);
 
   // a vector of pairs of hi values and children
@@ -55,58 +51,37 @@ void handle_vertex(spanning_tree::Tree& t, std::size_t r) {
   hi_and_child.reserve(children.size());
 
   // for each child input the hi value and the child
-  for (auto child: children) {
-      hi_and_child.push_back({t.get_vertex(child).hi(), child});
+  for (std::size_t child: children) {
+    hi_and_child.push_back({t.get_vertex(child).hi(), child});
   }
-
-  // sort the vertex by hi value
   std::sort(hi_and_child.begin(), hi_and_child.end());
+  if (!children.empty()) { hi_1 = hi_and_child[0].first; }
 
-  // for each child vertex
-  // the lowest hi value of all the children vertices
-  std::size_t hi_1{SIZE_T_MAX};
-
-  // TODO: urgent!! look into this
-  // the child vertex whose hi value is hi_1
-  std::size_t hi_child{SIZE_T_MAX};
-
-  // if hi_and_child is not empty
-  // assign hi_1 and hi_child from the first element of hi_and_child
-  if (!hi_and_child.empty()) {
-      hi_1 = hi_and_child[0].first;
-      hi_child = hi_and_child[0].second;
-  }
-
-  //spanning_tree::Vertex& vv = ;
   t.get_vertex_mut(v).set_hi(std::min(hi_0, hi_1));
 
   //std::size_t n_hi = std::min(hi_0, hi_1);
+  // TODO: urgent!! look into this
 
-  std::size_t hi_2{SIZE_T_MAX};
-
-  // if hi_and_child has at least 2 elements
-  // assign hi_2 from the second element of hi_and_child
-  if (hi_and_child.size() > 1) {
-       hi_2 = hi_and_child[1].first;
-  }
-
-  // sorts by the first element of the pair
-  std::set<std::pair<std::size_t, std::size_t>> p; // TODO: rename p
-  for (auto c: children) {
-    p.insert(std::make_pair(t.get_hi(c), c));
-  }
-
-  if (!p.empty()) {
-    hi_1 = p.begin()->first;
-    hi_child = p.begin()->second;
-
-    if (p.size() > 1) {
-      hi_2 = (++p.begin())->first;
+  // the child vertex whose hi value is hi_1
+  std::size_t hi_child { UNDEFINED_SIZE_T };
+  for (std::size_t child: children) {
+    if (t.get_vertex(child).hi() == hi_1) {
+      hi_child = child;
+      break;
     }
   }
 
-  std::size_t v_hi = std::min(hi_0, hi_1);
-  t.set_hi(v, v_hi);
+  // if hi_and_child has at least 2 elements
+  // assign hi_2 from the second element of hi_and_child
+  // works because hi_and_child is sorted
+  std::size_t hi_2 { UNDEFINED_SIZE_T };
+  for (std::size_t child: children) {
+    if (child != hi_child) {
+      hi_2 = t.get_vertex(child).hi();
+      break;
+    }
+  }
+
 
   /*
    * compute bracket list
@@ -122,7 +97,7 @@ void handle_vertex(spanning_tree::Tree& t, std::size_t r) {
   // pop incoming backedges
   // remove backedges we have reached the end of
   std::set<std::size_t> ibe_idxs = t.get_ibe_idxs(v);
-  for (auto b: ibe_idxs) {
+  for (std::size_t b: ibe_idxs) {
     t.del_bracket(v, b);
 
     // TODO: set backedge class ?? was id not enough?
@@ -135,13 +110,13 @@ void handle_vertex(spanning_tree::Tree& t, std::size_t r) {
 
   // push outgoing backedges
   std::set<std::size_t> obe_i = t.get_obe_idxs(v);
-  for (auto b: obe_i) {
-    t.push(v, b);
+  for (std::size_t be_idx: obe_i) {
+    t.push(v, be_idx);
   }
 
   if (hi_2 < hi_0) {
     // add a capping backedge
-      std::size_t dest_v =  t.get_sorted(hi_2);
+    std::size_t dest_v =  hi_2;
     std::size_t be_idx = t.add_be(v, dest_v, true);
     t.push(v, be_idx);
   }
@@ -164,13 +139,6 @@ void handle_vertex(spanning_tree::Tree& t, std::size_t r) {
     // the class of the topmost bracket in the bracket stack
     spanning_tree::Edge& e = t.get_incoming_edge(v);
     e.set_class_idx(b.recent_class());
-    if (b.is_capping()) {
-      // e.set_class_idx(b.get_class());
-      //e.set_class_idx(b.recent_class() - 1);
-    } else {
-
-    }
-    //e.set_class_idx(b.recent_class());
 
     /*check for e, b equivalance*/
     if (b.recent_size() == 1) {

@@ -263,9 +263,16 @@ bidirected::VariationGraph to_vg(const char* filename, const core::config& app_c
   }
 
   // populate tips
+  // -------------
+
   for (std::size_t v_idx{}; v_idx < vg.size(); ++v_idx) {
     const bidirected::Vertex &v = vg.get_vertex(v_idx);
-    if (v.get_edges_l().empty() || v.get_edges_r().empty()) {  vg.add_tip(v_idx); }
+    if (v.get_edges_l().empty() && v.get_edges_r().empty()) {
+      std::cerr << std::format(" {} WARN isolated node {} \n", fn_name, v.get_name());
+      vg.add_tip(v_idx, graph_types::VertexEnd::l);
+    }
+    else if (v.get_edges_l().empty()) { vg.add_tip(v_idx, graph_types::VertexEnd::l); }
+    else if (v.get_edges_l().empty()) { vg.add_tip(v_idx, graph_types::VertexEnd::r); }
   }
 
   //std::cout << "Paths added " << std::endl;

@@ -30,11 +30,13 @@ FetchContent_Declare(
   URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
 )
 
+
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 enable_testing()
 
+include(sanitizers.cmake)
 
 if (MSVC)
     # warning level 4
@@ -60,24 +62,25 @@ ADD_LIBRARY(LibsModule
 
   # graph
   src/graph/tree.cpp
-  src/graph/u_graph.cpp
-  src/graph/digraph.cpp
+
+  # trees
+  src/pvst/pvst.cpp
   src/graph/bidirected.cpp
   src/graph/biedged.cpp
   src/graph/spanning_tree.cpp
-  
-  # trees 
-  #src/vst/vst.cpp
-  #src/vst/pst.cpp
-  src/pvst/pvst.cpp
-  src/pst/pst.cpp
-  
+
+  #
+  src/common/common.cpp
+
+
   # genomics
   src/genomics/variant_calling.cpp
   src/genomics/vcf.cpp
+    src/genomics/ops.cpp
 
   # algorithms
   src/algorithms/cycle_equiv.cpp
+  src/algorithms/tree_ops.cpp
 
   # cli
   src/cli/cli.cpp
@@ -139,8 +142,8 @@ file(MAKE_DIRECTORY ${BINARY_DIR}/)
 
 
 add_custom_command(TARGET povu
-                   POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:povu> ../${BINARY_DIR}/)
+		   POST_BUILD
+		   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:povu> ../${BINARY_DIR}/)
 
 add_executable( povu_test
   tests/main_tests.cc

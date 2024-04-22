@@ -1,19 +1,16 @@
 #ifndef CORE_HPP
 #define CORE_HPP
 
-#include <map>
-#include <memory>
+
 #include <string>
 #include <unistd.h>
 #include <vector>
 #include <utility>
-#include <algorithm>
 #include <iostream>
 #include <optional>
 #include <filesystem>
 
-#include "./constants.hpp"
-#include "./typedefs.hpp"
+
 #include "utils.hpp"
 
 namespace core {
@@ -56,6 +53,7 @@ struct config {
 
   // general
   unsigned char v; // verbosity
+  bool print_dot_ {false}; // generate dot format graphs
 
   //
   bool sort_; // sort the graph (default: true)
@@ -92,6 +90,7 @@ struct config {
   std::vector<std::string>* get_reference_ptr() { return &this->reference_paths; }
   const std::string& get_references_txt() const { return this->references_txt; }
   std::size_t verbosity() const { return this->v; } // can we avoid this being a size_t?
+  bool print_dot() const { return this->print_dot_; }
   bool sort() const { return this->sort_; }
   bool gen_undefined_vcf() const { return this->undefined_vcf; }
 
@@ -107,6 +106,7 @@ struct config {
   void set_references_txt(std::string s) { this->references_txt = s; }
   void set_verbosity(unsigned char v) { this->v = v; }
   void set_sort(bool b) { this->sort_ = b; }
+  void set_print_dot(bool b) { this->print_dot_ = b; }
   void set_input_gfa(std::string s) { this->input_gfa = s; }
   void set_pvst_path(std::string s) { this->pvst_path = s; }
   void set_task(task_t t) { this->task = t; }
@@ -118,6 +118,7 @@ struct config {
   void dbg_print() {
     std::cerr << "CLI parameters: " << std::endl;
     std::cerr << "\t" << "verbosity: " << this->verbosity() << "\n";
+    std::cerr << "\t" << "print dot: " << (this->print_dot() ? "yes" : "no") << "\n";
     std::cerr << "\t" << "sort: " << (this->sort() ? "yes" : "no") << "\n";
     std::cerr << "\t" << "task: " << this->task << std::endl;
     std::cerr << "\t" << "input gfa: " << this->input_gfa << std::endl;
@@ -135,28 +136,6 @@ struct config {
     }
 };
 
-/*
- * ===================
- * Graph related types
- * ===================
- */
-
-
-/*
- * black edge is default
- * TODO: pick a better default
- * gray edge is a bi-edge
- */
-enum color { gray, black };
-
-// implement << operator for color
-std::ostream& operator<<(std::ostream& os, const color& c);
-
-// Eq class and node id
-struct eq_n_id_t {
-  std::size_t eq_class;
-  std::size_t v_id;
-};
 
 } // namespace core
 #endif

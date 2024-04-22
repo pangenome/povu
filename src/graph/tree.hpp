@@ -5,8 +5,8 @@
 #include <string>
 #include <vector>
 #include <cstddef>
-
-
+#include <map>
+#include "../core/constants.hpp"
 namespace tree {
 
 
@@ -140,7 +140,19 @@ public:
   void print_dot(bool with_classes=false);
 };
 
+struct node {
+    std::set<std::size_t> children;
+    std::size_t parent {core::constants::UNDEFINED_SIZE_T};
+};
 
+
+/**
+ * Map backed tree
+ * ---------------
+ *
+ */
+template <typename KeyType, typename ValueType>
+using MapTree = std::map<KeyType, ValueType>;
 
 } // namespace tree
 

@@ -2,21 +2,21 @@
 #define DIGRAPH_HPP
 
 #include <cstddef>
-#include <iostream>
 #include <string>
-#include <unordered_set>
 #include <set>
 #include <vector>
 #include <functional>
 
-#include "../core/core.hpp"
 
+
+#include "../common/common.hpp"
 #include <handlegraph/handle_graph.hpp>
-//#include <handlegraph/mutable_handle_graph.hpp>
+
 
 namespace hg = handlegraph;
 
 namespace digraph {
+using namespace graph_types;
 
 /*
  * Path
@@ -28,7 +28,7 @@ struct path_t {
 };
 
 bool operator<(const path_t& lhs, const path_t& rhs);
-  
+
 /*
  * Edge
  * ----
@@ -36,16 +36,16 @@ bool operator<(const path_t& lhs, const path_t& rhs);
 class Edge {
   std::size_t frm; // from
   std::size_t t; // to
-  core::color c;
+  color c;
 
 public:
   Edge();
-  Edge(std::size_t frm, std::size_t to, core::color c=core::color::black);
+  Edge(std::size_t frm, std::size_t to, color c=color::black);
 
   std::size_t to() const;
   std::size_t from() const;
 
-  core::color get_color() const;
+  color get_color() const;
   bool is_black() const;
 
   void set_from(std::size_t f);
@@ -71,7 +71,7 @@ class Vertex {
   // name of the path the vertex is in
   // std::set<std::size_t> paths;
   // path id and position in the path
-  std::set<std::pair<std::size_t, std::size_t>> paths; 
+  std::set<std::pair<std::size_t, std::size_t>> paths;
 
 
   // TODO: add orientation
@@ -91,8 +91,8 @@ public:
   std::set<Edge>* out_mut ();
   std::set<Edge>* in_mut();
 
-  void add_out(std::size_t self_idx, std::size_t to_idx, core::color c);
-  void add_in(std::size_t from_idx, std::size_t self_idx, core::color c);
+  void add_out(std::size_t self_idx, std::size_t to_idx, color c);
+  void add_in(std::size_t from_idx, std::size_t self_idx, color c);
 
   //void set_seq(std::string& s);
   //void set_handle(std::string&& h);
@@ -103,7 +103,7 @@ public:
   int add_path(std::size_t p_id, std::size_t p_pos);
 
   std::set<std::pair<std::size_t, std::size_t>> const& get_paths() const;
-  
+
   bool is_leaf() const;
 };
 
@@ -162,7 +162,7 @@ public:
    * if the edge is a loop, still add it
    * if the edge is a loop, and the color is grey, do nothing FIXME??
    */
-  void add_edge(std::size_t from, std::size_t to, core::color c=core::color::black);
+  void add_edge(std::size_t from, std::size_t to, color c=color::black);
 
   /*
    * convert the digraph into a biedged graph
@@ -171,14 +171,14 @@ public:
    */
   void biedge();
 
-  
+
   void print_dot();
 
 
   std::vector<path_t> const& get_paths() const;
-  
+
   /*
-	Library implementations
+    Library implementations
   */
 
   // HandleGraph
@@ -189,7 +189,7 @@ public:
   // returns the node_id as a handle
   // TODO: not applicable, make applidable
   handlegraph::handle_t get_handle(const handlegraph::nid_t& node_id,
-								   bool is_reverse = false) const;
+                                   bool is_reverse = false) const;
 
   // same as a size_t cast
   handlegraph::nid_t get_id(const handlegraph::handle_t& handle) const;
@@ -214,13 +214,13 @@ public:
 
  // TODO: implement
  bool follow_edges_impl(const handlegraph::handle_t& handle,
-						bool go_left,
-						const std::function<bool(const handlegraph::handle_t&)>& iteratee) const;
+                        bool go_left,
+                        const std::function<bool(const handlegraph::handle_t&)>& iteratee) const;
 
 
   // TODO: implement
   bool for_each_handle_impl(const std::function<bool(const handlegraph::handle_t&)>& iteratee,
-							bool parallel = false) const;
+                            bool parallel = false) const;
 
 
   // MutableHandleGraph
@@ -231,13 +231,13 @@ public:
   handlegraph::handle_t create_handle(const std::string& sequence);
 
   handlegraph::handle_t create_handle(const std::string& sequence,
-									  const handlegraph::nid_t& id);
+                                      const handlegraph::nid_t& id);
 
   // the second arg is expected to be a string castable into size_t
   //handlegraph::handle_t create_handle(const std::string& sequence, const std::string const& name);
 
   void create_edge(const handlegraph::handle_t& left,
-				   const handlegraph::handle_t& right);
+                   const handlegraph::handle_t& right);
 
   // MutablePathHandleGraph
   // ----------------------
@@ -247,11 +247,11 @@ public:
 
 
   hg::path_handle_t create_path_handle(const std::string& name,
-									   bool is_circular = false);
+                                       bool is_circular = false);
 
 
   hg::path_handle_t rename_path(const hg::path_handle_t& path_handle,
-								const std::string& new_name);
+                                const std::string& new_name);
 
 };
 } // namespace digraph

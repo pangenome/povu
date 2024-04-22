@@ -16,10 +16,11 @@
 #include "../core/core.hpp"
 #include "../core/utils.hpp"
 
-using namespace core::constants;
+
 
 namespace pvst {
-
+using namespace core::constants;
+using namespace graph_types;
 
 /**
  * @brief compute the pvst of a given vector of eq_n_id_t values
@@ -29,7 +30,7 @@ namespace pvst {
  *
  * @return a PVST tree
  */
-tree::Tree compute_pvst(std::vector<core::eq_n_id_t> v, const core::config& app_config) {
+tree::Tree compute_pvst(std::vector<eq_n_id_t> v, const core::config& app_config) {
   std::string fn_name = "[povu::pvst::compute_pvst]";
   if (app_config.verbosity() > 3) { std::cerr << fn_name << "\n"; }
 
