@@ -274,7 +274,7 @@ class Tree {
   // a BracketList for each node
   // the list of backedges bracketing a node
   // a bracketList is a backedge with some metadata around it
-  std::vector<BracketList> bracket_lists;
+  std::vector<BracketList*> bracket_lists;
 
   // the index of an edge or backedge in the input graph
   // key is the graph_idx and the value is the tree_idx or the backedge idx
@@ -314,6 +314,11 @@ public:
   // --------------
   Tree();
   Tree(std::size_t size);
+
+  // ---------
+  // destructor(s)
+  // ---------
+  ~Tree();
 
   // ---------
   // getter(s)
@@ -431,7 +436,7 @@ public:
   void set_sort_g(std::size_t idx, std::size_t vertex);
 
 
-  void add_vertex(Vertex&& v, color clr=color::gray);
+  void add_vertex(Vertex&& v);
 
   // set the dfs number of a vertex
   void set_dfs_num(std::size_t vertex, std::size_t dfs_num);

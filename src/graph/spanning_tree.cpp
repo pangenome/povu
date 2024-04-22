@@ -174,7 +174,7 @@ Tree::Tree() :
   nodes(std::vector<Vertex>{}),
   tree_edges(std::vector<Edge>{}),
   back_edges(std::vector<BackEdge>{}),
-  bracket_lists(std::vector<BracketList>{}),
+  bracket_lists(std::vector<BracketList*>{}),
   sort_(std::vector<std::size_t>{}),
   sort_g(std::vector<std::size_t>{}),
   equiv_class_count_(0) {}
@@ -183,15 +183,34 @@ Tree::Tree(std::size_t size) :
   nodes(std::vector<Vertex>{}),
   tree_edges(std::vector<Edge>{}),
   back_edges(std::vector<BackEdge>{}),
-  bracket_lists(std::vector<BracketList>{}),
+  bracket_lists(std::vector<BracketList*>{}),
   sort_(std::vector<std::size_t>{}),
   sort_g(std::vector<std::size_t>{}),
   equiv_class_count_(0) {
-  this->nodes.resize(size);
-  this->bracket_lists.resize(size);
-  this->sort_.resize(size);
-  this->sort_g.resize(size);
+  this->nodes.reserve(size);
+  this->tree_edges.reserve(size);
+  this->back_edges.reserve(size);
+  this->bracket_lists.reserve(size);
 }
+
+Tree::~Tree(){
+  this->nodes.clear();
+  this->tree_edges.clear();
+  this->back_edges.clear();
+  for (std::size_t i = 0; i < this->bracket_lists.size(); ++i) {
+    if (this->bracket_lists.at(i) != nullptr) {
+      delete this->bracket_lists[i];
+    } else {
+      std::cout << "Bracket list " << i << " is null" << std::endl;
+    }
+  }
+  this->bracket_lists.clear();
+
+  this->sort_.clear();
+  this->sort_g.clear();
+}
+
+
 
 void Tree::set_sort(std::size_t idx, std::size_t vertex) {
   this->sort_.at(idx) = vertex;
@@ -209,9 +228,11 @@ void Tree::set_vertex_type(std::size_t vertex, VertexType type) {
   this->nodes.at(vertex).set_type(type);
 }
 
-void Tree::add_vertex(Vertex&& v, color c) {
+void Tree::add_vertex(Vertex&& v) {
   this->nodes.push_back(std::move(v));
-  this->bracket_lists.push_back(BracketList{});
+  BracketList* b_list = new std::list<Bracket>{};
+
+  this->bracket_lists.push_back(b_list);
 }
 
 Vertex& Tree::get_root() { return this->nodes.at(0); }
@@ -229,7 +250,7 @@ Vertex& Tree::get_vertex_mut(std::size_t vertex) {
 std::size_t Tree::get_root_idx() const { return this->root_node_index; }
 
 std::size_t Tree::list_size(std::size_t vertex) {
-  return this->bracket_lists.at(vertex).size();
+  return this->bracket_lists.at(vertex)->size();
 }
 
 std::size_t Tree::get_hi(std::size_t vertex) {
@@ -481,10 +502,13 @@ void Tree::set_hi(std::size_t vertex, std::size_t val) {
 void Tree::concat_bracket_lists(std::size_t parent_vertex, std::size_t child_vertex) {
   std::string fn_name = std::format("[povu::spanning_tree::Tree::{}]", __func__);
 
-  BracketList* p_b_l_ptr = &this->bracket_lists[parent_vertex];
-  BracketList& bl_c = this->bracket_lists.at(child_vertex);
+  BracketList* bl_p = this->bracket_lists.at(parent_vertex);
+  BracketList* bl_c = this->bracket_lists.at(child_vertex);
 
-  p_b_l_ptr->insert(p_b_l_ptr->end(), bl_c.begin(), bl_c.end());
+  //bl_p.merge(bl_c);
+
+  bl_p->insert(bl_p->end(), bl_c->begin(), bl_c->end());
+  bl_c->clear();
 }
 
 // TODO: once deleted do we care to reflect changes in the concated ones?
@@ -497,12 +521,13 @@ void Tree::del_bracket(std::size_t vertex, std::size_t backedge_idx) {
   std::string fn_name = std::format("[povu::spanning_tree::Tree::{}]", __func__);
 
   std::size_t be_id = this->back_edges.at(backedge_idx).id();
-  BracketList& bl = this->get_bracket_list(vertex);
-  bl.remove_if([&](Bracket& br) { return br.back_edge_id() == be_id; });
+  //BracketList& bl = this->get_bracket_list(vertex);
+  BracketList* bl = this->bracket_lists[vertex];
+  bl->remove_if([&](Bracket& br) { return br.back_edge_id() == be_id; });
 }
 
 BracketList& Tree::get_bracket_list(std::size_t vertex) {
-    return this->bracket_lists.at(vertex);
+  return *this->bracket_lists.at(vertex);
 }
 
 void Tree::push(std::size_t vertex, std::size_t backege_idx) {
@@ -514,7 +539,7 @@ void Tree::push(std::size_t vertex, std::size_t backege_idx) {
                        UNDEFINED_SIZE_T,
                        be.is_capping_backedge());
 
-  this->bracket_lists.at(vertex).push_front(br);
+  this->bracket_lists.at(vertex)->push_front(br);
 
   //Bracket* br_ptr { &this->bracket_lists.at(vertex).front() };
   //this->bracket_lists.at(vertex).front()
@@ -522,7 +547,7 @@ void Tree::push(std::size_t vertex, std::size_t backege_idx) {
 }
 
 Bracket& Tree::top(std::size_t vertex) {
-  return this->bracket_lists.at(vertex).front();
+  return this->bracket_lists.at(vertex)->front();
 }
 
 std::size_t Tree::new_class() { return this->equiv_class_count_++; }

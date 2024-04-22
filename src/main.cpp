@@ -119,7 +119,7 @@ void update_bd_eq_classes(const biedged::BVariationGraph &be_g, bidirected::Vari
 }
 
 spanning_tree::Tree compute_spanning_tree(biedged::BVariationGraph g) {
-  spanning_tree::Tree t = spanning_tree::Tree();
+  spanning_tree::Tree t = spanning_tree::Tree(g.size());
 
   std::stack<std::tuple<std::size_t, std::size_t, bidirected::color>> s; // parent and v idx
   std::set<std::size_t> visited;
@@ -239,14 +239,9 @@ void compute_sese_regions(bidirected::VariationGraph &vg, core::config& app_conf
 
   spanning_tree::Tree st = compute_spanning_tree(bg);
 
-
   if (app_config.print_dot() && app_config.verbosity() > 4) { std::cout << "\n\n" << "Spanning Tree" << "\n\n";
     st.print_dot();
   }
-
-
-
-
 
   if (app_config.verbosity() > 2) { std::cerr << fn_name << " Finding Cycle Equivalent Classes\n"; }
   algorithms::cycle_equiv(st);
