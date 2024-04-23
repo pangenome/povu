@@ -156,6 +156,8 @@ public:
   // getters
   // -------
   std::size_t size() const;
+  std::size_t num_edges() const;
+
   Edge &get_edge_mut(std::size_t edge_idx);
   const Edge& get_edge(std::size_t edge_idx) const;
   const std::vector<Edge>& get_all_edges() const;

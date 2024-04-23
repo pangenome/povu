@@ -8,21 +8,17 @@
 #include <tuple>
 #include <utility>
 
-
 #include "./algorithms/cycle_equiv.hpp"
 #include "./cli/cli.hpp"
+#include "./common/common.hpp"
+#include "./core/constants.hpp"
 #include "./core/core.hpp"
 #include "./genomics/genomics.hpp"
 #include "./graph/bidirected.hpp"
 #include "./graph/biedged.hpp"
 #include "./graph/spanning_tree.hpp"
-
-
-
 #include "./io/io.hpp"
 
-#include "./common/common.hpp"
-#include "core/constants.hpp"
 
 
 /**
@@ -129,6 +125,7 @@ spanning_tree::Tree compute_spanning_tree(biedged::BVariationGraph g) {
   std::size_t counter{}; // dfs pre visit counter
 
   std::map<std::size_t, std::size_t> vtx_to_dfs_num;
+  std::map<std::size_t, std::size_t> dfs_num_to_vtx;
   std::set<std::size_t> in_tree; // graph vertices in the tree
   std::set<std::pair<std::size_t, std::size_t>> back_edges; // avoids duplicate back edges
 
@@ -149,6 +146,7 @@ spanning_tree::Tree compute_spanning_tree(biedged::BVariationGraph g) {
       t.add_vertex(spanning_tree::Vertex{v_idx, counter, v.get_handle(), v.get_type()});
       in_tree.insert(v_idx);
       vtx_to_dfs_num[v_idx] = counter;
+      dfs_num_to_vtx[counter] = v_idx;
 
       if (p_idx != core::constants::INVALID_ID) {
         t.add_tree_edge(vtx_to_dfs_num[p_idx], counter, core::constants::UNDEFINED_SIZE_T, c);
@@ -158,8 +156,6 @@ spanning_tree::Tree compute_spanning_tree(biedged::BVariationGraph g) {
     }
 
     bool explored {true};
-
-    //std::set<std::pair<graph_types::color, std::size_t>> neighbors =
     for (auto [c, n] : g.get_neighbours(v_idx)) {
       if (visited.find(n) == visited.end()) {
         s.push({v_idx, n, c});
@@ -170,6 +166,7 @@ spanning_tree::Tree compute_spanning_tree(biedged::BVariationGraph g) {
       else if (!is_parent_child(n, v_idx) && back_edges.find({n, v_idx}) == back_edges.end())  {
         t.add_be(vtx_to_dfs_num[v_idx], vtx_to_dfs_num[n],core::constants::UNDEFINED_SIZE_T, false, c);
         back_edges.insert({v_idx, n});
+        back_edges.insert({n, v_idx});
       }
     }
 
@@ -184,32 +181,52 @@ spanning_tree::Tree compute_spanning_tree(biedged::BVariationGraph g) {
       std::cerr << "size mismatch " << t.size() << " " << g.size() << "\n";
     }
 
-    // TODO: compare edge count
-
-  for (std::size_t v{}; v < t.size() ; v++) {
-    for (auto c : t.get_children(v)) {
-      if (t.get_vertex(v).dfs_num() >= t.get_vertex(c).dfs_num()) {
-        std::cerr << "te weird " << v << " " << t.get_vertex(v).dfs_num() << " "
-                  << c << " " << t.get_vertex(c).dfs_num() << "\n";
-      }
+    // compare edge count
+    if (t.tree_edge_count() + t.back_edge_count() != g.num_edges()) {
+      std::cerr << "edge count mismatch " << t.tree_edge_count() << " " << t.back_edge_count() << " " << g.num_edges() << "\n";
     }
 
 
-    for (std::size_t tgt : t.get_obe(v)) {
-      if (t.get_vertex(v).dfs_num() <= t.get_vertex(tgt).dfs_num()) {
-        std::cerr << "obe weird " << v << " " << t.get_vertex(v).dfs_num() << " "
-                  << tgt << " " << t.get_vertex(tgt).dfs_num() << "\n";
-      }
-    }
+    for (std::size_t v{}; v < t.size() ; v++) {
+      std::set<std::size_t>const& children = t.get_children(v);
+      std::set<std::size_t>const& obe = t.get_obe(v);
+      std::set<std::size_t>const& ibe = t.get_ibe(v);
 
-    for (std::size_t src : t.get_ibe(v)) {
-      if (t.get_vertex(v).dfs_num() >= t.get_vertex(src).dfs_num()) {
-         std::cerr << "ibe weird" << v << " " << t.get_vertex(v).dfs_num() << " "
-                   << src << " " << t.get_vertex(src).dfs_num() << "\n";
+      if (t.is_root(v)) {
+        if (obe.size() + ibe.size() + children.size() != g.get_neighbours(dfs_num_to_vtx[v]).size()) {
+          std::cerr << "neighbour mismatch " << v << " " << obe.size() << " " << ibe.size() << " " << children.size() << " " << g.get_neighbours(v).size() << "\n";
+        }
+      }
+      else {
+        if (obe.size() + ibe.size() + children.size() + 1 != g.get_neighbours(dfs_num_to_vtx[v]).size()) {
+          std::cerr << "neighbour mismatch " << v << " " << obe.size() << " " << ibe.size() << " " << children.size() << " " << g.get_neighbours(v).size() << "\n";
+        }
+
+      }
+
+      for (auto c : t.get_children(v)) {
+        if (t.get_vertex(v).dfs_num() >= t.get_vertex(c).dfs_num()) {
+          std::cerr << "te weird " << v << " " << t.get_vertex(v).dfs_num() << " "
+                    << c << " " << t.get_vertex(c).dfs_num() << "\n";
+        }
+      }
+
+      for (std::size_t tgt : t.get_obe(v)) {
+        if (t.get_vertex(v).dfs_num() <= t.get_vertex(tgt).dfs_num()) {
+          std::cerr << "obe weird " << v << " " << t.get_vertex(v).dfs_num() << " "
+                    << tgt << " " << t.get_vertex(tgt).dfs_num() << "\n";
+        }
+      }
+
+      for (std::size_t src : t.get_ibe(v)) {
+        if (t.get_vertex(v).dfs_num() >= t.get_vertex(src).dfs_num()) {
+          std::cerr << "ibe weird" << v << " " << t.get_vertex(v).dfs_num() << " "
+                    << src << " " << t.get_vertex(src).dfs_num() << "\n";
+        }
       }
     }
   }
-}
+
   return t;
 }
 
@@ -246,15 +263,13 @@ void compute_sese_regions(bidirected::VariationGraph &vg, core::config& app_conf
   if (app_config.verbosity() > 2) { std::cerr << fn_name << " Finding Cycle Equivalent Classes\n"; }
   algorithms::cycle_equiv(st);
 
-  return;
-
 
   if (app_config.print_dot() && app_config.verbosity() > 4) { std::cout << "\n\n" << "Updated Spanning Tree" << "\n\n";
     st.print_dot();
   }
 
   return;
-
+  /*
   bg.update_eq_classes(st);
   if (app_config.print_dot() && app_config.verbosity() > 4) { std::cout << "\n\n" << "Updated Biedged" << "\n\n";
     bg.print_dot();
@@ -280,6 +295,7 @@ void compute_sese_regions(bidirected::VariationGraph &vg, core::config& app_conf
     std::string n2 {vg.get_vertex(v2).get_name()};
     //std::cout << "(" << n1 << ", " << t1 << ") ~> (" << n2 << ", " << t2 << ")\n";
   }
+  */
 }
 
 /**
@@ -303,7 +319,7 @@ int main(int argc, char *argv[]) {
     std::cerr << std::format("{} Number of components: {}\n", fn_name, components.size());
   }
 
-  for (std::size_t i{8}; i < components.size(); i++) {
+  for (std::size_t i{}; i < components.size(); i++) {
     if (app_config.verbosity() > 2) {
       std::cerr << std::format("{} Handling component: {}\n", fn_name, i+1);
     }
@@ -315,12 +331,10 @@ int main(int argc, char *argv[]) {
 
     if (app_config.verbosity() > 3) { components[i].dbg_print(); }
 
-
     // if ( i==8) { continue; }
 
     compute_sese_regions(components[i], app_config);
 
-    return 0;
   }
 
   return 0;

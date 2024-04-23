@@ -111,6 +111,11 @@ std::ostream& operator<<(std::ostream& os, const Edge& e) {
   Vertex
   ======
 */
+
+/*
+  Constructor(s)
+*/
+
 Vertex::Vertex() :
   black_edge(core::constants::UNDEFINED_SIZE_T),
   grey_edges(std::set<std::size_t>()),
@@ -323,14 +328,56 @@ BVariationGraph::BVariationGraph(const bidirected::VariationGraph &g, bool add_d
     do_gray_edges(i, g.get_vertex(i),  l , r);
   }
 
-  // connect dummy vertices to tips
   if (add_dummy_vertices) {
-    for (auto [side, id] : g.tips()) {
+    this->dummy_vertices_.push_back(this->size());
+    this->vertices.push_back(Vertex("d_e", this->size(), v_type::dummy));
+  }
+
+  // connect dummy start to graph starts
+  if (add_dummy_vertices) {
+    for (auto [side, id] : g.graph_start_nodes()) {
       v_type vt = side == v_end::l ? v_type::l : v_type::r;
       auto [l, r] =  common_fns::frm_bidirected_idx(id);
       std::size_t v1 = vt == v_type::l ? l : r;
 
-      this->add_edge(0, v_type::dummy, v1, vt, color::gray);
+     this->add_edge(0, v_type::dummy, v1, vt, color::gray);
+    }
+  }
+
+  // connect dummy end to graph ends
+
+  if (add_dummy_vertices) {
+
+    std::set<side_n_id_t> orphan_tips = g.get_orphan_tips();
+    std::set<side_n_id_t> end_tips = g.graph_end_nodes();
+
+    end_tips.insert(orphan_tips.begin(), orphan_tips.end());
+
+
+    for (auto [side, id] : end_tips) {
+      v_type vt = side == v_end::l ? v_type::l : v_type::r;
+      auto [l, r] =  common_fns::frm_bidirected_idx(id);
+      std::size_t v1 = vt == v_type::l ? l : r;
+
+            this->add_edge(v1, vt,this->size() - 1, v_type::dummy,  color::gray);
+
+    }
+  }
+
+  // connect dummy start to dummy end
+  if (add_dummy_vertices) {
+    this->add_edge(0, v_type::dummy, this->size() - 1, v_type::dummy, color::gray);
+  }
+
+  for (std::size_t i{} ; i < this->size(); ++i) {
+    if (this->get_neighbours(i).size() < 2) {
+      std::cout << "failed check i " << i << std::endl;
+    }
+
+    if (i>0 && i < this->size() - 1) {
+      if (this->get_vertex(i).get_black_edge() == core::constants::UNDEFINED_SIZE_T) {
+        std::cout << "no black edge failed check i " << i << std::endl;
+      }
     }
   }
 }
@@ -370,8 +417,13 @@ const std::vector<size_t>& BVariationGraph::get_dummy_vertices() const {
 }
 
 std::size_t BVariationGraph::size() const {
-  return vertices.size();
+  return this->vertices.size();
 }
+
+std::size_t BVariationGraph::num_edges() const {
+  return this->edges.size();
+}
+
 
 Vertex& BVariationGraph::get_vertex_mut(std::size_t i) {
   return vertices.at(i);

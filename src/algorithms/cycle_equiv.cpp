@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <limits>
+#include <ostream>
 #include <unistd.h>
 #include <utility>
 #include <vector>
@@ -27,7 +28,7 @@ void cycle_equiv(spanning_tree::Tree &t) {
   // This for loop depends on an overflow
   for (std::size_t v{t.size() - 1}; v < UNDEFINED_SIZE_T; --v) {
 
-    std::cout << "v: " << v;
+    //std::cout << "v: " << v << " name: " << t.get_vertex(v).name() << std::endl;
 
 
     /*
@@ -85,7 +86,7 @@ void cycle_equiv(spanning_tree::Tree &t) {
     }
 
 
-    std::cout << "\tcompute bracket list";
+    //std::cout << "\tcompute bracket list";
     /*
      * compute bracket list
      * --------------------
@@ -126,7 +127,7 @@ void cycle_equiv(spanning_tree::Tree &t) {
     }
 
 
-    std::cout << "\tdetermine equivalance class for edge v.parent() to v";
+    //std::cout << "\tdetermine equivalance class for edge v.parent() to v" << std::flush;
     /*
      * determine equivalance class for edge v.parent() to v
      * ---------------------------------------------------
@@ -134,27 +135,47 @@ void cycle_equiv(spanning_tree::Tree &t) {
 
     // if v is not the root of the spanning tree
     if (!t.is_root(v)) {
-      spanning_tree::Bracket& b = t.top(v);
 
-      if (t.list_size(v) !=  b.recent_size()) {
-        b.set_recent_size(t.list_size(v));
-        b.set_recent_class(t.new_class());
+    /*
+      Add an articulating backedge
+     */
+      if (t.get_bracket_list(v).empty()) {
+        std::size_t cl = t.new_class();
+
+        while (true) {
+          spanning_tree::Edge& e = t.get_incoming_edge(v);
+          e.set_class_idx(cl);
+          if (t.is_root(v) || t.get_obe(t.get_parent(v)).empty()) {
+            break;
+          }
+          --v;
+        }
       }
 
-      // when retreating out of a node the tree edge is labelled with
-      // the class of the topmost bracket in the bracket stack
-      spanning_tree::Edge& e = t.get_incoming_edge(v);
-      e.set_class_idx(b.recent_class());
+      /*default behavior*/
+      else {
+        spanning_tree::Bracket& b = t.top(v);
 
-      /*check for e, b equivalance*/
-      if (b.recent_size() == 1) {
-        std::size_t b_id = b.back_edge_id();
-        spanning_tree::BackEdge& be = t.get_backedge_ref_given_id(b_id);
-        be.set_class(e.get_class_idx());
+        if (t.list_size(v) !=  b.recent_size()) {
+          b.set_recent_size(t.list_size(v));
+          b.set_recent_class(t.new_class());
+        }
+
+        // when retreating out of a node the tree edge is labelled with
+        // the class of the topmost bracket in the bracket stack
+        spanning_tree::Edge& e = t.get_incoming_edge(v);
+        e.set_class_idx(b.recent_class());
+
+        /*check for e, b equivalance*/
+        if (b.recent_size() == 1) {
+          std::size_t b_id = b.back_edge_id();
+          spanning_tree::BackEdge& be = t.get_backedge_ref_given_id(b_id);
+          be.set_class(e.get_class_idx());
+        }
       }
     }
 
-    std::cout << "\tfinished loop" << std::endl;
+    //std::cout << "\tfinished loop" << std::endl;
   }
 }
 

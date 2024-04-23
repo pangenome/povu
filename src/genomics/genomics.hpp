@@ -19,10 +19,7 @@ struct node {
     std::size_t parent {core::constants::UNDEFINED_SIZE_T};
 };
 
-  //void find_seses(spanning_tree::Tree st, const std::vector<std::size_t>& v);
 
-std::vector<std::tuple<std::size_t, VertexType, std::size_t, VertexType>>
-foo(spanning_tree::Tree st, const std::vector<std::size_t>& v, const core::config& app_config);
 }
 
 namespace genomics {

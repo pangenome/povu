@@ -314,6 +314,10 @@ public:
   // --------------
   Tree();
   Tree(std::size_t size);
+  //Tree(const Tree&) = delete;
+  //Tree& operator=(const Tree&) = delete;
+  //Tree(Tree&&) = default;
+  //Tree& operator(Tree&&) = default;
 
   // ---------
   // destructor(s)
@@ -327,6 +331,9 @@ public:
 
   // number of vertices in the tree
   std::size_t size() const;
+  std::size_t tree_edge_count() const;
+  std::size_t back_edge_count() const;
+
   Edge& get_incoming_edge(std::size_t vertex);
 
   Vertex const &get_vertex(std::size_t vertex) const;
@@ -406,6 +413,9 @@ public:
   std::set<std::size_t> get_children(std::size_t vertex);
 
   bool is_root(std::size_t vertex) const;
+  /**
+    * @brief get the parent vertex of parent of a vertex
+   */
   std::size_t get_parent(std::size_t vertex);
 
   bool has_ibe(std::size_t vertex, std::size_t qry_idx);
@@ -467,6 +477,8 @@ public:
 
   // get the bracket on top of the bracket list for v
   Bracket& top(std::size_t vertex);
+
+  //BracketList& get_bracket_list(std::size_t vertex);
 
   // return the current equivalence class count then increment it
   std::size_t new_class();

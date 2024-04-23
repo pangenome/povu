@@ -229,7 +229,7 @@ void Tree::set_vertex_type(std::size_t vertex, VertexType type) {
 }
 
 void Tree::add_vertex(Vertex&& v) {
-  this->nodes.push_back(std::move(v));
+  this->nodes.push_back(v);
   BracketList* b_list = new std::list<Bracket>{};
 
   this->bracket_lists.push_back(b_list);
@@ -238,6 +238,8 @@ void Tree::add_vertex(Vertex&& v) {
 Vertex& Tree::get_root() { return this->nodes.at(0); }
 
 std::size_t Tree::size() const { return this->nodes.size(); }
+std::size_t Tree::tree_edge_count() const { return this->tree_edges.size(); }
+std::size_t Tree::back_edge_count() const { return this->back_edges.size(); }
 
 Vertex const &Tree::get_vertex(std::size_t vertex) const {
   return this->nodes.at(vertex);
@@ -374,9 +376,7 @@ bool Tree::has_obe(std::size_t vertex, std::size_t qry_idx)  {
 }
 
 std::size_t Tree::get_parent(std::size_t vertex) {
-  // std::cout << vertex << "\n";
-    //this->tree_edges.at(vertex).get_parent();
-  auto i = this->get_vertex(vertex).get_parent_idx();
+  std::size_t i = this->get_vertex(vertex).get_parent_idx();
   return this->tree_edges.at(i).get_parent();
 }
 
@@ -454,8 +454,7 @@ void Tree::add_tree_edge(std::size_t frm, std::size_t to, std::size_t g_edge_idx
 std::size_t Tree::add_be(std::size_t frm, std::size_t to, bool capping_be, color c) {
   std::size_t back_edge_idx = this->back_edges.size();
   std::size_t edge_count = back_edge_idx + this->tree_edges.size();
-  this->back_edges.push_back(std::move(BackEdge(edge_count, frm, to, capping_be, c)));
-
+  this->back_edges.push_back(BackEdge(edge_count, frm, to, capping_be, c));
   this->nodes[frm].add_obe(back_edge_idx);
   this->nodes[to].add_ibe(back_edge_idx);
 
@@ -502,10 +501,8 @@ void Tree::set_hi(std::size_t vertex, std::size_t val) {
 void Tree::concat_bracket_lists(std::size_t parent_vertex, std::size_t child_vertex) {
   std::string fn_name = std::format("[povu::spanning_tree::Tree::{}]", __func__);
 
-  BracketList* bl_p = this->bracket_lists.at(parent_vertex);
-  BracketList* bl_c = this->bracket_lists.at(child_vertex);
-
-  //bl_p.merge(bl_c);
+  BracketList* bl_p = this->bracket_lists[parent_vertex];
+  BracketList* bl_c = this->bracket_lists[child_vertex];
 
   bl_p->insert(bl_p->end(), bl_c->begin(), bl_c->end());
   bl_c->clear();
@@ -526,9 +523,6 @@ void Tree::del_bracket(std::size_t vertex, std::size_t backedge_idx) {
   bl->remove_if([&](Bracket& br) { return br.back_edge_id() == be_id; });
 }
 
-BracketList& Tree::get_bracket_list(std::size_t vertex) {
-  return *this->bracket_lists.at(vertex);
-}
 
 void Tree::push(std::size_t vertex, std::size_t backege_idx) {
   std::string fn_name = std::format("[povu::spanning_tree::{}]", __func__);
@@ -539,16 +533,30 @@ void Tree::push(std::size_t vertex, std::size_t backege_idx) {
                        UNDEFINED_SIZE_T,
                        be.is_capping_backedge());
 
-  this->bracket_lists.at(vertex)->push_front(br);
-
-  //Bracket* br_ptr { &this->bracket_lists.at(vertex).front() };
-  //this->bracket_lists.at(vertex).front()
-  //be.set_bracket_ptr(br_ptr); // update the backedge
+  this->bracket_lists[vertex]->push_front(br);
 }
+
+
+BracketList& Tree::get_bracket_list(std::size_t vertex) {
+  std::string fn_name = std::format("[povu::spanning_tree::{}]", __func__);
+  if (this->bracket_lists[vertex] == nullptr ) {
+    throw std::runtime_error(std::format("{} Bracket list is null", fn_name));
+  }
+
+  return *this->bracket_lists[vertex];
+}
+
 
 Bracket& Tree::top(std::size_t vertex) {
-  return this->bracket_lists.at(vertex)->front();
+    std::string fn_name = std::format("[povu::spanning_tree::{}]", __func__);
+  BracketList& bl = this->get_bracket_list(vertex);
+  if (bl.empty()) {
+    throw std::runtime_error(std::format("{} Bracket list is empty", fn_name));
+  }
+
+  return this->bracket_lists[vertex]->front();
 }
+
 
 std::size_t Tree::new_class() { return this->equiv_class_count_++; }
 
