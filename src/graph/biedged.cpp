@@ -383,6 +383,7 @@ BVariationGraph::BVariationGraph(const bidirected::VariationGraph &g, bool add_d
   }
   */
 
+#ifdef DEBUG
   for (std::size_t i{} ; i < this->size(); ++i) {
     if (this->get_neighbours(i).size() < 2) {
       std::cout << "failed check i " << i << std::endl;
@@ -394,6 +395,7 @@ BVariationGraph::BVariationGraph(const bidirected::VariationGraph &g, bool add_d
       }
     }
   }
+#endif
 }
 
 /*
@@ -503,7 +505,7 @@ void BVariationGraph::update_eq_classes(spanning_tree::Tree& st) {
       ? st.get_tree_edge(v.second).get_class()
       : st.get_backedge(v.second).get_class();
 
-    auto e = this->get_edge_mut(e_idx);
+    //auto e = this->get_edge_mut(e_idx);
 
     this->get_edge_mut(e_idx).set_eq_class(eq_class);
   }
@@ -546,72 +548,118 @@ void BVariationGraph::print_dot() const {
   std::cout << "}" << std::endl;
 }
 
-spanning_tree::Tree BVariationGraph::compute_spanning_tree() const {
-  std::string fn_name = std::format("[povu::biedged::{}]", __func__);
+// TODO: make ref params const
+void validate_spanning_tree(BVariationGraph const& g, spanning_tree::Tree& t,   std::map<std::size_t, std::size_t>& dfs_num_to_vtx) {
+    if (t.size() != g.size()) {
+    std::cerr << "size mismatch " << t.size() << " " << g.size() << "\n";
+  }
 
-  spanning_tree::Tree t = spanning_tree::Tree(this->size());
+  // compare edge count
+  if (t.tree_edge_count() + t.back_edge_count() != g.num_edges()) {
+    std::cerr << "edge count mismatch " << t.tree_edge_count() << " " << t.back_edge_count() << " " << g.num_edges() << "\n";
+  }
 
-  std::size_t v_idx {}; // set start node to 0
-  std::stack<std::size_t> s;
-  s.push(v_idx);
+  for (std::size_t v{}; v < t.size() ; v++) {
+    std::set<std::size_t>const& children = t.get_children(v);
+    std::set<std::size_t>const& obe = t.get_obe(v);
+    std::set<std::size_t>const& ibe = t.get_ibe(v);
 
-  std::set<std::size_t> visited;
-  std::size_t counter {};
-
-  while (!s.empty()) {
-    v_idx = s.top();
-
-    if (visited.find(v_idx) == visited.end()) {
-      t.set_dfs_num(v_idx, counter);
-      t.set_vertex_type(v_idx, this->get_vertex(v_idx).get_type());
-      t.set_sort(counter, v_idx);
-      t.set_sort_g(v_idx, counter);
-      t.get_vertex_mut(v_idx).set_name(this->get_vertex(v_idx).get_handle()) ;
-      ++counter;
+    if (t.is_root(v)) {
+      if (obe.size() + ibe.size() + children.size() != g.get_neighbours(dfs_num_to_vtx[v]).size()) {
+        std::cerr << "neighbour mismatch " << v << " " << obe.size() << " " << ibe.size() << " " << children.size() << " " << g.get_neighbours(v).size() << "\n";
+      }
+    }
+    else {
+      if (obe.size() + ibe.size() + children.size() + 1 != g.get_neighbours(dfs_num_to_vtx[v]).size()) {
+        std::cerr << "neighbour mismatch " << v << " " << obe.size() << " " << ibe.size() << " " << children.size() << " " << g.get_neighbours(v).size() << "\n";
+      }
     }
 
-    visited.insert(v_idx);
+    for (auto c : t.get_children(v)) {
+      if (t.get_vertex(v).dfs_num() >= t.get_vertex(c).dfs_num()) {
+        std::cerr << "te weird " << v << " " << t.get_vertex(v).dfs_num() << " "
+                  << c << " " << t.get_vertex(c).dfs_num() << "\n";
+      }
+    }
 
-    bool explored{true};
-    Vertex const &v = this->get_vertex(v_idx);
+    for (std::size_t tgt : t.get_obe(v)) {
+      if (t.get_vertex(v).dfs_num() <= t.get_vertex(tgt).dfs_num()) {
+        std::cerr << "obe weird " << v << " " << t.get_vertex(v).dfs_num() << " "
+                  << tgt << " " << t.get_vertex(tgt).dfs_num() << "\n";
+      }
+    }
 
-    std::set<size_t> adj_edges = v.get_grey_edges();
-    // if (v.get_black_edge() != core::constants::UNDEFINED_SIZE_T) { adj_edges.insert(v.get_black_edge()); }
-    if (v.get_type() != v_type::dummy) { adj_edges.insert(v.get_black_edge()); }
+    for (std::size_t src : t.get_ibe(v)) {
+      if (t.get_vertex(v).dfs_num() >= t.get_vertex(src).dfs_num()) {
+        std::cerr << "ibe weird" << v << " " << t.get_vertex(v).dfs_num() << " "
+                  << src << " " << t.get_vertex(src).dfs_num() << "\n";
+      }
+    }
+  }
+}
 
-    for (auto e_idx : adj_edges) {
-      const Edge &e = this->edges.at(e_idx);
-      std::size_t adj_v_idx = e.get_other_vertex(v_idx);
 
-      if (visited.find(adj_v_idx) == visited.end()) {
-        t.add_tree_edge(v_idx, adj_v_idx, e_idx, e.get_color());
-        s.push(adj_v_idx);
+spanning_tree::Tree BVariationGraph::compute_spanning_tree() const {
+  spanning_tree::Tree t = spanning_tree::Tree(this->size());
+
+  std::stack<std::tuple<std::size_t, std::size_t, bidirected::color>> s; // parent and v idx
+  std::set<std::size_t> visited;
+  std::size_t v_idx {}; // set start node to 0
+  s.push({core::constants::INVALID_ID, v_idx, bidirected::color::gray});
+  visited.insert(v_idx);
+  std::size_t counter{}; // dfs pre visit counter
+
+  std::map<std::size_t, std::size_t> vtx_to_dfs_num;
+  std::map<std::size_t, std::size_t> dfs_num_to_vtx;
+  std::set<std::size_t> in_tree; // graph vertices in the tree
+  std::set<unordered_pair> back_edges; // avoids duplicate back edges
+
+  auto is_parent = [&](std::size_t p, std::size_t c) -> bool {
+    return t.get_children(vtx_to_dfs_num[p]).count(vtx_to_dfs_num[c]);
+  };
+
+  auto is_parent_child = [&](std::size_t n, std::size_t v_idx) -> bool {
+    return is_parent(n, v_idx) || is_parent(v_idx, n);
+  };
+
+  while (!s.empty()) {
+    auto [p_idx, v_idx, c] = s.top();
+
+    biedged::Vertex const& v = this->get_vertex(v_idx);
+
+    if (in_tree.find(v_idx) == in_tree.end()) {
+      t.add_vertex(spanning_tree::Vertex{v_idx, counter, v.get_handle(), v.get_type()});
+      in_tree.insert(v_idx);
+      vtx_to_dfs_num[v_idx] = counter;
+      dfs_num_to_vtx[counter] = v_idx;
+
+      if (p_idx != core::constants::INVALID_ID) {
+        t.add_tree_edge(vtx_to_dfs_num[p_idx], counter, core::constants::UNDEFINED_SIZE_T, c);
+      }
+
+      counter++;
+    }
+
+    bool explored {true};
+    for (auto [c, n] : this->get_neighbours(v_idx)) {
+      if (visited.find(n) == visited.end()) {
+        s.push({v_idx, n, c});
+        visited.insert(n);
         explored = false;
         break;
       }
-      else if (
-        !t.is_root(v_idx) &&
-        t.get_parent(v_idx) != adj_v_idx &&
-        !t.has_child(v_idx, adj_v_idx) &&
-        !t.has_ibe(v_idx, adj_v_idx) &&
-        !t.has_obe(v_idx, adj_v_idx)
-      ) {
-        // TODO: why the has child and not parent test?
-        //std::cout << "adding back edge: " << v_idx << " -> " << a << std::endl;
-        t.add_be(v_idx, adj_v_idx, e_idx, false, e.get_color());
+      else if (!is_parent_child(n, v_idx) && back_edges.find({n, v_idx}) == back_edges.end())  {
+        t.add_be(vtx_to_dfs_num[v_idx], vtx_to_dfs_num[n],core::constants::UNDEFINED_SIZE_T, false, c);
+        back_edges.insert({v_idx, n});
       }
     }
 
     if (explored) { s.pop(); }
   }
 
-  for (std::size_t i{}; i < this->size(); ++i) {
-    if (t.get_vertex(i).is_null()) {
-      throw std::logic_error(std::format("{}: vertex {} is null. {}/{} vertices explored\n",
-                                         fn_name, i, counter, this->size()));
-    }
-  }
-
+#ifdef DEBUG   // check the correctness of the tree
+  validate_spanning_tree(*this, t, dfs_num_to_vtx);
+#endif
   return t;
 }
 

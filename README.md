@@ -50,10 +50,12 @@ Example
 
 ## Development
 
-Compile with debug symbols
 ```
-cmake -DCMAKE_BUILD_TYPE=Debug -H. -Bbuild && cmake --build build -- -j 3
+Compile with debug symbols and with address sanitizer
 ```
+cmake -DCMAKE_BUILD_TYPE=Release -DUSE_SANITIZER=address  -H. -Bbuild && cmake --build build -- -j 3
+```
+
 
 A release version (default)
 ```
@@ -80,21 +82,21 @@ separated plain text file made up of 5 columns as described below
 ![pvst](docs/images/pvst7.png)
 
 ```
-0		T	6	1
-1		T	6	2
-2	0,1,3	D	6	1
-3	10,14,15,4	D	6	2
-4	5,9	T	4	3
-5	6,7,8	T	2	4
-6		T	1	5
-7		T	3	6
-8		T	2	7
-9		T	4	8
-10	11,12,13	T	7	9
-11		T	0	10
-12		T	8	11
-13		T	7	12
-14		T	6	13
-15		T	6	14
+0       T   6   1
+1       T   6   2
+2   0,1,3   D   6   1
+3   10,14,15,4  D   6   2
+4   5,9 T   4   3
+5   6,7,8   T   2   4
+6       T   1   5
+7       T   3   6
+8       T   2   7
+9       T   4   8
+10  11,12,13    T   7   9
+11      T   0   10
+12      T   8   11
+13      T   7   12
+14      T   6   13
+15      T   6   14
 
 ```
