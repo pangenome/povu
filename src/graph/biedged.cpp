@@ -328,10 +328,23 @@ BVariationGraph::BVariationGraph(const bidirected::VariationGraph &g, bool add_d
     do_gray_edges(i, g.get_vertex(i),  l , r);
   }
 
+  // connect dummy vertices to tips
+  if (add_dummy_vertices) {
+    for (auto [side, id] : g.tips()) {
+      v_type vt = side == v_end::l ? v_type::l : v_type::r;
+      auto [l, r] =  common_fns::frm_bidirected_idx(id);
+      std::size_t v1 = vt == v_type::l ? l : r;
+
+      this->add_edge(0, v_type::dummy, v1, vt, color::gray);
+    }
+  }
+
+  /*
   if (add_dummy_vertices) {
     this->dummy_vertices_.push_back(this->size());
     this->vertices.push_back(Vertex("d_e", this->size(), v_type::dummy));
   }
+
 
   // connect dummy start to graph starts
   if (add_dummy_vertices) {
@@ -368,6 +381,7 @@ BVariationGraph::BVariationGraph(const bidirected::VariationGraph &g, bool add_d
   if (add_dummy_vertices) {
     this->add_edge(0, v_type::dummy, this->size() - 1, v_type::dummy, color::gray);
   }
+  */
 
   for (std::size_t i{} ; i < this->size(); ++i) {
     if (this->get_neighbours(i).size() < 2) {

@@ -39,11 +39,13 @@ std::vector<bidirected::VariationGraph> read_and_componetize(const core::config&
   bidirected::VariationGraph vg =
     io::from_gfa::to_vg(app_config.get_input_gfa().c_str(), app_config);
 
-  if (app_config.verbosity() > 1) {
+  /*
+    no need to print this if we have multiple components
+    if (app_config.verbosity() > 1) {
     if (app_config.verbosity() > 2)  { std::cerr << fn_name << " Finished reading graph:\n"; }
-    // no need to print this if we have multiple components
     // vg.dbg_print();
-  }
+    }
+   */
 
   if (false) { // validate the haplotype paths
     if (app_config.verbosity() > 2)  { std::cerr << fn_name << " Validating paths\n"; }
@@ -252,8 +254,6 @@ void compute_sese_regions(bidirected::VariationGraph &vg, core::config& app_conf
 
   // compute the spanning tree of the biedged variation graph
   if (app_config.verbosity() > 2) { std::cerr << fn_name << " Generating spanning tree\n"; }
-  //spanning_tree::Tree st =    bg.compute_spanning_tree();
-
   spanning_tree::Tree st = compute_spanning_tree(bg);
 
   if (app_config.print_dot() && app_config.verbosity() > 4) { std::cout << "\n\n" << "Spanning Tree" << "\n\n";
@@ -262,7 +262,6 @@ void compute_sese_regions(bidirected::VariationGraph &vg, core::config& app_conf
 
   if (app_config.verbosity() > 2) { std::cerr << fn_name << " Finding Cycle Equivalent Classes\n"; }
   algorithms::cycle_equiv(st);
-
 
   if (app_config.print_dot() && app_config.verbosity() > 4) { std::cout << "\n\n" << "Updated Spanning Tree" << "\n\n";
     st.print_dot();

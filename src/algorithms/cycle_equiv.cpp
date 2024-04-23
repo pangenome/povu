@@ -119,7 +119,7 @@ void cycle_equiv(spanning_tree::Tree &t) {
       t.push(v, be_idx);
     }
 
-    if (hi_2 < hi_0) {
+    if (hi_2 < hi_0 && !t.get_bracket_list(v).empty()) {
       // add a capping backedge
       std::size_t dest_v =  hi_2;
       std::size_t be_idx = t.add_be(v, dest_v, true);
@@ -136,22 +136,18 @@ void cycle_equiv(spanning_tree::Tree &t) {
     // if v is not the root of the spanning tree
     if (!t.is_root(v)) {
 
-    /*
-      Add an articulating backedge
-     */
-      if (t.get_bracket_list(v).empty()) {
+      /*
+        Add an articulating backedge
+      */
+      if (t.get_bracket_list(v).empty())  {
         std::size_t cl = t.new_class();
-
         while (true) {
           spanning_tree::Edge& e = t.get_incoming_edge(v);
           e.set_class_idx(cl);
-          if (t.is_root(v) || t.get_obe(t.get_parent(v)).empty()) {
-            break;
-          }
+          if (t.is_root(v-1) || !t.get_obe(v-1).empty()) { break; }
           --v;
         }
       }
-
       /*default behavior*/
       else {
         spanning_tree::Bracket& b = t.top(v);
