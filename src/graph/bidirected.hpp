@@ -9,8 +9,8 @@
 #include <vector>
 
 #include <handlegraph/handle_graph.hpp>
-#include "../core/core.hpp"
-#include "../core/constants.hpp"
+#include "../cli/app.hpp"
+#include "../common/constants.hpp"
 #include "../common/common.hpp"
 
 namespace hg = handlegraph;
@@ -18,7 +18,7 @@ namespace hg = handlegraph;
 namespace bidirected {
 
 using namespace graph_types;
-
+namespace constants = common::constants;
 
 // TODO: replace with struct or class to allow methods like complement
 enum class orientation_t {
@@ -58,7 +58,7 @@ class Edge {
   VertexEnd v2_end;
 
   // the equivalence class of the edge
-  std::size_t eq_class {core::constants::UNDEFINED_SIZE_T};
+  std::size_t eq_class {constants::UNDEFINED_SIZE_T};
 
 public:
   // --------------
@@ -121,7 +121,7 @@ class Vertex {
   std::string name_; // sequence name in the GFA file
 
   // the equivalence class of the vertex
-  std::size_t eq_class {core::constants::UNDEFINED_SIZE_T};
+  std::size_t eq_class {constants::UNDEFINED_SIZE_T};
 
 public:
   // --------------

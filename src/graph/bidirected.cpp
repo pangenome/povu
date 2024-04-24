@@ -16,11 +16,12 @@
 
 
 #include "./bidirected.hpp"
-#include "../core/utils.hpp"
-#include "../core/utils.hpp"
+#include "../common/utils.hpp"
 
 
 namespace bidirected {
+
+
 
 // Definition of operator<< outside the struct
 std::ostream& operator<<(std::ostream& os, const component& comp) {
@@ -806,7 +807,7 @@ void VariationGraph::print_dot() const {
   for (std::size_t i{}; i < this->size(); ++i) {
     std::cout << std::format("\t{} [label=\"{} {}\"];\n",
                              i, this->get_vertex(i).get_name(),
-                             (this->get_vertex(i).get_eq_class() == core::constants::UNDEFINED_SIZE_T
+                             (this->get_vertex(i).get_eq_class() == constants::UNDEFINED_SIZE_T
                               ? ""
                               : std::to_string(this->get_vertex(i).get_eq_class() )  ) );
   }
@@ -814,7 +815,7 @@ void VariationGraph::print_dot() const {
   for (std::size_t i{}; i < this->edges.size(); ++i) {
     const Edge& e = this->get_edge(i);
     std::cout << std::format("\t{} -> {} [label=\"{}\"];\n", e.get_v1_idx(), e.get_v2_idx(),
-                             (this->get_edge(i).get_eq_class() == core::constants::UNDEFINED_SIZE_T
+                             (this->get_edge(i).get_eq_class() == constants::UNDEFINED_SIZE_T
                               ? ""
                               : std::to_string(this->get_edge(i).get_eq_class()))
                              );

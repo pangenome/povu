@@ -117,7 +117,7 @@ std::ostream& operator<<(std::ostream& os, const Edge& e) {
 */
 
 Vertex::Vertex() :
-  black_edge(core::constants::UNDEFINED_SIZE_T),
+  black_edge(constants::UNDEFINED_SIZE_T),
   grey_edges(std::set<std::size_t>()),
   type(v_type::l),
   handle(std::string()),
@@ -125,7 +125,7 @@ Vertex::Vertex() :
 {}
 
 Vertex::Vertex(const std::string& id, std::size_t vertex_idx, v_type vertex_type) :
-  black_edge(core::constants::UNDEFINED_SIZE_T),
+  black_edge(constants::UNDEFINED_SIZE_T),
   grey_edges(std::set<std::size_t>()),
   type(vertex_type),
   handle(id),
@@ -147,7 +147,7 @@ std::size_t Vertex::get_black_edge() const {
 
 std::set<std::size_t> Vertex::get_neighbours() const {
   std::set<std::size_t> neighbours { this->get_grey_edges().begin(), this->get_grey_edges().end() };
-  if (this->get_black_edge() != core::constants::UNDEFINED_SIZE_T) {
+  if (this->get_black_edge() != constants::UNDEFINED_SIZE_T) {
     neighbours.insert(this->get_black_edge());
   }
   return neighbours;
@@ -182,6 +182,19 @@ void Vertex::set_vertex_idx(std::size_t i) {
 /*
   Constructor(s)
 */
+void validate_biedging(BVariationGraph const& bg) {
+  for (std::size_t i{} ; i < bg.size(); ++i) {
+    if (bg.get_neighbours(i).size() < 2) {
+      std::cout << "failed check i " << i << std::endl;
+    }
+
+    if (i>0 && i < bg.size() - 1) {
+      if (bg.get_vertex(i).get_black_edge() == constants::UNDEFINED_SIZE_T) {
+        std::cout << "no black edge failed check i " << i << std::endl;
+      }
+    }
+  }
+}
 
 BVariationGraph::BVariationGraph(const bidirected::VariationGraph &g, bool add_dummy_vertices) {
   std::string fn_name = std::format("[povu::BVariationGraph::{}]", __func__);
@@ -232,7 +245,7 @@ BVariationGraph::BVariationGraph(const bidirected::VariationGraph &g, bool add_d
     }
   };
 
-  std::set<unordered_pair> added_edges;
+  std::set<utils::unordered_pair> added_edges;
 
   /*
     add gray edges
@@ -255,9 +268,9 @@ BVariationGraph::BVariationGraph(const bidirected::VariationGraph &g, bool add_d
           v1_type = e.get_v1_end() == v_end::l ? v_type::l : v_type::r;
         }
 
-        if (added_edges.count(unordered_pair(new_v1, i_l))) { continue; }
+        if (added_edges.count(utils::unordered_pair(new_v1, i_l))) { continue; }
 
-        added_edges.insert(unordered_pair(new_v1, i_l));
+        added_edges.insert(utils::unordered_pair(new_v1, i_l));
 
         if (new_v1 == i_l) {
           std::cout << "e " << e << std::endl;
@@ -291,9 +304,9 @@ BVariationGraph::BVariationGraph(const bidirected::VariationGraph &g, bool add_d
           v2_type = e.get_v2_end() == v_end::l ? v_type::l : v_type::r;
         }
 
-        if (added_edges.count(unordered_pair(i_r, new_v2))) { continue; }
+        if (added_edges.count(utils::unordered_pair(i_r, new_v2))) { continue; }
 
-        added_edges.insert(unordered_pair(i_r, new_v2));
+        added_edges.insert(utils::unordered_pair(i_r, new_v2));
 
         if (new_v2 == i_r) {
           std::cout << "i_r "<< new_v2 << std::endl;
@@ -384,17 +397,7 @@ BVariationGraph::BVariationGraph(const bidirected::VariationGraph &g, bool add_d
   */
 
 #ifdef DEBUG
-  for (std::size_t i{} ; i < this->size(); ++i) {
-    if (this->get_neighbours(i).size() < 2) {
-      std::cout << "failed check i " << i << std::endl;
-    }
-
-    if (i>0 && i < this->size() - 1) {
-      if (this->get_vertex(i).get_black_edge() == core::constants::UNDEFINED_SIZE_T) {
-        std::cout << "no black edge failed check i " << i << std::endl;
-      }
-    }
-  }
+  validate_biedging(*this);
 #endif
 }
 
@@ -414,12 +417,11 @@ std::set<std::pair<color, std::size_t>> BVariationGraph::get_neighbours(std::siz
   }
 
   std::size_t black_e_idx = v.get_black_edge();
-  if (black_e_idx != core::constants::UNDEFINED_SIZE_T) {
+  if (black_e_idx != constants::UNDEFINED_SIZE_T) {
   neighbours.insert(std::make_pair(
       color::black,
       this->get_edge(black_e_idx).get_other_vertex(vertex_idx)));
   }
-
 
   return neighbours;
 }
@@ -536,12 +538,12 @@ void BVariationGraph::print_dot() const {
       std::cout <<
         std::format("\t{} -- {} [color=\"black\"; label=\"{} {}\"];\n",
                     e.get_v1_idx(), e.get_v2_idx(), e.get_label(),
-                    (e.get_eq_class() == core::constants::UNDEFINED_SIZE_T ? "" : std::to_string(e.get_eq_class())) );
+                    (e.get_eq_class() == constants::UNDEFINED_SIZE_T ? "" : std::to_string(e.get_eq_class())) );
     }
     else {
       std::cout <<
         std::format("\t{} -- {} [color=\"gray\" label=\"{}\"];\n", e.get_v1_idx(), e.get_v2_idx(),
-                    (e.get_eq_class() == core::constants::UNDEFINED_SIZE_T ? "" : std::to_string(e.get_eq_class())));
+                    (e.get_eq_class() == constants::UNDEFINED_SIZE_T ? "" : std::to_string(e.get_eq_class())));
     }
   }
 
@@ -549,7 +551,7 @@ void BVariationGraph::print_dot() const {
 }
 
 // TODO: make ref params const
-void validate_spanning_tree(BVariationGraph const& g, spanning_tree::Tree& t,   std::map<std::size_t, std::size_t>& dfs_num_to_vtx) {
+void validate_spanning_tree(BVariationGraph const& g, spanning_tree::Tree& t, std::map<std::size_t, std::size_t>& dfs_num_to_vtx) {
     if (t.size() != g.size()) {
     std::cerr << "size mismatch " << t.size() << " " << g.size() << "\n";
   }
@@ -605,14 +607,14 @@ spanning_tree::Tree BVariationGraph::compute_spanning_tree() const {
   std::stack<std::tuple<std::size_t, std::size_t, bidirected::color>> s; // parent and v idx
   std::set<std::size_t> visited;
   std::size_t v_idx {}; // set start node to 0
-  s.push({core::constants::INVALID_ID, v_idx, bidirected::color::gray});
+  s.push({constants::INVALID_ID, v_idx, bidirected::color::gray});
   visited.insert(v_idx);
   std::size_t counter{}; // dfs pre visit counter
 
   std::map<std::size_t, std::size_t> vtx_to_dfs_num;
   std::map<std::size_t, std::size_t> dfs_num_to_vtx;
   std::set<std::size_t> in_tree; // graph vertices in the tree
-  std::set<unordered_pair> back_edges; // avoids duplicate back edges
+  std::set<utils::unordered_pair> back_edges; // avoids duplicate back edges
 
   auto is_parent = [&](std::size_t p, std::size_t c) -> bool {
     return t.get_children(vtx_to_dfs_num[p]).count(vtx_to_dfs_num[c]);
@@ -628,13 +630,13 @@ spanning_tree::Tree BVariationGraph::compute_spanning_tree() const {
     biedged::Vertex const& v = this->get_vertex(v_idx);
 
     if (in_tree.find(v_idx) == in_tree.end()) {
-      t.add_vertex(spanning_tree::Vertex{v_idx, counter, v.get_handle(), v.get_type()});
+      t.add_vertex(spanning_tree::Vertex{counter, v.get_handle(), v.get_type()});
       in_tree.insert(v_idx);
       vtx_to_dfs_num[v_idx] = counter;
       dfs_num_to_vtx[counter] = v_idx;
 
-      if (p_idx != core::constants::INVALID_ID) {
-        t.add_tree_edge(vtx_to_dfs_num[p_idx], counter, core::constants::UNDEFINED_SIZE_T, c);
+      if (p_idx != constants::INVALID_ID) {
+        t.add_tree_edge(vtx_to_dfs_num[p_idx], counter, constants::UNDEFINED_SIZE_T, c);
       }
 
       counter++;
@@ -649,7 +651,7 @@ spanning_tree::Tree BVariationGraph::compute_spanning_tree() const {
         break;
       }
       else if (!is_parent_child(n, v_idx) && back_edges.find({n, v_idx}) == back_edges.end())  {
-        t.add_be(vtx_to_dfs_num[v_idx], vtx_to_dfs_num[n],core::constants::UNDEFINED_SIZE_T, false, c);
+        t.add_be(vtx_to_dfs_num[v_idx], vtx_to_dfs_num[n],constants::UNDEFINED_SIZE_T, false, c);
         back_edges.insert({v_idx, n});
       }
     }

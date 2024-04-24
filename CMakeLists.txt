@@ -60,24 +60,16 @@ add_subdirectory(
 ADD_LIBRARY(LibsModule
   # io
   src/io/from_gfa.cpp
-
-  # graph
-  src/graph/tree.cpp
+  src/io/vcf.cpp
 
   # trees
-  src/pvst/pvst.cpp
   src/graph/bidirected.cpp
   src/graph/biedged.cpp
   src/graph/spanning_tree.cpp
 
   #
   src/common/common.cpp
-
-
-  # genomics
-  src/genomics/variant_calling.cpp
-  src/genomics/vcf.cpp
-    src/genomics/ops.cpp
+  src/common/utils.cpp
 
   # algorithms
   src/algorithms/cycle_equiv.cpp
@@ -85,8 +77,8 @@ ADD_LIBRARY(LibsModule
 
   # cli
   src/cli/cli.cpp
-  src/core/core.cpp
-  src/core/utils.cpp
+  src/cli/app.cpp
+
 )
 
 #include_directories(

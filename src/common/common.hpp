@@ -106,4 +106,28 @@ std::pair<std::size_t, std::size_t> frm_bidirected_idx(std::size_t bd_idx, bool 
 } // namespace common_fns
 
 
+namespace genomic_types {
+
+  //typedef std::pair<bidirected::VertexEnd, id_t> side_n_id_t; // TODO: replace with struct
+  //typedef std::vector<side_n_id_t> subpath_t;
+  //typedef std::vector<subpath_t> subpaths_t;
+
+// TODO: make use of this or delete
+enum variant_type {
+    SNP,
+    DEL,
+    INS,
+    INV,
+    DUP,
+    CNV,
+    BND
+};
+
+// TODO which version of VCF is best?
+enum output_format {
+    VCF, //  currently outputs v4.2
+    PAF, // not yet supported
+};
+
+}
 #endif

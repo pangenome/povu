@@ -13,13 +13,14 @@
 #include <format>
 #include <numeric>
 
-#include "../pvst/pvst.hpp"
-#include "../graph/tree.hpp"
-#include "../graph/digraph.hpp"
-#include "../core/constants.hpp"
-#include "../core/core.hpp"
-#include "./genomics.hpp"
-#include "../core/utils.hpp"
+// #include "../pvst/pvst.hpp"
+// #include "../graph/tree.hpp"
+//#include "../graph/digraph.hpp"
+//#include "../core/constants.hpp"
+#include "../cli/app.hpp"
+#include "./io.hpp"
+#include "../common/utils.hpp"
+#include "../graph/bidirected.hpp"
 
 namespace vcf {
 

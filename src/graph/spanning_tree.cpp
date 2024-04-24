@@ -13,23 +13,20 @@
 #include <vector>
 
 #include "./spanning_tree.hpp"
-#include "../core/constants.hpp"
+#include "../common/constants.hpp"
 
 
 namespace spanning_tree {
 
-const std::size_t SIZE_T_MAX = std::numeric_limits<size_t>::max();
 using namespace graph_types;
-using core::constants::UNDEFINED_SIZE_T;
+using common::constants::UNDEFINED_SIZE_T;
+using common::constants::INVALID_ID;
 
 /*
  * Bracket
  * ----
  */
-Bracket::Bracket():
-  back_edge_id_(SIZE_T_MAX),
-  recent_size_(0),
-  recent_class_(0) {}
+Bracket::Bracket(): back_edge_id_(INVALID_ID), recent_size_(0), recent_class_(0) {}
 
 Bracket::Bracket(
   std::size_t backedge_id, std::size_t recent_size, std::size_t recent_class, bool is_capping)
@@ -77,7 +74,7 @@ void Edge::set_class(std::size_t c) { this->class_ = c; }
  * --------
  */
 BackEdge::BackEdge(bool capping_be):
-  class_(SIZE_T_MAX), capping_back_edge_(capping_be), null_(true)
+  class_(INVALID_ID), capping_back_edge_(capping_be), null_(true)
 {}
 
 BackEdge::BackEdge(
@@ -87,8 +84,8 @@ BackEdge::BackEdge(
   bool capping_be,
   color c
   )
-  : id_(id), src(src), tgt(tgt), class_(SIZE_T_MAX), recent_class_(SIZE_T_MAX),
-    recent_size_(SIZE_T_MAX), capping_back_edge_(capping_be), null_(false),
+  : id_(id), src(src), tgt(tgt), class_(INVALID_ID), recent_class_(INVALID_ID),
+    recent_size_(INVALID_ID), capping_back_edge_(capping_be), null_(false),
     color_(c) {}
 
 std::size_t BackEdge::id() const { return this->id_; }
@@ -101,7 +98,7 @@ std::size_t BackEdge::get_recent_size() const { return this->recent_size_; }
 
 color BackEdge::get_color() const { return this->color_; }
 
-bool BackEdge::is_class_defined() const { return this->class_ != SIZE_T_MAX; }
+bool BackEdge::is_class_defined() const { return this->class_ != INVALID_ID; }
 bool BackEdge::is_capping_backedge() const { return this->capping_back_edge_; }
 
 void BackEdge::set_class(std::size_t c) { this->class_ = c; }
@@ -117,7 +114,7 @@ void BackEdge::set_recent_size(std::size_t s) { this->recent_size_ = s; }
  */
 // Constructor(s)
 Vertex::Vertex():
-  dfs_num_(SIZE_T_MAX),
+  dfs_num_(INVALID_ID),
   parent_id(std::numeric_limits<size_t>::max()),
   hi_(std::numeric_limits<size_t>::max()),
   null_(true) {}
@@ -128,9 +125,9 @@ Vertex::Vertex(std::size_t id, std::size_t parent_id):
   hi_(std::numeric_limits<size_t>::max()),
   null_(false){}
 
-Vertex::Vertex(std::size_t v_id, std::size_t dfs_num,
+Vertex::Vertex(std::size_t dfs_num,
                const std::string &name, VertexType type_)
-  : dfs_num_(dfs_num), parent_id(core::constants::INVALID_ID), name_(name), type_(type_),
+  : dfs_num_(dfs_num), parent_id(INVALID_ID), name_(name), type_(type_),
       hi_(std::numeric_limits<size_t>::max()),
       null_(false){}
 
@@ -627,7 +624,7 @@ void Tree::print_dot() {
 
       bool is_capping = be.is_capping_backedge();
 
-      std::string class_ = be.get_class() ==  core::constants::UNDEFINED_SIZE_T
+      std::string class_ = be.get_class() == UNDEFINED_SIZE_T
          ?  "" : std::to_string(be.get_class());
 
       std::string color{};

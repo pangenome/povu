@@ -7,8 +7,7 @@
 
 
 
-namespace core::constants {
-
+namespace common::constants {
 //
 const std::size_t DUMMY_VERTEX_COUNT { 2 };
 

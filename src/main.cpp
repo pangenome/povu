@@ -11,12 +11,9 @@
 #include "./algorithms/cycle_equiv.hpp"
 #include "./cli/cli.hpp"
 #include "./common/common.hpp"
-//#include "./core/constants.hpp"
-#include "./core/core.hpp"
-#include "./genomics/genomics.hpp"
+#include "./cli/app.hpp"
 #include "./graph/bidirected.hpp"
 #include "./graph/biedged.hpp"
-//#include "./graph/spanning_tree.hpp"
 #include "./io/io.hpp"
 
 
@@ -215,10 +212,7 @@ int main(int argc, char *argv[]) {
 
     if (app_config.verbosity() > 3) { components[i].dbg_print(); }
 
-    // if ( i==8) { continue; }
-
     compute_sese_regions(components[i], app_config);
-
   }
 
   return 0;

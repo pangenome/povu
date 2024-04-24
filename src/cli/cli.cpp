@@ -14,8 +14,8 @@
 #include <filesystem>
 
 
-#include "../core/core.hpp"
 
+#include "./cli.hpp"
 
 namespace cli {
 

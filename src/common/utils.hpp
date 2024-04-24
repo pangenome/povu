@@ -85,5 +85,18 @@ public:
     }
 };
 
+struct unordered_pair{
+  std::size_t l;
+  std::size_t r;
+
+  unordered_pair(std::size_t l,std::size_t r):
+    l(std::min(l,r)), r(std::max(l,r)) {}
+
+  // spaceship operator
+  friend constexpr auto operator<=>(unordered_pair, unordered_pair) = default;
+};
+
+
+
 } // namespace utils
 #endif

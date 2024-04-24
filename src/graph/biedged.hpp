@@ -1,7 +1,7 @@
 #ifndef BIEDGED_HPP
 #define BIEDGED_HPP
 
-#include "../core/core.hpp"
+//#include "../common/utils.hpp"
 #include "./bidirected.hpp"
 #include "./spanning_tree.hpp"
 #include "../common/common.hpp"
@@ -10,18 +10,7 @@
 
 namespace biedged {
 using namespace graph_types;
-
-struct unordered_pair{
-  std::size_t l;
-  std::size_t r;
-
-  unordered_pair(std::size_t l,std::size_t r):
-    l(std::min(l,r)), r(std::max(l,r)) {}
-
-  // spaceship operator
-  friend constexpr auto operator<=>(unordered_pair, unordered_pair) = default;
-};
-
+namespace constants = common::constants;
 
 /**
    (l , r) == (r, l)
@@ -35,20 +24,20 @@ class Edge {
 
   // TODO: remove?
   std::string label; // or sequence only applicable to black edges
-  std::size_t eq_class {core::constants::UNDEFINED_SIZE_T}; // equivalence class of the edge
+  std::size_t eq_class {constants::UNDEFINED_SIZE_T}; // equivalence class of the edge
 
 public:
-  // ------------
-  // constructors
-  // ------------
+  // --------------
+  // constructor(s)
+  // --------------
   Edge();
   Edge(std::size_t v1, VertexType v1_type, std::size_t v2, VertexType v2_type, color c);
   Edge(std::size_t v1, VertexType v1_type, std::size_t v2, VertexType v2_type, color c, std::string label);
 
 
-  // -------
-  // getters
-  // -------
+  // ---------
+  // getter(s)
+  // ---------
   std::size_t get_eq_class() const;
   color get_color() const;
   std::size_t get_v1_idx() const;
@@ -57,16 +46,16 @@ public:
   std::size_t get_other_vertex(std::size_t vertex_index) const;
 
 
-  // -------
-  // setters
-  // -------
+  // ---------
+  // setter(s)
+  // ---------
   void set_eq_class(std::size_t e);
   void set_v1_idx(std::size_t i);
   void set_v2_idx(std::size_t i);
 
-  // ---------
-  // operators
-  // ---------
+  // -----------
+  // operator(s)
+  // -----------
   // implement << operator
   friend std::ostream& operator<<(std::ostream& os, const Edge& e);
   // spaceship operator

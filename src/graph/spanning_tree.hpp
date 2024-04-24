@@ -225,7 +225,7 @@ public:
   // --------------
   Vertex(); // creates a root with parent id set to and id of zero
   Vertex(std::size_t id, std::size_t parent_id);
-  Vertex(std::size_t v_id, std::size_t dfs_num, const std::string& name, VertexType type_);
+  Vertex(std::size_t dfs_num, const std::string& name, VertexType type_);
   // ---------
   // getter(s)
   // ---------

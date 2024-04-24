@@ -5,10 +5,8 @@
 #include <utility>
 
 // For global typedefs, there may be some local ones
-namespace core::typedefs {
-
+namespace common::typedefs {
 typedef std::pair<std::size_t, std::size_t> size_t_pair;
 typedef std::size_t id_t;
-
 }
 #endif

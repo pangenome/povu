@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "../graph/spanning_tree.hpp"
-#include "../core/constants.hpp"
+#include "../common/constants.hpp"
 
 namespace algorithms {
 // TODO: move to constants
@@ -16,8 +16,8 @@ namespace algorithms {
   ---------
 */
 const std::size_t SIZE_T_MAX = std::numeric_limits<size_t>::max();
-using core::constants::UNDEFINED_SIZE_T;
-using core::constants::INVALID_ID;
+using common::constants::UNDEFINED_SIZE_T;
+using common::constants::INVALID_ID;
 
 /**
  * Compute the equivalance class of a given vertex
