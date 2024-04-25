@@ -67,7 +67,7 @@ ADD_LIBRARY(LibsModule
   src/graph/biedged.cpp
   src/graph/spanning_tree.cpp
 
-  #
+  # common
   src/common/common.cpp
   src/common/utils.cpp
 
@@ -79,6 +79,8 @@ ADD_LIBRARY(LibsModule
   src/cli/cli.cpp
   src/cli/app.cpp
 
+  # genomics
+  src/genomics/variant_calling.cpp
 )
 
 #include_directories(

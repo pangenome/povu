@@ -8,7 +8,7 @@
 
 #include "./cycle_equiv.hpp"
 #include "../graph/spanning_tree.hpp"
-
+#include "../common/constants.hpp"
 
 namespace algorithms {
 // TODO: move to constants

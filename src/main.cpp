@@ -5,6 +5,7 @@
 #include <iostream>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "./algorithms/cycle_equiv.hpp"
 #include "./cli/cli.hpp"
@@ -13,7 +14,8 @@
 #include "./graph/bidirected.hpp"
 #include "./graph/biedged.hpp"
 #include "./io/io.hpp"
-
+#include "common/typedefs.hpp"
+#include "./genomics/genomics.hpp"
 
 
 /**
@@ -148,7 +150,10 @@ void compute_sese_regions(bidirected::VariationGraph &vg, core::config& app_conf
   }
 
   if (app_config.verbosity() > 2) { std::cerr << fn_name << " Finding SESE regions\n"; }
-  algorithms::find_seses(st);
+  std::vector<common::typedefs::size_t_pair> seses = algorithms::find_seses(st);
+
+
+  genomics::call_variants(seses, vg, app_config);
 
   return;
   /*

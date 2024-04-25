@@ -6,8 +6,9 @@
 #include <unistd.h>
 #include <vector>
 
-#include "./cycle_equiv.hpp"
 #include "../common/typedefs.hpp"
+#include "../common/constants.hpp"
+#include "./cycle_equiv.hpp"
 
 
 
@@ -23,33 +24,40 @@ struct class_props {
   std::vector<std::size_t> prev_; //
   std::vector<std::size_t> next_; //
 
+  std::size_t size() const { return g_id_.size(); }
+
   void print_data() {
+    std::cout << "idx: ";
+    for (std::size_t i{}; i < this->size() ;i++) {
+      std::cout << i << " ";
+    }
+    std::cout << std::endl;
+
     std::cout << "id: ";
-      for (auto i : g_id_) {
-        std::cout << i << " ";
-      }
-      std::cout << std::endl;
+    for (auto i : g_id_) {
+      std::cout << i << " ";
+    }
+    std::cout << std::endl;
 
     std::cout << "c: ";
-      for (auto i : classes_) {
-        std::cout << i << " ";
-      }
-      std::cout << std::endl;
+    for (auto i : classes_) {
+      std::cout << i << " ";
+    }
+    std::cout << std::endl;
 
+    // print prev
+    std::cout << "prev: ";
+    for (auto i : prev_) {
+      std::cout << i << " ";
+    }
+    std::cout << std::endl;
 
-      // print prev
-      std::cout << "prev: ";
-      for (auto i : prev_) {
-        std::cout << i << " ";
-      }
-      std::cout << std::endl;
-
-            // print next
-      std::cout << "next: ";
-      for (auto i : next_) {
-        std::cout << i << " ";
-      }
-      std::cout << std::endl;
+    // print next
+    std::cout << "next: ";
+    for (auto i : next_) {
+      std::cout << i << " ";
+    }
+    std::cout << std::endl;
   }
 };
 
@@ -68,7 +76,7 @@ class_props stack_props(std::vector<id_n_cls> v) {
       eq_class_count[v[i].cls] += 1;
     }
     ids.push_back(v[i].id);
-    eq_classes.push_back(eq_class_count[v[i].cls]);
+    eq_classes.push_back(v[i].cls);
   }
 
   // a vector which contains the index within v of the next element with the same value
@@ -149,34 +157,41 @@ std::vector<id_n_cls> compute_eq_class_stack(spanning_tree::Tree& t) {
     else {
       throw std::runtime_error("No class found for vertex: " + t.get_vertex(v).name());
     }
-  }
-
-  if (false) {
-    // print the contnets of s
-    for (auto i : s) { std::cout << i.id << " "; }
-    std::cout << std::endl;
-
-    for (auto i : s) { std::cout << i.cls << " "; }
-    std::cout << std::endl;
-  }
+  }\
 
   return s;
 }
 
 std::vector<size_t_pair> canonical_seses(const class_props& p) {
   std::vector<size_t_pair> v;
-  const std::vector<std::size_t>& next { p.next_ };
+  const std::vector<std::size_t> &next { p.next_ };
+  const std::vector<std::size_t> &prev{p.prev_};
+  const std::vector<std::size_t> &cl { p.classes_ };
 
+  std::size_t top {INVALID_ID};
+
+  for (std::size_t i{}; i < p.size(); ++i) {
+
+    if (top == cl[i]) {
+        v.push_back({p.g_id_[prev[i]] , p.g_id_[i]});
+    }
+
+    if (next[i] > i + 1) {
+      top = cl[i];
+    }
+  }
 
   return v;
 }
 
-void find_seses(spanning_tree::Tree& t) {
+std::vector<size_t_pair> find_seses(spanning_tree::Tree& t) {
   std::string fn_name = std::format("[povu::algorithms::{}]", __func__);
   std::vector<id_n_cls> s { compute_eq_class_stack(t) };
-  class_props p { stack_props(s) };
-  canonical_seses(p);
+  class_props p{stack_props(s)};
   //p.print_data();
+  // canonical_seses(p);
+
+  return canonical_seses(p);
 }
 
 } // namespace algorithms
