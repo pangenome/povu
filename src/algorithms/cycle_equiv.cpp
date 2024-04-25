@@ -1,13 +1,14 @@
 #include <algorithm>
 #include <cstddef>
 #include <limits>
-#include <ostream>
 #include <unistd.h>
 #include <utility>
 #include <vector>
+#include <format>
 
+#include "./cycle_equiv.hpp"
 #include "../graph/spanning_tree.hpp"
-#include "../common/constants.hpp"
+
 
 namespace algorithms {
 // TODO: move to constants
@@ -25,6 +26,7 @@ using common::constants::INVALID_ID;
  * in reverse DFS
  */
 void cycle_equiv(spanning_tree::Tree &t) {
+    std::string fn_name = std::format("[povu::algorithms::{}]", __func__);
   // This for loop depends on an overflow
   for (std::size_t v{t.size() - 1}; v < UNDEFINED_SIZE_T; --v) {
 

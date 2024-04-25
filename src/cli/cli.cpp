@@ -142,7 +142,7 @@ int cli(int argc, char **argv, core::config& app_config) {
   try {
     p.ParseCLI(argc, argv);
   }
-  catch (args::Help) {
+  catch (args::Help& _) {
     std::cout << p;
   }
   catch (args::Error& e) {

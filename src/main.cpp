@@ -4,8 +4,6 @@
 #include <format>
 #include <iostream>
 #include <string>
-//#include <stack>
-//#include <tuple>
 #include <utility>
 
 #include "./algorithms/cycle_equiv.hpp"
@@ -142,12 +140,15 @@ void compute_sese_regions(bidirected::VariationGraph &vg, core::config& app_conf
     st.print_dot();
   }
 
-  if (app_config.verbosity() > 2) { std::cerr << fn_name << " Finding Cycle Equivalent Classes\n"; }
+  if (app_config.verbosity() > 2) { std::cerr << fn_name << " Computing Cycle Equivalence\n"; }
   algorithms::cycle_equiv(st);
 
   if (app_config.print_dot() && app_config.verbosity() > 4) { std::cout << "\n\n" << "Updated Spanning Tree" << "\n\n";
     st.print_dot();
   }
+
+  if (app_config.verbosity() > 2) { std::cerr << fn_name << " Finding SESE regions\n"; }
+  algorithms::find_seses(st);
 
   return;
   /*
@@ -211,6 +212,11 @@ int main(int argc, char *argv[]) {
     }
 
     if (app_config.verbosity() > 3) { components[i].dbg_print(); }
+
+    if (i==6) {
+      std::cerr << "Skipping component 6\n";
+      continue;
+    }
 
     compute_sese_regions(components[i], app_config);
   }

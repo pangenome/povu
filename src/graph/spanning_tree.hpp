@@ -374,14 +374,17 @@ public:
   size_t list_size(std::size_t vertex);
   size_t get_hi(std::size_t vertex);
 
+
   /**
     * @brief get indexes of the vertices the obes from this vertex points to (tgt/targets)
    */
+    // TODO rename to get_obe_tgts
   std::set<size_t> get_obe(std::size_t vertex); // get backedge target indexes
 
   /**
     * @brief get sources of the vertices the ibes from this vertex points from (srcs)
    */
+      // TODO rename to get_obe_srcs
   std::set<size_t> get_ibe(std::size_t vertex);
 
   /**
