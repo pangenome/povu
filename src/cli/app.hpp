@@ -53,7 +53,7 @@ struct config {
 
   // general
   unsigned char v; // verbosity
-  bool print_dot_ { false }; // generate dot format graphs
+  bool print_dot_ { true }; // generate dot format graphs
 
   //
   bool sort_; // sort the graph (default: true)

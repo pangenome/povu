@@ -20,7 +20,10 @@ namespace bidirected {
 using namespace graph_types;
 namespace constants = common::constants;
 
-// TODO: replace with struct or class to allow methods like complement
+
+// TODO:
+// - replace with struct or class to allow methods like complement
+// - move to graph_types
 enum class orientation_t {
   forward,
   reverse
@@ -30,6 +33,9 @@ std::ostream& operator<<(std::ostream& os, const orientation_t& o);
 struct id_n_orientation_t {
   std::size_t v_idx;
   orientation_t orientation;
+
+  // prototype < operator
+  friend bool operator<(const side_n_id_t& lhs, const side_n_id_t& rhs);
 };
 std::ostream& operator<<(std::ostream& os, const id_n_orientation_t& x);
 
@@ -115,7 +121,7 @@ class Vertex {
   std::vector<PathInfo> paths;
 
   // from libHandleGraph
-  std::string handle;
+  std::string handle; // should be same as name
   bool is_reversed_;
 
   std::string name_; // sequence name in the GFA file
@@ -186,6 +192,8 @@ class VariationGraph {
   // vertices with incident edges on only one side
   std::set<side_n_id_t> tips_;
 
+  utils::TwoWayMap<std::size_t, std::size_t> id_to_idx_;
+
   // graph start nodes are vertices with edges adjacent to only one side, the right side or the left side
   // the side is the one without any incident edges
   //std::set<std::size_t> graph_start_nodes_;
@@ -214,17 +222,30 @@ public:
   // ---------
   // getter(s)
   // ---------
-  std::size_t size() const; // the number of vertices in the graph valid or not
+  /**
+   * @brief the number of vertices in the graph, valid or not.
+   */
+  std::size_t size() const;
   const Vertex& get_vertex(std::size_t index) const;
 
   const Vertex& get_vertex_by_name(std::string n) const;
   std::size_t get_vertex_idx_by_name(std::string n) const;
-
-
   Vertex& get_vertex_mut(std::size_t index);
+  /**
+    * @brief Given the graph index of a vertex, return the handlegraph/gfa id of the vertex
+   */
+  std::size_t idx_to_id(std::size_t idx) const;
+
+  /**
+    * @brief Given the handlegraph/gfa id of a vertex, return the graph index of the vertex
+   */
+  std::size_t id_to_idx(std::size_t id) const;
+
+
   const Edge& get_edge(std::size_t index) const;
   Edge& get_edge_mut(std::size_t index);
   const std::vector<Edge>& get_all_edges() const;
+
 
   /**
    * @brief Get all paths between two nodes in the bidirected variation graph
@@ -234,7 +255,7 @@ public:
    * @param compact if true, remove redundant strand information in the path
    * @return std::vector<subpaths_t> a vector of paths
    */
-  std::vector<std::vector<side_n_id_t>> get_paths(id_t start_id, id_t stop_id, bool compact=true) const;
+  std::vector<std::vector<id_n_orientation_t>> get_paths(const canonical_sese& sese) const;
 
   // get adjacent vertex indexes to a vertex in a given direction
   std::vector<side_n_id_t> get_adj_vertices(std::size_t vertex_index, VertexEnd vertex_end) const;
@@ -282,6 +303,8 @@ public:
     * @return std::size_t the index of the vertex in the graph
    */
   std::size_t add_vertex(const Vertex& vertex);
+
+  //void set_id_to_idx(std::size_t id, std::size_t idx);
 
 
   void add_edge(const Edge& edge); // handles the case where one or both of the vertices are invalid

@@ -150,39 +150,11 @@ void compute_sese_regions(bidirected::VariationGraph &vg, core::config& app_conf
   }
 
   if (app_config.verbosity() > 2) { std::cerr << fn_name << " Finding SESE regions\n"; }
-  std::vector<common::typedefs::size_t_pair> seses = algorithms::find_seses(st);
-
+  std::vector<graph_types::canonical_sese> seses = algorithms::find_seses(st);
 
   genomics::call_variants(seses, vg, app_config);
 
   return;
-  /*
-  bg.update_eq_classes(st);
-  if (app_config.print_dot() && app_config.verbosity() > 4) { std::cout << "\n\n" << "Updated Biedged" << "\n\n";
-    bg.print_dot();
-  }
-
-  update_bd_eq_classes(bg, vg);
-
-  if (app_config.print_dot() && app_config.verbosity() > 4) { std::cout << "\n\n" << "Variation Graph (with classes, unsorted)" << "\n\n";
-    vg.print_dot();
-  }
-
-  if (app_config.verbosity() > 2) { std::cerr << fn_name << " Computing eq class stack\n"; }
-  std::vector<std::size_t> v = algorithms::compute_eq_class_stack(st);
-
-  if (app_config.verbosity() > 2) { std::cerr << fn_name << " Finding SNPs\n"; }
-  std::vector<std::tuple<std::size_t, graph_types::VertexType, std::size_t, graph_types::VertexType>> seses =
-    graph_operations::foo(st, v, app_config);
-
-  if (app_config.verbosity() > 2) { std::cerr << fn_name << " SESE regions\n"; }
-  for (const auto& [v1, t1, v2, t2] : seses) {
-
-    std::string n1 {vg.get_vertex(v1).get_name()};
-    std::string n2 {vg.get_vertex(v2).get_name()};
-    //std::cout << "(" << n1 << ", " << t1 << ") ~> (" << n2 << ", " << t2 << ")\n";
-  }
-  */
 }
 
 /**
@@ -206,7 +178,7 @@ int main(int argc, char *argv[]) {
     std::cerr << std::format("{} Number of components: {}\n", fn_name, components.size());
   }
 
-  for (std::size_t i{}; i < components.size(); i++) {
+  for (std::size_t i{6}; i < components.size(); i++) {
     if (app_config.verbosity() > 2) {
       std::cerr << std::format("{} Handling component: {}\n", fn_name, i+1);
     }
@@ -217,11 +189,6 @@ int main(int argc, char *argv[]) {
     }
 
     if (app_config.verbosity() > 3) { components[i].dbg_print(); }
-
-    if (i==6) {
-      std::cerr << "Skipping component 6\n";
-      continue;
-    }
 
     compute_sese_regions(components[i], app_config);
   }

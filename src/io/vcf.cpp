@@ -29,11 +29,11 @@ namespace vcf {
  * @brief Given a bidirected::VariationGraph and a subpath, return the string sequence
  */
 std::string path_to_seq(const bidirected::VariationGraph& bd_vg,
-                        const std::vector<bidirected::side_n_id_t>& p) {
+                        const std::vector<bidirected::id_n_orientation_t>& p) {
   std::string seq = "";
-  for (auto [side, id]: p) {
+  for (auto [id, orientation]: p) {
     bidirected::Vertex const& v = bd_vg.get_vertex(id);
-    seq += side == bidirected::VertexEnd::l ? v.get_label() : v.get_rc_label();
+    seq += orientation == bidirected::orientation_t::forward ? v.get_label() : v.get_rc_label();
   }
 
   return seq;
@@ -106,7 +106,7 @@ void write_vcfs(const std::map<std::size_t,
 std::map<std::size_t, std::vector<vcf::vcf_record>> gen_vcf_records(
   const bidirected::VariationGraph& bd_vg,
   const std::vector<std::vector<std::set<std::size_t>>>& haplotypes,
-  const std::vector<std::vector<std::vector<bidirected::side_n_id_t>>>& all_paths,
+  const std::vector<std::vector<std::vector<bidirected::id_n_orientation_t>>>& all_paths,
   const core::config& app_config
   ) {
 
@@ -141,7 +141,7 @@ std::map<std::size_t, std::vector<vcf::vcf_record>> gen_vcf_records(
     // where each string is a path
     std::vector<std::string> path_seqs;
     for (std::size_t path_idx{}; path_idx < num_paths; ++path_idx) {
-      const std::vector<bidirected::side_n_id_t>& p = all_paths[fl_idx][path_idx];
+      const std::vector<bidirected::id_n_orientation_t>& p = all_paths[fl_idx][path_idx];
       path_seqs.push_back(path_to_seq(bd_vg, p));
     }
 
@@ -181,7 +181,7 @@ std::map<std::size_t, std::vector<vcf::vcf_record>> gen_vcf_records(
           // use the intersection to determine this
 
           // get the position of that path in the reference whose id is ref_id
-          auto [_, v_id] = all_paths[fl_idx][path_idx].front();
+          auto [v_id, _] = all_paths[fl_idx][path_idx].front();
           bidirected::Vertex const& v = bd_vg.get_vertex(v_id);
 
           // TODO: can this loop be avoided?

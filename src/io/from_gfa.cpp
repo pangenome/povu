@@ -92,9 +92,9 @@ void handle_self_loop(bidirected::VariationGraph &vg, id_t v_id, bool src_f, boo
 bidirected::VariationGraph to_vg(const char* filename, const core::config& app_config) {
   std::string fn_name = std::format("[povu::io::{}]", __func__);
 
-  #ifdef DEBUG
-  if (app_config.verbosity() > 2) { std::cout << fn_name << std::endl; }
-  #endif
+  //#ifdef DEBUG
+  //if (app_config.verbosity() > 2) { std::cout << fn_name << std::endl; }
+  //#endif
 
   gfak::GFAKluge gg = gfak::GFAKluge();
 
@@ -154,12 +154,14 @@ bidirected::VariationGraph to_vg(const char* filename, const core::config& app_c
     gg.for_each_sequence_line_in_file(
       filename,
       [&](const gfak::sequence_elem& s) {
-        vg.create_handle(s.sequence, std::stoll(s.name) - offset_value);
-        vg.get_vertex_mut(std::stoll(s.name) - offset_value).set_name(s.name);
+        vg.create_handle(s.sequence, std::stoll(s.name));
+        //vg.get_vertex_mut(std::stoll(s.name) - offset_value).set_name(s.name);
       });
   }
 
+  std::cerr << fn_name << "Nodes added Graph size: " << node_count << " " << vg.size() << std::endl;
   assert(vg.size() == node_count);
+
 
   //std::cout << "[io::gfa_to_vg]" << "Nodes added Graph size: " << vg.size() << std::endl;
 
@@ -172,7 +174,7 @@ bidirected::VariationGraph to_vg(const char* filename, const core::config& app_c
         if (e.source_name.empty()) return;
 
         if (e.source_name == e.sink_name) {
-          handle_self_loop(vg, stoll(e.source_name) - offset_value,
+          handle_self_loop(vg, stoll(e.source_name),
                            e.source_orientation_forward, e.sink_orientation_forward);
           return;
         }
@@ -191,8 +193,8 @@ bidirected::VariationGraph to_vg(const char* filename, const core::config& app_c
 
         //std::cout << "source "<< e.source_name << v1_end << " sink " << e.sink_name << v2_end << "\n";
 
-        vg.add_edge(stoll(e.source_name) - offset_value, v1_end,
-                    stoll(e.sink_name) - offset_value, v2_end);
+        vg.add_edge(stoll(e.source_name), v1_end,
+                    stoll(e.sink_name), v2_end);
       });
   }
 

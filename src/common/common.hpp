@@ -4,6 +4,7 @@
 
 #include <cstddef>
 #include <iostream>
+#include <set>
 #include <sys/types.h>
 
 namespace graph_types {
@@ -80,6 +81,11 @@ struct side_n_id_t {
 };
 std::ostream& operator<<(std::ostream& os, const side_n_id_t& x);
 
+struct canonical_sese {
+  std::size_t start;
+  std::size_t end;
+  std::set<std::size_t> in_sese;
+};
 
 } // namespace graph_types
 

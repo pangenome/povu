@@ -157,23 +157,28 @@ std::vector<id_n_cls> compute_eq_class_stack(spanning_tree::Tree& t) {
     else {
       throw std::runtime_error("No class found for vertex: " + t.get_vertex(v).name());
     }
-  }\
+  }
 
   return s;
 }
 
-std::vector<size_t_pair> canonical_seses(const class_props& p) {
-  std::vector<size_t_pair> v;
+std::vector<canonical_sese> canonical_seses(const class_props& p) {
+  std::vector<canonical_sese> v;
   const std::vector<std::size_t> &next { p.next_ };
-  const std::vector<std::size_t> &prev{p.prev_};
+  const std::vector<std::size_t> &prev { p.prev_ };
   const std::vector<std::size_t> &cl { p.classes_ };
+  std::set<std::size_t> in_sese;
 
   std::size_t top {INVALID_ID};
 
   for (std::size_t i{}; i < p.size(); ++i) {
-
     if (top == cl[i]) {
-        v.push_back({p.g_id_[prev[i]] , p.g_id_[i]});
+      // populate in_sese
+      for (std::size_t j { prev[i] }; j <= i; ++j) {
+        in_sese.insert(p.g_id_[j]);
+      }
+      v.push_back({p.g_id_[prev[i]] , p.g_id_[i], in_sese});
+      in_sese.clear();
     }
 
     if (next[i] > i + 1) {
@@ -184,7 +189,7 @@ std::vector<size_t_pair> canonical_seses(const class_props& p) {
   return v;
 }
 
-std::vector<size_t_pair> find_seses(spanning_tree::Tree& t) {
+std::vector<canonical_sese> find_seses(spanning_tree::Tree& t) {
   std::string fn_name = std::format("[povu::algorithms::{}]", __func__);
   std::vector<id_n_cls> s { compute_eq_class_stack(t) };
   class_props p{stack_props(s)};

@@ -1,6 +1,5 @@
 #include <vector>
 
-#include "../common/typedefs.hpp"
 #include "../graph/bidirected.hpp"
 
 
@@ -26,6 +25,6 @@ enum output_format {
     PAF, // not yet supported
 };
 
-void call_variants(const std::vector<size_t_pair>& canonical_flubbles, const bidirected::VariationGraph& bd_vg, const core::config& app_config);
+void call_variants(const std::vector<canonical_sese>& canonical_flubbles, const bidirected::VariationGraph& bd_vg, const core::config& app_config);
 
 } // namespace genomics

@@ -41,7 +41,7 @@ using namespace common::typedefs;
  */
 std::vector<std::vector<std::set<std::size_t>>>
 find_path_haplotypes(
-  const std::vector<std::vector<std::vector<bidirected::side_n_id_t>>>& all_paths,
+  const std::vector<std::vector<std::vector<bidirected::id_n_orientation_t>>>& all_paths,
   const bidirected::VariationGraph& bd_vg
   ) {
   std::string fn_name =  "[povu::genomics::find_path_haplotypes]";
@@ -49,11 +49,11 @@ find_path_haplotypes(
   std::vector<std::vector<std::set<std::size_t>>> haplotypes_per_path;
 
   for (std::size_t fl_idx{}; fl_idx < all_paths.size(); ++fl_idx) {
-    const std::vector<std::vector<bidirected::side_n_id_t>>& c_flubble_paths = all_paths[fl_idx];
+    const std::vector<std::vector<bidirected::id_n_orientation_t>>& c_flubble_paths = all_paths[fl_idx];
 
     std::vector<std::set<std::size_t>> h;
 
-    for (const std::vector<bidirected::side_n_id_t>& c_flubble_path: c_flubble_paths) {
+    for (const std::vector<bidirected::id_n_orientation_t>& c_flubble_path: c_flubble_paths) {
 
       // for each path in the flubble
       // find the haplotype
@@ -62,7 +62,7 @@ find_path_haplotypes(
       std::set<std::size_t> intersect;
       std::set<std::size_t> temp;
       std::vector<std::vector<std::size_t>> haplotypes_per_path;
-      for (auto [side, v_id]: c_flubble_path) {
+      for (auto [v_id, _]: c_flubble_path) {
         // find the haplotype
         const std::vector<bidirected::PathInfo>& path_info = bd_vg.get_vertex(v_id).get_paths();
 
@@ -95,7 +95,7 @@ find_path_haplotypes(
  *
  *
  */
-void call_variants(const std::vector<size_t_pair>& canonical_flubbles,
+void call_variants(const std::vector<graph_types::canonical_sese>& canonical_flubbles,
                    const bidirected::VariationGraph& bd_vg,
                    const core::config& app_config) {
   std::string fn_name = "[povu::genomics::call_variants]";
@@ -110,20 +110,22 @@ void call_variants(const std::vector<size_t_pair>& canonical_flubbles,
 
   // walk paths in the digraph
   // while looping over canonical_flubbles
-  std::vector<std::vector<std::vector<bidirected::side_n_id_t>>> all_paths;
+  std::vector<std::vector<std::vector<bidirected::id_n_orientation_t>>> all_paths;
 
   //std::cout << fn_name << " Extracting paths for flubbles:\n";
   // extract flubble paths
   for (std::size_t i{} ; i < canonical_flubbles.size(); ++i) {
     if (false) {
+      std::format("{} flubble: {} start: {} stop: {}\n",
+                     fn_name, i, canonical_flubbles[i].start, canonical_flubbles[i].end);
       std::cout << fn_name << " flubble: " << i
-                << " start: " << canonical_flubbles[i].first
-                << " stop: " << canonical_flubbles[i].second
+                << " start: " << canonical_flubbles[i].start
+                << " stop: " << canonical_flubbles[i].end
                 << "\n";
     }
 
-    std::vector<std::vector<bidirected::side_n_id_t>> paths =
-      bd_vg.get_paths(canonical_flubbles[i].first, canonical_flubbles[i].second);
+    std::vector<std::vector<bidirected::id_n_orientation_t>> paths =
+      bd_vg.get_paths(canonical_flubbles[i]);
 
     all_paths.push_back(paths);
   }

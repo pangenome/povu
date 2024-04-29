@@ -262,7 +262,8 @@ BVariationGraph::BVariationGraph(const bidirected::VariationGraph &g, bool add_d
           auto [l, r] =  common_fns::frm_bidirected_idx(e.get_v2_idx());
           new_v1 = e.get_v2_end() == v_end::r ? r : l;
           v1_type = e.get_v2_end() == v_end::l ? v_type::r : v_type::l;
-        } else {
+        }
+        else {
           auto [l, r] =  common_fns::frm_bidirected_idx(e.get_v1_idx());
           new_v1 = e.get_v1_end() == v_end::l ? l : r;
           v1_type = e.get_v1_end() == v_end::l ? v_type::l : v_type::r;
@@ -551,8 +552,10 @@ void BVariationGraph::print_dot() const {
 }
 
 // TODO: make ref params const
-void validate_spanning_tree(BVariationGraph const& g, spanning_tree::Tree& t, std::map<std::size_t, std::size_t>& dfs_num_to_vtx) {
-    if (t.size() != g.size()) {
+void validate_spanning_tree(BVariationGraph const& g,
+                            spanning_tree::Tree& t,
+                            std::map<std::size_t, std::size_t>& dfs_num_to_vtx) {
+  if (t.size() != g.size()) {
     std::cerr << "size mismatch " << t.size() << " " << g.size() << "\n";
   }
 
@@ -568,7 +571,7 @@ void validate_spanning_tree(BVariationGraph const& g, spanning_tree::Tree& t, st
 
     if (t.is_root(v)) {
       if (obe.size() + ibe.size() + children.size() != g.get_neighbours(dfs_num_to_vtx[v]).size()) {
-        std::cerr << "neighbour mismatch " << v << " " << obe.size() << " " << ibe.size() << " " << children.size() << " " << g.get_neighbours(v).size() << "\n";
+        std::cerr << "neighbour mismatch (root) " << v << " " << obe.size() << " " << ibe.size() << " " << children.size() << " " << g.get_neighbours(v).size() << "\n";
       }
     }
     else {
