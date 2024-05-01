@@ -181,6 +181,10 @@ public:
   // ----
   // misc
   // ----
+
+  /**
+   * @brief Compute the DFS spanning tree of the graph
+   */
   spanning_tree::Tree compute_spanning_tree() const;
 };
 

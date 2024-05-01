@@ -159,9 +159,7 @@ bidirected::VariationGraph to_vg(const char* filename, const core::config& app_c
       });
   }
 
-  std::cerr << fn_name << "Nodes added Graph size: " << node_count << " " << vg.size() << std::endl;
   assert(vg.size() == node_count);
-
 
   //std::cout << "[io::gfa_to_vg]" << "Nodes added Graph size: " << vg.size() << std::endl;
 

@@ -2,6 +2,7 @@
 #include <format>
 #include <iostream>
 #include <iterator>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -552,52 +553,75 @@ void BVariationGraph::print_dot() const {
 }
 
 // TODO: make ref params const
-void validate_spanning_tree(BVariationGraph const& g,
-                            spanning_tree::Tree& t,
-                            std::map<std::size_t, std::size_t>& dfs_num_to_vtx) {
+void validate_spanning_tree(BVariationGraph const &g, spanning_tree::Tree &t,
+                            const utils::TwoWayMap<std::size_t, std::size_t>& vtx_to_dfs_num) {
   if (t.size() != g.size()) {
     std::cerr << "size mismatch " << t.size() << " " << g.size() << "\n";
   }
 
   // compare edge count
   if (t.tree_edge_count() + t.back_edge_count() != g.num_edges()) {
-    std::cerr << "edge count mismatch " << t.tree_edge_count() << " " << t.back_edge_count() << " " << g.num_edges() << "\n";
+    std::cerr << std::format("edge count mismatch {} {} {}\n",
+                             t.tree_edge_count(), t.back_edge_count(), g.num_edges());
   }
 
   for (std::size_t v{}; v < t.size() ; v++) {
     std::set<std::size_t>const& children = t.get_children(v);
     std::set<std::size_t>const& obe = t.get_obe(v);
-    std::set<std::size_t>const& ibe = t.get_ibe(v);
+    std::set<std::size_t> const &ibe = t.get_ibe(v);
+
+    vtx_to_dfs_num.get_key(v);
 
     if (t.is_root(v)) {
-      if (obe.size() + ibe.size() + children.size() != g.get_neighbours(dfs_num_to_vtx[v]).size()) {
-        std::cerr << "neighbour mismatch (root) " << v << " " << obe.size() << " " << ibe.size() << " " << children.size() << " " << g.get_neighbours(v).size() << "\n";
+      if (obe.size() + ibe.size() + children.size() != g.get_neighbours(    vtx_to_dfs_num.get_key(v)).size()) {
+        std::cerr << std::format("neighbour mismatch (root) {} {} {} {} {}\n",
+                                 v,
+                                 obe.size(),
+                                 ibe.size(),
+                                 children.size(),
+                                 g.get_neighbours(v).size());
       }
     }
     else {
-      if (obe.size() + ibe.size() + children.size() + 1 != g.get_neighbours(dfs_num_to_vtx[v]).size()) {
-        std::cerr << "neighbour mismatch " << v << " " << obe.size() << " " << ibe.size() << " " << children.size() << " " << g.get_neighbours(v).size() << "\n";
+      if (obe.size() + ibe.size() + children.size() + 1 != g.get_neighbours(    vtx_to_dfs_num.get_key(v)).size()) {
+        std::cerr << std::format("neighbour mismatch {} ({} {}) {} {} {} {}\n",
+                                 v,
+                                 t.get_vertex(v).name(),
+                                 g.get_vertex(vtx_to_dfs_num.get_key(v)).get_handle(),
+                                 obe.size(),
+                                 ibe.size(),
+                                 children.size(), g.get_neighbours(v).size());
       }
     }
 
     for (auto c : t.get_children(v)) {
       if (t.get_vertex(v).dfs_num() >= t.get_vertex(c).dfs_num()) {
-        std::cerr << "te weird " << v << " " << t.get_vertex(v).dfs_num() << " "
-                  << c << " " << t.get_vertex(c).dfs_num() << "\n";
+        g.get_vertex( vtx_to_dfs_num.get_key(v)).get_handle();
+        std::cerr << std::format("te weird {} {} {} {}\n",
+                                 v,
+                                 t.get_vertex(v).dfs_num(),
+                                 c,
+                                 t.get_vertex(c).dfs_num());
       }
     }
 
     for (std::size_t tgt : t.get_obe(v)) {
       if (t.get_vertex(v).dfs_num() <= t.get_vertex(tgt).dfs_num()) {
-        std::cerr << "obe weird " << v << " " << t.get_vertex(v).dfs_num() << " "
-                  << tgt << " " << t.get_vertex(tgt).dfs_num() << "\n";
+        std::cerr << std::format("obe weird {} {} {} {}\n",
+                                 v,
+                                 t.get_vertex(v).dfs_num(),
+                                 tgt,
+                                 t.get_vertex(tgt).dfs_num());
       }
     }
 
     for (std::size_t src : t.get_ibe(v)) {
       if (t.get_vertex(v).dfs_num() >= t.get_vertex(src).dfs_num()) {
-        std::cerr << "ibe weird" << v << " " << t.get_vertex(v).dfs_num() << " "
-                  << src << " " << t.get_vertex(src).dfs_num() << "\n";
+        std::cerr << std::format("ibe weird {} {} {} {}\n",
+                                 v,
+                                 t.get_vertex(v).dfs_num(),
+                                 src,
+                                 t.get_vertex(src).dfs_num());
       }
     }
   }
@@ -607,24 +631,52 @@ void validate_spanning_tree(BVariationGraph const& g,
 spanning_tree::Tree BVariationGraph::compute_spanning_tree() const {
   spanning_tree::Tree t = spanning_tree::Tree(this->size());
 
-  std::stack<std::tuple<std::size_t, std::size_t, bidirected::color>> s; // parent and v idx
+  std::stack<std::tuple<std::size_t, std::size_t, bidirected::color>> s; // parent indedx in the biedged graph, vertex idx and color
   std::set<std::size_t> visited;
   std::size_t v_idx {}; // set start node to 0
   s.push({constants::INVALID_ID, v_idx, bidirected::color::gray});
   visited.insert(v_idx);
   std::size_t counter{}; // dfs pre visit counter
 
-  std::map<std::size_t, std::size_t> vtx_to_dfs_num;
-  std::map<std::size_t, std::size_t> dfs_num_to_vtx;
+  utils::TwoWayMap<std::size_t, std::size_t> vtx_to_dfs_num_;
+
   std::set<std::size_t> in_tree; // graph vertices in the tree
   std::set<utils::unordered_pair> back_edges; // avoids duplicate back edges
 
   auto is_parent = [&](std::size_t p, std::size_t c) -> bool {
-    return t.get_children(vtx_to_dfs_num[p]).count(vtx_to_dfs_num[c]);
+    return t.get_children(vtx_to_dfs_num_.get_value(p)).count(vtx_to_dfs_num_.get_value(c));
   };
 
   auto is_parent_child = [&](std::size_t n, std::size_t v_idx) -> bool {
     return is_parent(n, v_idx) || is_parent(v_idx, n);
+  };
+
+  auto is_self_loop = [&](std::size_t n, std::size_t v_idx) -> bool {
+    if (!is_parent_child(n, v_idx)) { return false; }
+
+    std::string v_handle = this->get_vertex(v_idx).get_handle();
+    std::string n_handle = this->get_vertex(n).get_handle();
+
+    try {
+      std::stoull(v_handle);
+      std::stoull(n_handle);
+    }
+    catch (std::invalid_argument const& e) {
+      return false;
+    }
+
+    if (std::stoull( n_handle) != std::stoull(v_handle)) {
+      return false;
+    }
+
+    for (auto e_idx : this->get_vertex(v_idx).get_grey_edges()) {
+      if (this->get_edge(e_idx).get_other_vertex(v_idx) == n) {
+        std::cerr << "self loop " << v_handle << std::endl;
+        return true;
+      }
+    }
+
+    return false;
   };
 
   while (!s.empty()) {
@@ -632,14 +684,13 @@ spanning_tree::Tree BVariationGraph::compute_spanning_tree() const {
 
     biedged::Vertex const& v = this->get_vertex(v_idx);
 
-    if (in_tree.find(v_idx) == in_tree.end()) {
+    if (!in_tree.count(v_idx)) {
       t.add_vertex(spanning_tree::Vertex{counter, v.get_handle(), v.get_type()});
       in_tree.insert(v_idx);
-      vtx_to_dfs_num[v_idx] = counter;
-      dfs_num_to_vtx[counter] = v_idx;
+      vtx_to_dfs_num_.insert(v_idx, counter);
 
       if (p_idx != constants::INVALID_ID) {
-        t.add_tree_edge(vtx_to_dfs_num[p_idx], counter, constants::UNDEFINED_SIZE_T, c);
+        t.add_tree_edge(vtx_to_dfs_num_.get_value(p_idx), counter, constants::UNDEFINED_SIZE_T, c);
       }
 
       counter++;
@@ -653,8 +704,8 @@ spanning_tree::Tree BVariationGraph::compute_spanning_tree() const {
         explored = false;
         break;
       }
-      else if (!is_parent_child(n, v_idx) && back_edges.find({n, v_idx}) == back_edges.end())  {
-        t.add_be(vtx_to_dfs_num[v_idx], vtx_to_dfs_num[n],constants::UNDEFINED_SIZE_T, false, c);
+      else if ((is_self_loop(n, v_idx) || !is_parent_child(n, v_idx)) && !back_edges.count({n, v_idx}))  {
+        t.add_be(vtx_to_dfs_num_.get_value(v_idx), vtx_to_dfs_num_.get_value(n), constants::UNDEFINED_SIZE_T, false, c);
         back_edges.insert({v_idx, n});
       }
     }
@@ -663,7 +714,7 @@ spanning_tree::Tree BVariationGraph::compute_spanning_tree() const {
   }
 
 #ifdef DEBUG   // check the correctness of the tree
-  validate_spanning_tree(*this, t, dfs_num_to_vtx);
+  validate_spanning_tree(*this, t, vtx_to_dfs_num_);
 #endif
   return t;
 }

@@ -36,14 +36,6 @@ std::vector<bidirected::VariationGraph> read_and_componetize(const core::config&
   bidirected::VariationGraph vg =
     io::from_gfa::to_vg(app_config.get_input_gfa().c_str(), app_config);
 
-  /*
-    no need to print this if we have multiple components
-    if (app_config.verbosity() > 1) {
-    if (app_config.verbosity() > 2)  { std::cerr << fn_name << " Finished reading graph:\n"; }
-    // vg.dbg_print();
-    }
-   */
-
   if (false) { // validate the haplotype paths
     if (app_config.verbosity() > 2)  { std::cerr << fn_name << " Validating paths\n"; }
     if (vg.validate_haplotype_paths()) {
