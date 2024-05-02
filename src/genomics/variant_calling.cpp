@@ -90,6 +90,104 @@ find_path_haplotypes(
   return haplotypes_per_path;
 }
 
+/**
+ * @brief Get the side of a start or end vertex that is incident to the SESE
+ *
+ * the alternative side faces the SESE
+ * if the incident side is the left side then the vertex is in forward orientation and vice versa
+ * Being an SESE we expect that all vertices connected to one side are in the SESE
+ * and all vertices connected to the other side are not in the SESE
+ *
+ * @param in_sese The set of vertices in the SESE
+ * @param start_id The id of the vertex to get the orientation for
+ */
+bidirected::VertexEnd get_boundary_incidence(const bidirected::VariationGraph& g,
+                                 const std::set<std::size_t>& in_sese,
+                                 std::size_t v_id,
+                                 std::size_t alt_id) {
+  std::string fn_name = std::format("[povu::genomics::]", __func__);
+
+  std::size_t v_idx = g.id_to_idx(v_id);
+  const bidirected::Vertex& v = g.get_vertex(v_idx);
+
+  auto foo = [&](std::size_t e_idx) ->bool {
+    auto [side, alt_v_idx] = g.get_edge(e_idx).get_other_vertex(v_idx);
+    return in_sese.count(g.idx_to_id(alt_v_idx)) || g.idx_to_id(alt_v_idx) == alt_id ;
+  };
+
+  bool allLeftInSet = std::any_of(v.get_edges_l().begin(), v.get_edges_l().end(), foo);
+
+  bool allRightNotInSet = allLeftInSet ? !std::none_of(v.get_edges_r().begin(), v.get_edges_r().end(), foo)
+                                       : std::any_of(v.get_edges_r().begin(), v.get_edges_r().end(), foo);
+  if (!(allLeftInSet ^ allRightNotInSet)) {
+    throw std::runtime_error(std::format("{} {} {}", v_idx, allLeftInSet, allRightNotInSet));
+  }
+
+  bidirected::VertexEnd o = allLeftInSet ? bidirected::VertexEnd::l : bidirected::VertexEnd::r;
+
+  return o;
+}
+
+std::pair<bidirected::id_n_orientation_t, bidirected::id_n_orientation_t>
+foo(const bidirected::VariationGraph& g, const graph_types::canonical_sese& sese){
+  std::string fn_name = std::format("[povu::genomics::{}]", __func__);
+  if (false) { std::cerr << fn_name << "\n"; }
+
+  auto [start_id, stop_id, in_sese] = sese;
+
+  /*
+    assume e is the incoming vertex end
+   */
+  auto v_end_to_orientation = [&](graph_types::VertexEnd e) -> bidirected::orientation_t {
+    if (e == graph_types::VertexEnd::l ) {
+      return bidirected::orientation_t::forward;
+    }
+
+    return bidirected::orientation_t::reverse;
+  };
+
+  /*
+    Determine start side and orientation
+   */
+  bidirected::VertexEnd start_end;
+  try {
+    start_end = get_boundary_incidence(g, in_sese, start_id, stop_id);
+  }
+  catch (std::exception& e) {
+    std::cerr << std::format("{} WARN: SESE ({} {}) start boundary: {}\n", fn_name, start_id, stop_id, e.what());
+    return{};
+  }
+
+  bidirected::VertexEnd stop_end;
+  try {
+    stop_end = get_boundary_incidence(g, in_sese, stop_id, start_id);
+  }
+  catch (std::exception& e) {
+    std::cerr << std::format("{} WARN: SESE ({} {}) stop boundary: {}\n", fn_name, start_id, stop_id, e.what());
+    return{};
+  }
+
+
+  //std::cerr << start_orientation << " " << stop_orientation << "\n";
+
+    // TODO: remove when sort is implemented
+  // if SESE is flipped then we need to reverse the start and stop
+  if (start_id > stop_id && start_end == bidirected::VertexEnd::l && stop_end == bidirected::VertexEnd::r) {
+    std::swap(start_id, stop_id);
+    std::swap(start_end, stop_end);
+  }
+
+  bidirected::orientation_t start_o = start_end == graph_types::VertexEnd::r ? bidirected::orientation_t::forward
+                                                                            : bidirected::orientation_t::reverse;
+
+  bidirected::orientation_t stop_o = stop_end == graph_types::VertexEnd::l ? bidirected::orientation_t::forward
+                                                                          : bidirected::orientation_t::reverse;
+
+  bidirected::id_n_orientation_t entry { start_id, start_o };
+  bidirected::id_n_orientation_t exit { stop_id, stop_o };
+
+  return { entry, exit };
+}
 
 /**
  *
@@ -98,39 +196,21 @@ find_path_haplotypes(
 void call_variants(const std::vector<graph_types::canonical_sese>& canonical_flubbles,
                    const bidirected::VariationGraph& bd_vg,
                    const core::config& app_config) {
-  std::string fn_name = "[povu::genomics::call_variants]";
-  if (app_config.verbosity() > 3) { std::cerr << fn_name << "\n"; }
-
-  //output_format of = output_format::VCF;
-  //std::vector<std::pair<std::size_t, std::size_t>> canonical_flubbles = extract_canonical_flubbles(pvst_, app_config);
-
-  if (app_config.verbosity() > 3) {
-    std::cerr << fn_name << " Found " << canonical_flubbles.size() << " canonical flubbles\n";
-  }
+  std::string fn_name { std::format("[povu::genomics::{}]" , __func__) };
 
   // walk paths in the digraph
   // while looping over canonical_flubbles
   std::vector<std::vector<std::vector<bidirected::id_n_orientation_t>>> all_paths;
 
-  //std::cout << fn_name << " Extracting paths for flubbles:\n";
   // extract flubble paths
-  for (std::size_t i{} ; i < canonical_flubbles.size(); ++i) {
-    if (false) {
-      std::format("{} flubble: {} start: {} stop: {}\n",
-                     fn_name, i, canonical_flubbles[i].start, canonical_flubbles[i].end);
-      std::cout << fn_name << " flubble: " << i
-                << " start: " << canonical_flubbles[i].start
-                << " stop: " << canonical_flubbles[i].end
-                << "\n";
-    }
-
-    std::vector<std::vector<bidirected::id_n_orientation_t>> paths =
-      bd_vg.get_paths(canonical_flubbles[i]);
-
+  for (std::size_t i{}; i < canonical_flubbles.size(); ++i) {
+    const graph_types::canonical_sese& f = canonical_flubbles[i];
+    if (false) { std::cerr << std::format("{} flubble: {} ~> {}\n", fn_name, f.start, f.end); }
+    auto [entry, exit] = foo(bd_vg, f);
+    std::vector<std::vector<bidirected::id_n_orientation_t>> paths = bd_vg.get_paths(entry, exit);
     all_paths.push_back(paths);
   }
 
-  //std::cout << fn_name << " Finding haplotypes\n";
   std::vector<std::vector<std::set<std::size_t>>> haplotypes_per_path =
     find_path_haplotypes(all_paths, bd_vg);
 
@@ -138,7 +218,6 @@ void call_variants(const std::vector<graph_types::canonical_sese>& canonical_flu
     vcf::gen_vcf_records(bd_vg, haplotypes_per_path, all_paths, app_config);
 
   vcf::write_vcfs(vcf_records, bd_vg, app_config);
-
 }
 
 } // namespace genomics

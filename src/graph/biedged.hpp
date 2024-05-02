@@ -98,7 +98,7 @@ public:
   std::set<std::size_t> const& get_grey_edges() const;
   std::size_t get_black_edge() const;
   std::size_t get_vertex_idx() const;
-  std::set<std::size_t> get_neighbours() const;
+  std::vector<std::size_t> get_neighbours() const;
 
 
   // ---------
@@ -153,7 +153,7 @@ public:
   Vertex& get_vertex_mut(std::size_t vertex_idx);
   const Vertex& get_vertex(std::size_t vertex_idx) const;
   const std::vector<size_t> &get_dummy_vertices() const;
-  std::set<std::pair<color, std::size_t>> get_neighbours(std::size_t vertex_idx) const;
+  std::vector<std::pair<color, std::size_t>> get_neighbours(std::size_t vertex_idx) const;
 
 
   // -------

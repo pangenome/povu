@@ -143,7 +143,9 @@ void compute_sese_regions(bidirected::VariationGraph &vg, core::config& app_conf
 
   if (app_config.verbosity() > 2) { std::cerr << fn_name << " Finding SESE regions\n"; }
   std::vector<graph_types::canonical_sese> seses = algorithms::find_seses(st);
+  if (app_config.verbosity() > 2) { std::cerr << std::format("{} Found {} canonical flubbles\n", fn_name, seses.size()); }
 
+    if (app_config.verbosity() > 2) { std::cerr << std::format("{} Calling variants\n", fn_name); }
   genomics::call_variants(seses, vg, app_config);
 
   return;
@@ -170,7 +172,7 @@ int main(int argc, char *argv[]) {
     std::cerr << std::format("{} Number of components: {}\n", fn_name, components.size());
   }
 
-  for (std::size_t i{6}; i < components.size(); i++) {
+  for (std::size_t i{}; i < components.size(); i++) {
     if (app_config.verbosity() > 2) {
       std::cerr << std::format("{} Handling component: {}\n", fn_name, i+1);
     }
@@ -181,6 +183,8 @@ int main(int argc, char *argv[]) {
     }
 
     if (app_config.verbosity() > 3) { components[i].dbg_print(); }
+
+    //    if (i==1) { continue; }
 
     compute_sese_regions(components[i], app_config);
   }

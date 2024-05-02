@@ -58,10 +58,10 @@ std::ostream& operator<<(std::ostream& os, const component& comp) {
 std::ostream& operator<<(std::ostream& os, const orientation_t& o) {
   switch (o) {
   case orientation_t::forward:
-  os << "+";
+  os << ">>"; // might be better than +
   break;
   case orientation_t::reverse:
-  os << "-";
+  os << "<<";
   break;
   }
 
@@ -401,72 +401,18 @@ std::set<side_n_id_t> const& VariationGraph::find_haplotype_end_nodes() const {
   return this->haplotype_end_nodes_;
 }
 
-/**
- * @brief Get the orientation of a start or end vertex in an SESE
- *
- * Being an SESE we expect that all vertices connected to one side are in the SESE
- * and all vertices connected to the other side are not in the SESE
- *
- * @param in_sese The set of vertices in the SESE
- * @param start_id The id of the vertex to get the orientation for
- */
-orientation_t get_boundary_orientation(const VariationGraph& g, const std::set<std::size_t>& in_sese, std::size_t v_id, std::size_t alt_id) {
-  std::string fn_name = std::format("[povu::graph::VariationGraph::]", __func__);
+std::vector<std::vector<id_n_orientation_t>> VariationGraph::get_paths
+(id_n_orientation_t entry, id_n_orientation_t exit) const {
+  std::string fn_name = std::format("[povu::bidirected::{}]", __func__);
 
-  std::size_t v_idx = g.id_to_idx(v_id);
-  const Vertex& v = g.get_vertex(v_idx);
+  auto [start_id, start_o] = entry;
+  auto [stop_id, stop_o] = exit;
 
-  auto foo = [&](std::size_t e_idx) ->bool {
-    auto [side, alt_v_idx] = g.get_edge(e_idx).get_other_vertex(v_idx);
-    return in_sese.count(g.idx_to_id(alt_v_idx)) || g.idx_to_id(alt_v_idx) == alt_id ;
-  };
+  //std::cerr << start_id << start_o  << " " << stop_id << stop_o << std::endl;
 
-  bool allLeftInSet = std::any_of(v.get_edges_l().begin(), v.get_edges_l().end(), foo);
+  //id_n_orientation_t exit = {stop_id, orientation_t::forward};
 
-  bool allRightNotInSet = allLeftInSet ? !std::none_of(v.get_edges_r().begin(), v.get_edges_r().end(), foo)
-                                       : std::any_of(v.get_edges_r().begin(), v.get_edges_r().end(), foo);
-
-
-  if (!(allLeftInSet ^ allRightNotInSet)) {
-    throw std::runtime_error(std::format("{} {} {}", v_idx, allLeftInSet, allRightNotInSet));
-  }
-
-  orientation_t o = allLeftInSet ? orientation_t::forward : orientation_t::reverse;
-
-  return o;
-}
-
-std::vector<std::vector<id_n_orientation_t>>
-VariationGraph::get_paths(const canonical_sese& sese) const {
-  std::string fn_name = std::format("[povu::bidirected::]", __func__);
-  if (false) { std::cerr << fn_name << "\n"; }
-  // each side has a set of paths associated with it
-  //std::map<id_n_orientation_t, std::vector<std::vector<id_n_orientation_t>>> paths_map;
-
-  auto [start_id, stop_id, in_sese] = sese;
-
-  /*
-    Determine start side and orientation
-   */
-  orientation_t start_orientation;
-  try {
-    start_orientation = get_boundary_orientation(*this, in_sese, start_id, stop_id);
-  }
-  catch (std::exception& e) {
-    std::cerr << std::format("{} WARN: SESE ({} {}) start boundary: {}\n", fn_name, start_id, stop_id, e.what());
-    return {};
-  }
-
-  orientation_t stop_orientation;
-  try {
-    stop_orientation = get_boundary_orientation(*this, in_sese, stop_id, start_id);
-  }
-  catch (std::exception& e) {
-    std::cerr << std::format("{} WARN: SESE ({} {}) stop boundary: {}\n", fn_name, start_id, stop_id, e.what());
-    return {};
-  }
-
-  id_n_orientation_t exit = {stop_id, stop_orientation};
+  // std::map<id_n_orientation_t, std::vector<std::vector<id_n_orientation_t>>> paths_map;
 
   // each side has a set of paths associated with it
   std::map<id_n_orientation_t, std::vector<std::vector<id_n_orientation_t>>> paths_map;
@@ -498,8 +444,6 @@ const path_t& VariationGraph::get_path(std::size_t path_id) const {
 std::size_t VariationGraph::get_path_count() const {
   return this->paths.size();
 }
-
-
 
 void VariationGraph::dbg_print() {
   std::vector<side_n_id_t> buffer;

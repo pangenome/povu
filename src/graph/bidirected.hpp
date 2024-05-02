@@ -255,7 +255,7 @@ public:
    * @param compact if true, remove redundant strand information in the path
    * @return std::vector<subpaths_t> a vector of paths
    */
-  std::vector<std::vector<id_n_orientation_t>> get_paths(const canonical_sese& sese) const;
+  std::vector<std::vector<id_n_orientation_t>> get_paths(id_n_orientation_t entry, id_n_orientation_t exit) const;
 
   // get adjacent vertex indexes to a vertex in a given direction
   std::vector<side_n_id_t> get_adj_vertices(std::size_t vertex_index, VertexEnd vertex_end) const;

@@ -1,7 +1,6 @@
 #ifndef CORE_HPP
 #define CORE_HPP
 
-
 #include <string>
 #include <unistd.h>
 #include <vector>
@@ -9,7 +8,6 @@
 #include <iostream>
 #include <optional>
 #include <filesystem>
-
 
 #include "../common/utils.hpp"
 
@@ -53,7 +51,7 @@ struct config {
 
   // general
   unsigned char v; // verbosity
-  bool print_dot_ { true }; // generate dot format graphs
+  bool print_dot_ { false }; // generate dot format graphs
 
   //
   bool sort_; // sort the graph (default: true)
