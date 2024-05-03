@@ -4,25 +4,21 @@
 #include <format>
 #include <iostream>
 #include <iterator>
-#include <limits>
 #include <map>
 #include <ostream>
+#include <queue>
+#include <set>
 #include <stack>
-#include <deque>
 #include <string>
 #include <sys/types.h>
 #include <unordered_set>
-#include <utility>
 #include <vector>
-
 
 #include "./bidirected.hpp"
 #include "../common/utils.hpp"
 
 
 namespace bidirected {
-
-
 
 // Definition of operator<< outside the struct
 std::ostream& operator<<(std::ostream& os, const component& comp) {
@@ -89,6 +85,13 @@ bool operator<(const id_n_orientation_t& lhs, const id_n_orientation_t& rhs) {
   }
 }
 
+bool operator!=(const id_n_orientation_t & lhs, const id_n_orientation_t& rhs) {
+    return lhs.v_idx != rhs.v_idx || lhs.orientation != rhs.orientation;
+}
+
+bool operator==(const id_n_orientation_t & lhs, const id_n_orientation_t& rhs) {
+    return lhs.v_idx == rhs.v_idx && lhs.orientation == rhs.orientation;
+}
 
 /*
  * Edge
@@ -401,30 +404,147 @@ std::set<side_n_id_t> const& VariationGraph::find_haplotype_end_nodes() const {
   return this->haplotype_end_nodes_;
 }
 
-std::vector<std::vector<id_n_orientation_t>> VariationGraph::get_paths
-(id_n_orientation_t entry, id_n_orientation_t exit) const {
+std::set<id_n_orientation_t> VariationGraph::get_outgoing_neighbours(id_n_orientation_t idx_n_o) const {
+  auto [v_idx, o] = idx_n_o;
+  std::set<id_n_orientation_t> neighbours;
+
+  const std::set<std::size_t>& edges = o == orientation_t::forward ?
+    this->get_vertex(v_idx).get_edges_r() : this->get_vertex(v_idx).get_edges_l();
+
+  for (const auto& e_idx : edges) {
+    const Edge& e = this->get_edge(e_idx);
+    auto [side, alt_idx] = e.get_other_vertex(v_idx);
+    if (side == VertexEnd::l) {
+      neighbours.insert({alt_idx, orientation_t::forward});
+    }
+    else {
+      neighbours.insert({alt_idx, orientation_t::reverse});
+    }
+  }
+
+  return neighbours;
+}
+
+std::set<id_n_orientation_t> VariationGraph::get_incoming_neighbours(id_n_orientation_t idx_n_o) const {
+  auto [v_idx, o] = idx_n_o;
+  std::set<id_n_orientation_t> neighbours;
+
+  const std::set<std::size_t>& e_idxs = o == orientation_t::forward ?
+    this->get_vertex(v_idx).get_edges_l() : this->get_vertex(v_idx).get_edges_r();
+
+  for (const auto& e_idx : e_idxs) {
+    const Edge& e = this->get_edge(e_idx);
+    auto [side, alt_idx] = e.get_other_vertex(v_idx);
+    if (side == VertexEnd::r) {
+      neighbours.insert({alt_idx, orientation_t::forward});
+    }
+    else {
+      neighbours.insert({alt_idx, orientation_t::reverse});
+    }
+  }
+
+  return neighbours;
+}
+
+
+/**
+  * @brief Get all the paths between the entry and exit nodes
+  *
+  * Each path is a vector of nodes and their traversal orientations
+  *
+  * @param entry The entry node as an id
+  * @param exit The exit node as an id
+  * @return A vector of paths in terms of the idxs
+  */
+std::vector<std::vector<id_n_orientation_t>> VariationGraph::get_paths (id_n_orientation_t entry, id_n_orientation_t exit) const {
   std::string fn_name = std::format("[povu::bidirected::{}]", __func__);
+
+  //std::cerr << fn_name << entry << " ~> " << exit << std::endl;
+
 
   auto [start_id, start_o] = entry;
   auto [stop_id, stop_o] = exit;
 
-  //std::cerr << start_id << start_o  << " " << stop_id << stop_o << std::endl;
+  //std::size_t start_v_idx = this->id_to_idx(start_id);
+  id_n_orientation_t entry_idx = {this->id_to_idx(start_id) , start_o};
+  id_n_orientation_t exit_idx = {this->id_to_idx(stop_id) , stop_o};
 
-  //id_n_orientation_t exit = {stop_id, orientation_t::forward};
-
-  // std::map<id_n_orientation_t, std::vector<std::vector<id_n_orientation_t>>> paths_map;
+  //std::cerr << entry << " ~> " << exit << std::endl;
 
   // each side has a set of paths associated with it
   std::map<id_n_orientation_t, std::vector<std::vector<id_n_orientation_t>>> paths_map;
 
   // a double ended queue to control the traversal of the region
-  std::deque<side_n_id_t> q;
+  //std::deque<id_n_orientation_t> q;
+  std::queue<id_n_orientation_t> q;
+  q.push(entry_idx);
 
   // a set to keep track of the vertices we've seen
-  std::set<side_n_id_t> seen;
+  std::set<id_n_orientation_t> seen;
+  seen.insert(entry_idx);
+
+  std::size_t counter {}; // a counter to keep track of the number of iterations
+  // allows us to short circuit the traversal if it's taking too long
+
+  while (!q.empty()) {
+    id_n_orientation_t current = q.front();
+    //auto [cur_idx, cur_o] = current;
+
+    //std::cerr << "\t" << this->idx_to_id(current.v_idx) << current.orientation  << std::endl;
+    q.pop();
+
+    if (counter > 20) {
+      std::cerr << "Skipping " << entry << " ~> " << exit << std::endl;
+      break;
+    }
+    counter++;
+
+    if (current == entry_idx) {
+      paths_map[current] = {{}};
+    }
+    else {
+      std::set<id_n_orientation_t> in_neighbours = this->get_incoming_neighbours(current);
+      for (const id_n_orientation_t& n : in_neighbours) {
+        std::vector<std::vector<id_n_orientation_t>> neighbour_paths = paths_map[n];
+        for (const auto& path : neighbour_paths) {
+          std::vector<id_n_orientation_t> new_path = path;
+          if (current != exit_idx) { new_path.push_back(current); }
+          //new_path.push_back(current);
+          if (paths_map.find(current) == paths_map.end() ) {
+            paths_map[current] = {new_path};
+          }
+          else {
+            paths_map[current].push_back(new_path);
+          }
+        }
+      }
+    }
 
 
-  return paths_map[exit];
+    if (current != exit_idx) {
+      for (const auto& out_n : this->get_outgoing_neighbours(current)) {
+
+        if (seen.find(out_n) == seen.end()) {
+          q.push(out_n);
+          seen.insert(out_n);
+        }
+      }
+    }
+  }
+
+  //print exit map
+  if (false) {
+  std::cerr << "paths for " << entry << " ~> " << exit << std::endl;
+  for (const auto& mv  : paths_map[exit_idx]) {
+    for (const auto& v : mv) {
+      std::cerr << "\t" << this->idx_to_id(v.v_idx) << v.orientation << " ";
+   }
+   std::cerr << std::endl;
+  }
+
+  }
+
+  return paths_map[exit_idx];
 }
 
 std::vector<path_t> VariationGraph::get_paths() const {
@@ -529,8 +649,8 @@ void VariationGraph::print_dot() const {
   std::cout << "\tnode [shape=record];" << std::endl;
 
   for (std::size_t i{}; i < this->size(); ++i) {
-    std::cout << std::format("\t{} [label=\"{} {}\"];\n",
-                             i, this->get_vertex(i).get_name(),
+    std::cout << std::format("\t{} [label=\"{} ({}) {}\"];\n",
+                             i, this->get_vertex(i).get_name(), i,
                              (this->get_vertex(i).get_eq_class() == constants::UNDEFINED_SIZE_T
                               ? ""
                               : std::to_string(this->get_vertex(i).get_eq_class() )  ) );

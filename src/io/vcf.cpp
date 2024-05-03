@@ -133,6 +133,8 @@ std::map<std::size_t, std::vector<vcf::vcf_record>> gen_vcf_records(
   for (std::size_t fl_idx{}; fl_idx < all_paths.size(); ++fl_idx) {
     num_paths = all_paths[fl_idx].size();
 
+    if (num_paths < 2) { continue; }
+
     // does this flubble contain a reference path?
     bool has_ref{false};
 

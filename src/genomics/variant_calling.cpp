@@ -1,59 +1,37 @@
 #include <algorithm>
-#include <cmath>
 #include <cstddef>
 #include <ctime>
-#include <deque>
 #include <format>
-#include <fstream>
-#include <functional>
-#include <iomanip>
 #include <iostream>
 #include <map>
-#include <queue>
 #include <set>
-#include <sstream>
-#include <stack>
 #include <string>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
-#include "../common/typedefs.hpp"
-//#include "../core/constants.hpp"
-//#include "../core/core.hpp"
-//#include "../common/utils.hpp"
 #include "../graph/bidirected.hpp"
-// #include "../graph/digraph.hpp"
-//#include "../graph/tree.hpp"
-//#include "../pvst/pvst.hpp"
 #include "../io/io.hpp"
 
 
 namespace genomics {
-using namespace common::typedefs;
-
-
-
+typedef std::vector<bidirected::id_n_orientation_t> walk; // a walk is a sequence of vertices also a path
 
 /**
  * Associate each path with a set of haplotypes
  *
  */
 std::vector<std::vector<std::set<std::size_t>>>
-find_path_haplotypes(
-  const std::vector<std::vector<std::vector<bidirected::id_n_orientation_t>>>& all_paths,
-  const bidirected::VariationGraph& bd_vg
-  ) {
-  std::string fn_name =  "[povu::genomics::find_path_haplotypes]";
+find_path_haplotypes(const std::vector<std::vector<walk>>& all_paths, const bidirected::VariationGraph& bd_vg) {
+  std::string fn_name { std::format("[povu::genomics::{}]",  __func__) };
 
   std::vector<std::vector<std::set<std::size_t>>> haplotypes_per_path;
 
   for (std::size_t fl_idx{}; fl_idx < all_paths.size(); ++fl_idx) {
-    const std::vector<std::vector<bidirected::id_n_orientation_t>>& c_flubble_paths = all_paths[fl_idx];
+    const std::vector<walk>& c_flubble_paths = all_paths[fl_idx];
 
     std::vector<std::set<std::size_t>> h;
 
-    for (const std::vector<bidirected::id_n_orientation_t>& c_flubble_path: c_flubble_paths) {
+    for (const walk& c_flubble_path: c_flubble_paths) {
 
       // for each path in the flubble
       // find the haplotype
@@ -65,6 +43,7 @@ find_path_haplotypes(
       for (auto [v_id, _]: c_flubble_path) {
         // find the haplotype
         const std::vector<bidirected::PathInfo>& path_info = bd_vg.get_vertex(v_id).get_paths();
+
 
         for (auto [path_id, _]: path_info) {
           curr_haplotypes.insert(path_id);
@@ -200,19 +179,19 @@ void call_variants(const std::vector<graph_types::canonical_sese>& canonical_flu
 
   // walk paths in the digraph
   // while looping over canonical_flubbles
-  std::vector<std::vector<std::vector<bidirected::id_n_orientation_t>>> all_paths;
+  std::vector<std::vector<walk>> all_paths;
 
   // extract flubble paths
   for (std::size_t i{}; i < canonical_flubbles.size(); ++i) {
     const graph_types::canonical_sese& f = canonical_flubbles[i];
-    if (false) { std::cerr << std::format("{} flubble: {} ~> {}\n", fn_name, f.start, f.end); }
     auto [entry, exit] = foo(bd_vg, f);
-    std::vector<std::vector<bidirected::id_n_orientation_t>> paths = bd_vg.get_paths(entry, exit);
+    std::vector<walk> paths = bd_vg.get_paths(entry, exit);
     all_paths.push_back(paths);
   }
 
   std::vector<std::vector<std::set<std::size_t>>> haplotypes_per_path =
     find_path_haplotypes(all_paths, bd_vg);
+
 
   std::map<std::size_t, std::vector<vcf::vcf_record>> vcf_records =
     vcf::gen_vcf_records(bd_vg, haplotypes_per_path, all_paths, app_config);

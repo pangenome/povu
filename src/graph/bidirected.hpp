@@ -38,6 +38,9 @@ struct id_n_orientation_t {
   friend bool operator<(const side_n_id_t& lhs, const side_n_id_t& rhs);
 };
 std::ostream& operator<<(std::ostream& os, const id_n_orientation_t& x);
+bool operator!=(const id_n_orientation_t & lhs, const id_n_orientation_t& rhs);
+bool operator==(const id_n_orientation_t & lhs, const id_n_orientation_t& rhs);
+
 
 
 struct PathInfo {
@@ -241,6 +244,9 @@ public:
    */
   std::size_t id_to_idx(std::size_t id) const;
 
+  std::set<id_n_orientation_t> get_outgoing_neighbours(id_n_orientation_t idx_n_o) const;
+  std::set<id_n_orientation_t> get_incoming_neighbours(id_n_orientation_t idx_n_o) const;
+  //std::set<id_n_orientation_t> get_neighbours(std::size_t v_idx, orientation_t o) const;
 
   const Edge& get_edge(std::size_t index) const;
   Edge& get_edge_mut(std::size_t index);

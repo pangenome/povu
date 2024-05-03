@@ -682,7 +682,7 @@ spanning_tree::Tree BVariationGraph::compute_spanning_tree() const {
 
     for (auto e_idx : this->get_vertex(v_idx).get_grey_edges()) {
       if (this->get_edge(e_idx).get_other_vertex(v_idx) == n) {
-        std::cerr << "self loop " << v_handle << std::endl;
+        //std::cerr << "self loop " << v_handle << std::endl;
         return true;
       }
     }
