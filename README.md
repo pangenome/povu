@@ -1,5 +1,5 @@
 # povu
-Variant caller based on cycle equivalence
+A variant caller based on cycle equivalence
 
 ## Install
 
@@ -10,93 +10,36 @@ Variant caller based on cycle equivalence
 git clone --recursive git@github.com:pangenome/domibubble.git
 ```
 
-2. Choose a suitable compilation method
-
-Compile for development (with debug symbols)
-```
-cmake -DCMAKE_BUILD_TYPE=Debug  -H. -Bbuild && cmake --build build -- -j 3
-```
-
-Compile for use (optimized binary)
+2. Compile
 ```
 cmake -H. -Bbuild && cmake --build build -- -j 3
 ```
 
-3. Check that the binary is installed in `./bin`
-```
-./bin/povu
-```
+3. The binary should be in `./bin/povu`
 
-# Input
-Input GFA
 
-Expect a sorted graph in GFA
-Expect first node to have id 1
+## Run
 
-Compile
-```
-cmake -H. -Bbuild && cmake --build build -- -j 3
-```
+Using the dataset in the test_data folder we can call variants related to the `HG02572__LPA__tig00000001` reference
+like so:
 
-Run
-```
-./bin/povu
-```
-
-Example
 ```
 ./bin/povu -v 2 call -i test_data/LPA.max120.gfa  --  HG02572__LPA__tig00000001
 ```
 
+This creates a `HG02572__LPA__tig00000001.vcf` which contains variants relative to that reference path in the graph.
+
+For the help text run `./bin/povu -h` or just `./bin/povu`
+
+## Input
+Input GFA
+
+Expect the segments in the input GFA to have unique numeric [segment names](https://github.com/GFA-spec/GFA-spec/blob/master/GFA1.md#s-segment-line)
+
 ## Development
 
-```
 Compile with debug symbols and with address sanitizer
-```
-cmake -DCMAKE_BUILD_TYPE=Release -DUSE_SANITIZER=address  -H. -Bbuild && cmake --build build -- -j 3
-```
-
-
-A release version (default)
-```
-cmake -DCMAKE_BUILD_TYPE=Release -H. -Bbuild && cmake --build build -- -j 3
-```
-
-## Pangenome Variation Structure Tree (PVST)
-
-You can use `-t` to generate the PVST in `.pvst` format which is a is a tab
-separated plain text file made up of 5 columns as described below
-
-
-| type                      | description                                                                                    |
-|---------------------------|------------------------------------------------------------------------------------------------|
-| unsigned numeric          | vertex id (can be zero)                                                                        |
-| list of unsigned numerics | child nodes in comma separated values                                                          |
-| character                 | A value indicating whether the node is a true vertex or a dummy vertex (D for dummy, T for true)                         |
-| unsigned numeric          | the equivalence class of the vertex                                                            |
-| unsigned numeric          | the id of the vertex in the GFA file (multiple different vertex ids can share the same GFA id) |
-
-### Example
-
-![graph](docs/images/vg7.png)
-![pvst](docs/images/pvst7.png)
 
 ```
-0       T   6   1
-1       T   6   2
-2   0,1,3   D   6   1
-3   10,14,15,4  D   6   2
-4   5,9 T   4   3
-5   6,7,8   T   2   4
-6       T   1   5
-7       T   3   6
-8       T   2   7
-9       T   4   8
-10  11,12,13    T   7   9
-11      T   0   10
-12      T   8   11
-13      T   7   12
-14      T   6   13
-15      T   6   14
-
+cmake -DCMAKE_BUILD_TYPE=Debug -DUSE_SANITIZER=address  -H. -Bbuild && cmake --build build -- -j 3
 ```

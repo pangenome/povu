@@ -13,25 +13,15 @@
 #include <args.hxx>
 #include <filesystem>
 
-
-
 #include "./cli.hpp"
 
 namespace cli {
 
-#define FILE_ERROR(name)                                                       \
-  {                                                                            \
-    std::string e = "Error, Failed to open the file " + name; \
-    throw std::invalid_argument(e);                                              \
-  }
-
-
-
-// version string constant
-const std::string VERSION = "0.0.0-alpha";
 
 /**
- * Get the size of a file
+ * @brief Get the size of a file
+ * @param fp file path
+ * @return size of the file in bytes
  */
 std::size_t get_file_size(const std::string& fp) {
   std::streampos begin, end;
@@ -134,7 +124,7 @@ int cli(int argc, char **argv, core::config& app_config) {
   args::Group arguments(p, "arguments", args::Group::Validators::DontCare, args::Options::Global);
   args::Flag version(arguments, "version", "The current version of povu", {"version"});
   args::ValueFlag<int> verbosity(arguments, "verbosity", "Level of output", {'v', "verbosity"});
-  args::ValueFlag<std::string> pvst_path(arguments, "pvst_file_name", "PVST output file path", {'t', "pvst-path"});
+  //args::ValueFlag<std::string> pvst_path(arguments, "pvst_file_name", "PVST output file path", {'t', "pvst-path"});
   //args::Flag no_sort(arguments, "no_sort", "Disable sorting (not recommended)", {'n', "no-sort"});
   args::HelpFlag h(arguments, "help", "help", {'h', "help"});
 
@@ -158,9 +148,9 @@ int cli(int argc, char **argv, core::config& app_config) {
     std::exit(0);
   }
 
-  if (pvst_path) {
-    app_config.set_pvst_path(args::get(pvst_path));
-  }
+  //if (pvst_path) {
+  //  app_config.set_pvst_path(args::get(pvst_path));
+  //}
 
   if (args::get(verbosity)) {
     app_config.set_verbosity(args::get(verbosity));

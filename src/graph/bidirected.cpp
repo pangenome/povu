@@ -459,23 +459,15 @@ std::set<id_n_orientation_t> VariationGraph::get_incoming_neighbours(id_n_orient
 std::vector<std::vector<id_n_orientation_t>> VariationGraph::get_paths (id_n_orientation_t entry, id_n_orientation_t exit) const {
   std::string fn_name = std::format("[povu::bidirected::{}]", __func__);
 
-  //std::cerr << fn_name << entry << " ~> " << exit << std::endl;
-
-
   auto [start_id, start_o] = entry;
   auto [stop_id, stop_o] = exit;
 
-  //std::size_t start_v_idx = this->id_to_idx(start_id);
   id_n_orientation_t entry_idx = {this->id_to_idx(start_id) , start_o};
   id_n_orientation_t exit_idx = {this->id_to_idx(stop_id) , stop_o};
-
-  //std::cerr << entry << " ~> " << exit << std::endl;
 
   // each side has a set of paths associated with it
   std::map<id_n_orientation_t, std::vector<std::vector<id_n_orientation_t>>> paths_map;
 
-  // a double ended queue to control the traversal of the region
-  //std::deque<id_n_orientation_t> q;
   std::queue<id_n_orientation_t> q;
   q.push(entry_idx);
 
@@ -488,13 +480,11 @@ std::vector<std::vector<id_n_orientation_t>> VariationGraph::get_paths (id_n_ori
 
   while (!q.empty()) {
     id_n_orientation_t current = q.front();
-    //auto [cur_idx, cur_o] = current;
 
-    //std::cerr << "\t" << this->idx_to_id(current.v_idx) << current.orientation  << std::endl;
     q.pop();
 
     if (counter > 20) {
-      std::cerr << "Skipping " << entry << " ~> " << exit << std::endl;
+      std::cerr << fn_name << " skipping flubble " << entry << " ~> " << exit << std::endl;
       break;
     }
     counter++;
@@ -531,19 +521,18 @@ std::vector<std::vector<id_n_orientation_t>> VariationGraph::get_paths (id_n_ori
       }
     }
   }
-
+#ifdef DEBUG
   //print exit map
   if (false) {
-  std::cerr << "paths for " << entry << " ~> " << exit << std::endl;
-  for (const auto& mv  : paths_map[exit_idx]) {
-    for (const auto& v : mv) {
-      std::cerr << "\t" << this->idx_to_id(v.v_idx) << v.orientation << " ";
-   }
-   std::cerr << std::endl;
+    std::cerr << "paths for " << entry << " ~> " << exit << std::endl;
+    for (const auto& mv  : paths_map[exit_idx]) {
+      for (const auto& v : mv) {
+        std::cerr << "\t" << this->idx_to_id(v.v_idx) << v.orientation << " ";
+     }
+     std::cerr << std::endl;
+    }
   }
-
-  }
-
+#endif
   return paths_map[exit_idx];
 }
 

@@ -1,22 +1,12 @@
+#include <format>
 #include <fstream>
 #include <cstddef>
 #include <iostream>
-#include <ostream>
-#include <stack>
-#include <queue>
-#include <string>
 #include <map>
+#include <ostream>
 #include <set>
-#include <unordered_set>
 #include <vector>
-#include <utility>
-#include <format>
-#include <numeric>
 
-// #include "../pvst/pvst.hpp"
-// #include "../graph/tree.hpp"
-//#include "../graph/digraph.hpp"
-//#include "../core/constants.hpp"
 #include "../cli/app.hpp"
 #include "./io.hpp"
 #include "../common/utils.hpp"
@@ -92,7 +82,7 @@ void write_vcfs(const std::map<std::size_t,
     std::string ref_name = path_id_name_map[ref_id];
 
     if (app_config.verbosity() > 0) {
-      std::cerr << fn_name << " writing vcf for " << ref_name << "\n";
+      std::cerr << std::format("{} writing vcf for {}\n", fn_name, ref_name);
     }
 
     write_vcf(ref_name, vcf_recs, app_config);
