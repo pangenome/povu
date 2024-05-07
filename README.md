@@ -17,19 +17,38 @@ cmake -H. -Bbuild && cmake --build build -- -j 3
 
 3. The binary should be in `./bin/povu`
 
-
 ## Run
 
-Using the dataset in the test_data folder we can call variants related to the `HG02572__LPA__tig00000001` reference
-like so:
+For the help text run `./bin/povu -h` or just `./bin/povu`
+
+### Examples
+
+#### 1
+
+Using the dataset in the `test_data` folder we can call variants related to the
+`HG02572__LPA__tig00000001` reference like so:
+
+We can pass an individual reference
 
 ```
-./bin/povu -v 2 call -i test_data/LPA.max120.gfa  --  HG02572__LPA__tig00000001
+./bin/povu -v 2 call -i test_data/LPA.max120.gfa -- HG02572__LPA__tig00000001
 ```
 
 This creates a `HG02572__LPA__tig00000001.vcf` which contains variants relative to that reference path in the graph.
 
-For the help text run `./bin/povu -h` or just `./bin/povu`
+
+#### 2
+
+Extract all references from a GFA file and save in a file
+```
+grep '^P' test_data/HPRC/chrY.hprc-v1.0-pggb.gfa | cut -f 2 > haps.txt
+```
+
+Pass the references with `-p`
+```
+povu -v 4 call -i test_data/HPRC/chrY.hprc-v1.0-pggb.gfa -p haps.txt
+```
+This creates a vcf for each reference in the file `haps.txt`
 
 ## Input
 Input GFA
