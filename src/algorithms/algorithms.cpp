@@ -30,6 +30,10 @@ void eulerian_cycle_equiv(pst::Tree &t) {
 
   auto start = std::chrono::high_resolution_clock::now();
 
+  bool in_hairpin {false};
+
+  std::size_t boundary {pc::UNDEFINED_SIZE_T};
+
   for (std::size_t v { t.size() - 1 }; v < pc::UNDEFINED_SIZE_T; --v) {
 
     if (report_time && v % 10000 == 0) {
@@ -63,6 +67,13 @@ void eulerian_cycle_equiv(pst::Tree &t) {
 
 
     std::set<std::size_t> children = t.get_children(v);
+
+
+    if (in_hairpin && children.empty() && !t.is_root(v)) { // v is a leaf
+      in_hairpin = false;
+      std::cerr << "Found hairpin boundary end " << t.get_vertex(boundary).name() << std::endl;
+    }
+
 
     // a vector of pairs of hi values and children
     std::vector<std::pair<std::size_t, std::size_t>> hi_and_child{};
@@ -179,12 +190,25 @@ void eulerian_cycle_equiv(pst::Tree &t) {
       if (t.get_vertex(v).type() != VertexType::dummy) {
         //std::cerr << "add art be " << t.get_vertex(v).name() << " " << dest_v << std::endl;
 
-        std::cerr << "Found inversion boundary " << t.get_vertex(v).name() << std::endl;
+        std::cerr << "Found hairpin boundary start " << t.get_vertex(v).name() << std::endl;
       }
 
       std::size_t be_idx = t.add_be(v, dest_v, pst::EdgeType::simplifying_back_edge);
       t.push(v, be_idx);
       t.get_vertex_mut(v).set_hi(t.get_root_idx());
+
+      in_hairpin = true;
+    }
+    else if (in_hairpin) {
+
+      pst::Bracket& b = t.top(v);
+
+      std::size_t b_id = b.back_edge_id();
+      pst::BackEdge &be = t.get_backedge_ref_given_id(b_id);
+      if (be.type() == pst::EdgeType::simplifying_back_edge) {
+        boundary = v;
+      }
+
     }
 
 

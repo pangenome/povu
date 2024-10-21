@@ -1,14 +1,9 @@
 #ifndef B_LIST_HPP
 #define B_LIST_HPP
 
-#include <cstddef>
-#include <string>
-#include <vector>
-#include <set>
 #include <list>
-#include <map>
+#include <cstddef>
 #include <unordered_map>
-
 
 
 namespace povu::bracket_list {
@@ -27,19 +22,18 @@ class Bracket {
   std::size_t recent_size_;
   std::size_t recent_class_; // TODO: rename to class?
 
-
 public:
   //Bracket(std::size_t backedge_id, std::size_t recent_size, std::size_t recent_class);
   Bracket(std::size_t backedge_id);
 
   std::size_t back_edge_id();
 
-
   std::size_t recent_size() const;
   std::size_t recent_class() const;
 
   void set_recent_size(std::size_t s);
   void set_recent_class(std::size_t c);
+
 };
 
 /*

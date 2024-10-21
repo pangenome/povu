@@ -48,6 +48,7 @@ std::size_t Edge::get_class_idx() { return this->class_; }
 void Edge::set_class_idx(std::size_t c) { this->class_ = c; }
 void Edge::set_class(std::size_t c) { this->class_ = c; }
 
+
 /*
  * BackEdge
  * --------
@@ -69,7 +70,7 @@ bool BackEdge::is_class_defined() const { return this->class_ != INVALID_ID; }
 bool BackEdge::is_capping_backedge() const { return this->type_ == EdgeType::capping_back_edge; }
 
 void BackEdge::set_class(std::size_t c) { this->class_ = c; }
-
+EdgeType BackEdge::type() const { return this->type_; }
 
 
 /*

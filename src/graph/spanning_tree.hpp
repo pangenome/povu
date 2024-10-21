@@ -141,6 +141,8 @@ public:
   color get_color() const;
 
   void set_class(std::size_t c);
+
+  EdgeType type() const;
 };
 
 

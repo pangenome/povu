@@ -90,7 +90,11 @@ template <typename T> struct unordered_pair{
 
 } // namespace povu::types
 
+
+
+
 namespace povu::graph_types {
+
 /*
  * black edge is default
  * TODO: pick a better default
