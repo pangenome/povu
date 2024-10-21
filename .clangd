@@ -1,0 +1,14 @@
+CompileFlags:
+  Add:
+    - "-std=c++20"
+    - "-xc++"
+    - "-fopenmp=libomp"
+    - "-Wall"
+    - "-Wextra"
+    - "-Wpedantic"
+    - "--include-directory=./deps/libhandlegraph/src/include"
+    - "-I=[./deps/gfakluge/src]"
+    - "-I=[./deps/gfakluge/src/tinyFA]"
+    - "-I=[./deps/libhandlegraph/src/include]"
+  Remove:
+    -W*

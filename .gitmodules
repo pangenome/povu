@@ -1,0 +1,12 @@
+[submodule "deps/libhandlegraph"]
+	path = deps/libhandlegraph
+	url = https://github.com/vgteam/libhandlegraph.git
+[submodule "deps/gfakluge"]
+	path = deps/gfakluge
+	url = https://github.com/vgteam/gfakluge.git
+[submodule "deps/args"]
+	path = deps/args
+	url = https://github.com/Taywee/args.git
+[submodule "deps/WFA2-lib"]
+	path = deps/WFA2-lib
+	url = https://github.com/smarco/WFA2-lib

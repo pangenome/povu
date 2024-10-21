@@ -1,0 +1,29 @@
+From the paper
+
+
+* Circular without start and without end
+
+* without start
+
+* without end
+
+* xx
+| Example | Description                                                     |
+|---------+-----------------------------------------------------------------|
+| t1      |                                                                 |
+| t2      |                                                                 |
+| t3      |                                                                 |
+| t4      |                                                                 |
+| t5      | from figure 1 of the paper                                      |
+| t6      | breaks biedge (fix)                                             |
+| t7      |                                                                 |
+| t8      | hairpin no self loop                                            |
+| t9      |                                                                 |
+| t10     | large nested                                                    |
+| t11     | large nested (smaller)                                          |
+| t12     | Hairpin one self loop                                           |
+| t13     | reverse SESE boundaries                                         |
+| t14     | hairpin no self loop with diamond in trunk                      |
+| t15     | hairpin no self loop with bubbles in trunk                      |
+| t16     | hairpin no self loop with bubbles in trunk (mixed orientations) |
+| diamond | a diamond SESE                                                  |
