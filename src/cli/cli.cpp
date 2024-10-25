@@ -155,7 +155,7 @@ int cli(int argc, char **argv, core::config& app_config) {
   args::Group commands(p, "commands");
   args::Command call(commands, "call", "call",
                        [&](args::Subparser &parser) { call_handler(parser, app_config); });
-  args::Command deconstruct(commands, "deconstruct", "Convert the graph to a PVSF",
+  args::Command deconstruct(commands, "deconstruct", "Find flubbles in the variation graph",
                        [&](args::Subparser &parser) { deconstruct_handler(parser, app_config); });
   args::Command info(commands, "info", "Print information about the graph [use 1 thread for meaningful results]",
                        [&](args::Subparser &parser) { info_handler(parser, app_config); });
