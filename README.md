@@ -1,5 +1,5 @@
 # povu
-Find regions of variation in a graph by finding Eulerian cycles.
+Find regions of variation in a variation graph
 
 
 ## Install
@@ -8,7 +8,7 @@ Find regions of variation in a graph by finding Eulerian cycles.
 
 1. Fetch the source code
 ```
-git clone --recursive git@github.com:pangenome/domibubble.git
+git clone --recursive https://github.com/urbanslug/povu.git
 ```
 
 2. Compile
@@ -23,63 +23,39 @@ cmake -H. -Bbuild && cmake --build build -- -j 3
 
 For general help text run `./bin/povu -h` or just `./bin/povu`
 
-### Call
-
-**help:** `./bin/povu call`
-
-The `call` sub-command takes a graph and a set of reference/haplotype paths and returns the variants
-relative to each haplotype in a VCF format.
-
-
-### Examples
-
-#### Example 1
-
-*Passing a haplotype directly.*
-
-Using the dataset in the `./test_data` folder we can call variants related to the
-`HG02572__LPA__tig00000001` haplotype like so:
-
-
-```
-./bin/povu -v 2 call -i test_data/LPA.max120.gfa -- HG02572__LPA__tig00000001
-```
-
-This creates a `HG02572__LPA__tig00000001.vcf` which contains variants relative to that reference path in the graph.
-
-
-#### Example 2
-
-*Passing a set of line separated haplotypes in a file.*
-
-Extract all references from a GFA file and save them in a file
-```
-grep '^P' test_data/HPRC/chrY.hprc-v1.0-pggb.gfa | cut -f 2 > haps.txt
-```
-
-Pass the references with `-p`
-```
-povu -v 4 call -i test_data/HPRC/chrY.hprc-v1.0-pggb.gfa -p haps.txt
-```
-
-This creates a VCF file for each haplotype in the `haps.txt`
-
 
 ### Deconstruct
 
-**help:** `./bin/povu deconstruct`
+**help:** `./bin/povu deconstruct -h`
 
-For any graph, the `deconstruct` sub-command generates the bubble forest: a set of bubble trees. Currently, each bubble tree is stored in its own bubble file.
+For any graph, the `deconstruct` sub-command generates the flubble forest: a set of flubble trees. Currently, each flubble tree is stored in its own flubble file.
 
-#### Bub Format
+Example 1.
+Lines starting with `#` are comments
+```
+# create an output directory
+mkdir results/
 
-The bub format is a plain-text file representing bubble tree(s) and ends with the `.bub` extension. It is tab-separated and consists of 3 columns where a dot `.` represents a null value.
+# run povu on the yeast dataset
+./bin/povu deconstruct -v 0 -i ./test_data/cerevisiae.fa.gz.d1a145e.417fcdf.7493449.smooth.final.gfa -o results
+```
+
+Currently hairpin boundaries are printed by `povu deconstruct` at runtime, if none is printed then none was found.
+
+
+## Flubble Tree
+
+A tree representation of the hierarchy and nesting relationship between flubbles
+
+#### flb Format
+
+The flb format is a plain-text file representing flubble tree(s) and ends with the `.flb` extension. It is tab-separated and consists of 3 columns where a dot `.` represents a null value.
 Below is a table with the specifics of each column.
 
 | column    | type             | description                                                                                                                                                                                   |
 |-----------|------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | vertex id | unsigned numeric | A unique identifier (can be zero & cannot be null).                                                                                                                                           |
-| range     | string           | The start & end vertices, as well as their strand. <br> Null in dummy vertices. <br> For example, `>4946,>4948` refers to a bubble starting at 4946 and ending at 4948 in the forward strand. |
+| range     | string           | The start & end vertices, as well as their strand. <br> Null in dummy vertices. <br> For example, `>4946,>4948` refers to a flubble starting at 4946 and ending at 4948 in the forward strand. |
 | children  | string           | A comma seperated string of unsigned integers which are the child vertices <br> Null if the vertex is a leaf.                                                                                 |
 
 
@@ -100,4 +76,4 @@ cmake -DCMAKE_BUILD_TYPE=Debug -DUSE_SANITIZER=address  -H. -Bbuild && cmake --b
 
 ## Name
 
-The etymology of the name is rooted in profound philosophy 🤔. "Povu," is [Kiswahili](https://en.wikipedia.org/wiki/Swahili_language) for "foam." Foam, by nature, comprises countless bubbles.
+The etymology of the name is rooted in profound philosophy 🤔. "Povu," is [Kiswahili](https://en.wikipedia.org/wiki/Swahili_language) for "foam." Foam, by nature, comprises countless flubbles.
