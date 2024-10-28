@@ -1,5 +1,5 @@
 # povu
-Find regions of variation in a variation graph
+Find flubbles in a variation graph
 
 
 ## Install
@@ -28,7 +28,8 @@ For general help text run `./bin/povu -h` or just `./bin/povu`
 
 **help:** `./bin/povu deconstruct -h`
 
-For any graph, the `deconstruct` sub-command generates the flubble forest: a set of flubble trees. Currently, each flubble tree is stored in its own flubble file.
+The `deconstruct` sub-command finds flubbles, reports hairpin inversion boundaries, and generates the flubble forest: a set of flubble trees.
+Currently, each flubble tree is stored in its own flubble file in a directory specified by the user using the `-o` CLI argument.
 
 Example 1.
 Lines starting with `#` are comments
