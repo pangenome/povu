@@ -73,6 +73,10 @@ void eulerian_cycle_equiv(pst::Tree &t) {
       in_hairpin = false;
       std::cerr << "Found hairpin boundary end " << t.get_vertex(boundary).name() << std::endl;
     }
+    else if (in_hairpin && t.is_root(v)) {
+      in_hairpin = false;
+      std::cerr << "Found hairpin boundary end " << t.get_vertex(boundary).name() << std::endl;
+    }
 
 
     // a vector of pairs of hi values and children

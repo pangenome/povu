@@ -153,13 +153,13 @@ int cli(int argc, char **argv, core::config& app_config) {
 
   args::ArgumentParser p("Use cycle equivalence to call variants");
   args::Group commands(p, "commands");
-  args::Command call(commands, "call", "call",
-                       [&](args::Subparser &parser) { call_handler(parser, app_config); });
+
   args::Command deconstruct(commands, "deconstruct", "Find flubbles in the variation graph",
                        [&](args::Subparser &parser) { deconstruct_handler(parser, app_config); });
   args::Command info(commands, "info", "Print information about the graph [use 1 thread for meaningful results]",
                        [&](args::Subparser &parser) { info_handler(parser, app_config); });
-
+  args::Command call(commands, "call", "[subcommand under development please do not use]",
+                       [&](args::Subparser &parser) { call_handler(parser, app_config); });
 
   args::Group arguments(p, "arguments", args::Group::Validators::DontCare, args::Options::Global);
   args::Flag version(arguments, "version", "The current version of povu", {"version"});
