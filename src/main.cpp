@@ -16,6 +16,7 @@
 
 namespace bd = povu::bidirected;
 namespace pt = povu::types;
+
 namespace pgt = povu::graph_types;
 
 void do_info(const core::config &app_config) {
@@ -31,7 +32,7 @@ void do_info(const core::config &app_config) {
 }
 
 
-void do_call(const core::config& app_config) {
+void do_call(const core::config &app_config) {
   std::string fn_name = std::format("[povu::main::{}]", __func__);
 
   std::chrono::duration<double> timeRefRead;

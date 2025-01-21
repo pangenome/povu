@@ -98,7 +98,7 @@ public:
 
   std::string as_DNA_str(const bd::VG& bd_vg,
                          pt::Stride sp,
-                         const std::vector<variant_type>& variant_cats, const std::string& record_id) const {
+                         const std::vector<variant_type> &variant_cats, const std::string &record_id) const {
     std::string dna_str;
 
     bool has_ins{std::find(variant_cats.begin(), variant_cats.end(), genomics::variant_type::INS) != variant_cats.end()};

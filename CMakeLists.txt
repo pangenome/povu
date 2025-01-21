@@ -14,7 +14,8 @@ set(CMAKE_CXX_FLAGS "-Wall -Wextra -Wpedantic")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DDEBUG")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -DRELEASE")
 
-project(povu)
+# Project name and language
+project(povu LANGUAGES C CXX)
 
 # GoogleTest requires at least C++14
 set(CMAKE_CXX_STANDARD 20)
@@ -42,8 +43,8 @@ endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # add_subdirectory( deps/gfakluge )
-add_subdirectory( deps/libhandlegraph )
-add_subdirectory( deps/WFA2-lib )
+add_subdirectory(deps/libhandlegraph )
+add_subdirectory(deps/WFA2-lib )
 
 ADD_LIBRARY(LibsModule
   # io
