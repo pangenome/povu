@@ -24,8 +24,12 @@
 // #include "../common/types.hpp"
 // #include "handlegraph/types.hpp"
 
+#include <gfa.h> // from liteseq
+
 
 namespace io::from_gfa {
+namespace lq = liteseq;
+
 namespace bd = povu::bidirected;
 namespace pg = povu::graph;
 namespace pgt = povu::graph_types;
@@ -33,23 +37,30 @@ using namespace povu::graph;
 
 
 std::vector<std::string> splitString(const std::string& str, char delimiter) {
-    std::vector<std::string> tokens;
-    std::stringstream ss(str);
-    std::string token;
+  std::vector<std::string> tokens;
+  std::stringstream ss(str);
+  std::string token;
 
-    while (std::getline(ss, token, delimiter)) {
-        tokens.push_back(token);
-    }
+  while (std::getline(ss, token, delimiter)) {
+    tokens.push_back(token);
+  }
 
-    return tokens;
+  return tokens;
 }
 
 
-int foo(const char* filename, std::vector<std::size_t>& v_ids, std::vector<std::tuple<std::size_t, pgt::or_t, std::size_t, pgt::or_t>>& edges) {
+/**
+ * Scan over a GFA file line by line and populate the vectors with the node ids and edges
+ */
+int inspect_gfa(const char *filename,
+                std::vector<std::size_t> &v_ids,
+                std::vector<std::tuple<std::size_t, pgt::or_t, std::size_t, pgt::or_t>> &edges) {
+  std::string fn_name { std::format("[povu::io::{}]", __func__) };
+
   std::ifstream file(filename); // Open the file
   if (!file) {
     std::cerr << "Unable to open file" << std::endl;
-    return 1;
+    return -1;
   }
 
   std::string line;
@@ -58,13 +69,10 @@ int foo(const char* filename, std::vector<std::size_t>& v_ids, std::vector<std::
   while (std::getline(file, line)) {
     tokens = splitString(line, '\t');
     if (tokens[0] == "S") {
-
       v_ids.push_back(stoull(tokens[1]));
     }
     else if (tokens[0] == "L") {
-
       std::size_t src = stoull(tokens[1]);
-      // char src_o = tokens[2][0];
       pgt::or_t src_o = tokens[2][0] == '+' ? pgt::or_t::forward : pgt::or_t::reverse;
       std::size_t snk = stoull(tokens[3]);
       pgt::or_t snk_o = tokens[4][0] == '+' ? pgt::or_t::forward : pgt::or_t::reverse;
@@ -80,60 +88,56 @@ int foo(const char* filename, std::vector<std::size_t>& v_ids, std::vector<std::
 /**
  * To a variation graph represented as a bidirected graph
  *
- *
- *
  * @param [in] filename The GFA file to read
  * @return A VariationGraph object from the GFA file
  */
-povu::graph::Graph to_pv_graph(const char* filename, const core::config& app_config) {
+povu::graph::Graph to_pv_graph(const char *filename, const core::config &app_config) {
   std::string fn_name { std::format("[povu::io::{}]", __func__) };
 
-  std::vector<std::size_t> v_ids;
+  lq::vg *ls_g = lq::vg_new(); // initialize a liteseq graph
+  lq::vg_props ls_cfg = {.vertex_labels=false, .references = false};
 
-  std::vector<std::tuple<std::size_t, pgt::or_t, std::size_t, pgt::or_t>> edges;
+  lq::gfa_to_vg(filename, ls_g, &ls_cfg); // read the GFA file into a liteseq graph
+  pg::Graph g(ls_g->vtx_count, ls_g->edge_count); // initialize a povu graph
 
-  foo(filename, v_ids, edges);
-
-  pg::Graph g(v_ids.size(), edges.size());
-
-
-  /*
-    add nodes
-    ---------
-
-  */
-
-  for (std::size_t v_id : v_ids) { g.add_vertex(v_id); }
-
-
-  /*
-    add edges
-    ---------
-
-  */
-
-  for (auto [src, src_or, snk, snk_or] : edges) {
-
-    if (src == snk) {
-      if (src_or == snk_or) {
-        g.add_edge(src, pgt::VertexEnd::l, src, pgt::VertexEnd::r);
-      }
-
-      if (src_or != snk_or) {
-        std::cerr << std::format("{} invalid self loop\n", fn_name);
-      }
-      continue;
-    }
-
-    auto v1_end = src_or == pgt::or_t::forward ? pgt::v_end::r : pgt::v_end::l;
-    auto v2_end = snk_or == pgt::or_t::forward ? pgt::v_end::l : pgt::v_end::r;
-
-    g.add_edge(src, v1_end, snk, v2_end);
+  /* add vertices */
+  for (size_t i {}; i < ls_g->vtx_count; ++i) {
+    g.add_vertex(ls_g->v[i].id);
   }
 
-  // populate tips
-  // -------------
+  /* add edges */
+  for (std::size_t i {}; i < ls_g->edge_count; ++i) {
+    std::size_t v1 = ls_g->e[i].v1_id;
+    pgt::v_end v1_end = ls_g->e[i].v1_side == 0 ? pgt::v_end::l : pgt::v_end::r;
 
+    std::size_t v2 = ls_g->e[i].v2_id;
+    pgt::v_end v2_end = ls_g->e[i].v2_side == 0 ? pgt::v_end::l : pgt::v_end::r;
+
+    g.add_edge(v1, v1_end, v2, v2_end);
+  }
+
+  lq::vg_free(ls_g, &ls_cfg);
+
+  //for (auto [src, src_or, snk, snk_or] : edges) {
+  //  if (src == snk) {
+  //    if (src_or == snk_or) {
+  //      g.add_edge(src, pgt::VertexEnd::l, src, pgt::VertexEnd::r);
+  //    }
+
+  //    if (src_or != snk_or) {
+  //      std::cerr << std::format("{} invalid self loop\n", fn_name);
+  //    }
+  //    continue;
+  //  }
+
+  //  auto v1_end = src_or == pgt::or_t::forward ? pgt::v_end::r : pgt::v_end::l;
+  //  auto v2_end = snk_or == pgt::or_t::forward ? pgt::v_end::l : pgt::v_end::r;
+
+  //  g.add_edge(src, v1_end, snk, v2_end);
+  //}
+
+
+  /* populate tips */
   for (std::size_t v_idx {}; v_idx < g.size(); ++v_idx) {
     const Vertex& v = g.get_vertex_by_idx(v_idx);
     std::size_t v_id = v.id();
@@ -150,7 +154,6 @@ povu::graph::Graph to_pv_graph(const char* filename, const core::config& app_con
 
   return g;
 }
-
 
 /**
  * Count the number of lines of each type in a GFA file.
@@ -210,11 +213,10 @@ void handle_self_loop(bd::VG &vg, id_t v_id, bool src_f, bool snk_f) {
 
 
 /**
- * To a variation graph represented as a bidirected graph
- *
- *
+ * Read GFA into a variation graph represented as a bidirected graph
  *
  * @param [in] filename The GFA file to read
+ * @param [in] app_config The application configuration
  * @return A VariationGraph object from the GFA file
  */
 bd::VG to_bd(const char* filename, const core::config& app_config) {
