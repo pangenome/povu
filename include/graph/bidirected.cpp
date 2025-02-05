@@ -1,12 +1,9 @@
-#include "./graph.hpp"
-#include <cstddef>
-#include <stack>
-#include <unordered_set>
-#include <format>
-#include <string>
-#include <sys/types.h>
 
-namespace povu::graph {
+#include "./bidirected.hpp"
+
+
+
+namespace povu::bidirected {
 using namespace povu::graph_types;
 namespace pgt = povu::graph_types;
 
@@ -33,52 +30,61 @@ pgt::side_n_id_t Edge::get_other_vertex(std::size_t v_id) const {
   Vertex
   ------
  */
-Vertex::Vertex(std::size_t v_id) : v_id{v_id} {}
+Vertex::Vertex(std::size_t v_id, const std::string& label) : v_id{v_id}, label_(label) {}
 std::size_t Vertex::id() const { return v_id; }
-void Vertex::add_edge_l(std::size_t e_id) { e_l.insert(e_id); }
-void Vertex::add_edge_r(std::size_t e_id) { e_r.insert(e_id); }
+const std::string& Vertex::get_label() const {return this->label_; }
 const std::set<std::size_t>& Vertex::get_edges_l() const { return e_l; }
 const std::set<std::size_t>& Vertex::get_edges_r() const { return e_r; }
+/* setters */
+void Vertex::add_edge_l(std::size_t e_id) { e_l.insert(e_id); }
+void Vertex::add_edge_r(std::size_t e_id) { e_r.insert(e_id); }
+void Vertex::add_ref(std::size_t path_id, pgt::or_t strand, std::size_t step_index) {
+  this->refs_.push_back(PathInfo(path_id, strand, step_index));
+}
+
 
 /*
   Graph
   -----
  */
-Graph::Graph() {}
-Graph::Graph(std::size_t v_count, std::size_t e_count) {
+
+VariationGraph::VariationGraph(std::size_t v_count, std::size_t e_count) {
   this->vertices.reserve(v_count);
   this->edges.reserve(e_count);
 }
 
-void Graph::add_vertex(std::size_t v_id) {
-  vertices.push_back(Vertex{v_id});
+void VG::add_vertex(std::size_t v_id, const std::string& label) {
+  vertices.push_back(Vertex{v_id, label});
   this->v_id_to_idx_.insert(v_id, vertices.size() - 1);
 }
 
-std::size_t Graph::v_idx_to_id(std::size_t v_idx) const {
+std::size_t VG::v_idx_to_id(std::size_t v_idx) const {
   return this->v_id_to_idx_.get_key(v_idx);
 }
 
-std::size_t Graph::v_id_to_idx(std::size_t v_id) const {
+std::size_t VG::v_id_to_idx(std::size_t v_id) const {
   return this->v_id_to_idx_.get_value(v_id);
 }
 
-std::size_t Graph::size() const { return this->vertices.size(); }
-std::size_t Graph::edge_count() const { return this->edges.size(); }
-const std::set<pgt::side_n_id_t> &Graph::tips() const { return this->tips_; }
-const Vertex& Graph::get_vertex_by_idx(std::size_t v_idx) const { return vertices[v_idx]; }
-const Vertex &Graph::get_vertex_by_id(std::size_t v_id) const {
+std::size_t VG::size() const { return this->vertices.size(); }
+std::size_t VG::edge_count() const { return this->edges.size(); }
+const std::set<pgt::side_n_id_t> &VG::tips() const { return this->tips_; }
+const Vertex& VG::get_vertex_by_idx(std::size_t v_idx) const { return vertices[v_idx]; }
+const Vertex &VG::get_vertex_by_id(std::size_t v_id) const {
   return vertices[this->v_id_to_idx_.get_value(v_id)];
 }
+Vertex& VG::get_vertex_mut_by_id(std::size_t v_id) {
+    return vertices[this->v_id_to_idx_.get_value(v_id)];
+}
 
-const Edge& Graph::get_edge(std::size_t e_id) const { return edges[e_id]; }
+const Edge& VG::get_edge(std::size_t e_id) const { return edges[e_id]; }
 
-void Graph::add_tip(std::size_t v_id, pgt::v_end end) {
+void VG::add_tip(std::size_t v_id, pgt::v_end end) {
   std::size_t v_idx = this->v_id_to_idx_.get_value(v_id);
   this->tips_.insert(pgt::side_n_id_t{end, v_idx} );
 }
 
-void Graph::add_edge(std::size_t v1_id, pgt::v_end v1_end, std::size_t v2_id, pgt::v_end v2_end) {
+void VG::add_edge(std::size_t v1_id, pgt::v_end v1_end, std::size_t v2_id, pgt::v_end v2_end) {
   std::size_t v1_idx = this->v_id_to_idx_.get_value(v1_id);
   std::size_t v2_idx = this->v_id_to_idx_.get_value(v2_id);
   edges.push_back(Edge{v1_idx, v1_end, v2_idx, v2_end});
@@ -99,13 +105,18 @@ void Graph::add_edge(std::size_t v1_id, pgt::v_end v1_end, std::size_t v2_id, pg
   }
 }
 
-void Graph::summary() const {
+void VG::add_ref(const std::string& ref_name) {
+  std::size_t ref_id = this->refs_.size();
+  this->refs_[ref_id] = ref_name;
+}
+
+void VG::summary() const {
   std::cout << "Bidirected Graph: " << std::endl;
   std::cout << "\t" << "vertex count: " << this->size() << std::endl;
   std::cout << "\t" << "edge count: " << this->edge_count() << std::endl;
 }
 
-std::vector<povu::graph::Graph> componetize(const povu::graph::Graph& g, const core::config& app_config) {
+std::vector<VG> componetize(const povu::bidirected::VG& g, const core::config& app_config) {
   std::string fn_name = std::format("[povu::graph_ops::{}]", __func__);
   if (app_config.verbosity() > 4) { std::cerr << fn_name << std::endl; }
 
@@ -115,7 +126,7 @@ std::vector<povu::graph::Graph> componetize(const povu::graph::Graph& g, const c
   s.push(0);
   visited.insert(0);
 
-  std::vector<povu::graph::Graph> components;
+  std::vector<VG> components;
 
   std::set<std::size_t> curr_edges;
   std::set<std::size_t> curr_vertices;
@@ -132,7 +143,7 @@ std::vector<povu::graph::Graph> componetize(const povu::graph::Graph& g, const c
 
   while (!s.empty()) {
     std::size_t v_idx = s.top();
-    const povu::graph::Vertex& v = g.get_vertex_by_idx(v_idx);
+    const povu::bidirected::Vertex& v = g.get_vertex_by_idx(v_idx);
     bool is_vtx_explored { true };
 
     std::set<std::size_t> const& e_l = v.get_edges_l();
@@ -161,14 +172,14 @@ std::vector<povu::graph::Graph> componetize(const povu::graph::Graph& g, const c
     }
 
     if (s.empty()) {
-      povu::graph::Graph curr_vg(curr_vertices.size(), curr_edges.size());
+      VG curr_vg(curr_vertices.size(), curr_edges.size());
 
       for (std::size_t v_id: curr_vertices) {
-        curr_vg.add_vertex(v_id);
+        curr_vg.add_vertex(v_id, g.get_vertex_by_id(v_id).get_label());
       }
 
       for (std::size_t e_id: curr_edges) {
-        const povu::graph::Edge &e = g.get_edge(e_id);
+        const povu::bidirected::Edge &e = g.get_edge(e_id);
         std::size_t v1_idx = e.get_v1_idx();
         pgt::v_end v1_end = e.get_v1_end();
         std::size_t v1_id = g.v_idx_to_id(v1_idx);

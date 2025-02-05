@@ -1,5 +1,6 @@
 -/build
 -/bin
+-/to_del
 -*.o
 -*.png
 -*.dot

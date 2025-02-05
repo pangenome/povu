@@ -13,6 +13,13 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+string(TOUPPER "${CMAKE_BUILD_TYPE}" uppercase_CMAKE_BUILD_TYPE)
+
+# Only enable sanitizers in Debug mode
+if(NOT uppercase_CMAKE_BUILD_TYPE STREQUAL "DEBUG")
+  return()
+endif()
+
 include(CheckCXXSourceCompiles)
 
 set(USE_SANITIZER
@@ -56,10 +63,9 @@ if(USE_SANITIZER)
 
   if(UNIX)
 
-    if(uppercase_CMAKE_BUILD_TYPE STREQUAL "DEBUG")
-      append("-O1" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
-    endif()
-
+    # Set optimization level to -O1 for Debug mode with sanitizers
+    append("-O1" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+    
     if(USE_SANITIZER MATCHES "([Aa]ddress)")
       # Optional: -fno-optimize-sibling-calls -fsanitize-address-use-after-scope
       message(STATUS "Testing with Address sanitizer")

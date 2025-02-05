@@ -1,6 +1,8 @@
 #include <string>
 #include "WFAligner.hpp"
 
+#include "./align.hpp"
+
 namespace povu::align {
 
 std::string wfa2(wfa::WFAlignerGapAffine& aligner, const std::string& query, const std::string& text) {

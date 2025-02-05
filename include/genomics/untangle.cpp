@@ -113,7 +113,7 @@ std::vector<pt::idx_t> get_positions(const bd::VG &bd_vg, const ref_meta& meta, 
   // true if the position is valid, false otherwise.
   auto pred = [&](const bd::PathInfo& pi, std::size_t len) -> bool {
 
-    auto [ref_id, si] = pi;
+    auto [ref_id, si, _] = pi;
 
     if (ref_id != hap_id) { return false; }
 
@@ -130,7 +130,7 @@ std::vector<pt::idx_t> get_positions(const bd::VG &bd_vg, const ref_meta& meta, 
 
       for (const bd::PathInfo& cpi : curr_ps) {
 
-        auto [c_ref_id, cv_si] = cpi;
+        auto [c_ref_id, cv_si, _] = cpi;
         if (c_ref_id != ref_id) { continue; }
 
         if (cv_si == curr_si + len) {

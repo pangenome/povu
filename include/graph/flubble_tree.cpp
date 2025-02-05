@@ -26,11 +26,11 @@ namespace pvtr = povu::tree;
 // orientation, id, class
 struct oic {
   pgt::or_t orientation;
-  pt::id_t id;
+  std::size_t id;
   std::size_t cls;
 };
 
-inline flubble forwardise(pt::id_t start_id, pgt::or_t start_or, pt::id_t end_id, pgt::or_t end_or) {
+inline flubble forwardise(std::size_t start_id, pgt::or_t start_or, std::size_t end_id, pgt::or_t end_or) {
   //flubble fl;
   if (start_or == pgt::or_t::reverse && end_or == pgt::or_t::reverse) {
     return {pgt::id_n_orientation_t{end_id, pgt::or_t::forward},
@@ -90,7 +90,7 @@ std::vector<oic> compute_eq_class_stack(pst::Tree& t) {
     pgt::v_type curr_vtx_type = t.get_vertex(v).type();
 
     if (curr_vtx_type != pgt::v_type::dummy) {
-      g_v_id = std::stoull(t.get_vertex(v).name());
+      g_v_id = t.get_vertex(v).g_v_id();
     }
 
     if (t.is_root(v) || seen.find(g_v_id) != seen.end()) { continue; }
@@ -132,7 +132,7 @@ std::vector<oic> compute_eq_class_stack(pst::Tree& t) {
       s[v]->push_front({curr_or, g_v_id, curr_class});
     }
     else {
-      throw std::runtime_error(std::format("{} No class found for vertex: {}", fn_name, t.get_vertex(v).name()));
+      throw std::runtime_error(std::format("{} No class found for vertex: {}", fn_name, t.get_vertex(v).g_v_id()));
     }
   }
 

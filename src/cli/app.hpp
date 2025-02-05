@@ -9,7 +9,7 @@
 #include <iostream>
 #include <filesystem>
 
-#include "../common/utils.hpp"
+#include "../../include/common/utils.hpp"
 
 namespace core {
 namespace pu = povu::utils;
@@ -54,6 +54,10 @@ struct config {
   //std::optional<std::filesystem::path> pvst_path;
   std::filesystem::path output_dir; // output directory for task and deconstruct
 
+  // graph
+  bool inc_vtx_labels_; // whether to include vertex labels
+  bool inc_refs_; // whether to include references/paths
+
   // general
   unsigned char v; // verbosity
   bool print_dot_ { true }; // generate dot format graphs
@@ -75,6 +79,8 @@ struct config {
       : task(task_t::unset),
         chrom(""), // default is empty string
         output_dir("."),                // default is current directory
+        inc_vtx_labels_(false),
+        inc_refs_(false),
         v(0),
         thread_count_(1),
         ref_input_format(input_format_t::unset),
@@ -88,6 +94,8 @@ struct config {
   std::string get_input_gfa() const { return this->input_gfa; }
   std::filesystem::path get_forest_dir() const { return this->forest_dir; }
   std::filesystem::path get_output_dir() const { return this->output_dir; }
+  bool inc_vtx_labels() const { return this->inc_vtx_labels_; }
+  bool inc_refs() const { return this->inc_refs_; }
   const std::string& get_chrom() const { return this->chrom; }
   std::vector<std::string> const& get_reference_paths() const { return this->reference_paths; }
   std::vector<std::string>* get_reference_ptr() { return &this->reference_paths; }
@@ -103,6 +111,8 @@ struct config {
   // ---------
   // as it os from the user not the handlegraph stuff
   void set_chrom(std::string&& s) { this->chrom = s; }
+  void set_inc_vtx_labels(bool b) { this->inc_vtx_labels_ = b; }
+  void set_inc_refs(bool b) { this->inc_refs_ = b; }
   void set_ref_input_format(input_format_t f) { this->ref_input_format = f; }
   void add_reference_path(std::string s) { this->reference_paths.push_back(s); }
   void set_reference_paths(std::vector<std::string>&& v) { this->reference_paths = std::move(v); }

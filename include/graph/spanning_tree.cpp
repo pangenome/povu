@@ -49,7 +49,7 @@ void Edge::set_class_idx(std::size_t c) { this->class_ = c; }
 void Edge::set_class(std::size_t c) { this->class_ = c; }
 
 
-/*
+/* 
  * BackEdge
  * --------
  */
@@ -79,13 +79,13 @@ EdgeType BackEdge::type() const { return this->type_; }
  */
 // Constructor(s)
 
-Vertex::Vertex(std::size_t dfs_num, const std::string &name, VertexType type_)
-  : dfs_num_(dfs_num), parent_id(INVALID_ID), name_(name), type_(type_),
+Vertex::Vertex(std::size_t dfs_num, std::size_t g_v_id, VertexType type_)
+  : dfs_num_(dfs_num), parent_id(INVALID_ID), g_v_id_(g_v_id), type_(type_),
     hi_(std::numeric_limits<size_t>::max()), null_(false){}
 
 
 // getters
-std::string const& Vertex::name() const { return this->name_; }
+std::size_t Vertex::g_v_id() const { return this->g_v_id_; }
 VertexType Vertex::type() const { return this->type_; }
 std::size_t  Vertex::hi() const { return this->hi_; }
 std::size_t  Vertex::dfs_num() const { return this->dfs_num_; }
@@ -108,7 +108,7 @@ void Vertex::add_obe(std::size_t obe_id) { this->obe.insert(obe_id); }
 void Vertex::add_ibe(std::size_t ibe_id) { this->ibe.insert(ibe_id); }
 void Vertex::add_child(std::size_t e_id) { this->children.insert(e_id); }
 void Vertex::set_parent(std::size_t n_id) { this->parent_id = n_id; }
-void Vertex::set_name(std::string const& name) { this->name_ = name; }
+void Vertex::set_g_v_id(std::size_t g_v_id) { this->g_v_id_ = g_v_id; }
 void Vertex::set_type(VertexType t) { this->type_ = t; }
 void Vertex::set_hi(std::size_t val) { this->hi_ = val; }
 void Vertex::set_dfs_num(std::size_t idx) { this->dfs_num_ = idx; }
@@ -527,7 +527,7 @@ void Tree::print_dot() {
 
   for (std::size_t i{}; i < this->size(); i++){
     std::string v_type_str = this->get_vertex(i).type() == VertexType::l ? "-" : "+";
-    std::cout << std::format("\t{} [label =  \"{} ({}{})\"];\n", i, i, this->get_vertex(i).name(), v_type_str);
+    std::cout << std::format("\t{} [label =  \"{} ({}{})\"];\n", i, i, this->get_vertex(i).g_v_id(), v_type_str);
   }
 
   for (std::size_t i{}; i < this->size(); i++) {

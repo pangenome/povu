@@ -4,20 +4,28 @@
 #include <cstddef>
 #include <string>
 #include <vector>
+#include <format>
+#include <cstddef>
+#include <ostream>
+#include <fstream> // for std::ifstream
+#include <string>
+#include <vector>
+#include <gfa.h> // from liteseq
 
 #include "../cli/app.hpp"
-#include "../graph/bidirected.hpp"
-#include "../graph/tree.hpp"
-#include "../genomics/genomics.hpp"
+#include "../../include/graph/bidirected.hpp"
+#include "../../include/graph/tree.hpp"
+#include "../../include/common/utils.hpp"
+#include "../../include/graph/tree.hpp"
 
-#include "../graph/graph.hpp"
 
-
-namespace io::from_gfa {
+namespace povu::io::from_gfa {
+namespace lq = liteseq;
 namespace bd = povu::bidirected;
+namespace pgt = povu::graph_types;
+namespace pt = povu::types;
 
-povu::graph::Graph to_pv_graph(const char *filename, const core::config& app_config);
-bd::VariationGraph to_bd(const char* filename, const core::config& app_config);
+bd::VG to_bd(const char* filename, const core::config& app_config);
 }; // namespace io::from_gfa
 
 namespace povu::io::generic {
@@ -34,7 +42,6 @@ std::vector<std::filesystem::path> get_files(const std::string& dir_path, const 
 void write_txt(const std::vector<pgt::flubble>& flubbles, const std::string& base_name, const core::config& app_config);
 }; // namespace io::generic
 
-
 namespace povu::io::bub {
 using povu::graph_types::id_n_orientation_t;
 using povu::graph_types::id_n_cls;
@@ -48,6 +55,7 @@ void write_bub(const pvtr::Tree<pgt::flubble>& bt, const std::string& base_name,
 std::vector<pgt::flubble> read_canonical_fl(const std::string& fp);
 } // namespace povu::io::bub
 
+/*
 namespace povu::io::vcf {
 using povu::genomics::vcf::vcf_record;
 
@@ -58,6 +66,6 @@ void write_vcfs(const std::map<std::size_t,
                 const bidirected::VariationGraph& bd_vg,
                 const core::config& app_config);
 } // namespace io::vcf
-
+*/
 
 #endif

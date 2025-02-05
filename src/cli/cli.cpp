@@ -96,6 +96,10 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
     app_config.set_undefined_vcf(true);
   }
 
+  /* set graph properties */
+  app_config.set_inc_vtx_labels(true);
+  app_config.set_inc_refs(true);
+
   // either ref list or path list
   // if ref list is not set, then path list must be set
   // -------------

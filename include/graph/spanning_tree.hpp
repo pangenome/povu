@@ -117,13 +117,13 @@ class BackEdge {
 
   // TODO: why this duplication?
   std::size_t class_; // equivalnce class id
-  std::size_t recent_class_; //
+  std::size_t recent_class_; // FIXME: remove this or use it
   std::size_t recent_size_; //
 
   // TODO: use an enum here
   //bool capping_back_edge_; // is a capping back edge // TODO: remove, use type_
   EdgeType type_;
-  bool null_;
+  bool null_; // FIXME: remove this or use it
 
   color color_;
 
@@ -165,8 +165,8 @@ class Vertex {
   std::set<size_t> obe; // out back edges
   std::set<size_t> ibe;  // in back edges
 
-  // TODO: remove
-  std::string name_ {}; // id/name of the vertex in the input GFA
+  // TODO: rename to something better?
+  std::size_t g_v_id_ {}; // id/name of the vertex in the input GFA
 
   pgt::VertexType type_;
 
@@ -184,7 +184,7 @@ public:
   // --------------
   //Vertex(); // creates a root with parent id set to and id of zero
   //Vertex(std::size_t id, std::size_t parent_id);
-  Vertex(std::size_t dfs_num, const std::string& name, VertexType type_);
+  Vertex(std::size_t dfs_num, std::size_t g_v_id, VertexType type_);
   // ---------
   // getter(s)
   // ---------
@@ -193,7 +193,7 @@ public:
   std::size_t dfs_num() const;
   std::size_t parent() const; // TODO: remove
   std::size_t hi() const; // TODO: remove
-  std::string const& name() const;
+  std::size_t g_v_id() const;
   VertexType type() const;
 
   std::set<size_t> const& get_obe() const;
@@ -217,7 +217,7 @@ public:
 
   // the index of the parent node in the tree vertex
   void set_parent(std::size_t n_id);
-  void set_name(std::string const&name);
+  void set_g_v_id(std::size_t g_v_id);
   void set_type(VertexType t);
   void set_hi(std::size_t val);
   // the dfs num of the node

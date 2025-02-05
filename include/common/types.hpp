@@ -12,6 +12,50 @@
 #include <utility>
 #include <vector>
 
+namespace povu::types {
+
+typedef std::chrono::high_resolution_clock Time; // C++ timer
+
+typedef u_int32_t id_t;
+typedef u_int32_t idx_t;
+
+struct Stride {
+  std::size_t start;
+  std::size_t length;
+};
+typedef Stride span;
+
+
+typedef std::pair<std::size_t, std::size_t> size_t_pair;
+
+/**
+ * ordered pair similar to std::pair but with same type on both sides for less
+ * typing
+ */
+template <typename T> struct Pair {
+  T first;
+  T second;
+
+  friend bool operator<(const Pair &lhs, const Pair &rhs) {
+    return std::tie(lhs.first, lhs.second) < std::tie(rhs.first, rhs.second);
+  }
+
+  // spaceship operator
+  friend constexpr auto operator<=>(Pair, Pair) = default;
+};
+
+template <typename T> struct unordered_pair {
+  T l;
+  T r;
+
+  unordered_pair(T l, T r) : l(std::min(l, r)), r(std::max(l, r)) {}
+
+  // spaceship operator
+  friend constexpr auto operator<=>(const unordered_pair &,
+                                    const unordered_pair &) = default;
+};
+
+} // namespace povu::types
 
 namespace povu::constants {
 //
@@ -27,6 +71,7 @@ const std::size_t SIZE_T_MIN = std::numeric_limits<size_t>::min();
 const std::size_t SIZE_T_MAX = std::numeric_limits<size_t>::max();
 const int UNDEFINED_INT = std::numeric_limits<int>::min();
 const std::size_t UNDEFINED_SIZE_T = std::numeric_limits<size_t>::max();
+const std::size_t UNDEFINED_IDX = std::numeric_limits<povu::types::idx_t>::max();
 const std::size_t INVALID_ID = UNDEFINED_SIZE_T;
 const std::size_t INVALID_IDX = UNDEFINED_SIZE_T;
 
@@ -45,52 +90,6 @@ const char COL_SEP = '\t'; // column separator
 const char NO_VALUE = '.'; // null character
 } // namespace povu::constants
 
-namespace povu::types {
-
-// C++ timer
-typedef std::chrono::high_resolution_clock Time;
-
-struct Stride {
-  std::size_t start;
-  std::size_t length;
-};
-typedef Stride span;
-
-typedef std::size_t id_t;
-typedef std::size_t idx_t;
-typedef std::pair<std::size_t, std::size_t> size_t_pair;
-
-/**
- * ordered pair similar to std::pair but with same type on both sides for less typing
-*/
-template <typename T> struct Pair {
-  T first;
-  T second;
-
-  friend bool operator<(const Pair& lhs, const Pair& rhs) {
-    return std::tie(lhs.first, lhs.second) < std::tie(rhs.first, rhs.second);
-  }
-
-  // spaceship operator
-  friend constexpr auto operator<=>(Pair, Pair) = default;
-};
-
-template <typename T> struct unordered_pair{
-  T l;
-  T r;
-
-  unordered_pair(T l, T r): l(std::min(l,r)), r(std::max(l,r)) {}
-
-  // spaceship operator
-  friend constexpr auto operator<=>(const unordered_pair&, const unordered_pair&) = default;
-};
-
-
-
-
-} // namespace povu::types
-
-
 
 
 namespace povu::graph_types {
@@ -101,6 +100,7 @@ namespace povu::graph_types {
  * gray edge is a bi-edge
  */
 enum class color { gray, black };
+typedef  color color_e;
 std::ostream& operator<<(std::ostream& os, const color& c);
 
 // Eq class and node id
@@ -141,7 +141,8 @@ enum class VertexType {
     r,
     dummy
 };
-typedef VertexType v_type;
+typedef VertexType v_type; // deprected use v_type_e
+typedef VertexType v_type_e;
 std::ostream& operator<<(std::ostream& os, const VertexType& vt);
 
 // Merge path_t and biedged PathInfo into one namespace
