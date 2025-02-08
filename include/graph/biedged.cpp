@@ -448,7 +448,8 @@ void validate_spanning_tree(BVariationGraph const &g, pst::Tree &t,
 pst::Tree BVariationGraph::compute_spanning_tree() const {
   pst::Tree t = pst::Tree(this->size());
 
-  std::stack<std::tuple<std::size_t, std::size_t, pgt::color>> s; // parent indedx in the biedged graph, vertex idx and color
+  // parent indedx in the biedged graph, vertex idx and color
+  std::stack<std::tuple<std::size_t, std::size_t, pgt::color>> s; 
 
   std::vector<bool> visited(this->size(), false); // visited vertices
 
@@ -532,10 +533,6 @@ pst::Tree BVariationGraph::compute_spanning_tree() const {
 
     if (explored) { s.pop(); }
   }
-
-  //#ifdef DEBUG   // check the correctness of the tree
-  // validate_spanning_tree(*this, t, dfs_num_to_vtx);
-  //#endif
 
   return t;
 }

@@ -13,14 +13,15 @@ void do_call(const core::config &app_config) {
   // -----
   if (app_config.verbosity() > 2)  { std::cerr << std::format ("{} Reading graph\n", fn_name); }
 
+  /*
   t0 = pt::Time::now();
-  bd::VG bd_vg = io::from_gfa::to_bd(app_config.get_input_gfa().c_str(), app_config);
-  if (app_config.verbosity() > 1) {
-    timeRefRead = pt::Time::now() - t0;
-    povu::utils::report_time(std::cerr, fn_name, "read_gfa2", timeRefRead);
+  bd::VG bd_vg = io::from_gfa::to_bd(app_config.get_input_gfa().c_str(),
+  app_config); if (app_config.verbosity() > 1) { timeRefRead = pt::Time::now() -
+  t0; povu::utils::report_time(std::cerr, fn_name, "read_gfa2", timeRefRead);
   }
 
-  std::vector<std::filesystem::path> flubble_files = povu::io::generic::get_files(app_config.get_forest_dir(), ".flb");
+  std::vector<std::filesystem::path> flubble_files =
+  povu::io::generic::get_files(app_config.get_forest_dir(), ".flb");
 
   std::vector<pgt::flubble> canonical_flubbles;
 
@@ -36,6 +37,7 @@ void do_call(const core::config &app_config) {
   // read from a flubble tree in flb in format
   // -----
   //povu::genomics::call_variants(canonical_flubbles, bd_vg, app_config);
+  */
 
   return;
 }

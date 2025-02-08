@@ -253,6 +253,8 @@ class Tree {
   /*
     a map from the edge id (in the spanning tree) to the index in the tree_edges
     vector or the back_edges vector
+    key is the edge id and the value is a pair of the edge type and the index
+    in the tree_edges or back_edges vector
    */
   std::map<std::size_t, std::pair<EdgeType, std::size_t>> edge_id_map_;
 
@@ -431,10 +433,13 @@ public:
                      EdgeType t,
                      color clr=color::black);
 
+  [[deprecated("use without g_edge_idx")]]
   void add_tree_edge(std::size_t frm,
                      std::size_t to,
                      std::size_t g_edge_idx,
                      color clr=color::black);
+
+  void add_tree_edge(std::size_t frm, std::size_t to, color clr = color::black);
 
   void set_hi(std::size_t vertex, std::size_t val);
 

@@ -1,6 +1,9 @@
 #include "./subcommands.hpp"
 
-namespace povu::graph_ops {
+
+namespace povu::subcommands {
+const std::string MODULE = "povu::deconstruct";
+
 namespace pst = povu::spanning_tree;
 namespace pbd = povu::bidirected;
 
@@ -40,62 +43,82 @@ pst::Tree biedge_and_cycle_equiv(const pbd::VG& g, std::size_t component_id, con
   return st;
 }
 
-} // namespace povu::graph_ops
-
-namespace povu::subcommands {
-
-void deconstruct_component(const bd::VG& g, std::size_t component_id, const core::config& app_config) {
+void deconstruct_component(bd::VG *g, std::size_t component_id, const core::config& app_config) {
   std::string fn_name = std::format("[povu::deconstruct::{}]", __func__);
 
-  pst::Tree st = povu::graph_ops::biedge_and_cycle_equiv(g, component_id, app_config);
-  pvtr::Tree<pgt::flubble> flubble_tree = povu::graph::flubble_tree::st_to_ft(st);
-  povu::io::bub::write_bub(flubble_tree, std::to_string(component_id), app_config);
+  g->untip();
+
+  // g->print_dot(std::cerr);
+
+  pst::Tree st { bd::compute_spanning_tree(*g) };
+
+  st.print_dot();
+
+  delete g;
+
+  //pst::Tree st = biedge_and_cycle_equiv(g, component_id, app_config);
+  //pvtr::Tree<pgt::flubble> flubble_tree = povu::graph::flubble_tree::st_to_ft(st);
+  //povu::io::bub::write_bub(flubble_tree, std::to_string(component_id), app_config);
 }
 
+
 /**
- * in this way the initial VG gors out of scope after the function read and componetize
- */
-std::vector<bd::VG> get_components(const core::config &app_config) {
+ * Read the input gfa into a bidirected variation graph
+*/
+bd::VG *get_vg(const core::config &app_config) {
   std::string fn_name = std::format("[povu::deconstruct::{}]", __func__);
 
   std::chrono::duration<double> timeRefRead;
   auto t0 = pt::Time::now();
 
-  /* Read the input gfa into a bidirected variation graph */
-  if (app_config.verbosity() > 2)  { std::cerr << std::format ("{} Reading graph\n", fn_name); }
-  bd::VG g = io::from_gfa::to_bd(app_config.get_input_gfa().c_str(), app_config);
+  if (app_config.verbosity() > 2) {
+    std::cerr << std::format("{} Reading graph\n", fn_name);
+  }
+  bd::VG *g = io::from_gfa::to_bd(app_config.get_input_gfa().c_str(), app_config);
+
   if (app_config.verbosity() > 1) {
     timeRefRead = pt::Time::now() - t0;
     povu::utils::report_time(std::cerr, fn_name, "read_gfa", timeRefRead);
     t0 = pt::Time::now();
   }
 
-  if (app_config.verbosity() > 2)  { std::cerr << std::format("{} Finding components\n", fn_name); }
-  std::vector<bd::VG> components =  bd::componetize(g, app_config);
-
-  return components;
+  return g;
 }
 
-
 void do_deconstruct(const core::config &app_config) {
-  std::string fn_name = std::format("[povu::deconstruct::{}]", __func__);
-  std::vector<bd::VG> components =  get_components(app_config);
+  std::string fn_name = std::format("[{}::{}]", MODULE, __func__);
+  std::size_t ll = app_config.verbosity(); // ll for log level, to avoid long names. good idea?
 
-  if (app_config.verbosity() > 1) {
+  bd::VG *g = get_vg(app_config);
+
+  if (ll > 2) {
+    std::cerr << std::format("{} Finding components\n", fn_name);
+  }
+  std::vector<bd::VG *> components = bd::componetize(*g);
+
+  delete g;
+
+  if (ll > 1) {
     std::cerr << std::format("{} Found {} components\n", fn_name, components.size());
   }
 
-  /* Divide the vector into chunks for each thread */
-  std::size_t chunk_size = components.size() / static_cast<std::size_t>(app_config.thread_count() );
+  /* Divide the number of components into chunks for each thread */
+  unsigned int total_threads = std::thread::hardware_concurrency();
+  std::size_t conf_num_threads =
+    static_cast<std::size_t>(app_config.thread_count());
+  unsigned int num_threads =
+    (conf_num_threads > num_threads) ? total_threads : conf_num_threads;
+
+  std::size_t chunk_size = components.size() / num_threads;
 
   /* Create and launch threads */
-  std::vector<std::thread> threads(app_config.thread_count());
+  std::vector<std::thread> threads(num_threads);
   std::size_t start, end;
-  for (unsigned int i {}; i < app_config.thread_count(); ++i) {
+  for (unsigned int i {}; i < num_threads; ++i) {
     start = i * chunk_size;
-    end = (i == app_config.thread_count() - 1) ? components.size() : (i + 1) * chunk_size;
+    end = (i == num_threads - 1) ? components.size() : (i + 1) * chunk_size;
 
-    threads[i] = std::thread([start, end,fn_name, app_config, &components] {
+    threads[i] = std::thread([start, end, fn_name, num_threads, app_config, &components] {
       for (std::size_t i{start}; i < end; i++) {
 
         std::size_t component_id {i + 1};
@@ -104,18 +127,18 @@ void do_deconstruct(const core::config &app_config) {
           std::cerr << std::format("{} Handling component: {}\n", fn_name, component_id);
         }
 
-        if (components[i].size() < 3) {
+        if (components[i]->size() < 3) {
           if (app_config.verbosity() > 2) {
-            std::cerr << std::format("{} Skipping component {} because it is too small. (size: {})\n", fn_name, component_id, components[i].size());
+            std::cerr << std::format("{} Skipping component {} because it is too small. (size: {})\n", fn_name, component_id, components[i]->size());
           }
           continue;
         }
 
-        if (app_config.verbosity() > 3 && app_config.thread_count() == 1 && app_config.get_task() != core::task_t::info) {
-          components[i].summary();
+        if (app_config.verbosity() > 3 && num_threads == 1) {
+          components[i]->summary();
         }
 
-        deconstruct_component(std::ref(components[i]), component_id, std::ref(app_config)); // Pass by reference
+        deconstruct_component(components[i], component_id, std::ref(app_config)); // Pass by reference
       }
     });
   }

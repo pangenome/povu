@@ -8,8 +8,9 @@ void do_info(const core::config &app_config) {
   // -----
   // read the input gfa into a bidirected variation graph
   // -----
-  bd::VG g = io::from_gfa::to_bd(app_config.get_input_gfa().c_str(), app_config);
+  bd::VG *g = io::from_gfa::to_bd(app_config.get_input_gfa().c_str(), app_config);
 
-  g.summary();
+  g->summary();
+  delete g;
 }
 }

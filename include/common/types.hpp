@@ -72,6 +72,8 @@ const std::size_t SIZE_T_MAX = std::numeric_limits<size_t>::max();
 const int UNDEFINED_INT = std::numeric_limits<int>::min();
 const std::size_t UNDEFINED_SIZE_T = std::numeric_limits<size_t>::max();
 const std::size_t UNDEFINED_IDX = std::numeric_limits<povu::types::idx_t>::max();
+const std::size_t UNDEFINED_ID = std::numeric_limits<povu::types::id_t>::max();
+const std::size_t DUMMY_VTX_ID = UNDEFINED_ID;
 const std::size_t INVALID_ID = UNDEFINED_SIZE_T;
 const std::size_t INVALID_IDX = UNDEFINED_SIZE_T;
 

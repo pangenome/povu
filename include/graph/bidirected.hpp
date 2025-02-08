@@ -27,6 +27,7 @@
 
 #include "../common/types.hpp"
 #include "../common/utils.hpp"
+#include "./spanning_tree.hpp"
 
 //TODO: find a proper place for the app config
 #include "../../src/cli/app.hpp" // for core::config
@@ -35,6 +36,9 @@
 namespace povu::bidirected {
 namespace pgt = povu::graph_types;
 namespace pu = povu::utils;
+namespace pst = povu::spanning_tree;
+namespace pt = povu::types;
+namespace  pc = povu::constants;
 
 /**
  *
@@ -54,16 +58,16 @@ struct PathInfo {
 
 // undirected edge
 class Edge {
-  std::size_t v1_id;
+  std::size_t v1_idx_; // actually stores the index of the vertex in the graph not the id
   pgt::v_end v1_end;
-  std::size_t v2_id;
+  std::size_t v2_idx_;
   pgt::v_end v2_end;
 
 public:
   // --------------
   // constructor(s)
   // --------------
-  Edge(std::size_t v1_id, pgt::v_end v1_end , std::size_t v2_id, pgt::v_end v2_end);
+  Edge(std::size_t v1_idx, pgt::v_end v1_end , std::size_t v2_idx, pgt::v_end v2_end);
 
   // ---------
   // getter(s)
@@ -116,7 +120,9 @@ class VariationGraph {
   std::vector<Edge> edges;
   pu::TwoWayMap<std::size_t, std::size_t> v_id_to_idx_; // TODO: reserve size
   std::map<id_t, std::string> refs_; // a map of ref ids to names
-  std::set<pgt::side_n_id_t> tips_;
+  std::set<pgt::side_n_id_t> tips_; // the set of side and id of the tips
+
+  std::size_t dummy_idx_; // index of the dummy vertex
 
 public:
   // --------------
@@ -140,23 +146,39 @@ public:
   const Vertex& get_vertex_by_id(std::size_t v_id) const;
   Vertex& get_vertex_mut_by_id(std::size_t v_id);
 
+  // TODO: reduce number of dummy related methods
+  const Vertex& get_dummy_vertex() const;
+  std::size_t get_dummy_idx() const;
+  bool has_dummy() const;
+
 
   // ---------
   // setter(s)
   // ---------
-  void add_tip(std::size_t v_id, pgt::v_end end);
-  void add_vertex(std::size_t v_id, const std::string& label);
+  void add_tip(std::size_t v_id, pgt::v_end end); // TODO: give a name that shows that we don't add a vertex but mark a vertex as tip
+  // returns the index (v_idx) of the added vertex
+  std::size_t add_vertex(std::size_t v_id, const std::string& label);
+
   void add_edge(std::size_t v1_id, pgt::v_end v1_end, std::size_t v2_id, pgt::v_end v2_end);
   void add_ref(const std::string &ref_name);
+  /**
+   * make sure not to run more than once
+   *
+   *
+   */
+  void untip(); //
+  void shrink_to_fit();
 
   // other
   void summary() const;
+  void print_dot(std::ostream& os) const;
 };
 
 typedef VariationGraph VG;
 
-std::vector<povu::bidirected::VG> componetize(const povu::bidirected::VG& g, const core::config& app_config);
+std::vector<VG *> componetize(const VG &g);
 
+pst::Tree compute_spanning_tree(const VG &g);
 
-} // namespace povu::graph
+} // namespace povu::bidirected
 #endif

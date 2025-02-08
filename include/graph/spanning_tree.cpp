@@ -380,6 +380,27 @@ void Tree::add_tree_edge(std::size_t frm, std::size_t to, std::size_t g_edge_idx
 
   this->edge_id_map_[edge_count] = std::make_pair(EdgeType::tree_edge, edge_idx);
 
+  
+  this->nodes[frm].unset_null();
+  this->nodes[to].unset_null();
+
+  this->nodes[frm].add_child(edge_idx);
+  this->nodes[to].set_parent(edge_idx);
+}
+
+void Tree::add_tree_edge(std::size_t frm, std::size_t to, color c) {
+  std::size_t edge_idx = this->tree_edges.size();
+  std::size_t edge_count = edge_idx + this->back_edges.size();
+  this->tree_edges.push_back(Edge(edge_count, frm, to, c));
+
+  // if (this->g_edge_idx_map.count(g_edge_idx)) {
+  // std::cerr << "TE g_e id" << g_edge_idx << " id " << edge_count << "\n";
+  // throw std::runtime_error("Tree Edge already exists");
+  //}
+
+  this->edge_id_map_[edge_count] = std::make_pair(EdgeType::tree_edge, edge_idx);
+
+  // TODO: what are these for?
   this->nodes[frm].unset_null();
   this->nodes[to].unset_null();
 
@@ -526,7 +547,7 @@ void Tree::print_dot() {
   );
 
   for (std::size_t i{}; i < this->size(); i++){
-    std::string v_type_str = this->get_vertex(i).type() == VertexType::l ? "-" : "+";
+    std::string v_type_str = this->get_vertex(i).type() == VertexType::l ? "+" : "-";
     std::cout << std::format("\t{} [label =  \"{} ({}{})\"];\n", i, i, this->get_vertex(i).g_v_id(), v_type_str);
   }
 
