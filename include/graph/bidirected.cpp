@@ -188,7 +188,7 @@ void VG::print_dot(std::ostream& os) const {
   os << "graph G {" << std::endl;
   os << "\t" << "graph [rankdir=LR];" << std::endl;
   os << "\t" << "node [shape=rectangle];" << std::endl;
-  for (size_t v_idx {}; v_idx < this->size(); ++v_idx) {
+  for (size_t v_idx {}; v_idx < this->vtx_count(); ++v_idx) {
     const Vertex& v = this->get_vertex_by_idx(v_idx);
     std::string v_id = v.id() == constants::UNDEFINED_ID ? "d" : std::to_string(v.id());
 
@@ -215,7 +215,7 @@ std::vector<VG *> componetize(const povu::bidirected::VG &g) {
 
   std::unordered_set<pt::idx_t> visited;
   visited.reserve(g.vtx_count());
-  
+
   // avoids creating multiple edges between the same vertices
   std::unordered_set<pt::idx_t> added_edges;
   added_edges.reserve(g.edge_count());
@@ -228,57 +228,54 @@ std::vector<VG *> componetize(const povu::bidirected::VG &g) {
   std::vector<VG *> components;
   VG *curr_vg { nullptr };
 
-  bool found_unvisited { false };
-
   std::set<pt::idx_t> comp_vtxs; // current component vertices
   comp_vtxs.insert(start_vtx);
 
   /* ---------- Helper Functions ---------- */
 
-  auto process_edge = [&](pt::idx_t v_idx, pt::idx_t e_idx) -> bool {
+  auto process_edge = [&](pt::idx_t v_idx, pt::idx_t e_idx) -> void {
     const Edge &e = g.get_edge(e_idx);
-    auto [_, adj_v_idx] = e.get_other_vertex(v_idx);
-    if (adj_v_idx != v_idx && !visited.contains(adj_v_idx)) {
-      s.push(adj_v_idx);
-      visited.insert(adj_v_idx);
-      comp_vtxs.insert(adj_v_idx);
-      return true;
-    }
-    return false;
+    pt::idx_t adj_v_idx = e.get_other_vertex(v_idx).v_idx;
+
+    if (visited.contains(adj_v_idx)) return; // also handles self loops
+
+    s.push(adj_v_idx);
+    visited.insert(adj_v_idx);
+    comp_vtxs.insert(adj_v_idx);
+    return;
   };
 
-  auto add_edges = [&](pt::idx_t v_idx, pt::idx_t e_idx, const Vertex &v) -> void {
+  auto add_edges = [&](const Vertex &v, pt::idx_t v_idx, pt::idx_t e_idx) -> void {
     if (added_edges.contains(e_idx)) {
       return;
     }
 
     added_edges.insert(e_idx);
     const Edge &e = g.get_edge(e_idx);
-    auto [side, adj_v_idx] = e.get_other_vertex(v_idx);
-    curr_vg->add_edge(v.id(), pgt::v_end::r, g.v_idx_to_id(adj_v_idx), side);
+
+    if (e.get_v1_idx() == e.get_v2_idx()) { // self loop
+      curr_vg->add_edge(v.id(), e.get_v1_end(), v.id(), e.get_v2_end());
+      return;
+    }
+
+    pgt::v_end s1 = (e.get_v1_idx() == v_idx) ? e.get_v1_end() : e.get_v2_end();
+    auto [s2, adj_v_idx] = e.get_other_vertex(v_idx);
+    curr_vg->add_edge(v.id(), s1, g.v_idx_to_id(adj_v_idx), s2);
   };
 
   /* ---------- Main Component Search Loop ---------- */
 
   while (!s.empty()) {
-    found_unvisited = false;
     pt::idx_t v_idx = s.top();
+    s.pop();
     const Vertex& v = g.get_vertex_by_idx(v_idx);
 
-    for (auto e_idx : v.get_edges_l()){
-      found_unvisited = process_edge(v_idx, e_idx);
-    }
-
-    if (found_unvisited) {
-      continue;
+    for (auto e_idx : v.get_edges_l()) {
+      process_edge(v_idx, e_idx);
     }
 
     for (auto e_idx : v.get_edges_r()) {
-      found_unvisited = process_edge(v_idx, e_idx);
-    }
-
-    if (!found_unvisited) {
-      s.pop();
+      process_edge(v_idx, e_idx);
     }
 
     if (s.empty()) {
@@ -294,11 +291,11 @@ std::vector<VG *> componetize(const povu::bidirected::VG &g) {
       for (auto v_idx : comp_vtxs) {
         const Vertex& v = g.get_vertex_by_idx(v_idx);
         for (auto e_idx : v.get_edges_l()) {
-          add_edges(v_idx, e_idx, v);
+          add_edges(v, v_idx, e_idx);
         }
 
         for (auto e_idx : v.get_edges_r()) {
-          add_edges(v_idx, e_idx, v);
+          add_edges(v, v_idx, e_idx);
         }
       }
 
@@ -310,9 +307,9 @@ std::vector<VG *> componetize(const povu::bidirected::VG &g) {
       }
 
       // clear the set for the next component
-      added_edges.clear();
       components.push_back(curr_vg);
       curr_vg = nullptr;
+      added_edges.clear();
 
       /* find the next unvisited vertex */
       for (std::size_t v_idx{}; v_idx < g.vtx_count(); ++v_idx) {

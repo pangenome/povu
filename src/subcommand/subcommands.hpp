@@ -5,7 +5,6 @@
 
 #include "../../include/algorithms/algorithms.hpp"
 #include "../../include/common/types.hpp"
-// #include "../../include/graph/biedged.hpp"
 #include "../../include/graph/flubble_tree.hpp"
 #include "../../include/graph/spanning_tree.hpp"
 #include "../io/io.hpp"

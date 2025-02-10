@@ -1,4 +1,5 @@
 #include "./subcommands.hpp"
+#include <iostream>
 
 
 namespace povu::subcommands {
@@ -85,9 +86,9 @@ void do_deconstruct(const core::config &app_config) {
           std::cerr << std::format("{} Handling component: {}\n", fn_name, component_id);
         }
 
-        if (components[i]->size() < 3) {
+        if (components[i]->vtx_count() < 3) {
           if (app_config.verbosity() > 2) {
-            std::cerr << std::format("{} Skipping component {} because it is too small. (size: {})\n", fn_name, component_id, components[i]->size());
+            std::cerr << std::format("{} Skipping component {} because it is too small. (size: {})\n", fn_name, component_id, components[i]->vtx_count());
           }
           continue;
         }
