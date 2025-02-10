@@ -54,25 +54,19 @@ void do_deconstruct(const core::config &app_config) {
   std::size_t ll = app_config.verbosity(); // ll for log level, to avoid long names. good idea?
 
   bd::VG *g = get_vg(app_config);
+  g->summary();
 
-  if (ll > 2) {
-    std::cerr << std::format("{} Finding components\n", fn_name);
-  }
+  if (ll > 1) std::cerr << std::format("{} Finding components\n", fn_name);
   std::vector<bd::VG *> components = bd::componetize(*g);
 
   delete g;
 
-  if (ll > 1) {
-    std::cerr << std::format("{} Found {} components\n", fn_name, components.size());
-  }
+  if (ll > 1) std::cerr << std::format("{} Found {} components\n", fn_name, components.size());
 
   /* Divide the number of components into chunks for each thread */
   unsigned int total_threads = std::thread::hardware_concurrency();
-  std::size_t conf_num_threads =
-    static_cast<std::size_t>(app_config.thread_count());
-  unsigned int num_threads =
-    (conf_num_threads > num_threads) ? total_threads : conf_num_threads;
-
+  std::size_t conf_num_threads = static_cast<std::size_t>(app_config.thread_count());
+  unsigned int num_threads = (conf_num_threads > total_threads) ? total_threads : conf_num_threads;
   std::size_t chunk_size = components.size() / num_threads;
 
   /* Create and launch threads */

@@ -65,7 +65,7 @@ ADD_LIBRARY(LibsModule
 
   # graph
   ${INCLUDE_DIR}/graph/bidirected.cpp
-  ${INCLUDE_DIR}/graph/biedged.cpp
+  #${INCLUDE_DIR}/graph/biedged.cpp
   ${INCLUDE_DIR}/graph/flubble_tree.cpp
   #src/graph/graph.cpp
   ${INCLUDE_DIR}/graph/spanning_tree.cpp
