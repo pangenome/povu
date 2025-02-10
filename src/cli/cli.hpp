@@ -1,6 +1,9 @@
 #include "./app.hpp"
+#include "../io/io.hpp"
 
 namespace cli {
+namespace pic = povu::io::common;
+
 
 #define FILE_ERROR(name)                                                       \
   {                                                                            \

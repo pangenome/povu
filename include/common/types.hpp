@@ -3,6 +3,7 @@
 
 #include <chrono>
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <utility>
 #include <format>
@@ -18,6 +19,7 @@ typedef std::chrono::high_resolution_clock Time; // C++ timer
 
 typedef u_int32_t id_t;
 typedef u_int32_t idx_t;
+typedef int8_t status_t; // return status of a fn
 
 struct Stride {
   std::size_t start;

@@ -16,37 +16,12 @@ void deconstruct_component(bd::VG *g, std::size_t component_id, const core::conf
 }
 
 
-/**
- * Read the input gfa into a bidirected variation graph
-*/
-bd::VG *get_vg(const core::config &app_config) {
-  std::string fn_name = std::format("[povu::deconstruct::{}]", __func__);
-  std::size_t ll = app_config.verbosity(); // log level
-
-  std::chrono::duration<double> timeRefRead;
-  auto t0 = pt::Time::now();
-
-  if (ll > 2) std::cerr << std::format("{} Reading graph\n", fn_name);
-  bd::VG *g = io::from_gfa::to_bd(app_config.get_input_gfa().c_str(), app_config);
-
-  if (ll > 1) {
-    timeRefRead = pt::Time::now() - t0;
-    povu::utils::report_time(std::cerr, fn_name, "read_gfa", timeRefRead);
-    t0 = pt::Time::now();
-  }
-
-  return g;
-}
 
 void do_deconstruct(const core::config &app_config) {
   std::string fn_name = std::format("[povu::deconstruct::{}]", __func__);
   std::size_t ll = app_config.verbosity(); // ll for log level, to avoid long names. good idea?
 
   bd::VG *g = get_vg(app_config);
-
-  #ifdef DEBUG
-  g->summary();
-  #endif
 
   if (ll > 1) std::cerr << std::format("{} Finding components\n", fn_name);
   std::vector<bd::VG *> components = bd::componetize(*g);

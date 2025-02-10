@@ -72,8 +72,6 @@ pt::idx_t VG::v_id_to_idx(pt::id_t v_id) const {
   return this->v_id_to_idx_.get_value(v_id);
 }
 
-pt::idx_t VG::size() const { return this->vertices.size(); }
-
 pt::idx_t VG::vtx_count() const { return this->vertices.size(); }
 
 pt::idx_t VG::edge_count() const { return this->edges.size(); }
@@ -105,8 +103,6 @@ std::size_t VG::get_dummy_idx() const {
 bool VG::has_dummy() const {
   return this->dummy_idx_ != constants::UNDEFINED_IDX;
 }
-
-
 
 void VG::add_tip(std::size_t v_id, pgt::v_end end) {
   this->tips_.insert( pgt::side_n_id_t{end, v_id} );

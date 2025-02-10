@@ -76,7 +76,7 @@ bd::VG *to_bd(const char* filename, const core::config& app_config) {
   lq::vg_free(ls_g, &ls_cfg); // very important: free the liteseq graph
 
   /* populate tips */
-  for (std::size_t v_idx{}; v_idx < vg->size(); ++v_idx) {
+  for (std::size_t v_idx{}; v_idx < vg->vtx_count(); ++v_idx) {
     const bd::Vertex &v = vg->get_vertex_by_idx(v_idx);
 
     if (v.get_edges_l().empty() && v.get_edges_r().empty()) {

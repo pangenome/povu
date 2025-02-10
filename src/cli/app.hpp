@@ -22,7 +22,7 @@ namespace pu = povu::utils;
  */
 
 // rename to task_e
-enum class task_t {
+enum class task_e {
   call,        // call variants
   deconstruct, // deconstruct a graph
   info,        // print graph information
@@ -30,12 +30,12 @@ enum class task_t {
 };
 
 // rename to input_format_e
-enum class input_format_t {
+enum class input_format_e {
   file_path,
   params,  // CLI params
   unset // unset
 };
-std::ostream& operator<<(std::ostream& os, const task_t& t);
+std::ostream& operator<<(std::ostream& os, const task_e& t);
 
 enum class subgraph_category {
   bubble,
@@ -47,7 +47,7 @@ enum class subgraph_category {
  * @brief app config
  */
 struct config {
-  task_t task;
+  task_e task;
   std::string input_gfa;
   std::filesystem::path forest_dir;
   std::string chrom;
@@ -66,8 +66,8 @@ struct config {
 
   // references
   std::string references_txt; // the path to the file containing the reference paths
-  input_format_t ref_input_format;
-  std::vector<std::string> reference_paths;
+  input_format_e ref_input_format;
+  std::vector<std::string> reference_paths; // or just references
   bool undefined_vcf;
 
   // -------------
@@ -76,14 +76,16 @@ struct config {
 
   // constructor(s)
   config()
-      : task(task_t::unset),
+      : task(task_e::unset),
+        forest_dir("."),
         chrom(""), // default is empty string
         output_dir("."),                // default is current directory
         inc_vtx_labels_(false),
         inc_refs_(false),
         v(0),
         thread_count_(1),
-        ref_input_format(input_format_t::unset),
+        references_txt(""),
+        ref_input_format(input_format_e::unset),
         reference_paths(std::vector<std::string>{}),
         undefined_vcf(false)
     {}
@@ -98,13 +100,15 @@ struct config {
   bool inc_refs() const { return this->inc_refs_; }
   const std::string& get_chrom() const { return this->chrom; }
   std::vector<std::string> const& get_reference_paths() const { return this->reference_paths; }
+  input_format_e get_refs_input_fmt() const { return this->ref_input_format; }
   std::vector<std::string>* get_reference_ptr() { return &this->reference_paths; }
   const std::string& get_references_txt() const { return this->references_txt; }
   std::size_t verbosity() const { return this->v; } // can we avoid this being a size_t?
   unsigned int thread_count() const { return this->thread_count_; }
   bool print_dot() const { return this->print_dot_; }
   bool gen_undefined_vcf() const { return this->undefined_vcf; }
-  task_t get_task() const { return this->task; }
+  task_e get_task() const { return this->task; }
+  
 
   // ---------
   // setter(s)
@@ -113,7 +117,7 @@ struct config {
   void set_chrom(std::string&& s) { this->chrom = s; }
   void set_inc_vtx_labels(bool b) { this->inc_vtx_labels_ = b; }
   void set_inc_refs(bool b) { this->inc_refs_ = b; }
-  void set_ref_input_format(input_format_t f) { this->ref_input_format = f; }
+  void set_ref_input_format(input_format_e f) { this->ref_input_format = f; }
   void add_reference_path(std::string s) { this->reference_paths.push_back(s); }
   void set_reference_paths(std::vector<std::string>&& v) { this->reference_paths = std::move(v); }
   void set_reference_txt_path(std::string&& s) { this->references_txt = std::move(s); }
@@ -124,7 +128,7 @@ struct config {
   void set_input_gfa(std::string s) { this->input_gfa = s; }
   void set_forest_dir(std::string s) { this->forest_dir = s; }
   void set_output_dir(std::string s) { this->output_dir = s; }
-  void set_task(task_t t) { this->task = t; }
+  void set_task(task_e t) { this->task = t; }
   void set_undefined_vcf(bool b) { this->undefined_vcf = b; }
 
   // --------
@@ -141,7 +145,7 @@ struct config {
     std::cerr << "\t" << "output dir: " << this->output_dir << std::endl;
     std::cerr << "\t" << "chrom: " << this->chrom << std::endl;
     std::cerr << "\t" << "Generate undefined vcf: " << std::boolalpha << this->undefined_vcf << std::endl;
-    if (this->ref_input_format == input_format_t::file_path) {
+    if (this->ref_input_format == input_format_e::file_path) {
       std::cerr << "\t" << "Reference paths file: " << this->references_txt << std::endl;
     }
 

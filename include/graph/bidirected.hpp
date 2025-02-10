@@ -135,9 +135,6 @@ public:
   pt::idx_t v_id_to_idx(pt::id_t v_id) const;
   pt::id_t v_idx_to_id(pt::idx_t v_idx) const;
 
-  [[deprecated("use vtx_count")]]
-  pt::idx_t size() const; // number of vertices
-
   pt::idx_t vtx_count() const;
   pt::idx_t edge_count() const;
   const std::set<pgt::side_n_id_t>& tips() const;

@@ -1,15 +1,15 @@
 #include "./app.hpp"
 
 namespace core {
-std::ostream& operator<<(std::ostream& os, const task_t& t)  {
+std::ostream& operator<<(std::ostream& os, const task_e& t)  {
   switch (t) {
-    case task_t::call:
+    case task_e::call:
       os << "call";
       break;
-    case task_t::deconstruct:
+    case task_e::deconstruct:
       os << "deconstruct";
       break;
-    case task_t::info:
+    case task_e::info:
       os << "info";
       break;
     default:

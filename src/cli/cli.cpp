@@ -14,64 +14,22 @@
 #include "app.hpp"
 
 namespace cli {
-/**
- * @brief Get the size of a file
- * @param fp file path
- * @return size of the file in bytes
- */
-std::size_t get_file_size(const std::string& fp) {
-  std::streampos begin, end;
-  std::ifstream f (fp);
 
-  if (!f) { FILE_ERROR(fp); }
-
-  begin = f.tellg();
-  f.seekg (0, std::ios::end);
-  end = f.tellg();
-  f.close();
-
-  return end-begin;
-}
-
-
-/**
- * read the entire file into a string
- * should be faster for small inputs to read the entire file into a string and
- * process it at once
- * will perform whitespace normalization/formatting
- */
-void read_lines_to_vector_str(const std::string& fp, std::vector<std::string> *v) {
-  std::ifstream f{fp};
-  std::string temp;
-
-  if (!f) { FILE_ERROR(fp); }
-
-  while (f >> temp) { v->push_back(temp); }
-}
-
-
-void fp_to_vector (const std::string& fp, std::vector<std::string>* v) {
-  std::size_t file_size = get_file_size(fp);
-
-  v->reserve(file_size);
-  read_lines_to_vector_str(fp, v);
-  v->shrink_to_fit();
-}
-
+// TODO: rename ref_list to refs
 
 void call_handler(args::Subparser &parser, core::config& app_config) {
   args::Group arguments("arguments");
   args::ValueFlag<std::string> input_gfa(parser, "gfa", "path to input gfa [required]", {'i', "input-gfa"}, args::Options::Required);
   args::ValueFlag<std::string> forest_dir(parser, "forest_dir", "dir containing flubble forest [default: .]", {'f', "forest-dir"});
   args::ValueFlag<std::string> output_dir(parser, "output_dir", "Output directory [default: .]", {'o', "output-dir"});
-  args::ValueFlag<std::string> ref_list(parser, "ref_list", "path to txt file containing reference haplotypes [optional]", {'p', "path-list"});
+  args::ValueFlag<std::string> ref_list(parser, "ref_list", "path to txt file containing reference haplotypes [optional]", {'r', "ref-list"});
   args::ValueFlag<std::string> chrom(parser, "chrom", "graph identifier, default is from GFA file. Chrom column in VCF [optional]", {'c', "chrom"});
   args::Flag undefined_vcf(parser, "undefined_vcf", "Generate VCF file for flubbles without a reference path [default: false]", {'u', "undefined"});
-  args::PositionalList<std::string> pathsList(parser, "paths", "list of paths to use as reference haplotypes [optional]");
+  args::PositionalList<std::string> refsList(parser, "refs", "list of refs to use as reference haplotypes [optional]");
 
   parser.Parse();
 
-  app_config.set_task(core::task_t::call);
+  app_config.set_task(core::task_e::call);
 
   // input gfa is already a c_str
   app_config.set_input_gfa(args::get(input_gfa));
@@ -84,6 +42,7 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
     app_config.set_output_dir(args::get(output_dir));
   }
 
+  // uses the name of the GFA file
   if (chrom) {
     app_config.set_chrom(std::move(args::get(chrom)));
   }
@@ -100,25 +59,23 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
   app_config.set_inc_vtx_labels(true);
   app_config.set_inc_refs(true);
 
-  // either ref list or path list
-  // if ref list is not set, then path list must be set
-  // -------------
-
-  if (ref_list && std::begin(pathsList) != std::end(pathsList)) {
+  /* One of ref_list or path_list must be set—never both, and never none */
+  if (!ref_list && std::begin(refsList) == std::end(refsList)) {
+    std::cerr << "[cli::call_handler] Error: need either ref_list or path_list" << std::endl;
+    std::exit(1);
+  }
+  else if (ref_list && std::begin(refsList) != std::end(refsList)) {
     std::cerr << "[cli::call_handler] Error: cannot set both ref_list and path_list" << std::endl;
     std::exit(1);
   }
   else if (ref_list) {
-    app_config.set_ref_input_format(core::input_format_t::file_path);
+    app_config.set_ref_input_format(core::input_format_e::file_path);
     app_config.set_reference_txt_path(std::move(args::get(ref_list)));
-    std::vector<std::string> ref_paths;
-    read_lines_to_vector_str(app_config.get_references_txt(), &ref_paths);
-    app_config.set_reference_paths(std::move(ref_paths));
   }
-  else {
-    app_config.set_ref_input_format(core::input_format_t::params);
-    // assume pathsList is not empty
-    for (auto &&path : pathsList) {
+  else { // we already made sure that the list of refs is not empty
+    app_config.set_ref_input_format(core::input_format_e::params);
+    // TODO: set this in the call subcommand
+    for (auto &&path : refsList) {
       app_config.add_reference_path(path);
     }
   }
@@ -131,7 +88,7 @@ void deconstruct_handler(args::Subparser &parser, core::config& app_config) {
   args::ValueFlag<std::string> output_dir(parser, "output_dir", "Output directory [default: .]", {'o', "output-dir"});
 
   parser.Parse();
-  app_config.set_task(core::task_t::deconstruct);
+  app_config.set_task(core::task_e::deconstruct);
   // input gfa is already a c_str
   app_config.set_input_gfa(args::get(input_gfa));
 
@@ -146,7 +103,7 @@ void info_handler(args::Subparser &parser, core::config& app_config) {
   args::ValueFlag<std::string> input_gfa(parser, "gfa", "path to input gfa [required]", {'i', "input-gfa"}, args::Options::Required);
 
   parser.Parse();
-  app_config.set_task(core::task_t::info);
+  app_config.set_task(core::task_e::info);
   // input gfa is already a c_str
   app_config.set_input_gfa(args::get(input_gfa));
 }

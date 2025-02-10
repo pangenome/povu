@@ -89,9 +89,10 @@ set(SOURCE_FILES
   # io
   ${SRC_DIR}/io/bub.cpp
   ${SRC_DIR}/io/from_gfa.cpp
-  ${SRC_DIR}/io/txt.cpp
+  ${SRC_DIR}/io/common.cpp
 
   # subcommand
+  ${SRC_DIR}/subcommand/common.cpp
   ${SRC_DIR}/subcommand/deconstruct.cpp
   ${SRC_DIR}/subcommand/info.cpp
   ${SRC_DIR}/subcommand/call.cpp

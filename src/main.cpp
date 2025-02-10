@@ -13,13 +13,13 @@ int main(int argc, char *argv[]) {
   if (app_config.verbosity()) { app_config.dbg_print(); }
 
   switch (app_config.get_task()) {
-  case core::task_t::deconstruct:
+  case core::task_e::deconstruct:
     pv::do_deconstruct(app_config);
     break;
-  case core::task_t::call:
+  case core::task_e::call:
     pv::do_call(app_config);
     break;
-  case core::task_t::info:
+  case core::task_e::info:
     pv::do_info(app_config);
     break;
   default:

@@ -1,43 +1,55 @@
 #include "./subcommands.hpp"
+#include <cstddef>
+#include <cstdint>
+#include <vector>
 
 namespace povu::subcommands {
 
-void do_call(const core::config &app_config) {
+std::vector<pgt::flubble> get_can_flubbles(const core::config &app_config) {
+  std::string fn_name = std::format("[povu::subcommands::{}]", __func__);
+  // get the list of files in the forest dir that end in .flb
+  std::vector<fs::path> flbs = pic::get_files(app_config.get_forest_dir(), ".flb");
+
+  if (flbs.empty()) {
+    std::cerr << fn_name
+              << " Could not find flb files in " << app_config.get_forest_dir()
+              << std::endl;
+    exit(EXIT_FAILURE);
+  }
+
+  // TODO: [c] parallelise
+  std::vector<pgt::flubble> can_flbs; // flubbles in a given file
+  for (std::size_t i{}; i < flbs.size(); i++) {
+    //std::cerr << std::format("Reading flubble file: {}\n", flbs[i].string());
+    std::vector<pgt::flubble> res = povu::io::bub::read_canonical_fl(flbs[i].string());
+    can_flbs.insert(can_flbs.end(), res.begin(), res.end());
+  }
+
+  return can_flbs;
+}
+
+pt::status_t get_refs(core::config &app_config) {
+  if (app_config.get_refs_input_fmt() != core::input_format_e::file_path) {
+    return -1;
+  }
+
+  std::vector<std::string> refs;
+  pic::read_lines_to_vec_str(app_config.get_references_txt(), &refs);
+  app_config.set_reference_paths(std::move(refs));
+
+  return 0;
+}
+
+void do_call(core::config &app_config) {
   std::string fn_name = std::format("[povu::main::{}]", __func__);
 
-  std::chrono::duration<double> timeRefRead;
-  auto t0 = pt::Time::now();
-
-  // -----
+  // TODO: [c] parallelise
   // read the input gfa into a bidirected variation graph
-  // -----
-  if (app_config.verbosity() > 2)  { std::cerr << std::format ("{} Reading graph\n", fn_name); }
+  bd::VG *g = get_vg(app_config);
+  std::vector<pgt::flubble> canonical_flubbles = get_can_flubbles(app_config);
+  pt::status_t _ = get_refs(app_config);
 
-  /*
-  t0 = pt::Time::now();
-  bd::VG bd_vg = io::from_gfa::to_bd(app_config.get_input_gfa().c_str(),
-  app_config); if (app_config.verbosity() > 1) { timeRefRead = pt::Time::now() -
-  t0; povu::utils::report_time(std::cerr, fn_name, "read_gfa2", timeRefRead);
-  }
-
-  std::vector<std::filesystem::path> flubble_files =
-  povu::io::generic::get_files(app_config.get_forest_dir(), ".flb");
-
-  std::vector<pgt::flubble> canonical_flubbles;
-
-  // TODO: do in parallel
-  for (const auto& fp: flubble_files) {
-    std::cerr << std::format("Reading flubble file: {}\n", fp.string());
-    auto res = povu::io::bub::read_canonical_fl(fp.string());
-    // append the results of the vector with these results
-    canonical_flubbles.insert(canonical_flubbles.end(), res.begin(), res.end());
-  }
-
-  // ------
-  // read from a flubble tree in flb in format
-  // -----
-  //povu::genomics::call_variants(canonical_flubbles, bd_vg, app_config);
-  */
+  // povu::genomics::call_variants(canonical_flubbles, *g, app_config);
 
   return;
 }
