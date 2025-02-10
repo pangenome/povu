@@ -2,63 +2,27 @@
 
 
 namespace povu::subcommands {
-const std::string MODULE = "povu::deconstruct";
-
-namespace pst = povu::spanning_tree;
-namespace pbd = povu::bidirected;
-
-/**
- * @brief
- *
-*/
-pst::Tree biedge_and_cycle_equiv(const pbd::VG& g, std::size_t component_id, const core::config& app_config)  {
-  std::string fn_name = std::format("[povu::subcommand::{}]", __func__);
-
-  // g.print_dot();
-
-  // convert the bidirected variation graph into a biedged variation graph
-  if (app_config.verbosity() > 2) { std::cerr << std::format("{} Bi-edging {}\n", fn_name, component_id); }
-  biedged::BVariationGraph bg(g); // will add dummy vertices
-
-  if (app_config.print_dot() && app_config.verbosity() > 4 ) { std::cout << "\n\n" << "Biedged" << "\n\n";
-    bg.print_dot();
-  }
-
-  if (app_config.verbosity() > 2) { std::cerr << std::format("{} Generating spanning tree {}\n", fn_name, component_id); }
-  pst::Tree st = bg.compute_spanning_tree();
-
-  if (app_config.print_dot() && app_config.verbosity() > 4) { std::cout << "\n\n" << "Spanning Tree " << component_id << "\n\n";
-    st.print_dot();
-  }
-
-  
-  if (app_config.verbosity() > 2) { std::cerr << std::format("{} Computing Cycle Equivalence {}\n", fn_name, component_id); }
-  //povu::algorithms::eulerian_cycle_equiv(st);
-  povu::algorithms::simple_cycle_equiv(st);
-
-  if (app_config.print_dot() && app_config.verbosity() > 4) { std::cout << "\n\n" << "Updated Spanning Tree " << component_id << "\n\n";
-    st.print_dot();
-  }
-
-  return st;
-}
 
 void deconstruct_component(bd::VG *g, std::size_t component_id, const core::config& app_config) {
   std::string fn_name = std::format("[povu::deconstruct::{}]", __func__);
 
+  //g->print_dot(std::cerr);
+
   g->untip();
 
-  // g->print_dot(std::cerr);
+  //g->print_dot(std::cerr);
 
   pst::Tree st { bd::compute_spanning_tree(*g) };
 
-  st.print_dot();
+  //st.print_dot(std::cerr);
 
   delete g;
 
-  //pst::Tree st = biedge_and_cycle_equiv(g, component_id, app_config);
-  //pvtr::Tree<pgt::flubble> flubble_tree = povu::graph::flubble_tree::st_to_ft(st);
-  //povu::io::bub::write_bub(flubble_tree, std::to_string(component_id), app_config);
+  povu::algorithms::simple_cycle_equiv(st); // find equivalence classes
+
+  pvtr::Tree<pgt::flubble> flubble_tree = povu::graph::flubble_tree::st_to_ft(st);
+
+  povu::io::bub::write_bub(flubble_tree, std::to_string(component_id), app_config);
 }
 
 
@@ -86,7 +50,7 @@ bd::VG *get_vg(const core::config &app_config) {
 }
 
 void do_deconstruct(const core::config &app_config) {
-  std::string fn_name = std::format("[{}::{}]", MODULE, __func__);
+  std::string fn_name = std::format("[povu::deconstruct::{}]", __func__);
   std::size_t ll = app_config.verbosity(); // ll for log level, to avoid long names. good idea?
 
   bd::VG *g = get_vg(app_config);

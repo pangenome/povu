@@ -49,7 +49,7 @@ void Edge::set_class_idx(std::size_t c) { this->class_ = c; }
 void Edge::set_class(std::size_t c) { this->class_ = c; }
 
 
-/* 
+/*
  * BackEdge
  * --------
  */
@@ -380,7 +380,7 @@ void Tree::add_tree_edge(std::size_t frm, std::size_t to, std::size_t g_edge_idx
 
   this->edge_id_map_[edge_count] = std::make_pair(EdgeType::tree_edge, edge_idx);
 
-  
+
   this->nodes[frm].unset_null();
   this->nodes[to].unset_null();
 
@@ -538,60 +538,91 @@ const std::map<std::size_t, std::pair<EdgeType, std::size_t>>& Tree::get_g_edge_
   return this->g_edge_idx_map;
 }
 
-void Tree::print_dot() {
-  std::cout << std::format(
+void Tree::print_dot(std::ostream &os) {
+
+  /* ---------- Helper Functions ---------- */
+
+  auto vtx_to_dot = [&](std::size_t i) {
+    const Vertex &vertex = this->get_vertex(i);
+    std::string str;
+
+    switch (vertex.type()) {
+    case VertexType::dummy:
+      str = std::format("\t{} [style=filled, fillcolor=pink];\n", i);
+      break;
+    case VertexType::l:
+    case VertexType::r:
+      std::string sign = (vertex.type() == VertexType::l) ? "+" : "-";
+      str = std::format(
+          "\t{} [style=filled, fillcolor=lightblue, label = \"{} \\n ({}{})\"];\n",
+          i, i, vertex.g_v_id(), sign);
+      break;
+    }
+
+    os << str;
+  };
+
+  auto tree_edge_to_dot = [&](pt::idx_t p_v_idx, Edge &e) {
+    std::string cls = e.get_class_idx() > 10000 ? "\u2205" : std::to_string(e.get_class_idx());
+    std::string clr = e.get_color() == color::gray ? "gray" : "black";
+
+    os << std::format("\t{}  -- {}  [label=\"{} {}\" color={}];\n",
+                             p_v_idx, e.get_child(), e.id(), cls, clr);
+  };
+
+  auto be_to_dot = [&](pt::idx_t i, const std::pair<std::size_t, std::size_t> &o) {
+    auto [f,s]= o;
+    std::string cl = f > 10000 ? "\u2205" : std::to_string(f);
+    // a capping backedge is red and can never have been gray
+    BackEdge be = this->get_backedge_given_id(f);
+    bool is_capping = be.is_capping_backedge();
+    std::string class_ =
+      be.get_class() == UNDEFINED_SIZE_T ? "" : std::to_string(be.get_class());
+
+    std::string color{};
+
+    if (is_capping) {
+      color = "red";
+    } else if (this->get_backedge_given_id(f).get_color() == color::gray) {
+      color = "gray";
+    } else if (this->get_backedge_given_id(f).get_color() == color::black) {
+      color = "black";
+    } else {
+      color = "blue";
+    }
+
+    os << std::format("\t{} -- {} [label=\"{} {}\" style=\"dotted\" "
+                             "penwidth=\"3\" color=\"{}\"];\n",
+                             i, be.get_tgt(), cl, class_, color);
+  };
+
+  /* ---------- dot format header ---------- */
+
+  os << std::format(
     "graph G {{\n"
     "\trankdir = LR;\n"
     "\tnode[shape = circle];\n"
     "\tedge [arrowhead=vee];\n"
   );
 
+  //print the vertices
   for (std::size_t i{}; i < this->size(); i++){
-    std::string v_type_str = this->get_vertex(i).type() == VertexType::l ? "+" : "-";
-    std::cout << std::format("\t{} [label =  \"{} ({}{})\"];\n", i, i, this->get_vertex(i).g_v_id(), v_type_str);
+    vtx_to_dot(i);
   }
 
+  // print the edges
   for (std::size_t i{}; i < this->size(); i++) {
-    for (auto c : this->get_child_edges(i)) {
-      std::string cl = c.get_class_idx() > 10000
-                           ? "\u2205"
-                           : std::to_string(c.get_class_idx());
-
-      std::string color = c.get_color() == color::gray ? "gray" : "black";
-
-      std::cout << std::format("\t{}  -- {}  [label=\"{} {}\" color=\"{}\"];\n",
-                               i, c.get_child(), c.id(), cl, color);
+    for (auto &c : this->get_child_edges(i)) { // tree edges
+      tree_edge_to_dot(i, c);
     }
 
-    for (auto o: this->get_obe_w_id(i)) {
-      std::string cl = o.first > 10000 ? "\u2205" : std::to_string(o.first);
-      // a capping backedge is red and can never have been gray
-      BackEdge be = this->get_backedge_given_id(o.first);
-
-      bool is_capping = be.is_capping_backedge();
-
-      std::string class_ = be.get_class() == UNDEFINED_SIZE_T ?  "" : std::to_string(be.get_class());
-
-      std::string color{};
-
-      if (is_capping) {
-        color = "red";
-      } else if (this->get_backedge_given_id(o.first).get_color() == color::gray) {
-        color = "gray";
-      } else if (this->get_backedge_given_id(o.first).get_color() == color::black) {
-        color = "black";
-      } else {
-        color = "blue";
-      }
-
-      std::cout << std::format(
-          "\t{} -- {} [label=\"{} {}\" style=\"dotted\" penwidth=\"3\" color=\"{}\"];\n",
-          i, be.get_tgt(), cl, class_, color
-          );
+    for (auto o : this->get_obe_w_id(i)) { // back edges
+      be_to_dot(i, o);
     }
   }
 
-  std::cout << "}" << std::endl;
+  // end the dot format
+  os << "}" << std::endl;
 }
 
 } // namespace spanning_tree

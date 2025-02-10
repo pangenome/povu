@@ -2,6 +2,7 @@
 #define SPANNING_TREE_HPP
 
 #include <cstddef>
+#include <ostream>
 #include <string>
 #include <vector>
 #include <set>
@@ -16,6 +17,7 @@ namespace povu::spanning_tree {
 using namespace povu::graph_types;
 using namespace povu::bracket_list;
 namespace pgt = povu::graph_types;
+namespace pt = povu::types;
 
 
 // prototype the classes
@@ -460,7 +462,7 @@ public:
   // I/O
   // ------------
 
-  void print_dot();
+  void print_dot(std::ostream &os);
 };
 
 } // namespace spanning_tree
