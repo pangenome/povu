@@ -212,16 +212,6 @@ void eulerian_cycle_equiv(pst::Tree &t) {
 
     }
 
-
-
-    if (report_time && check_time) {
-      auto end = std::chrono::high_resolution_clock::now();
-      std::chrono::duration<double, std::milli> duration1 = end - start;
-      std::cout << "Block 2 Time: " << duration1.count() << " ms" << std::endl;
-
-      start = std::chrono::high_resolution_clock::now();
-    }
-
     /*
      * determine equivalance class for edge v.parent() to v
      * ---------------------------------------------------
@@ -235,14 +225,6 @@ void eulerian_cycle_equiv(pst::Tree &t) {
 
       pst::Bracket& b = t.top(v);
 
-    if (report_time && check_time) {
-      auto end = std::chrono::high_resolution_clock::now();
-      std::chrono::duration<double, std::milli> duration1 = end - start;
-      std::cout << "Block 3 a Time: " << duration1.count() << " ms" << std::endl;
-
-      start = std::chrono::high_resolution_clock::now();
-    }
-
 
       if (t.list_size(v) !=  b.recent_size()) {
         b.set_recent_size(t.list_size(v));
@@ -255,13 +237,6 @@ void eulerian_cycle_equiv(pst::Tree &t) {
       pst::Edge& e = t.get_incoming_edge(v);
       e.set_class_idx(b.recent_class());
 
-      if (report_time && check_time) {
-        auto end = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double, std::milli> duration1 = end - start;
-        std::cout << "Block 3 b Time: " << duration1.count() << " ms" << std::endl;
-
-        start = std::chrono::high_resolution_clock::now();
-      }
 
       /*check for e, b equivalance*/
       if (b.recent_size() == 1) {
@@ -270,18 +245,6 @@ void eulerian_cycle_equiv(pst::Tree &t) {
         be.set_class(e.get_class_idx());
       }
     }
-
-    if (report_time && check_time) {
-      auto end = std::chrono::high_resolution_clock::now();
-      std::chrono::duration<double, std::milli> duration1 = end - start;
-      std::cout << "Block 3 Time: " << duration1.count() << " ms" << std::endl;
-
-      start = std::chrono::high_resolution_clock::now();
-      check_time = false;
-    }
-
-
-    //std::cout << "\tfinished loop" << std::endl;
   }
 
 }

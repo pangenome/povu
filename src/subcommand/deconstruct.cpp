@@ -10,6 +10,7 @@ void deconstruct_component(bd::VG *g, std::size_t component_id, const core::conf
   g->untip();
   pst::Tree st { bd::compute_spanning_tree(*g) };
   delete g;
+  //povu::algorithms::eulerian_cycle_equiv(st);
   povu::algorithms::simple_cycle_equiv(st); // find equivalence classes
   pvtr::Tree<pgt::flubble> flubble_tree = povu::graph::flubble_tree::st_to_ft(st);
   povu::io::bub::write_bub(flubble_tree, std::to_string(component_id), app_config);

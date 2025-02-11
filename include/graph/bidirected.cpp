@@ -329,7 +329,6 @@ pst::Tree compute_spanning_tree(const VG &g) {
   if (g.get_dummy_idx() == constants::UNDEFINED_IDX) {
     std::cerr
       << "Graph has no dummy vertex computation of spanning tree expects dummy"
-      << g.v_idx_to_id(0) << " "
       << std::endl;
     return pst::Tree { 0 }; // empty tree
   }
