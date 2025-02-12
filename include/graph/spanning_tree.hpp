@@ -18,6 +18,7 @@ using namespace povu::graph_types;
 using namespace povu::bracket_list;
 namespace pgt = povu::graph_types;
 namespace pt = povu::types;
+namespace pc = povu::constants;
 using namespace povu::constants;
 using namespace povu::graph_types;
 

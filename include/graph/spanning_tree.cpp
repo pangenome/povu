@@ -501,7 +501,7 @@ void Tree::print_dot(std::ostream &os) {
       break;
     case v_type_e::l:
     case v_type_e::r:
-      std::string sign = (vertex.type() == v_type_e::l) ? "+" : "-";
+      std::string sign = (vertex.type() == pgt::v_type_e::l) ? "+" : "-";
       str = std::format(
           "\t{} [style=filled, fillcolor=lightblue, label = \"{} \\n ({}{})\"];\n",
           i, i, vertex.g_v_id(), sign);
@@ -513,7 +513,7 @@ void Tree::print_dot(std::ostream &os) {
 
   auto tree_edge_to_dot = [&](pt::idx_t p_v_idx, Edge &e) {
     std::string cls = e.get_class() == INVALID_CLS ? "" : std::to_string(e.get_class());
-    std::string clr = e.get_color() == color::gray ? "gray" : "black";
+    std::string clr = e.get_color() == color_e::gray ? "gray" : "black";
 
     os << std::format("\t{}  -- {}  [label=\"{} {}\" color={}];\n",
                              p_v_idx, e.get_child(), e.id(), cls, clr);
@@ -527,16 +527,19 @@ void Tree::print_dot(std::ostream &os) {
     bool is_capping = be.is_capping_backedge();
     std::string class_ = be.get_class() == INVALID_CLS ? "" : std::to_string(be.get_class());
 
-    std::string color{};
+    std::string color {};
 
     if (is_capping) {
-      color = "red";
-    } else if (this->get_backedge_given_id(f).get_color() == color::gray) {
-      color = "gray";
-    } else if (this->get_backedge_given_id(f).get_color() == color::black) {
-      color = "black";
-    } else {
-      color = "blue";
+      color = pc::RED;
+    }
+    else if (this->get_backedge_given_id(f).get_color() == color::gray) {
+      color = pc::GRAY;
+    }
+    else if (this->get_backedge_given_id(f).get_color() == color::black) {
+      color = pc::BLACK;
+    }
+    else {
+      color = pc::BLUE;
     }
 
     os << std::format("\t{} -- {} [label=\"{} {}\" style=\"dotted\" "

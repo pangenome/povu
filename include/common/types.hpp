@@ -12,7 +12,47 @@
 #include <sys/types.h>
 #include <utility>
 #include <vector>
-#include <unordered_set>
+
+namespace povu::constants {
+namespace pt = povu::types;
+
+  //const std::size_t DUMMY_VERTEX_COUNT { 2 };
+
+// colors
+const std::string GRAY{"gray"};
+const std::string BLACK{"black"};
+const std::string RED{"red"};
+const std::string BLUE{"blue"};
+
+// numeric
+const std::size_t SIZE_T_MIN = std::numeric_limits<size_t>::min();
+const std::size_t SIZE_T_MAX = std::numeric_limits<size_t>::max();
+const int UNDEFINED_INT = std::numeric_limits<int>::min();
+const std::size_t UNDEFINED_SIZE_T = SIZE_T_MAX;
+const pt::idx_t MAX_ID = std::numeric_limits<povu::types::idx_t>::max();
+const pt::idx_t MAX_IDX = std::numeric_limits<povu::types::idx_t>::max();
+
+const pt::idx_t UNDEFINED_IDX = MAX_IDX; // TODO: replace with INVALID
+const pt::id_t UNDEFINED_ID = MAX_ID;    // TODO: replace with INVALID
+const pt::id_t DUMMY_VTX_ID = UNDEFINED_ID;
+const pt::id_t INVALID_ID = MAX_ID;
+const pt::idx_t INVALID_IDX = MAX_IDX;
+const pt::idx_t INVALID_CLS = MAX_IDX; // equivalence class
+
+// strings
+const std::string EMPTY_SET = "\u2205";
+const std::string UNDEFINED_VALUE = "\u2205";
+const std::string WAVY_ARROW = "\u2933";
+
+// genomics constants
+const std::string UNDEFINED_PATH_LABEL{"undefined"};
+const std::size_t UNDEFINED_PATH_ID{INVALID_ID};
+const std::size_t UNDEFINED_PATH_POS{INVALID_ID};
+
+// VCF
+const char COL_SEP = '\t'; // column separator
+const char NO_VALUE = '.'; // null character
+} // namespace povu::constants
 
 namespace povu::types {
 
@@ -60,58 +100,14 @@ template <typename T> struct unordered_pair {
 
 } // namespace povu::types
 
-namespace povu::constants {
-namespace pt = povu::types;
-
-const std::size_t DUMMY_VERTEX_COUNT { 2 };
-
-// colors
-const std::string gray{"gray"};
-const std::string black{"black"};
-const std::string red{"red"};
-
-// numeric
-const std::size_t SIZE_T_MIN = std::numeric_limits<size_t>::min();
-const std::size_t SIZE_T_MAX = std::numeric_limits<size_t>::max();
-const int UNDEFINED_INT = std::numeric_limits<int>::min();
-const std::size_t UNDEFINED_SIZE_T = SIZE_T_MAX;
-const pt::idx_t MAX_ID = std::numeric_limits<povu::types::idx_t>::max();
-const pt::idx_t MAX_IDX = std::numeric_limits<povu::types::idx_t>::max();
-
-const pt::idx_t UNDEFINED_IDX = MAX_IDX; // TODO: replace with INVALID
-const pt::id_t UNDEFINED_ID = MAX_ID;    // TODO: replace with INVALID
-const pt::id_t DUMMY_VTX_ID = UNDEFINED_ID;
-const pt::id_t INVALID_ID = MAX_ID;
-const pt::idx_t INVALID_IDX = MAX_IDX;
-const pt::idx_t INVALID_CLS = MAX_IDX; // equivalence class
-
-// strings
-const std::string EMPTY_SET = "\u2205";
-const std::string UNDEFINED_VALUE = "\u2205";
-const std::string WAVY_ARROW = "\u2933";
-
-// genomics constants
-const std::string UNDEFINED_PATH_LABEL{"undefined"};
-const std::size_t UNDEFINED_PATH_ID{INVALID_ID};
-const std::size_t UNDEFINED_PATH_POS{INVALID_ID};
-
-// VCF
-const char COL_SEP = '\t'; // column separator
-const char NO_VALUE = '.'; // null character
-} // namespace povu::constants
-
 namespace povu::graph_types {
 
-/*
- * black edge is default
- * TODO: pick a better default
- * gray edge is a bi-edge
- */
+// should this be renamed to clr_e or color_e?
 enum class color {
   gray,
   black
 };
-typedef  color color_e;
+typedef color color_e;
 std::ostream& operator<<(std::ostream& os, const color_e& c);
 
 // Eq class and node id
@@ -151,6 +147,7 @@ enum class v_type_e {
 };
 std::ostream& operator<<(std::ostream& os, const v_type_e& vt);
 
+// TODO: remove
 // Merge path_t and biedged PathInfo into one namespace
 struct path_t {
   std::string name; // name as pertains the GFA file
@@ -170,7 +167,6 @@ struct side_n_id_t {
 };
 std::ostream& operator<<(std::ostream& os, const side_n_id_t& x);
 typedef side_n_id_t side_n_idx_t; // to use when the id is an index
-
 
 struct canonical_sese {
   std::size_t start;
@@ -196,6 +192,7 @@ struct id_n_orientation_t {
   }
 };
 typedef id_n_orientation_t id_or;
+typedef id_n_orientation_t id_or_t;
 
 std::ostream& operator<<(std::ostream& os, const id_n_orientation_t& x);
 bool operator!=(const id_n_orientation_t & lhs, const id_n_orientation_t& rhs);
