@@ -7,11 +7,22 @@ namespace povu::subcommands {
 void deconstruct_component(bd::VG *g, std::size_t component_id, const core::config& app_config) {
   std::string fn_name = std::format("[povu::deconstruct::{}]", __func__);
 
-  g->untip();
+
+  //g->print_dot(std::cerr);
+  //g->untip();
+  //std::cerr <<std::format("{} Computing Spanning Tree for component {} with {} vertices and {} edges\n", fn_name, component_id, g->vtx_count(), g->edge_count());
+  
   pst::Tree st { bd::compute_spanning_tree(*g) };
+
+  //st.print_dot(std::cerr);
+
   delete g;
+  //return;
+
   //povu::algorithms::eulerian_cycle_equiv(st);
+  //std::cerr << std::format("{} Find equiv classes for component {}\n", fn_name, component_id);
   povu::algorithms::simple_cycle_equiv(st); // find equivalence classes
+  //std::cerr << std::format("{} Constructing fl tree for component {}\n", fn_name, component_id);
   pvtr::Tree<pgt::flubble> flubble_tree = povu::graph::flubble_tree::st_to_ft(st);
   povu::io::bub::write_bub(flubble_tree, std::to_string(component_id), app_config);
 }
@@ -33,6 +44,7 @@ void do_deconstruct(const core::config &app_config) {
 
   /* Divide the number of components into chunks for each thread */
   unsigned int total_threads = std::thread::hardware_concurrency();
+  //std::cerr << std::format("{} Max threads: {}\n", fn_name, total_threads);
   std::size_t conf_num_threads = static_cast<std::size_t>(app_config.thread_count());
   unsigned int num_threads = (conf_num_threads > total_threads) ? total_threads : conf_num_threads;
   std::size_t chunk_size = components.size() / num_threads;

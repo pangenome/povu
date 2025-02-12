@@ -3,27 +3,25 @@
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
+#include <stack>
 #include <string>
+#include <sys/types.h>
 #include <unordered_set>
 #include <utility>
 #include <vector>
 
-
-
 namespace povu::bidirected {
-
-
 
 /*
   Edge
   ------
  */
-Edge::Edge(pt::idx_t v1_idx, pgt::v_end v1_end , pt::idx_t v2_idx, pgt::v_end v2_end)
+Edge::Edge(pt::idx_t v1_idx, pgt::v_end_e v1_end , pt::idx_t v2_idx, pgt::v_end_e v2_end)
   : v1_idx_{v1_idx}, v1_end{v1_end}, v2_idx_{v2_idx}, v2_end{v2_end} {}
 pt::idx_t Edge::get_v1_idx() const { return this->v1_idx_; }
-pgt::v_end Edge::get_v1_end() const { return this->v1_end; }
+pgt::v_end_e Edge::get_v1_end() const { return this->v1_end; }
 pt::idx_t Edge::get_v2_idx() const { return this->v2_idx_; }
-pgt::v_end Edge::get_v2_end() const { return this->v2_end; }
+pgt::v_end_e Edge::get_v2_end() const { return this->v2_end; }
 pgt::side_n_id_t Edge::get_other_vertex(pt::idx_t v_idx) const {
   if (this->v1_idx_ == v_idx) {
     return pgt::side_n_id_t{this->v2_end, this->v2_idx_};
@@ -31,6 +29,22 @@ pgt::side_n_id_t Edge::get_other_vertex(pt::idx_t v_idx) const {
   else {
     return pgt::side_n_id_t{this->v1_end, this->v1_idx_};
   }
+}
+pgt::side_n_id_t Edge::get_other_vtx(pt::idx_t v_idx, pgt::v_end_e ve) const {
+  constexpr auto opp = [](pgt::v_end_e e) {
+    return (e == pgt::v_end_e::l) ? pgt::v_end_e::r : pgt::v_end_e::l;
+  };
+
+  const pt::idx_t v1 = get_v1_idx();
+  const pt::idx_t v2 = get_v2_idx();
+
+  if (v1 == v2) { // Handle self-loop case
+    return {opp(ve), v1};
+  }
+
+  // Return the opposite vertex
+  return (v1 == v_idx) ? pgt::side_n_id_t{v2_end, v2_idx_}
+                       : pgt::side_n_id_t{v1_end, v1_idx_};
 }
 
 /*
@@ -104,7 +118,7 @@ bool VG::has_dummy() const {
   return this->dummy_idx_ != constants::UNDEFINED_IDX;
 }
 
-void VG::add_tip(std::size_t v_id, pgt::v_end end) {
+void VG::add_tip(std::size_t v_id, pgt::v_end_e end) {
   this->tips_.insert( pgt::side_n_id_t{end, v_id} );
 }
 
@@ -116,20 +130,20 @@ pt::idx_t VG::add_vertex(pt::id_t v_id, const std::string &label) {
   return vertices.size() - 1;
 }
 
-pt::idx_t VG::add_edge(pt::id_t v1_id, pgt::v_end v1_end, pt::id_t v2_id, pgt::v_end v2_end) {
+pt::idx_t VG::add_edge(pt::id_t v1_id, pgt::v_end_e v1_end, pt::id_t v2_id, pgt::v_end_e v2_end) {
   pt::idx_t v1_idx = this->v_id_to_idx_.get_value(v1_id);
   pt::idx_t v2_idx = this->v_id_to_idx_.get_value(v2_id);
   edges.push_back(Edge{v1_idx, v1_end, v2_idx, v2_end});
   pt::idx_t e_idx = edges.size() - 1;
 
-  if (v1_end == pgt::v_end::l) {
+  if (v1_end == pgt::v_end_e::l) {
     this->vertices[v1_idx].add_edge_l(e_idx);
   }
   else {
     this->vertices[v1_idx].add_edge_r(e_idx);
   }
 
-  if (v2_end == pgt::v_end::l) {
+  if (v2_end == pgt::v_end_e::l) {
     this->vertices[v2_idx].add_edge_l(e_idx);
   }
   else {
@@ -155,7 +169,7 @@ void VG::untip() {
   this->dummy_idx_ = this->add_vertex(pc::DUMMY_VTX_ID, "");
 
   for (auto [s, v_id]: this->tips_) {
-    this->add_edge(pc::DUMMY_VTX_ID, pgt::v_end::r, v_id, s);
+    this->add_edge(pc::DUMMY_VTX_ID, pgt::v_end_e::r, v_id, s);
   }
 }
 
@@ -177,8 +191,8 @@ void VG::summary() const {
 void VG::print_dot(std::ostream& os) const {
 
   // map v end left and right to dot west and east for rectangular vertices
-  auto v_end_to_dot = [](pgt::v_end e) {
-    return e == pgt::v_end::l ? "w" : "e";
+  auto v_end_to_dot = [](pgt::v_end_e e) {
+    return e == pgt::v_end_e::l ? "w" : "e";
   };
 
   os << "graph G {" << std::endl;
@@ -188,9 +202,10 @@ void VG::print_dot(std::ostream& os) const {
     const Vertex& v = this->get_vertex_by_idx(v_idx);
     std::string v_id = v.id() == constants::UNDEFINED_ID ? "d" : std::to_string(v.id());
 
-    os << "\t"
-       << v_idx
-       << std::format("[style=filled, fillcolor=lightblue, label=\"+ {} -\"];", v_id)
+    os << "\t" << v_idx
+       << std::format(
+              "[style=filled, fillcolor=lightblue, label=\"+ {} - \\n ({})\"];",
+              v_id, v_idx)
        << std::endl;
   }
 
@@ -254,7 +269,7 @@ std::vector<VG *> componetize(const povu::bidirected::VG &g) {
       return;
     }
 
-    pgt::v_end s1 = (e.get_v1_idx() == v_idx) ? e.get_v1_end() : e.get_v2_end();
+    pgt::v_end_e s1 = (e.get_v1_idx() == v_idx) ? e.get_v1_end() : e.get_v2_end();
     auto [s2, adj_v_idx] = e.get_other_vertex(v_idx);
     curr_vg->add_edge(v.id(), s1, g.v_idx_to_id(adj_v_idx), s2);
   };
@@ -325,140 +340,149 @@ std::vector<VG *> componetize(const povu::bidirected::VG &g) {
 
 pst::Tree compute_spanning_tree(const VG &g) {
 
-  /* assumes that the graph has a dummy vertex */
-  if (g.get_dummy_idx() == constants::UNDEFINED_IDX) {
-    std::cerr
-      << "Graph has no dummy vertex computation of spanning tree expects dummy"
-      << std::endl;
-    return pst::Tree { 0 }; // empty tree
-  }
+  const bool has_tips{!g.tips().empty()};
+  const pt::idx_t root_idx{0};
 
-  // we bi-edge all vertices except for the single dummy start vertex
-  pt::idx_t tree_size = ((g.vtx_count() - 1) * 2) + 1;
-  pst::Tree t { tree_size };
+  std::stack<pt::idx_t> s;
+  std::vector<u_int8_t> visited(g.vtx_count(), 0);
 
-  std::stack<side_n_id_t> s; // stores the vertex index not id
+  std::set<std::pair<pt::idx_t, pt::idx_t>> added_edges;
+  std::unordered_set<pt::idx_t> self_loops;
 
-  // TODO: replace visited and v_idx_to_tree_idx with a single vector
-  //       mapping side and id to a 2*idx + 1 value
+  pt::idx_t counter{0}; // dfs num
+  bool found_new_neighbour { false }; // neighbours exhausted
 
-  std::set<pgt::side_n_id_t> visited;
-  std::map<side_n_id_t, pt::idx_t> v_idx_to_tree_idx;
+  pt::idx_t p_idx {pc::INVALID_IDX}; // parent_idx
 
-  side_n_id_t start = { pgt::v_end::r, pc::DUMMY_VTX_ID };
+  pt::idx_t t_vtx_count = has_tips ? (2 * g.vtx_count()) + 1 : 2 * g.vtx_count();
+  pst::Tree t{t_vtx_count};
 
-  std::set<std::pair<id_t, id_t>> added_edges;
+  // biedged idx to tree idx (or counter)
+  std::vector<pt::id_t> be_idx_to_ctr(t_vtx_count, 0);
 
-  s.push(start);
-  visited.insert(start);
-  // workaround for dummy vertex being bidirected
-  visited.insert( {pgt::v_end::l, pc::DUMMY_VTX_ID} );
-
-  bool found_unvisited { false };
-
-  pt::idx_t counter{0};
-
-  /* ---------- Helper Functions ---------- */
-
-  auto mark_edge = [&](const side_n_id_t &a, const side_n_id_t &b) -> void {
-    added_edges.insert({v_idx_to_tree_idx[a], v_idx_to_tree_idx[b]});
-    added_edges.insert({v_idx_to_tree_idx[b], v_idx_to_tree_idx[a]});
+  auto unordered_pair = [](pt::idx_t a, pt::idx_t b) -> std::pair<pt::idx_t, pt::idx_t> {
+    return {std::min(a, b), std::max(a, b)};
   };
 
-  auto is_marked = [&](const side_n_id_t a, const side_n_id_t &b) -> bool {
-    return added_edges.contains( {v_idx_to_tree_idx[a], v_idx_to_tree_idx[b]} );
+  auto connect = [&](pt::idx_t a, pt::idx_t b) -> void {
+    added_edges.insert(unordered_pair(a, b));
   };
 
-  auto get_alt = [](pgt::v_end s) -> pgt::v_end {
-    return s == pgt::v_end::l ? pgt::v_end::r : pgt::v_end::l;
+  auto are_connected = [&](pt::idx_t a, pt::idx_t b) -> bool {
+    return added_edges.contains(unordered_pair(a, b));
   };
 
-  auto end2typ = [](pt::id_t v_id, pst::v_end e) -> v_type_e {
-    if (v_id == pc::DUMMY_VTX_ID) {
-      return v_type_e::dummy;
-    }
-    return e == pgt::v_end::l ? v_type_e::l : v_type_e::r;
-  };
-
-  auto add_vertex_to_tree = [&](const side_n_id_t &to_add) -> void {
-    if (!v_idx_to_tree_idx.contains(to_add)) {
-      auto [end, v_id] = to_add;
-      t.add_vertex({counter++, v_id, end2typ(v_id, end)});
-      v_idx_to_tree_idx[to_add] = counter - 1;
-    }
-  };
-
-  // returns true if a new vertex is discovered, false otherwise
-  auto process_edge = [&](const side_n_id_t &curr, pt::idx_t e_idx) -> bool {
-    auto [syd, v_id] = curr;
+  auto to_be = [&g](pgt::side_n_id_t i) -> pt::idx_t {
+    auto [s, v_id] = i;
     pt::idx_t v_idx = g.v_id_to_idx(v_id);
 
-    const Edge &e = g.get_edge(e_idx);
-    auto [n_adj_side, n_v_idx] = e.get_other_vertex(v_idx);
+    return (s == pgt::v_end_e::l) ? v_idx * 2 : (v_idx * 2) + 1;
+  };
 
-    pt::id_t n_v_id = g.v_idx_to_id(n_v_idx);
-    side_n_id_t neighbour = {n_adj_side, n_v_id};
+  auto to_bd = [&g](pt::idx_t be_v_idx) -> pgt::side_n_idx_t {
+    pgt::v_end_e s = (be_v_idx % 2 == 0) ? pgt::v_end_e::l : pgt::v_end_e::r;
+    pt::id_t v_id = g.v_idx_to_id(be_v_idx / 2);
+    return {s, v_id};
+  };
 
-    v_end_t n_alt_side = get_alt(n_adj_side);
-    side_n_id_t n_alt = {n_alt_side, n_v_id};
+  auto opp = [](pgt::v_end_e s) -> pgt::v_end_e {
+    return s == pgt::v_end_e::l ? pgt::v_end_e::r : pgt::v_end_e::l;
+  };
 
-    if ( !visited.contains(neighbour) ) {
+  auto end2typ = [](pst::v_end e) -> pgt::v_type_e {
+    return pgt::v_end_e::l == e ? pgt::v_type_e::l : pgt::v_type_e::r;
+  };
 
-      // when we discover a new vertex we create two vertices in the
-      // spanning tree and join them with a black edge. We also add a a gray
-      // tree edge between the parent and the child
+  auto add_vertex_to_tree = [&](pgt::v_end_e e, pt::idx_t bd_v_idx) -> void {
+    const Vertex &v = g.get_vertex_by_idx(bd_v_idx);
 
-      add_vertex_to_tree(curr);
-      add_vertex_to_tree(neighbour); // discovered vertex
-      add_vertex_to_tree(n_alt); // alt side of the discovered vertex
+    t.add_vertex({counter++, v.id(), end2typ(e)});
+    t.add_vertex({counter++, v.id(), end2typ(opp(e))});
 
-      t.add_tree_edge(v_idx_to_tree_idx[curr], v_idx_to_tree_idx[neighbour], color::gray);
-      t.add_tree_edge(v_idx_to_tree_idx[neighbour], v_idx_to_tree_idx[n_alt], color::black);
+    be_idx_to_ctr[to_be({e, v.id()})] = counter - 2;
+    be_idx_to_ctr[to_be({opp(e), v.id()})] = counter - 1;
 
-      // DFS treversal state update
-
-      mark_edge(curr, neighbour);
-      mark_edge(neighbour, n_alt);
-
-      s.push(neighbour);
-      s.push(n_alt);
-
-      visited.insert(neighbour);
-      visited.insert(n_alt);
-
-      return true; // new vertex discovered
+    // add edges
+    if (p_idx != pc::INVALID_IDX) {
+      t.add_tree_edge(p_idx, counter - 2, color::gray);
+      connect(p_idx, counter - 2);
     }
-    else if (!is_marked(curr, neighbour)) {
+    t.add_tree_edge(counter - 2, counter - 1 , color::black);
+    connect(counter-2, counter - 1);
+  };
+
+  // returns true if it discovers a new vertex (neighbour), false otherwise
+  auto process_edge = [&](pt::idx_t bd_v_idx, pgt::v_end_e ve, pt::idx_t e_idx) -> bool {
+    const Edge &e = g.get_edge(e_idx);
+
+    auto [os, ov_idx] = e.get_other_vtx(bd_v_idx, ve); // o for other
+    pt::idx_t o_be_idx = to_be( {os, g.v_idx_to_id(ov_idx)});
+
+    if (!visited[ov_idx]) { // has not been visited
+      add_vertex_to_tree(os, ov_idx);
+      
+      visited[ov_idx] = 1;
+      s.push(to_be( {os, g.v_idx_to_id(ov_idx)} ));
+      s.push(to_be( {opp(os), g.v_idx_to_id(ov_idx)} ));
+
+      return true;
+    }
+    else if (!are_connected(p_idx, be_idx_to_ctr[o_be_idx])) {
       // add a backedge if:
       //  - not a parent child relationship
       //  - a backedge does not already exist
-      t.add_be(v_idx_to_tree_idx[curr], v_idx_to_tree_idx[neighbour],
-               pst::EdgeType::back_edge, color::gray);
-      mark_edge(curr, neighbour);
+      t.add_be(p_idx, be_idx_to_ctr[o_be_idx], pst::EdgeType::back_edge, color::gray);
+      connect(p_idx, be_idx_to_ctr[o_be_idx]);
+    }
+    else if (bd_v_idx == ov_idx && !self_loops.contains(bd_v_idx)) {
+      // add a self loop backedge, a parent-child relationship
+      t.add_be(p_idx, be_idx_to_ctr[o_be_idx] , pst::EdgeType::back_edge, color::gray);
+      self_loops.insert(bd_v_idx);
     }
 
-    return false; // no new vertex discovered
+    return false;
   };
 
+  if (has_tips) { // add a dummy vertex to the tree
+    p_idx = counter;
+    t.add_vertex({counter++, pc::DUMMY_VTX_ID, v_type_e::dummy});
+  }
+
+  side_n_id_t start = has_tips ? *g.tips().begin() : pgt::side_n_id_t{pgt::v_end_e::l, g.v_idx_to_id(0)};
+  auto [s_v_end, s_v_id] = start;
+  pt::idx_t s_v_idx = g.v_id_to_idx(s_v_id);
+  s.push( to_be({s_v_end, s_v_id}) );
+  s.push( to_be({opp(s_v_end), s_v_id}) );
+  visited[s_v_idx] = 1;
+  add_vertex_to_tree(s_v_end, s_v_idx);
+
   /* ---------- Main Loop ---------- */
+
   while (!s.empty()) {
-    found_unvisited = false;
-    side_n_id_t curr = s.top();
-    auto [syd, v_id] = curr;
+    found_new_neighbour = false;
+    pt::idx_t be_v_idx = s.top();
+
+    p_idx = be_idx_to_ctr[be_v_idx];
+    auto [syd, v_id] = to_bd(be_v_idx);
+    pt::idx_t bd_v_idx = g.v_id_to_idx(v_id);
 
     const Vertex &v = g.get_vertex_by_id(v_id);
-    const std::set<pt::idx_t>& neighbours = syd == pgt::v_end::l ? v.get_edges_l() : v.get_edges_r();
+    const std::set<pt::idx_t> &neighbours = syd == pgt::v_end_e::l ? v.get_edges_l() : v.get_edges_r();
+
+    // if no neighbours then it is a tip. Add a backedge to the root
+    if (__builtin_expect((neighbours.empty() && !are_connected(p_idx, root_idx)), 0)) {
+      t.add_be(p_idx, root_idx, pst::EdgeType::back_edge, color::gray);
+      connect(p_idx, root_idx);
+    }
 
     for (auto e_idx : neighbours) {
-      if (process_edge(curr, e_idx)) {
-        found_unvisited = true;
+      if (process_edge(bd_v_idx, syd, e_idx)) {
+        found_new_neighbour = true;
         break;
       }
     }
 
-    if (!found_unvisited) {
-      s.pop();
-    }
+    if (!found_new_neighbour) { s.pop(); }
   }
 
   return t;

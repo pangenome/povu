@@ -75,7 +75,9 @@ public:
   pgt::v_end get_v1_end() const;
   pt::idx_t get_v2_idx() const;
   pgt::v_end get_v2_end() const;
+  [[deprecated("use get_other_vtx") ]]
   pgt::side_n_id_t get_other_vertex(pt::idx_t v_id) const;
+  pgt::side_n_id_t get_other_vtx(pt::idx_t v_id, pgt::v_end v_end) const;
 };
 
 

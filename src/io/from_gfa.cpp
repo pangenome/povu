@@ -40,10 +40,10 @@ bd::VG *to_bd(const char* filename, const core::config& app_config) {
   /* add edges */
   for (std::size_t i {}; i < ls_g->edge_count; ++i) {
     std::size_t v1 = ls_g->e[i].v1_id;
-    pgt::v_end v1_end = ls_g->e[i].v1_side == lq::vtx_side::LEFT ? pgt::v_end::l : pgt::v_end::r;
+    pgt::v_end_e v1_end = ls_g->e[i].v1_side == lq::vtx_side::LEFT ? pgt::v_end_e::l : pgt::v_end_e::r;
 
     std::size_t v2 = ls_g->e[i].v2_id;
-    pgt::v_end v2_end = ls_g->e[i].v2_side == lq::vtx_side::LEFT ? pgt::v_end::l : pgt::v_end::r;
+    pgt::v_end_e v2_end = ls_g->e[i].v2_side == lq::vtx_side::LEFT ? pgt::v_end_e::l : pgt::v_end_e::r;
 
     vg->add_edge(v1, v1_end, v2, v2_end);
   }
@@ -80,11 +80,13 @@ bd::VG *to_bd(const char* filename, const core::config& app_config) {
     const bd::Vertex &v = vg->get_vertex_by_idx(v_idx);
 
     if (v.get_edges_l().empty() && v.get_edges_r().empty()) {
-      std::cerr << std::format(" {} WARN isolated node {} \n", fn_name, v.id());
-      vg->add_tip(v.id(), pgt::VertexEnd::l);
+      if (app_config.verbosity() > 2 ){
+        std::cerr << std::format(" {} WARN isolated node {} \n", fn_name, v.id());
+      }
+      vg->add_tip(v.id(), pgt::v_end_e::l);
     }
-    else if (v.get_edges_l().empty()) { vg->add_tip(v.id(), pgt::v_end::l); }
-    else if (v.get_edges_r().empty()) { vg->add_tip(v.id(), pgt::v_end::r); }
+    else if (v.get_edges_l().empty()) { vg->add_tip(v.id(), pgt::v_end_e::l); }
+    else if (v.get_edges_r().empty()) { vg->add_tip(v.id(), pgt::v_end_e::r); }
   }
 
   return vg;

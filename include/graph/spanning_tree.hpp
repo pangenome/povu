@@ -18,7 +18,8 @@ using namespace povu::graph_types;
 using namespace povu::bracket_list;
 namespace pgt = povu::graph_types;
 namespace pt = povu::types;
-
+using namespace povu::constants;
+using namespace povu::graph_types;
 
 // prototype the classes
 class Edge;
@@ -68,7 +69,6 @@ public:
   // --------------
   // constructor(s)
   // --------------
-  Edge();
   Edge(std::size_t id, std::size_t src, std::size_t tgt, color c=color::black);
 
   // ---------
@@ -96,12 +96,15 @@ public:
 
   // FIXME: we need both because of a non const call that depends on the non const
   std::size_t get_class() const;
+  [[deprecated("use get casll" )]]
   std::size_t get_class_idx();
 
   // ---------
   // setter(s)
   // ---------
+  [[deprecated("use get casll")]]
   void set_class_idx(std::size_t c); // deprecated replaced by set_class
+
   void set_class(std::size_t c);
 };
 
@@ -298,6 +301,7 @@ public:
 
   // number of vertices in the tree
   std::size_t size() const;
+  pt::idx_t vtx_count() const;
   std::size_t tree_edge_count() const;
   std::size_t back_edge_count() const;
 
@@ -427,21 +431,9 @@ public:
   void set_dfs_num(std::size_t vertex, std::size_t dfs_num);
   void set_vertex_type(std::size_t vertex, VertexType type);
 
-  std::size_t add_be(std::size_t frm, std::size_t to, EdgeType t, color clr=color::black);
+  std::size_t add_be(std::size_t frm, std::size_t to, EdgeType t, color clr);
 
-  std::size_t add_be(std::size_t frm,
-                     std::size_t to,
-                     std::size_t g_edge_id,
-                     EdgeType t,
-                     color clr=color::black);
-
-  [[deprecated("use without g_edge_idx")]]
-  void add_tree_edge(std::size_t frm,
-                     std::size_t to,
-                     std::size_t g_edge_idx,
-                     color clr=color::black);
-
-  void add_tree_edge(std::size_t frm, std::size_t to, color clr = color::black);
+  void add_tree_edge(std::size_t frm, std::size_t to, color clr);
 
   void set_hi(std::size_t vertex, std::size_t val);
 

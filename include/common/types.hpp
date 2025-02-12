@@ -12,6 +12,7 @@
 #include <sys/types.h>
 #include <utility>
 #include <vector>
+#include <unordered_set>
 
 namespace povu::types {
 
@@ -53,14 +54,15 @@ template <typename T> struct unordered_pair {
   unordered_pair(T l, T r) : l(std::min(l, r)), r(std::max(l, r)) {}
 
   // spaceship operator
-  friend constexpr auto operator<=>(const unordered_pair &,
-                                    const unordered_pair &) = default;
+  friend constexpr auto operator<=>(const unordered_pair &, const unordered_pair &) = default;
 };
+
 
 } // namespace povu::types
 
 namespace povu::constants {
-//
+namespace pt = povu::types;
+
 const std::size_t DUMMY_VERTEX_COUNT { 2 };
 
 // colors
@@ -72,12 +74,16 @@ const std::string red{"red"};
 const std::size_t SIZE_T_MIN = std::numeric_limits<size_t>::min();
 const std::size_t SIZE_T_MAX = std::numeric_limits<size_t>::max();
 const int UNDEFINED_INT = std::numeric_limits<int>::min();
-const std::size_t UNDEFINED_SIZE_T = std::numeric_limits<size_t>::max();
-const std::size_t UNDEFINED_IDX = std::numeric_limits<povu::types::idx_t>::max();
-const std::size_t UNDEFINED_ID = std::numeric_limits<povu::types::id_t>::max();
-const std::size_t DUMMY_VTX_ID = UNDEFINED_ID;
-const std::size_t INVALID_ID = UNDEFINED_SIZE_T;
-const std::size_t INVALID_IDX = UNDEFINED_SIZE_T;
+const std::size_t UNDEFINED_SIZE_T = SIZE_T_MAX;
+const pt::idx_t MAX_ID = std::numeric_limits<povu::types::idx_t>::max();
+const pt::idx_t MAX_IDX = std::numeric_limits<povu::types::idx_t>::max();
+
+const pt::idx_t UNDEFINED_IDX = MAX_IDX; // TODO: replace with INVALID
+const pt::id_t UNDEFINED_ID = MAX_ID;    // TODO: replace with INVALID
+const pt::id_t DUMMY_VTX_ID = UNDEFINED_ID;
+const pt::id_t INVALID_ID = MAX_ID;
+const pt::idx_t INVALID_IDX = MAX_IDX;
+const pt::idx_t INVALID_CLS = MAX_IDX; // equivalence class
 
 // strings
 const std::string EMPTY_SET = "\u2205";
@@ -85,16 +91,14 @@ const std::string UNDEFINED_VALUE = "\u2205";
 const std::string WAVY_ARROW = "\u2933";
 
 // genomics constants
-const std::string UNDEFINED_PATH_LABEL { "undefined" };
-const std::size_t UNDEFINED_PATH_ID { INVALID_ID };
-const std::size_t UNDEFINED_PATH_POS { INVALID_ID };
+const std::string UNDEFINED_PATH_LABEL{"undefined"};
+const std::size_t UNDEFINED_PATH_ID{INVALID_ID};
+const std::size_t UNDEFINED_PATH_POS{INVALID_ID};
 
 // VCF
 const char COL_SEP = '\t'; // column separator
 const char NO_VALUE = '.'; // null character
 } // namespace povu::constants
-
-
 
 namespace povu::graph_types {
 
@@ -103,9 +107,12 @@ namespace povu::graph_types {
  * TODO: pick a better default
  * gray edge is a bi-edge
  */
-enum class color { gray, black };
+enum class color {
+  gray,
+  black
+};
 typedef  color color_e;
-std::ostream& operator<<(std::ostream& os, const color& c);
+std::ostream& operator<<(std::ostream& os, const color_e& c);
 
 // Eq class and node id
 struct eq_n_id_t {
@@ -131,6 +138,7 @@ enum class VertexEnd {
 typedef VertexEnd v_end_t;
 typedef VertexEnd v_end;
 typedef VertexEnd VtxEnd;
+typedef VertexEnd v_end_e;
 
 std::ostream& operator<<(std::ostream& os, const VertexEnd& vt);
 VertexEnd complement(VertexEnd s);
@@ -167,6 +175,8 @@ struct side_n_id_t {
   side_n_id_t complement() const;
 };
 std::ostream& operator<<(std::ostream& os, const side_n_id_t& x);
+typedef side_n_id_t side_n_idx_t; // to use when the id is an index
+
 
 struct canonical_sese {
   std::size_t start;
