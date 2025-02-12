@@ -30,11 +30,10 @@
 #include "./spanning_tree.hpp"
 
 namespace povu::bidirected {
-namespace pgt = povu::graph_types;
 namespace pu = povu::utils;
 namespace pst = povu::spanning_tree;
 namespace pt = povu::types;
-namespace  pc = povu::constants;
+namespace pc = povu::constants;
 using namespace povu::graph_types;
 namespace pgt = povu::graph_types;
 

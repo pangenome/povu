@@ -1,5 +1,3 @@
-#include "./bidirected.hpp"
-#include "spanning_tree.hpp"
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
@@ -9,6 +7,9 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+
+#include "./bidirected.hpp"
+
 
 namespace povu::bidirected {
 
@@ -354,10 +355,10 @@ pst::Tree compute_spanning_tree(const VG &g) {
 
     // add edges
     if (p_idx != pc::INVALID_IDX) {
-      t.add_tree_edge(p_idx, counter - 2, color::gray);
+      t.add_tree_edge(p_idx, counter - 2, pgt::color_e::gray);
       connect(p_idx, counter - 2);
     }
-    t.add_tree_edge(counter - 2, counter - 1 , color::black);
+    t.add_tree_edge(counter - 2, counter - 1 , pgt::color_e::black);
     connect(counter-2, counter - 1);
   };
 
@@ -381,12 +382,12 @@ pst::Tree compute_spanning_tree(const VG &g) {
       // add a backedge if:
       //  - not a parent child relationship
       //  - a backedge does not already exist
-      t.add_be(p_idx, be_idx_to_ctr[o_be_idx], pst::EdgeType::back_edge, color::gray);
+      t.add_be(p_idx, be_idx_to_ctr[o_be_idx], pst::e_type_e::back_edge, pgt::color_e::gray);
       connect(p_idx, be_idx_to_ctr[o_be_idx]);
     }
     else if (__builtin_expect((bd_v_idx == ov_idx && !self_loops.contains(bd_v_idx)), 0)) {
       // add a self loop backedge, a parent-child relationship
-      t.add_be(p_idx, be_idx_to_ctr[o_be_idx] , pst::EdgeType::back_edge, color::gray);
+      t.add_be(p_idx, be_idx_to_ctr[o_be_idx] , pst::e_type_e::back_edge, pgt::color_e::gray);
       self_loops.insert(bd_v_idx);
     }
 
@@ -421,7 +422,7 @@ pst::Tree compute_spanning_tree(const VG &g) {
 
     // if no neighbours then it is a tip. Add a backedge to the root
     if (__builtin_expect((neighbours.empty() && !are_connected(p_idx, root_idx)), 0)) {
-      t.add_be(p_idx, root_idx, pst::EdgeType::back_edge, color::gray);
+      t.add_be(p_idx, root_idx, pst::e_type_e::back_edge, pgt::color_e::gray);
       connect(p_idx, root_idx);
     }
 

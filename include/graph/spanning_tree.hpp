@@ -19,6 +19,7 @@ using namespace povu::bracket_list;
 namespace pgt = povu::graph_types;
 namespace pt = povu::types;
 namespace pc = povu::constants;
+
 using namespace povu::constants;
 using namespace povu::graph_types;
 
@@ -33,6 +34,7 @@ enum class EdgeType {
   capping_back_edge,
   simplifying_back_edge,
 };
+typedef EdgeType be_type_e ;
 
 /*
  * edge
@@ -64,26 +66,26 @@ class Edge {
   // Bracket* b; // if it is a backedge
   bool null_;
 
-  color color_;
+  pgt::color_e color_;
 
 public:
   // --------------
   // constructor(s)
   // --------------
-  Edge(std::size_t id, std::size_t src, std::size_t tgt, color c=color::black);
+  Edge(std::size_t id, std::size_t src, std::size_t tgt, pgt::color_e c=pgt::color_e::black);
 
   // ---------
   // getter(s)
   // ---------
   std::size_t id() const;
   std::size_t get_child() const; // TODO: remove, use get_child_v_idx
-    /**
-    * @brief get the index of the parent vertex
-    *
-    * @return the index of the parent vertex
+  /**
+   * @brief get the index of the parent vertex
+   *
+   * @return the index of the parent vertex
    */
   std::size_t get_child_v_idx() const;
-  color get_color() const;
+  pgt::color_e get_color() const;
   std::size_t get_parent() const; // TODO: remove, superceded by get_parent_v_idx
   /**
     * @brief get the index of the parent vertex
@@ -92,18 +94,20 @@ public:
    */
   std::size_t get_parent_v_idx() const;
 
+  [[deprecated("use get_parent_v_idx")]]
   std::size_t get_v1() const;
+  [[deprecated("use get_child_v_idx")]]
   std::size_t get_v2() const;
 
   // FIXME: we need both because of a non const call that depends on the non const
   std::size_t get_class() const;
-  [[deprecated("use get casll" )]]
+  [[deprecated("use get class" )]]
   std::size_t get_class_idx();
 
   // ---------
   // setter(s)
   // ---------
-  [[deprecated("use get casll")]]
+  [[deprecated("use set_class")]]
   void set_class_idx(std::size_t c); // deprecated replaced by set_class
 
   void set_class(std::size_t c);
@@ -128,13 +132,14 @@ class BackEdge {
 
   // TODO: use an enum here
   //bool capping_back_edge_; // is a capping back edge // TODO: remove, use type_
-  EdgeType type_;
+  be_type_e type_;
   bool null_; // FIXME: remove this or use it
 
-  color color_;
+  pgt::color_e color_; // TODO: remove, color does not matter for a backedge
 
 public:
-  BackEdge(std::size_t id, std::size_t src, std::size_t tgt, EdgeType t, color c=color::black);
+  // TODO: remove the default color
+  BackEdge(std::size_t id, std::size_t src, std::size_t tgt, be_type_e t, color c=pgt::color_e::gray);
 
   std::size_t id() const;
   std::size_t get_src() const;
@@ -144,11 +149,11 @@ public:
   bool is_class_defined() const;
 
   bool is_capping_backedge() const;
-  color get_color() const;
+  pgt::color_e get_color() const;
 
   void set_class(std::size_t c);
 
-  EdgeType type() const;
+  be_type_e type() const;
 };
 
 
@@ -188,9 +193,8 @@ public:
   // --------------
   // constructor(s)
   // --------------
-  //Vertex(); // creates a root with parent id set to and id of zero
-  //Vertex(std::size_t id, std::size_t parent_id);
   Vertex(std::size_t dfs_num, std::size_t g_v_id, v_type_e type_);
+
   // ---------
   // getter(s)
   // ---------
@@ -245,7 +249,7 @@ class Tree {
 
   // the index of an edge or backedge in the input graph
   // key is the graph_idx and the value is the tree_idx or the backedge idx
-  std::map<std::size_t, std::pair<EdgeType, std::size_t>> g_edge_idx_map;
+  std::map<std::size_t, std::pair<be_type_e, std::size_t>> g_edge_idx_map;
 
   // tree idx to graph edge idx
   std::map<std::size_t, std::size_t> tree_graph_idx_map_;
@@ -262,7 +266,7 @@ class Tree {
     key is the edge id and the value is a pair of the edge type and the index
     in the tree_edges or back_edges vector
    */
-  std::map<std::size_t, std::pair<EdgeType, std::size_t>> edge_id_map_;
+  std::map<std::size_t, std::pair<be_type_e, std::size_t>> edge_id_map_;
 
   // Holds the topo mapping of the tree
   // the index is the position in the toposort
@@ -371,7 +375,7 @@ public:
 
   std::size_t get_graph_edge_id(std::size_t tree_edge_id) const;
 
-  const std::pair<EdgeType, std::size_t>& get_edge_idx(std::size_t edge_id) const;
+  const std::pair<be_type_e, std::size_t>& get_edge_idx(std::size_t edge_id) const;
 
   // return reference to a back edge given the
   // index of the back edge in the back_edges vector
@@ -407,7 +411,7 @@ public:
 
   std::size_t get_sorted_g(std::size_t idx);
 
-  const std::map<std::size_t, std::pair<EdgeType, std::size_t>>& get_g_edge_idx_map() const;
+  const std::map<std::size_t, std::pair<be_type_e, std::size_t>>& get_g_edge_idx_map() const;
 
   // -------
   // setters
@@ -430,11 +434,11 @@ public:
 
   // set the dfs number of a vertex
   void set_dfs_num(std::size_t vertex, std::size_t dfs_num);
-  void set_vertex_type(std::size_t vertex, v_type_e type);
+  void set_vertex_type(std::size_t vertex, pgt::v_type_e type);
 
-  std::size_t add_be(std::size_t frm, std::size_t to, EdgeType t, color clr);
-
-  void add_tree_edge(std::size_t frm, std::size_t to, color clr);
+  // takes the frm and to are the dfs_nums of the vertices
+  std::size_t add_be(pt::idx_t frm, pt::idx_t to, be_type_e t, pgt::color_e clr);
+  void add_tree_edge(pt::idx_t frm, pt::idx_t to, pgt::color_e clr);
 
   void set_hi(std::size_t vertex, std::size_t val);
 

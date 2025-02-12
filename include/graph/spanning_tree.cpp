@@ -22,13 +22,13 @@ namespace povu::spanning_tree {
  * Edge
  * ----
  */
-// constructor(s)
-Edge::Edge(std::size_t id, std::size_t src, std::size_t tgt, color c):
+/*  constructor(s) */
+Edge::Edge(std::size_t id, std::size_t src, std::size_t tgt, pgt::color_e c):
   id_(id), src(src), tgt(tgt), class_(INVALID_CLS), null_(false), color_(c) {}
 
-// getters
+/* getters */
 std::size_t Edge::id() const { return this->id_; }
-color Edge::get_color() const { return this->color_; }
+pgt::color_e Edge::get_color() const { return this->color_; }
 std::size_t Edge::get_parent() const { return this->src; }
 std::size_t Edge::get_parent_v_idx() const { return this->src; }
 std::size_t Edge::get_v1() const { return this->src; }
@@ -36,8 +36,7 @@ std::size_t Edge::get_v2() const { return this->tgt; }
 std::size_t Edge::get_child() const { return this->tgt; }
 std::size_t Edge::get_class() const { return this->class_; }
 std::size_t Edge::get_class_idx() { return this->class_; }
-
-// setters
+/* setters */
 void Edge::set_class_idx(std::size_t c) { this->class_ = c; }
 void Edge::set_class(std::size_t c) { this->class_ = c; }
 
@@ -47,7 +46,7 @@ void Edge::set_class(std::size_t c) { this->class_ = c; }
  * --------
  */
 
-BackEdge::BackEdge(std::size_t id,  std::size_t src,  std::size_t tgt, EdgeType t, pgt::color c)
+BackEdge::BackEdge(std::size_t id,  std::size_t src,  std::size_t tgt, be_type_e t, pgt::color_e c)
   : id_(id), src(src), tgt(tgt), class_(INVALID_CLS), recent_class_(INVALID_CLS),
     recent_size_(INVALID_IDX), type_(t), null_(false), color_(c) {}
 
@@ -57,13 +56,13 @@ std::size_t BackEdge::get_tgt() const { return this->tgt; }
 
 std::size_t BackEdge::get_class() const { return this->class_; }
 
-color BackEdge::get_color() const { return this->color_; }
+pgt::color_e BackEdge::get_color() const { return this->color_; }
 
 bool BackEdge::is_class_defined() const { return this->class_ != INVALID_CLS; }
-bool BackEdge::is_capping_backedge() const { return this->type_ == EdgeType::capping_back_edge; }
+bool BackEdge::is_capping_backedge() const { return this->type_ == be_type_e::capping_back_edge; }
 
 void BackEdge::set_class(std::size_t c) { this->class_ = c; }
-EdgeType BackEdge::type() const { return this->type_; }
+be_type_e BackEdge::type() const { return this->type_; }
 
 
 /*
@@ -339,7 +338,7 @@ std::size_t Tree::get_graph_edge_id(std::size_t tree_edge_id) const {
     return this->tree_graph_idx_map_.at(tree_edge_id);
 }
 
-const std::pair<EdgeType, std::size_t>& Tree::get_edge_idx(std::size_t edge_id) const {
+const std::pair<be_type_e, std::size_t>& Tree::get_edge_idx(std::size_t edge_id) const {
   return this->edge_id_map_.at(edge_id);
 }
 
@@ -359,7 +358,7 @@ BackEdge Tree::get_backedge_given_id(std::size_t backedge_id) {
 
 
 
-void Tree::add_tree_edge(std::size_t frm, std::size_t to, color c) {
+void Tree::add_tree_edge(pt::idx_t frm, pt::idx_t to, pgt::color_e c) {
   std::size_t edge_idx = this->tree_edges.size();
   std::size_t edge_count = edge_idx + this->back_edges.size();
   this->tree_edges.push_back(Edge(edge_count, frm, to, c));
@@ -369,7 +368,7 @@ void Tree::add_tree_edge(std::size_t frm, std::size_t to, color c) {
   // throw std::runtime_error("Tree Edge already exists");
   //}
 
-  this->edge_id_map_[edge_count] = std::make_pair(EdgeType::tree_edge, edge_idx);
+  this->edge_id_map_[edge_count] = std::make_pair(be_type_e::tree_edge, edge_idx);
 
   // TODO: what are these for?
   this->nodes[frm].unset_null();
@@ -379,9 +378,9 @@ void Tree::add_tree_edge(std::size_t frm, std::size_t to, color c) {
   this->nodes[to].set_parent(edge_idx);
 }
 
-std::size_t Tree::add_be(std::size_t frm, std::size_t to, EdgeType t, color c) {
-  std::size_t back_edge_idx = this->back_edges.size();
-  std::size_t edge_count = back_edge_idx + this->tree_edges.size();
+pt::idx_t Tree::add_be(pt::idx_t frm, pt::idx_t to, be_type_e t, pgt::color_e c) {
+  pt::idx_t back_edge_idx = this->back_edges.size();
+  pt::idx_t edge_count = back_edge_idx + this->tree_edges.size();
   this->back_edges.push_back(BackEdge(edge_count, frm, to, t, c));
   this->nodes[frm].add_obe(back_edge_idx);
   this->nodes[to].add_ibe(back_edge_idx);
@@ -483,7 +482,7 @@ std::size_t Tree::get_sorted(std::size_t idx) { return  this->sort_.at(idx);}
 
 std::size_t Tree::get_sorted_g(std::size_t idx) { return  this->sort_g.at(idx);}
 
-const std::map<std::size_t, std::pair<EdgeType, std::size_t>>& Tree::get_g_edge_idx_map() const {
+const std::map<std::size_t, std::pair<be_type_e, std::size_t>>& Tree::get_g_edge_idx_map() const {
   return this->g_edge_idx_map;
 }
 
@@ -513,7 +512,7 @@ void Tree::print_dot(std::ostream &os) {
 
   auto tree_edge_to_dot = [&](pt::idx_t p_v_idx, Edge &e) {
     std::string cls = e.get_class() == INVALID_CLS ? "" : std::to_string(e.get_class());
-    std::string clr = e.get_color() == color_e::gray ? "gray" : "black";
+    std::string clr = e.get_color() == pgt::color_e::gray ? "gray" : "black";
 
     os << std::format("\t{}  -- {}  [label=\"{} {}\" color={}];\n",
                              p_v_idx, e.get_child(), e.id(), cls, clr);
