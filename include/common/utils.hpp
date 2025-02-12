@@ -8,9 +8,7 @@
 #include <vector>
 #include <unordered_map>
 
-
 namespace povu::utils {
-
 
 std::string reverse_complement(const std::string& sequence);
 

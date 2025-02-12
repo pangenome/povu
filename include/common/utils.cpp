@@ -19,7 +19,6 @@ char complement(char nucleotide) {
   }
 }
 
-
 std::string reverse_complement(const std::string& sequence) {
   std::string rc_sequence;
 

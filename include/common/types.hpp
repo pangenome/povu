@@ -135,9 +135,10 @@ enum class v_end_e {
   l,
   r
 };
-
 std::ostream& operator<<(std::ostream& os, const v_end_e& vt);
-v_end_e complement(v_end_e s);
+constexpr v_end_e complement(v_end_e s) {
+  return s == v_end_e::l ? v_end_e::r : v_end_e::l;
+};
 
 /**
  * l (left) 5' or +

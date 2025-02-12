@@ -37,11 +37,6 @@ std::ostream& operator<<(std::ostream& os, const v_end_e& ve) {
   return os;
 }
 
-v_end_e complement(v_end_e s) {
-  return s == v_end_e::l ? v_end_e::r : v_end_e::l;
-};
-
-
 std::ostream& operator<<(std::ostream& os, const color& c) {
   switch (c) {
   case color::gray:

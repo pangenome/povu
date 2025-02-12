@@ -22,26 +22,23 @@ pt::idx_t Edge::get_v1_idx() const { return this->v1_idx_; }
 pgt::v_end_e Edge::get_v1_end() const { return this->v1_end; }
 pt::idx_t Edge::get_v2_idx() const { return this->v2_idx_; }
 pgt::v_end_e Edge::get_v2_end() const { return this->v2_end; }
-pgt::side_n_idx_t Edge::get_other_vtx(pt::idx_t v_idx, pgt::v_end_e ve) const {
-  constexpr auto opp = [](pgt::v_end_e e) {
-    return (e == pgt::v_end_e::l) ? pgt::v_end_e::r : pgt::v_end_e::l;
-  };
+pgt::side_n_idx_t Edge::get_other_vtx(pt::idx_t v_idx) const {
+  return (get_v1_idx() == v_idx) ? pgt::side_n_id_t{v2_end, v2_idx_}
+                                 : pgt::side_n_id_t{v1_end, v1_idx_};
+}
 
+pgt::side_n_idx_t Edge::get_other_vtx(pt::idx_t v_idx, pgt::v_end_e ve) const {
   const pt::idx_t v1 = get_v1_idx();
   const pt::idx_t v2 = get_v2_idx();
 
   if (v1 == v2) { // Handle self-loop case
-    return {opp(ve), v1};
+    return {pgt::complement(ve), v1};
   }
 
   // Return the opposite vertex
   return (v1 == v_idx) ? pgt::side_n_id_t{v2_end, v2_idx_} : pgt::side_n_id_t{v1_end, v1_idx_};
 }
 
-pgt::side_n_idx_t Edge::get_other_vtx(pt::idx_t v_idx) const {
-  const pt::idx_t v1 = get_v1_idx();
-  return (v1 == v_idx) ? pgt::side_n_id_t{v2_end, v2_idx_} : pgt::side_n_id_t{v1_end, v1_idx_};
-}
 
 /*
   Vertex
@@ -130,7 +127,6 @@ pt::idx_t VG::add_edge(pt::id_t v1_id, pgt::v_end_e v1_end, pt::id_t v2_id, pgt:
   }
 
   return e_idx;
-
 }
 
 void VG::add_ref(const std::string& ref_name) {
@@ -211,7 +207,6 @@ std::vector<VG *> componetize(const povu::bidirected::VG &g) {
 
   auto process_edge = [&](pt::idx_t v_idx, pt::idx_t e_idx) -> void {
     const Edge &e = g.get_edge(e_idx);
-    //pt::idx_t adj_v_idx = e.get_other_vertex(v_idx).v_idx;
     auto [_, adj_v_idx] = e.get_other_vtx(v_idx);
 
     if (visited.contains(adj_v_idx)) return; // also handles self loops
@@ -223,22 +218,13 @@ std::vector<VG *> componetize(const povu::bidirected::VG &g) {
   };
 
   auto add_edges = [&](const Vertex &v, pgt::v_end_e ve, pt::idx_t v_idx, pt::idx_t e_idx) -> void {
-    if (added_edges.contains(e_idx)) { return; }
+    if (added_edges.contains(e_idx)) return; // don't duplicate edges
 
     added_edges.insert(e_idx);
     const Edge &e = g.get_edge(e_idx);
 
     auto [adj_s, adj_v_idx] = e.get_other_vtx(v_idx, ve); // handles self loops
     curr_vg->add_edge(v.id(), ve, g.v_idx_to_id(adj_v_idx), adj_s);
-
-    //if (e.get_v1_idx() == e.get_v2_idx()) { // self loop
-    //  curr_vg->add_edge(v.id(), e.get_v1_end(), v.id(), e.get_v2_end());
-    //  return;
-    //}
-
-    //pgt::v_end_e s1 = (e.get_v1_idx() == v_idx) ? e.get_v1_end() : e.get_v2_end();
-    //auto [s2, adj_v_idx] = e.get_other_vtx(v_idx);
-    //curr_vg->add_edge(v.id(), s1, g.v_idx_to_id(adj_v_idx), s2);
   };
 
   /* ---------- Main Component Search Loop ---------- */
@@ -352,9 +338,6 @@ pst::Tree compute_spanning_tree(const VG &g) {
     return {s, v_id};
   };
 
-  auto opp = [](pgt::v_end_e s) -> pgt::v_end_e {
-    return s == pgt::v_end_e::l ? pgt::v_end_e::r : pgt::v_end_e::l;
-  };
 
   auto end2typ = [](pgt::v_end_e e) -> pgt::v_type_e {
     return pgt::v_end_e::l == e ? pgt::v_type_e::l : pgt::v_type_e::r;
@@ -364,10 +347,10 @@ pst::Tree compute_spanning_tree(const VG &g) {
     const Vertex &v = g.get_vertex_by_idx(bd_v_idx);
 
     t.add_vertex({counter++, v.id(), end2typ(e)});
-    t.add_vertex({counter++, v.id(), end2typ(opp(e))});
+    t.add_vertex({counter++, v.id(), end2typ(pgt::complement(e))});
 
     be_idx_to_ctr[to_be({e, v.id()})] = counter - 2;
-    be_idx_to_ctr[to_be({opp(e), v.id()})] = counter - 1;
+    be_idx_to_ctr[to_be({pgt::complement(e), v.id()})] = counter - 1;
 
     // add edges
     if (p_idx != pc::INVALID_IDX) {
@@ -387,10 +370,10 @@ pst::Tree compute_spanning_tree(const VG &g) {
 
     if (!visited[ov_idx]) { // has not been visited
       add_vertex_to_tree(os, ov_idx);
-      
+
       visited[ov_idx] = 1;
       s.push(to_be( {os, g.v_idx_to_id(ov_idx)} ));
-      s.push(to_be( {opp(os), g.v_idx_to_id(ov_idx)} ));
+      s.push(to_be( {pgt::complement(os), g.v_idx_to_id(ov_idx)} ));
 
       return true;
     }
@@ -401,7 +384,7 @@ pst::Tree compute_spanning_tree(const VG &g) {
       t.add_be(p_idx, be_idx_to_ctr[o_be_idx], pst::EdgeType::back_edge, color::gray);
       connect(p_idx, be_idx_to_ctr[o_be_idx]);
     }
-    else if (bd_v_idx == ov_idx && !self_loops.contains(bd_v_idx)) {
+    else if (__builtin_expect((bd_v_idx == ov_idx && !self_loops.contains(bd_v_idx)), 0)) {
       // add a self loop backedge, a parent-child relationship
       t.add_be(p_idx, be_idx_to_ctr[o_be_idx] , pst::EdgeType::back_edge, color::gray);
       self_loops.insert(bd_v_idx);
@@ -419,7 +402,7 @@ pst::Tree compute_spanning_tree(const VG &g) {
   auto [s_v_end, s_v_id] = start;
   pt::idx_t s_v_idx = g.v_id_to_idx(s_v_id);
   s.push( to_be({s_v_end, s_v_id}) );
-  s.push( to_be({opp(s_v_end), s_v_id}) );
+  s.push( to_be({pgt::complement(s_v_end), s_v_id}) );
   visited[s_v_idx] = 1;
   add_vertex_to_tree(s_v_end, s_v_idx);
 
@@ -442,14 +425,12 @@ pst::Tree compute_spanning_tree(const VG &g) {
       connect(p_idx, root_idx);
     }
 
+    // stop processing edges on the first instance of finding a new neighbour
     for (auto e_idx : neighbours) {
-      if (process_edge(bd_v_idx, syd, e_idx)) {
-        found_new_neighbour = true;
-        break;
-      }
+      if ((found_new_neighbour = process_edge(bd_v_idx, syd, e_idx))) break;
     }
 
-    if (!found_new_neighbour) { s.pop(); }
+    if (!found_new_neighbour) s.pop();
   }
 
   return t;
