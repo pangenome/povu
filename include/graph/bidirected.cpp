@@ -22,15 +22,7 @@ pt::idx_t Edge::get_v1_idx() const { return this->v1_idx_; }
 pgt::v_end_e Edge::get_v1_end() const { return this->v1_end; }
 pt::idx_t Edge::get_v2_idx() const { return this->v2_idx_; }
 pgt::v_end_e Edge::get_v2_end() const { return this->v2_end; }
-pgt::side_n_id_t Edge::get_other_vertex(pt::idx_t v_idx) const {
-  if (this->v1_idx_ == v_idx) {
-    return pgt::side_n_id_t{this->v2_end, this->v2_idx_};
-  }
-  else {
-    return pgt::side_n_id_t{this->v1_end, this->v1_idx_};
-  }
-}
-pgt::side_n_id_t Edge::get_other_vtx(pt::idx_t v_idx, pgt::v_end_e ve) const {
+pgt::side_n_idx_t Edge::get_other_vtx(pt::idx_t v_idx, pgt::v_end_e ve) const {
   constexpr auto opp = [](pgt::v_end_e e) {
     return (e == pgt::v_end_e::l) ? pgt::v_end_e::r : pgt::v_end_e::l;
   };
@@ -43,8 +35,12 @@ pgt::side_n_id_t Edge::get_other_vtx(pt::idx_t v_idx, pgt::v_end_e ve) const {
   }
 
   // Return the opposite vertex
-  return (v1 == v_idx) ? pgt::side_n_id_t{v2_end, v2_idx_}
-                       : pgt::side_n_id_t{v1_end, v1_idx_};
+  return (v1 == v_idx) ? pgt::side_n_id_t{v2_end, v2_idx_} : pgt::side_n_id_t{v1_end, v1_idx_};
+}
+
+pgt::side_n_idx_t Edge::get_other_vtx(pt::idx_t v_idx) const {
+  const pt::idx_t v1 = get_v1_idx();
+  return (v1 == v_idx) ? pgt::side_n_id_t{v2_end, v2_idx_} : pgt::side_n_id_t{v1_end, v1_idx_};
 }
 
 /*
@@ -73,7 +69,6 @@ void Vertex::add_ref(pt::idx_t path_id, pgt::or_t strand, pt::idx_t step_index) 
 VariationGraph::VariationGraph(pt::idx_t v_count, pt::idx_t e_count) {
   this->vertices.reserve(v_count);
   this->edges.reserve(e_count);
-  this->dummy_idx_ = constants::UNDEFINED_IDX;
 }
 
 /* getters */
@@ -100,22 +95,6 @@ const Vertex &VG::get_vertex_by_id(pt::id_t v_id) const {
 }
 Vertex& VG::get_vertex_mut_by_id(pt::id_t v_id) {
     return vertices[this->v_id_to_idx_.get_value(v_id)];
-}
-
-const Vertex &VG::get_dummy_vertex() const {
-  if (this->dummy_idx_ == constants::UNDEFINED_IDX) {
-    throw std::runtime_error("Graph has no dummy vertex");
-  }
-
-  return vertices[this->dummy_idx_];
-}
-
-std::size_t VG::get_dummy_idx() const {
-  return this->dummy_idx_;
-}
-
-bool VG::has_dummy() const {
-  return this->dummy_idx_ != constants::UNDEFINED_IDX;
 }
 
 void VG::add_tip(std::size_t v_id, pgt::v_end_e end) {
@@ -157,20 +136,6 @@ pt::idx_t VG::add_edge(pt::id_t v1_id, pgt::v_end_e v1_end, pt::id_t v2_id, pgt:
 void VG::add_ref(const std::string& ref_name) {
   std::size_t ref_id = this->refs_.size();
   this->refs_[ref_id] = ref_name;
-}
-
-void VG::untip() {
-
-  // Do not add a second dummy vertex
-  if (this->tips_.empty() || this->dummy_idx_ != constants::UNDEFINED_IDX) {
-    return;
-  }
-
-  this->dummy_idx_ = this->add_vertex(pc::DUMMY_VTX_ID, "");
-
-  for (auto [s, v_id]: this->tips_) {
-    this->add_edge(pc::DUMMY_VTX_ID, pgt::v_end_e::r, v_id, s);
-  }
 }
 
 void VG::shrink_to_fit() {
@@ -246,7 +211,8 @@ std::vector<VG *> componetize(const povu::bidirected::VG &g) {
 
   auto process_edge = [&](pt::idx_t v_idx, pt::idx_t e_idx) -> void {
     const Edge &e = g.get_edge(e_idx);
-    pt::idx_t adj_v_idx = e.get_other_vertex(v_idx).v_idx;
+    //pt::idx_t adj_v_idx = e.get_other_vertex(v_idx).v_idx;
+    auto [_, adj_v_idx] = e.get_other_vtx(v_idx);
 
     if (visited.contains(adj_v_idx)) return; // also handles self loops
 
@@ -256,22 +222,23 @@ std::vector<VG *> componetize(const povu::bidirected::VG &g) {
     return;
   };
 
-  auto add_edges = [&](const Vertex &v, pt::idx_t v_idx, pt::idx_t e_idx) -> void {
-    if (added_edges.contains(e_idx)) {
-      return;
-    }
+  auto add_edges = [&](const Vertex &v, pgt::v_end_e ve, pt::idx_t v_idx, pt::idx_t e_idx) -> void {
+    if (added_edges.contains(e_idx)) { return; }
 
     added_edges.insert(e_idx);
     const Edge &e = g.get_edge(e_idx);
 
-    if (e.get_v1_idx() == e.get_v2_idx()) { // self loop
-      curr_vg->add_edge(v.id(), e.get_v1_end(), v.id(), e.get_v2_end());
-      return;
-    }
+    auto [adj_s, adj_v_idx] = e.get_other_vtx(v_idx, ve); // handles self loops
+    curr_vg->add_edge(v.id(), ve, g.v_idx_to_id(adj_v_idx), adj_s);
 
-    pgt::v_end_e s1 = (e.get_v1_idx() == v_idx) ? e.get_v1_end() : e.get_v2_end();
-    auto [s2, adj_v_idx] = e.get_other_vertex(v_idx);
-    curr_vg->add_edge(v.id(), s1, g.v_idx_to_id(adj_v_idx), s2);
+    //if (e.get_v1_idx() == e.get_v2_idx()) { // self loop
+    //  curr_vg->add_edge(v.id(), e.get_v1_end(), v.id(), e.get_v2_end());
+    //  return;
+    //}
+
+    //pgt::v_end_e s1 = (e.get_v1_idx() == v_idx) ? e.get_v1_end() : e.get_v2_end();
+    //auto [s2, adj_v_idx] = e.get_other_vtx(v_idx);
+    //curr_vg->add_edge(v.id(), s1, g.v_idx_to_id(adj_v_idx), s2);
   };
 
   /* ---------- Main Component Search Loop ---------- */
@@ -302,11 +269,11 @@ std::vector<VG *> componetize(const povu::bidirected::VG &g) {
       for (auto v_idx : comp_vtxs) {
         const Vertex& v = g.get_vertex_by_idx(v_idx);
         for (auto e_idx : v.get_edges_l()) {
-          add_edges(v, v_idx, e_idx);
+          add_edges(v, pgt::v_end_e::l, v_idx, e_idx);
         }
 
         for (auto e_idx : v.get_edges_r()) {
-          add_edges(v, v_idx, e_idx);
+          add_edges(v, pgt::v_end_e::r, v_idx, e_idx);
         }
       }
 
@@ -389,7 +356,7 @@ pst::Tree compute_spanning_tree(const VG &g) {
     return s == pgt::v_end_e::l ? pgt::v_end_e::r : pgt::v_end_e::l;
   };
 
-  auto end2typ = [](pst::v_end e) -> pgt::v_type_e {
+  auto end2typ = [](pgt::v_end_e e) -> pgt::v_type_e {
     return pgt::v_end_e::l == e ? pgt::v_type_e::l : pgt::v_type_e::r;
   };
 

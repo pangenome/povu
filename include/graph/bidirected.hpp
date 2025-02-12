@@ -37,7 +37,6 @@ namespace pt = povu::types;
 namespace  pc = povu::constants;
 using namespace povu::graph_types;
 namespace pgt = povu::graph_types;
-  //namespace pbd = povu::bidirected;
 
 /**
  *
@@ -58,26 +57,25 @@ struct PathInfo {
 // stores the index of the vertex in the graph not the id
 class Edge {
   pt::idx_t v1_idx_;
-  pgt::v_end v1_end;
+  pgt::v_end_e v1_end;
   pt::idx_t v2_idx_;
-  pgt::v_end v2_end;
+  pgt::v_end_e v2_end;
 
 public:
   // --------------
   // constructor(s)
   // --------------
-  Edge(pt::idx_t v1_idx, pgt::v_end v1_end , pt::idx_t v2_idx, pgt::v_end v2_end);
+  Edge(pt::idx_t v1_idx, pgt::v_end_e v1_end , pt::idx_t v2_idx, pgt::v_end_e v2_end);
 
   // ---------
   // getter(s)
   // ---------
   pt::idx_t get_v1_idx() const;
-  pgt::v_end get_v1_end() const;
+  pgt::v_end_e get_v1_end() const;
   pt::idx_t get_v2_idx() const;
-  pgt::v_end get_v2_end() const;
-  [[deprecated("use get_other_vtx") ]]
-  pgt::side_n_id_t get_other_vertex(pt::idx_t v_id) const;
-  pgt::side_n_id_t get_other_vtx(pt::idx_t v_id, pgt::v_end v_end) const;
+  pgt::v_end_e get_v2_end() const;
+  pgt::side_n_idx_t get_other_vtx(pt::idx_t v_id, pgt::v_end_e v_end) const;
+  pgt::side_n_idx_t get_other_vtx(pt::idx_t v_id) const; // if you don't care for self loops
 };
 
 
@@ -122,8 +120,6 @@ class VariationGraph {
   std::map<id_t, std::string> refs_; // a map of ref ids to names
   std::set<pgt::side_n_id_t> tips_; // the set of side and id of the tips
 
-  pt::idx_t dummy_idx_; // index of the dummy vertex
-
 public:
   // --------------
   // constructor(s)
@@ -145,27 +141,15 @@ public:
   const Vertex& get_vertex_by_id(pt::id_t v_id) const;
   Vertex& get_vertex_mut_by_id(pt::id_t v_id);
 
-  // TODO: reduce number of dummy related methods
-  const Vertex& get_dummy_vertex() const;
-  std::size_t get_dummy_idx() const;
-  bool has_dummy() const;
-
-
   // ---------
   // setter(s)
   // ---------
-  void add_tip(std::size_t v_id, pgt::v_end end); // TODO: give a name that shows that we don't add a vertex but mark a vertex as tip
+  void add_tip(std::size_t v_id, pgt::v_end_e end);
   // returns the index (v_idx) of the added vertex
   pt::idx_t add_vertex(pt::id_t v_id, const std::string& label);
-
-  pt::idx_t add_edge(pt::id_t v1_id, pgt::v_end v1_end, pt::id_t v2_id, pgt::v_end v2_end);
+  // returns the index (e_idx) of the added edge
+  pt::idx_t add_edge(pt::id_t v1_id, pgt::v_end_e v1_end, pt::id_t v2_id, pgt::v_end_e v2_end);
   void add_ref(const std::string &ref_name);
-  /**
-   * make sure not to run more than once
-   *
-   *
-   */
-  void untip(); //
   void shrink_to_fit();
 
   // other

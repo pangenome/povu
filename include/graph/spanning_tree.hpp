@@ -173,7 +173,7 @@ class Vertex {
   // TODO: rename to something better?
   std::size_t g_v_id_ {}; // id/name of the vertex in the input GFA
 
-  pgt::VertexType type_;
+  pgt::v_type_e type_;
 
   /*
    dfs_num of the highest node originating from an outgoing backedge from this
@@ -189,7 +189,7 @@ public:
   // --------------
   //Vertex(); // creates a root with parent id set to and id of zero
   //Vertex(std::size_t id, std::size_t parent_id);
-  Vertex(std::size_t dfs_num, std::size_t g_v_id, VertexType type_);
+  Vertex(std::size_t dfs_num, std::size_t g_v_id, v_type_e type_);
   // ---------
   // getter(s)
   // ---------
@@ -199,7 +199,7 @@ public:
   std::size_t parent() const; // TODO: remove
   std::size_t hi() const; // TODO: remove
   std::size_t g_v_id() const;
-  VertexType type() const;
+  v_type_e type() const;
 
   std::set<size_t> const& get_obe() const;
   std::set<size_t> const& get_ibe() const;
@@ -223,7 +223,7 @@ public:
   // the index of the parent node in the tree vertex
   void set_parent(std::size_t n_id);
   void set_g_v_id(std::size_t g_v_id);
-  void set_type(VertexType t);
+  void set_type(v_type_e t);
   void set_hi(std::size_t val);
   // the dfs num of the node
   void set_dfs_num(std::size_t idx);
@@ -429,7 +429,7 @@ public:
 
   // set the dfs number of a vertex
   void set_dfs_num(std::size_t vertex, std::size_t dfs_num);
-  void set_vertex_type(std::size_t vertex, VertexType type);
+  void set_vertex_type(std::size_t vertex, v_type_e type);
 
   std::size_t add_be(std::size_t frm, std::size_t to, EdgeType t, color clr);
 

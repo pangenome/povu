@@ -72,14 +72,14 @@ EdgeType BackEdge::type() const { return this->type_; }
  */
 // Constructor(s)
 
-Vertex::Vertex(std::size_t dfs_num, std::size_t g_v_id, VertexType type_)
+Vertex::Vertex(std::size_t dfs_num, std::size_t g_v_id, v_type_e type_)
   : dfs_num_(dfs_num), parent_id(INVALID_ID), g_v_id_(g_v_id), type_(type_),
     hi_(std::numeric_limits<size_t>::max()), null_(false){}
 
 
 // getters
 std::size_t Vertex::g_v_id() const { return this->g_v_id_; }
-VertexType Vertex::type() const { return this->type_; }
+v_type_e Vertex::type() const { return this->type_; }
 std::size_t  Vertex::hi() const { return this->hi_; }
 std::size_t  Vertex::dfs_num() const { return this->dfs_num_; }
 bool Vertex::is_leaf() const { return this->children.empty(); }
@@ -102,7 +102,7 @@ void Vertex::add_ibe(std::size_t ibe_id) { this->ibe.insert(ibe_id); }
 void Vertex::add_child(std::size_t e_id) { this->children.insert(e_id); }
 void Vertex::set_parent(std::size_t n_id) { this->parent_id = n_id; }
 void Vertex::set_g_v_id(std::size_t g_v_id) { this->g_v_id_ = g_v_id; }
-void Vertex::set_type(VertexType t) { this->type_ = t; }
+void Vertex::set_type(v_type_e t) { this->type_ = t; }
 void Vertex::set_hi(std::size_t val) { this->hi_ = val; }
 void Vertex::set_dfs_num(std::size_t idx) { this->dfs_num_ = idx; }
 
@@ -159,7 +159,7 @@ void Tree::set_dfs_num(std::size_t vertex, std::size_t dfs_num) {
   this->nodes.at(vertex).set_dfs_num(dfs_num);
 }
 
-void Tree::set_vertex_type(std::size_t vertex, VertexType type) {
+void Tree::set_vertex_type(std::size_t vertex, v_type_e type) {
   this->nodes.at(vertex).set_type(type);
 }
 
@@ -496,12 +496,12 @@ void Tree::print_dot(std::ostream &os) {
     std::string str;
 
     switch (vertex.type()) {
-    case VertexType::dummy:
+    case v_type_e::dummy:
       str = std::format("\t{} [style=filled, fillcolor=pink];\n", i);
       break;
-    case VertexType::l:
-    case VertexType::r:
-      std::string sign = (vertex.type() == VertexType::l) ? "+" : "-";
+    case v_type_e::l:
+    case v_type_e::r:
+      std::string sign = (vertex.type() == v_type_e::l) ? "+" : "-";
       str = std::format(
           "\t{} [style=filled, fillcolor=lightblue, label = \"{} \\n ({}{})\"];\n",
           i, i, vertex.g_v_id(), sign);

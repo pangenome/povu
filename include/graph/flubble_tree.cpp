@@ -87,9 +87,9 @@ std::vector<oic> compute_eq_class_stack(pst::Tree& t) {
 
     add_to_stack(v);
 
-    pgt::v_type curr_vtx_type = t.get_vertex(v).type();
+    pgt::v_type_e curr_vtx_type = t.get_vertex(v).type();
 
-    if (curr_vtx_type != pgt::v_type::dummy) {
+    if (curr_vtx_type != pgt::v_type_e::dummy) {
       g_v_id = t.get_vertex(v).g_v_id();
     }
 
@@ -101,7 +101,7 @@ std::vector<oic> compute_eq_class_stack(pst::Tree& t) {
     const pst::Edge& e =  t.get_parent_edge(v);
     if (e.get_color() == color::black) {
       curr_class = e.get_class();
-      curr_or = curr_vtx_type == pgt::v_type::r ? pgt::or_t::forward : pgt::or_t::reverse;
+      curr_or = curr_vtx_type == pgt::v_type_e::r ? pgt::or_t::forward : pgt::or_t::reverse;
     }
     else {
       bool found_black_edge { false };
@@ -111,7 +111,7 @@ std::vector<oic> compute_eq_class_stack(pst::Tree& t) {
 
       for (std::size_t be_idx : obe_idxs) {
         if (t.get_backedge(be_idx).get_color() == color::black) {
-          curr_or = curr_vtx_type == pgt::v_type::r ? pgt::or_t::forward : pgt::or_t::reverse;
+          curr_or = curr_vtx_type == pgt::v_type_e::r ? pgt::or_t::forward : pgt::or_t::reverse;
           found_black_edge = true;
           break;
         }
@@ -120,7 +120,7 @@ std::vector<oic> compute_eq_class_stack(pst::Tree& t) {
       if (!found_black_edge) {
         for (std::size_t be_idx : ibe_idxs) {
           if (t.get_backedge(be_idx).get_color() == color::black) {
-            curr_or = curr_vtx_type == pgt::v_type::r ? pgt::or_t::forward : pgt::or_t::reverse;
+            curr_or = curr_vtx_type == pgt::v_type_e::r ? pgt::or_t::forward : pgt::or_t::reverse;
             found_black_edge = true;
             break;
           }

@@ -131,31 +131,24 @@ struct id_n_cls {
   * r (right) 3' or -
   */
 // TODO: replace with struct or class to allow methods like complement
-enum class VertexEnd {
+enum class v_end_e {
   l,
   r
 };
-typedef VertexEnd v_end_t;
-typedef VertexEnd v_end;
-typedef VertexEnd VtxEnd;
-typedef VertexEnd v_end_e;
 
-std::ostream& operator<<(std::ostream& os, const VertexEnd& vt);
-VertexEnd complement(VertexEnd s);
-
+std::ostream& operator<<(std::ostream& os, const v_end_e& vt);
+v_end_e complement(v_end_e s);
 
 /**
  * l (left) 5' or +
  * r (right) 3' or -
  */
-enum class VertexType {
+enum class v_type_e {
     l,
     r,
     dummy
 };
-typedef VertexType v_type; // deprected use v_type_e
-typedef VertexType v_type_e;
-std::ostream& operator<<(std::ostream& os, const VertexType& vt);
+std::ostream& operator<<(std::ostream& os, const v_type_e& vt);
 
 // Merge path_t and biedged PathInfo into one namespace
 struct path_t {
@@ -165,7 +158,7 @@ struct path_t {
 };
 
 struct side_n_id_t {
-  VertexEnd v_end;
+  v_end_e v_end;
   std::size_t v_idx;
 
   // -------

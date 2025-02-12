@@ -4,12 +4,12 @@
 
 namespace povu::graph_types {
 
-std::ostream& operator<<(std::ostream& os, const VertexType& vt) {
+std::ostream& operator<<(std::ostream& os, const v_type_e& vt) {
   switch (vt) {
-  case VertexType::l:
+  case v_type_e::l:
     os << "+";
     break;
-  case VertexType::r:
+  case v_type_e::r:
     os << "-";
     break;
   default:
@@ -21,15 +21,15 @@ std::ostream& operator<<(std::ostream& os, const VertexType& vt) {
 }
 
 /*
- * VertexEnd
+ * v_end_e
  * ---------
  */
-std::ostream& operator<<(std::ostream& os, const VertexEnd& ve) {
+std::ostream& operator<<(std::ostream& os, const v_end_e& ve) {
   switch (ve) {
-  case VertexEnd::l:
+  case v_end_e::l:
   os << "+";
   break;
-  case VertexEnd::r:
+  case v_end_e::r:
   os << "-";
   break;
   }
@@ -37,8 +37,8 @@ std::ostream& operator<<(std::ostream& os, const VertexEnd& ve) {
   return os;
 }
 
-VertexEnd complement(VertexEnd s) {
-  return s == VertexEnd::l ? VertexEnd::r : VertexEnd::l;
+v_end_e complement(v_end_e s) {
+  return s == v_end_e::l ? v_end_e::r : v_end_e::l;
 };
 
 

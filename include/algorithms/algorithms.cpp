@@ -188,7 +188,7 @@ void eulerian_cycle_equiv(pst::Tree &t) {
 
     if (t.get_bracket_list(v).empty()) {
       std::size_t dest_v = t.get_root_idx();
-      if (t.get_vertex(v).type() != VertexType::dummy) {
+      if (t.get_vertex(v).type() != v_type_e::dummy) {
         //std::cerr << "add art be " << t.get_vertex(v).name() << " " << dest_v << std::endl;
 
         std::cerr << "Found hairpin boundary start " << t.get_vertex(v).g_v_id() << std::endl;
