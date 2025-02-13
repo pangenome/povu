@@ -235,14 +235,14 @@ void eulerian_cycle_equiv(pst::Tree &t) {
       // when retreating out of a node the tree edge is labelled with
       // the class of the topmost bracket in the bracket stack
       pst::Edge& e = t.get_incoming_edge(v);
-      e.set_class_idx(b.recent_class());
+      e.set_class(b.recent_class());
 
 
       /*check for e, b equivalance*/
       if (b.recent_size() == 1) {
         std::size_t b_id = b.back_edge_id();
         pst::BackEdge& be = t.get_backedge_ref_given_id(b_id);
-        be.set_class(e.get_class_idx());
+        be.set_class(e.get_class());
       }
     }
   }
@@ -431,13 +431,13 @@ void handle_vertex(pst::Tree &t,
     // when retreating out of a node the tree edge is labelled with
     // the class of the topmost bracket in the bracket stack
     pst::Edge& e = t.get_incoming_edge(v);
-    e.set_class_idx(b.recent_class());
+    e.set_class(b.recent_class());
 
     /*check for e, b equivalance*/
     if (b.recent_size() == 1) {
       std::size_t b_id = b.back_edge_id();
       pst::BackEdge& be = t.get_backedge_ref_given_id(b_id);
-      be.set_class(e.get_class_idx());
+      be.set_class(e.get_class());
     }
   }
 }

@@ -29,88 +29,41 @@ class Vertex;
 class BackEdge;
 
 enum class EdgeType {
-  tree_edge,
+  tree_edge, // TODO: remove
   back_edge,
   capping_back_edge,
   simplifying_back_edge,
 };
 typedef EdgeType be_type_e ;
 
-/*
- * edge
- * ----
- *
- * a tree edge
- */
+
+/* A tree edge */
 class Edge {
-  std::size_t id_; // (recent class)
-
-  // rename to parent and child
-  std::size_t src; // target vertex
-  std::size_t tgt; // source vertex
-
-  // does a tree edge need color?
-  // color edge_color;
-
-  std::size_t class_; // equivalnce class id
-
-  // TODO: is size used?
-  // not used in tree edge
-  std::size_t size;      // (recent size) size of the bracket list
-  // std::size_t recent_class; // (recent class) id of the topmost backedge
-
-  std::size_t backedge_id; // TODO: used??
-
-  // not used in tree edge
-  // std::size_t id; // (recent class)
-  // Bracket* b; // if it is a backedge
-  bool null_;
-
+  pt::id_t id_; // id of the edge
+  pt::idx_t parent_idx_; // target vertex
+  pt::idx_t child_idx_; // source vertex
+  pt::idx_t class_; // equivalnce class id
   pgt::color_e color_;
 
 public:
   // --------------
   // constructor(s)
   // --------------
-  Edge(std::size_t id, std::size_t src, std::size_t tgt, pgt::color_e c=pgt::color_e::black);
+  Edge(pt::id_t id, pt::idx_t parent_idx, pt::idx_t child_idx, pgt::color_e c);
 
   // ---------
   // getter(s)
   // ---------
-  std::size_t id() const;
-  std::size_t get_child() const; // TODO: remove, use get_child_v_idx
-  /**
-   * @brief get the index of the parent vertex
-   *
-   * @return the index of the parent vertex
-   */
-  std::size_t get_child_v_idx() const;
+  pt::id_t id() const;
+  pt::idx_t get_child_v_idx() const; // get the index of the child vertex
+  pt::idx_t get_parent_v_idx() const; // get the index of the parent vertex
   pgt::color_e get_color() const;
-  std::size_t get_parent() const; // TODO: remove, superceded by get_parent_v_idx
-  /**
-    * @brief get the index of the parent vertex
-    *
-    * @return the index of the parent vertex
-   */
-  std::size_t get_parent_v_idx() const;
-
-  [[deprecated("use get_parent_v_idx")]]
-  std::size_t get_v1() const;
-  [[deprecated("use get_child_v_idx")]]
-  std::size_t get_v2() const;
-
-  // FIXME: we need both because of a non const call that depends on the non const
-  std::size_t get_class() const;
-  [[deprecated("use get class" )]]
-  std::size_t get_class_idx();
+  pt::idx_t get_class() const;
 
   // ---------
   // setter(s)
   // ---------
-  [[deprecated("use set_class")]]
-  void set_class_idx(std::size_t c); // deprecated replaced by set_class
-
-  void set_class(std::size_t c);
+  void set_class(pt::idx_t c);
 };
 
 /*
@@ -437,7 +390,7 @@ public:
   void set_vertex_type(std::size_t vertex, pgt::v_type_e type);
 
   // takes the frm and to are the dfs_nums of the vertices
-  std::size_t add_be(pt::idx_t frm, pt::idx_t to, be_type_e t, pgt::color_e clr);
+  pt::idx_t add_be(pt::idx_t frm, pt::idx_t to, be_type_e t, pgt::color_e clr);
   void add_tree_edge(pt::idx_t frm, pt::idx_t to, pgt::color_e clr);
 
   void set_hi(std::size_t vertex, std::size_t val);

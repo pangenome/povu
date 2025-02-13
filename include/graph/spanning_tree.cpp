@@ -23,22 +23,19 @@ namespace povu::spanning_tree {
  * ----
  */
 /*  constructor(s) */
-Edge::Edge(std::size_t id, std::size_t src, std::size_t tgt, pgt::color_e c):
-  id_(id), src(src), tgt(tgt), class_(INVALID_CLS), null_(false), color_(c) {}
+Edge::Edge(pt::id_t id, pt::idx_t parent_idx, pt::idx_t child_idx, pgt::color_e c):
+  id_(id), parent_idx_(parent_idx), child_idx_(child_idx), class_(INVALID_CLS), color_(c) {}
 
 /* getters */
-std::size_t Edge::id() const { return this->id_; }
+pt::id_t Edge::id() const { return this->id_; }
 pgt::color_e Edge::get_color() const { return this->color_; }
-std::size_t Edge::get_parent() const { return this->src; }
-std::size_t Edge::get_parent_v_idx() const { return this->src; }
-std::size_t Edge::get_v1() const { return this->src; }
-std::size_t Edge::get_v2() const { return this->tgt; }
-std::size_t Edge::get_child() const { return this->tgt; }
-std::size_t Edge::get_class() const { return this->class_; }
-std::size_t Edge::get_class_idx() { return this->class_; }
+//pt::idx_t Edge::get_parent() const { return this->parent_idx_; }
+//pt::idx_t Edge::get_child() const { return this->child_idx_; }
+pt::idx_t Edge::get_parent_v_idx() const { return this->parent_idx_; }
+pt::idx_t Edge::get_child_v_idx() const { return this->child_idx_; }
+pt::idx_t Edge::get_class() const { return this->class_; }
 /* setters */
-void Edge::set_class_idx(std::size_t c) { this->class_ = c; }
-void Edge::set_class(std::size_t c) { this->class_ = c; }
+void Edge::set_class(pt::idx_t c) { this->class_ = c; }
 
 
 /*
@@ -204,8 +201,7 @@ Tree::get_children_w_id(std::size_t vertex) {
     res.insert(
       std::make_pair(
         this->tree_edges.at(e_idx).id(),
-        this->tree_edges.at(e_idx).get_child()
-      )
+        this->tree_edges.at(e_idx).get_child_v_idx())
    );
   }
   return res;
@@ -274,7 +270,7 @@ Tree::get_ibe_w_id(std::size_t vertex) {
 std::set<std::size_t> Tree::get_children(std::size_t vertex) {
   std::set<std::size_t> res {};
   for (auto e_idx : this->nodes.at(vertex).get_children()) {
-    res.insert(this->tree_edges.at(e_idx).get_child());
+    res.insert(this->tree_edges.at(e_idx).get_child_v_idx());
   }
   return res;
 }
@@ -322,12 +318,12 @@ Edge& Tree::get_incoming_edge(std::size_t vertex) {
 
 std::size_t Tree::get_parent(std::size_t vertex) {
   std::size_t i = this->get_vertex(vertex).get_parent_idx();
-  return this->tree_edges.at(i).get_parent();
+  return this->tree_edges.at(i).get_parent_v_idx();
 }
 
 std::size_t Tree::get_parent_v_idx(std::size_t v_idx) const {
   std::size_t e_idx = this->get_vertex(v_idx).get_parent_e_idx();
-  return this->tree_edges.at(e_idx).get_parent();
+  return this->tree_edges.at(e_idx).get_parent_v_idx();
 }
 
 const Edge& Tree::get_tree_edge(std::size_t edge_idx) const {
@@ -356,17 +352,10 @@ BackEdge Tree::get_backedge_given_id(std::size_t backedge_id) {
   return this->back_edges[be_idx];
 }
 
-
-
 void Tree::add_tree_edge(pt::idx_t frm, pt::idx_t to, pgt::color_e c) {
   std::size_t edge_idx = this->tree_edges.size();
   std::size_t edge_count = edge_idx + this->back_edges.size();
   this->tree_edges.push_back(Edge(edge_count, frm, to, c));
-
-  // if (this->g_edge_idx_map.count(g_edge_idx)) {
-  // std::cerr << "TE g_e id" << g_edge_idx << " id " << edge_count << "\n";
-  // throw std::runtime_error("Tree Edge already exists");
-  //}
 
   this->edge_id_map_[edge_count] = std::make_pair(be_type_e::tree_edge, edge_idx);
 
@@ -515,7 +504,7 @@ void Tree::print_dot(std::ostream &os) {
     std::string clr = e.get_color() == pgt::color_e::gray ? "gray" : "black";
 
     os << std::format("\t{}  -- {}  [label=\"{} {}\" color={}];\n",
-                             p_v_idx, e.get_child(), e.id(), cls, clr);
+                             p_v_idx, e.get_child_v_idx(), e.id(), cls, clr);
   };
 
   auto be_to_dot = [&](pt::idx_t i, const std::pair<std::size_t, std::size_t> &o) {

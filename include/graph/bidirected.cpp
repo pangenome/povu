@@ -382,12 +382,12 @@ pst::Tree compute_spanning_tree(const VG &g) {
       // add a backedge if:
       //  - not a parent child relationship
       //  - a backedge does not already exist
-      t.add_be(p_idx, be_idx_to_ctr[o_be_idx], pst::e_type_e::back_edge, pgt::color_e::gray);
+      t.add_be(p_idx, be_idx_to_ctr[o_be_idx], pst::be_type_e::back_edge, pgt::color_e::gray);
       connect(p_idx, be_idx_to_ctr[o_be_idx]);
     }
     else if (__builtin_expect((bd_v_idx == ov_idx && !self_loops.contains(bd_v_idx)), 0)) {
       // add a self loop backedge, a parent-child relationship
-      t.add_be(p_idx, be_idx_to_ctr[o_be_idx] , pst::e_type_e::back_edge, pgt::color_e::gray);
+      t.add_be(p_idx, be_idx_to_ctr[o_be_idx] , pst::be_type_e::back_edge, pgt::color_e::gray);
       self_loops.insert(bd_v_idx);
     }
 
@@ -422,7 +422,7 @@ pst::Tree compute_spanning_tree(const VG &g) {
 
     // if no neighbours then it is a tip. Add a backedge to the root
     if (__builtin_expect((neighbours.empty() && !are_connected(p_idx, root_idx)), 0)) {
-      t.add_be(p_idx, root_idx, pst::e_type_e::back_edge, pgt::color_e::gray);
+      t.add_be(p_idx, root_idx, pst::be_type_e::back_edge, pgt::color_e::gray);
       connect(p_idx, root_idx);
     }
 

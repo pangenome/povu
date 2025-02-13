@@ -98,7 +98,7 @@ std::vector<oic> compute_eq_class_stack(pst::Tree& t) {
 
     pgt::or_t curr_or;
 
-    const pst::Edge& e =  t.get_parent_edge(v);
+    const pst::Edge& e = t.get_parent_edge(v);
     if (e.get_color() == color::black) {
       curr_class = e.get_class();
       curr_or = curr_vtx_type == pgt::v_type_e::r ? pgt::or_t::forward : pgt::or_t::reverse;
