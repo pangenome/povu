@@ -138,12 +138,13 @@ enum class orientation_t {
   reverse
 };
 typedef orientation_t or_t;
+typedef orientation_t or_e;
 std::ostream& operator<<(std::ostream& os, const orientation_t& o);
 std::string or_to_str (orientation_t o);
 
 // TODO rename to id_or ?
 struct id_n_orientation_t {
-  std::size_t v_idx; // rename to id
+  std::size_t v_idx; // TODO change type and name to id to pt::id_t
   orientation_t orientation;
 
   std::string as_str() const {

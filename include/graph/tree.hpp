@@ -63,7 +63,7 @@ template <typename T>  class Tree {
   std::vector<Vertex<T>> vertices;
   std::vector<std::size_t> parent_v; // parent of each vertex
   std::vector<std::vector<std::size_t>> children_v; // children of each vertex
-  std::size_t root_idx_; // index of the root vertex in the vertices vector
+  pt::idx_t root_idx_; // index of the root vertex in the vertices vector
 
 public:
   // --------------
@@ -88,7 +88,7 @@ public:
     return this->vertices.size();
   }
 
-  std::size_t root_idx() const {
+  pt::idx_t root_idx() const {
     return this->root_idx_;
   }
 

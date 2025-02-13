@@ -33,7 +33,7 @@ pt::idx_t BackEdge::get_tgt() const { return this->tgt; }
 pt::idx_t BackEdge::get_class() const { return this->class_; }
 bool BackEdge::is_class_defined() const { return this->class_ != INVALID_CLS; }
 be_type_e BackEdge::type() const { return this->type_; }
-pgt::color_e BackEdge::get_color() const { return this->color_; }
+  //pgt::color_e BackEdge::get_color() const { return this->color_; }
 /* setters */
 void BackEdge::set_class(pt::idx_t c) { this->class_ = c; }
 
@@ -83,8 +83,8 @@ Tree::Tree(std::size_t size) :
   tree_edges(std::vector<Edge>{}),
   back_edges(std::vector<BackEdge>{}),
   //bracket_lists(std::vector<BracketList*>{}),
-  sort_(std::vector<std::size_t>{}),
-  sort_g(std::vector<std::size_t>{}),
+  //sort_(std::vector<std::size_t>{}),
+  //sort_g(std::vector<std::size_t>{}),
   equiv_class_count_(0) {
   this->nodes.reserve(size);
   this->tree_edges.reserve(size);
@@ -108,17 +108,17 @@ Tree::~Tree(){
   }
   this->bracket_lists.clear();
 
-  this->sort_.clear();
-  this->sort_g.clear();
+  //this->sort_.clear();
+  //this->sort_g.clear();
 }
 
-void Tree::set_sort(std::size_t idx, std::size_t vertex) {
-  this->sort_.at(idx) = vertex;
-}
+  //void Tree::set_sort(std::size_t idx, std::size_t vertex) {
+  //this->sort_.at(idx) = vertex;
+  //}
 
-void Tree::set_sort_g(std::size_t idx, std::size_t vertex) {
-  this->sort_g.at(idx) = vertex;
-}
+  //void Tree::set_sort_g(std::size_t idx, std::size_t vertex) {
+  //this->sort_g.at(idx) = vertex;
+  //}
 
 void Tree::set_dfs_num(std::size_t vertex, std::size_t dfs_num) {
   this->nodes.at(vertex).set_dfs_num(dfs_num);
@@ -135,7 +135,7 @@ void Tree::add_vertex(Vertex&& v) {
 Vertex& Tree::get_root()  { return this->nodes.at(this->get_root_idx()); }
 std::size_t Tree::get_root_idx() const { return this->root_node_index; }
 
-  pt::idx_t Tree::vtx_count() const { return static_cast<pt::idx_t>(this->nodes.size()); };
+pt::idx_t Tree::vtx_count() const { return static_cast<pt::idx_t>(this->nodes.size()); };
 std::size_t Tree::size() const { return this->nodes.size(); }
 std::size_t Tree::tree_edge_count() const { return this->tree_edges.size(); }
 std::size_t Tree::back_edge_count() const { return this->back_edges.size(); }
@@ -303,9 +303,9 @@ std::size_t Tree::get_graph_edge_id(std::size_t tree_edge_id) const {
     return this->tree_graph_idx_map_.at(tree_edge_id);
 }
 
-const std::pair<be_type_e, std::size_t>& Tree::get_edge_idx(std::size_t edge_id) const {
-  return this->edge_id_map_.at(edge_id);
-}
+  //std::size_t Tree::get_edge_idx(std::size_t edge_id) const {
+  // return this->edge_id_map_.at(edge_id);
+  //}
 
 BackEdge& Tree::get_backedge(std::size_t backedge_idx) {
   return this->back_edges.at(backedge_idx);
@@ -326,7 +326,7 @@ void Tree::add_tree_edge(pt::idx_t frm, pt::idx_t to, pgt::color_e c) {
   std::size_t edge_count = edge_idx + this->back_edges.size();
   this->tree_edges.push_back(Edge(edge_count, frm, to, c));
 
-  this->edge_id_map_[edge_count] = std::make_pair(be_type_e::tree_edge, edge_idx);
+  //this->edge_id_map_[edge_count] = edge_idx;
 
   // TODO: what are these for?
   //this->nodes[frm].unset_null();
@@ -436,9 +436,9 @@ std::size_t Tree::new_class() { return this->equiv_class_count_++; }
  * @param[in] idx the sort value of the node
  * @return the node id of the node with the given sort value
  */
-std::size_t Tree::get_sorted(std::size_t idx) { return  this->sort_.at(idx);}
+//std::size_t Tree::get_sorted(std::size_t idx) { return  this->sort_.at(idx);}
 
-std::size_t Tree::get_sorted_g(std::size_t idx) { return  this->sort_g.at(idx);}
+//std::size_t Tree::get_sorted_g(std::size_t idx) { return  this->sort_g.at(idx);}
 
 const std::map<std::size_t, std::pair<be_type_e, std::size_t>>& Tree::get_g_edge_idx_map() const {
   return this->g_edge_idx_map;

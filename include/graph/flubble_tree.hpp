@@ -24,7 +24,7 @@ std::vector<graph_types::canonical_sese> find_seses(pst::Tree& t);
  *
  */
 pvtr::Tree<pgt::flubble> st_to_ft(pst::Tree& t);
-std::vector<pgt::flubble> enumerate(pst::Tree& t);
+  //std::vector<pgt::flubble> enumerate(pst::Tree& t);
 }
 
 

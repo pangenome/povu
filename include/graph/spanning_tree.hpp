@@ -25,7 +25,7 @@ using namespace povu::constants;
 
 
 enum class be_type_e {
-  tree_edge, // TODO: remove
+  //tree_edge, // TODO: remove
   back_edge,
   capping_back_edge,
   simplifying_back_edge,
@@ -75,7 +75,7 @@ public:
   be_type_e type() const;
   pt::idx_t get_class() const;
   bool is_class_defined() const;
-  pgt::color_e get_color() const; // TODO: remove, color does not matter for a backedge
+  //pgt::color_e get_color() const; // TODO: remove, color does not matter for a backedge
 
   /* setters */
   void set_class(pt::idx_t c);
@@ -181,18 +181,18 @@ class Tree {
     key is the edge id and the value is a pair of the edge type and the index
     in the tree_edges or back_edges vector
    */
-  std::map<std::size_t, std::pair<be_type_e, std::size_t>> edge_id_map_;
+  //std::map<std::size_t, std::size_t> edge_id_map_;
 
   // Holds the topo mapping of the tree
   // the index is the position in the toposort
   // the value at a poistion is the index in nodes
   // topo sort vector
-  std::vector<std::size_t> sort_;
+  //std::vector<std::size_t> sort_;
 
   // sort based on the input graph
   // the index in the vertex is the index in the input graph
   // and the value is the index in the tree
-  std::vector<std::size_t> sort_g;
+  //std::vector<std::size_t> sort_g;
 
   // TODO: replace sort and sort_g with a two way map or remove both
 
@@ -290,7 +290,7 @@ public:
 
   std::size_t get_graph_edge_id(std::size_t tree_edge_id) const;
 
-  const std::pair<be_type_e, std::size_t>& get_edge_idx(std::size_t edge_id) const;
+  //std::size_t get_edge_idx(std::size_t edge_id) const;
 
   // return reference to a back edge given the
   // index of the back edge in the back_edges vector
