@@ -14,27 +14,22 @@
 #include "./bracket_list.hpp"
 
 namespace povu::spanning_tree {
-using namespace povu::graph_types;
-using namespace povu::bracket_list;
+
 namespace pgt = povu::graph_types;
 namespace pt = povu::types;
 namespace pc = povu::constants;
 
-using namespace povu::constants;
 using namespace povu::graph_types;
+using namespace povu::bracket_list;
+using namespace povu::constants;
 
-// prototype the classes
-class Edge;
-class Vertex;
-class BackEdge;
 
-enum class EdgeType {
+enum class be_type_e {
   tree_edge, // TODO: remove
   back_edge,
   capping_back_edge,
   simplifying_back_edge,
 };
-typedef EdgeType be_type_e ;
 
 
 /* A tree edge */
@@ -46,70 +41,45 @@ class Edge {
   pgt::color_e color_;
 
 public:
-  // --------------
-  // constructor(s)
-  // --------------
+  /* constructor(s) */
   Edge(pt::id_t id, pt::idx_t parent_idx, pt::idx_t child_idx, pgt::color_e c);
 
-  // ---------
-  // getter(s)
-  // ---------
+  /* getters */
   pt::id_t id() const;
+  pt::idx_t get_class() const;
+  pgt::color_e get_color() const;
   pt::idx_t get_child_v_idx() const; // get the index of the child vertex
   pt::idx_t get_parent_v_idx() const; // get the index of the parent vertex
-  pgt::color_e get_color() const;
-  pt::idx_t get_class() const;
 
-  // ---------
-  // setter(s)
-  // ---------
+  /* setters */
   void set_class(pt::idx_t c);
 };
 
-/*
- * back edge
- * ----------
- *
- * an edge from a vertex to an ancestor (not parent) in the spanning tree
- */
+/* backedge: an edge from a vertex to an ancestor (not parent) in the spanning tree */
 class BackEdge {
-  std::size_t id_; // a unique indeifier of the backedge
-  std::size_t src; // target vertex
-  std::size_t tgt; // source vertex
-
-
-  // TODO: why this duplication?
-  std::size_t class_; // equivalnce class id
-  std::size_t recent_class_; // FIXME: remove this or use it
-  std::size_t recent_size_; //
-
-  // TODO: use an enum here
-  //bool capping_back_edge_; // is a capping back edge // TODO: remove, use type_
+  pt::id_t id_; // a unique indeifier of the backedge
+  pt::idx_t src; // target vertex
+  pt::idx_t tgt; // source vertex
+  pt::idx_t class_; // equivalnce class id
   be_type_e type_;
-  bool null_; // FIXME: remove this or use it
-
   pgt::color_e color_; // TODO: remove, color does not matter for a backedge
 
 public:
   // TODO: remove the default color
-  BackEdge(std::size_t id, std::size_t src, std::size_t tgt, be_type_e t, color c=pgt::color_e::gray);
+  BackEdge(pt::id_t id, pt::idx_t src, pt::idx_t tgt, be_type_e t, color c);
 
-  std::size_t id() const;
-  std::size_t get_src() const;
-  std::size_t get_tgt() const;
-
-  std::size_t get_class() const;
-  bool is_class_defined() const;
-
-  bool is_capping_backedge() const;
-  pgt::color_e get_color() const;
-
-  void set_class(std::size_t c);
-
+  /* getters */
+  pt::id_t id() const;
+  pt::idx_t get_src() const;
+  pt::idx_t get_tgt() const;
   be_type_e type() const;
+  pt::idx_t get_class() const;
+  bool is_class_defined() const;
+  pgt::color_e get_color() const; // TODO: remove, color does not matter for a backedge
+
+  /* setters */
+  void set_class(pt::idx_t c);
 };
-
-
 
 /*
  * Vertex
@@ -118,73 +88,65 @@ public:
  * TODO: remove unused methods
  */
 class Vertex {
-  // dfsnum of the node in toposort
-  std::size_t dfs_num_;
-
-  std::size_t parent_id; // id to idx // index to the tree edge vector ?
-
   // indexes of the children edges in the tree_edges vector
-  std::set<std::size_t> children; // children // index to the tree edge vector
+  std::set<pt::idx_t> children; // children // index to the tree edge vector
+  std::set<pt::idx_t> obe;      // out back edges
+  std::set<pt::idx_t> ibe;      // in back edges
 
-  std::set<size_t> obe; // out back edges
-  std::set<size_t> ibe;  // in back edges
-
-  // TODO: rename to something better?
-  std::size_t g_v_id_ {}; // id/name of the vertex in the input GFA
-
-  pgt::v_type_e type_;
-
+  pt::idx_t dfs_num_; // Preorder DFS traversal number
+  pt::idx_t parent_id; // id to idx // index to the tree edge vector ?
   /*
    dfs_num of the highest node originating from an outgoing backedge from this
    vertex or from a child of this vertex
    */
-  std::size_t hi_;
+  pt::idx_t hi_;
+  pt::idx_t g_v_id_{}; // id/name of the vertex in the input GFA
 
-  bool null_;
+  pgt::v_type_e type_;
 
 public:
   // --------------
   // constructor(s)
   // --------------
-  Vertex(std::size_t dfs_num, std::size_t g_v_id, v_type_e type_);
+  Vertex(pt::idx_t dfs_num, pt::idx_t g_v_id, v_type_e type_);
 
   // ---------
   // getter(s)
   // ---------
   bool is_root() const;
   bool is_leaf() const;
-  std::size_t dfs_num() const;
-  std::size_t parent() const; // TODO: remove
-  std::size_t hi() const; // TODO: remove
-  std::size_t g_v_id() const;
+  pt::idx_t dfs_num() const;
+  pt::idx_t parent() const; // TODO: remove
+  pt::idx_t hi() const; // TODO: remove
+  pt::idx_t g_v_id() const;
   v_type_e type() const;
 
-  std::set<size_t> const& get_obe() const;
-  std::set<size_t> const& get_ibe() const;
-  bool is_null() const;
+  std::set<pt::idx_t> const& get_obe() const;
+  std::set<pt::idx_t> const& get_ibe() const;
+  //bool is_null() const;
 
   // get the index of the edge that points to the parent in the tree
 
-  size_t const& get_parent_idx() const; // TODO: remove, superceded by get_parent_edge_idx
-  size_t get_parent_e_idx() const;
+  pt::idx_t const& get_parent_idx() const; // TODO: remove, superceded by get_parent_edge_idx
+  pt::idx_t get_parent_e_idx() const;
 
-  std::set<size_t> const& get_children() const;
+  std::set<pt::idx_t> const& get_children() const;
 
   // ---------
   // setter(s)
   // ---------
-  void add_obe(std::size_t obe_id);
-  void add_ibe(std::size_t ibe_id);
-  void add_child(std::size_t e_id);
-  void unset_null(); // sets null to false;
+  void add_obe(pt::idx_t obe_id);
+  void add_ibe(pt::idx_t ibe_id);
+  void add_child(pt::idx_t e_id);
+  //void unset_null(); // sets null_ to false;
 
   // the index of the parent node in the tree vertex
-  void set_parent(std::size_t n_id);
-  void set_g_v_id(std::size_t g_v_id);
+  void set_parent(pt::idx_t n_id);
+  void set_g_v_id(pt::idx_t g_v_id);
   void set_type(v_type_e t);
-  void set_hi(std::size_t val);
+  void set_hi(pt::idx_t val);
   // the dfs num of the node
-  void set_dfs_num(std::size_t idx);
+  void set_dfs_num(pt::idx_t idx);
 };
 
 class Tree {

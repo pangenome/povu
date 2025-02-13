@@ -49,7 +49,7 @@ void eulerian_cycle_equiv(pst::Tree &t) {
      * ------------
      */
 
-    std::size_t hi_0 { pc::UNDEFINED_SIZE_T };
+    pt::idx_t hi_0 { pc::UNDEFINED_IDX };
     std::set<std::size_t> obe = t.get_obe(v);
     for (auto be: obe) {
       hi_0 = std::min(hi_0, t.get_vertex(be).dfs_num());
@@ -59,9 +59,7 @@ void eulerian_cycle_equiv(pst::Tree &t) {
     // (closest to root)
     // its hi value is hi_1 and the dfs num of that vertex is hi_child
     // children are empty for dummy stop node
-
-    std::size_t hi_1 { pc::UNDEFINED_SIZE_T };
-
+    pt::idx_t hi_1 { pc::UNDEFINED_IDX };
 
     std::set<std::size_t> children = t.get_children(v);
 
@@ -154,7 +152,8 @@ void eulerian_cycle_equiv(pst::Tree &t) {
       // TODO: set backedge class ?? was id not enough?
       // do this in the del_bracket_method?
       pst::BackEdge& be= t.get_backedge(b);
-      if (!be.is_capping_backedge() && !be.is_class_defined()) {
+
+      if (be.type() != pst::be_type_e::capping_back_edge && !be.is_class_defined()) {
         be.set_class(t.new_class());
       }
     }
@@ -180,7 +179,7 @@ void eulerian_cycle_equiv(pst::Tree &t) {
       // add a capping backedge
       std::size_t dest_v =  hi_2;
       std::size_t be_idx =
-        t.add_be(v, dest_v, pst::EdgeType::capping_back_edge, color_e::gray);
+        t.add_be(v, dest_v, pst::be_type_e::capping_back_edge, color_e::gray);
       t.push(v, be_idx);
     }
 
@@ -194,7 +193,7 @@ void eulerian_cycle_equiv(pst::Tree &t) {
         std::cerr << "Found hairpin boundary start " << t.get_vertex(v).g_v_id() << std::endl;
       }
 
-      std::size_t be_idx = t.add_be(v, dest_v, pst::EdgeType::simplifying_back_edge, color_e::gray);
+      std::size_t be_idx = t.add_be(v, dest_v, pst::be_type_e::simplifying_back_edge, color_e::gray);
       t.push(v, be_idx);
       t.get_vertex_mut(v).set_hi(t.get_root_idx());
 
@@ -206,7 +205,7 @@ void eulerian_cycle_equiv(pst::Tree &t) {
 
       std::size_t b_id = b.back_edge_id();
       pst::BackEdge &be = t.get_backedge_ref_given_id(b_id);
-      if (be.type() == pst::EdgeType::simplifying_back_edge) {
+      if (be.type() == pst::be_type_e::simplifying_back_edge) {
         boundary = v;
       }
 
@@ -271,7 +270,7 @@ void handle_vertex(pst::Tree &t,
    * ------------
    */
 
-  std::size_t hi_0{pc::INVALID_IDX};
+  pt::idx_t hi_0 {pc::INVALID_IDX};
   std::set<std::size_t> obe = t.get_obe(v);
   for (auto be : obe) {
     hi_0 = std::min(hi_0, t.get_vertex(be).dfs_num());
@@ -282,11 +281,8 @@ void handle_vertex(pst::Tree &t,
   // its hi value is hi_1 and the dfs num of that vertex is hi_child
   // children are empty for dummy stop node
 
-  std::size_t hi_1 { pc::INVALID_IDX };
-
-
+  pt::idx_t hi_1 { pc::INVALID_IDX };
   std::set<std::size_t> children = t.get_children(v);
-
 
   bool is_leaf = children.empty();
   // insert current boundary into the boundary list
@@ -359,7 +355,7 @@ void handle_vertex(pst::Tree &t,
     // TODO: set backedge class ?? was id not enough?
     // do this in the del_bracket_method?
     pst::BackEdge& be= t.get_backedge(b);
-    if (!be.is_capping_backedge() && !be.is_class_defined()) {
+    if (be.type() != pst::be_type_e::capping_back_edge && !be.is_class_defined()) {
       be.set_class(t.new_class());
     }
   }
@@ -375,7 +371,7 @@ void handle_vertex(pst::Tree &t,
   if (hi_2 < hi_0) {
     // add a capping backedge
     std::size_t dest_v =  hi_2;
-    std::size_t be_idx = t.add_be(v, dest_v, pst::EdgeType::capping_back_edge, color_e::gray);
+    std::size_t be_idx = t.add_be(v, dest_v, pst::be_type_e::capping_back_edge, color_e::gray);
     t.push(v, be_idx);
   }
 
@@ -390,7 +386,7 @@ void handle_vertex(pst::Tree &t,
     }
 
     // add a simplifying back edge
-    std::size_t be_idx = t.add_be(v, dest_v, pst::EdgeType::simplifying_back_edge, color_e::gray);
+    std::size_t be_idx = t.add_be(v, dest_v, pst::be_type_e::simplifying_back_edge, color_e::gray);
     t.push(v, be_idx);
     t.get_vertex_mut(v).set_hi(t.get_root_idx());
 
@@ -404,7 +400,7 @@ void handle_vertex(pst::Tree &t,
     pst::BackEdge &be = t.get_backedge_ref_given_id(b_id);
 
     // extend the end boudary of the current hairpin
-    if (be.type() == pst::EdgeType::simplifying_back_edge) {
+    if (be.type() == pst::be_type_e::simplifying_back_edge) {
       //boundary = v;
       curr_bry.b2 = t.get_vertex(v).g_v_id();
     }

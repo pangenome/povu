@@ -1,20 +1,4 @@
-#include <cmath>
-#include <cstddef>
-#include <format>
-#include <iostream>
-#include <limits>
-#include <map>
-#include <set>
-#include <stdexcept>
-#include <string>
-#include <sys/types.h>
-#include <unistd.h>
-#include <utility>
-#include <vector>
-
 #include "./spanning_tree.hpp"
-#include "bracket_list.hpp"
-
 
 namespace povu::spanning_tree {
 
@@ -23,17 +7,15 @@ namespace povu::spanning_tree {
  * ----
  */
 /*  constructor(s) */
-Edge::Edge(pt::id_t id, pt::idx_t parent_idx, pt::idx_t child_idx, pgt::color_e c):
-  id_(id), parent_idx_(parent_idx), child_idx_(child_idx), class_(INVALID_CLS), color_(c) {}
+Edge::Edge(pt::id_t id, pt::idx_t parent_idx, pt::idx_t child_idx, pgt::color_e c)
+  : id_(id), parent_idx_(parent_idx), child_idx_(child_idx), class_(INVALID_CLS), color_(c) {}
 
 /* getters */
 pt::id_t Edge::id() const { return this->id_; }
+pt::idx_t Edge::get_class() const { return this->class_; }
 pgt::color_e Edge::get_color() const { return this->color_; }
-//pt::idx_t Edge::get_parent() const { return this->parent_idx_; }
-//pt::idx_t Edge::get_child() const { return this->child_idx_; }
 pt::idx_t Edge::get_parent_v_idx() const { return this->parent_idx_; }
 pt::idx_t Edge::get_child_v_idx() const { return this->child_idx_; }
-pt::idx_t Edge::get_class() const { return this->class_; }
 /* setters */
 void Edge::set_class(pt::idx_t c) { this->class_ = c; }
 
@@ -42,65 +24,52 @@ void Edge::set_class(pt::idx_t c) { this->class_ = c; }
  * BackEdge
  * --------
  */
-
-BackEdge::BackEdge(std::size_t id,  std::size_t src,  std::size_t tgt, be_type_e t, pgt::color_e c)
-  : id_(id), src(src), tgt(tgt), class_(INVALID_CLS), recent_class_(INVALID_CLS),
-    recent_size_(INVALID_IDX), type_(t), null_(false), color_(c) {}
-
-std::size_t BackEdge::id() const { return this->id_; }
-std::size_t BackEdge::get_src() const { return this->src; }
-std::size_t BackEdge::get_tgt() const { return this->tgt; }
-
-std::size_t BackEdge::get_class() const { return this->class_; }
-
-pgt::color_e BackEdge::get_color() const { return this->color_; }
-
+BackEdge::BackEdge(pt::id_t id,  pt::idx_t src,  pt::idx_t tgt, be_type_e t, pgt::color_e c)
+  : id_(id), src(src), tgt(tgt), class_(INVALID_CLS), type_(t), color_(c) {}
+/* getters */
+pt::id_t BackEdge::id() const { return this->id_; }
+pt::idx_t BackEdge::get_src() const { return this->src; }
+pt::idx_t BackEdge::get_tgt() const { return this->tgt; }
+pt::idx_t BackEdge::get_class() const { return this->class_; }
 bool BackEdge::is_class_defined() const { return this->class_ != INVALID_CLS; }
-bool BackEdge::is_capping_backedge() const { return this->type_ == be_type_e::capping_back_edge; }
-
-void BackEdge::set_class(std::size_t c) { this->class_ = c; }
 be_type_e BackEdge::type() const { return this->type_; }
-
+pgt::color_e BackEdge::get_color() const { return this->color_; }
+/* setters */
+void BackEdge::set_class(pt::idx_t c) { this->class_ = c; }
 
 /*
  * Vertex
  * ------
  */
-// Constructor(s)
 
-Vertex::Vertex(std::size_t dfs_num, std::size_t g_v_id, v_type_e type_)
-  : dfs_num_(dfs_num), parent_id(INVALID_ID), g_v_id_(g_v_id), type_(type_),
-    hi_(std::numeric_limits<size_t>::max()), null_(false){}
-
+/* constructor(s) */
+Vertex::Vertex(pt::idx_t dfs_num, pt::idx_t g_v_id, v_type_e type_)
+    : dfs_num_(dfs_num), parent_id(pc::INVALID_ID), hi_(pc::INVALID_IDX),
+      g_v_id_(g_v_id), type_(type_) {}
 
 // getters
-std::size_t Vertex::g_v_id() const { return this->g_v_id_; }
+pt::idx_t Vertex::g_v_id() const { return this->g_v_id_; }
 v_type_e Vertex::type() const { return this->type_; }
-std::size_t  Vertex::hi() const { return this->hi_; }
-std::size_t  Vertex::dfs_num() const { return this->dfs_num_; }
+pt::idx_t  Vertex::hi() const { return this->hi_; }
+pt::idx_t  Vertex::dfs_num() const { return this->dfs_num_; }
 bool Vertex::is_leaf() const { return this->children.empty(); }
-std::size_t  Vertex::parent() const { return this->parent_id; }
-std::set<size_t> const &Vertex::get_ibe() const { return this->ibe; }
-std::set<size_t> const &Vertex::get_obe() const { return this->obe; }
-size_t const& Vertex::get_parent_idx() const { return this->parent_id; }
-size_t Vertex::get_parent_e_idx() const { return this->parent_id; }
-std::set<size_t> const& Vertex::get_children() const { return this->children; }
-bool Vertex::is_root() const {
-  return !this->null_ && this->parent_id == INVALID_IDX;
-}
-
-bool Vertex::is_null() const { return this->null_; }
+pt::idx_t  Vertex::parent() const { return this->parent_id; }
+std::set<pt::idx_t> const &Vertex::get_ibe() const { return this->ibe; }
+std::set<pt::idx_t> const &Vertex::get_obe() const { return this->obe; }
+pt::idx_t const& Vertex::get_parent_idx() const { return this->parent_id; }
+pt::idx_t Vertex::get_parent_e_idx() const { return this->parent_id; }
+std::set<pt::idx_t> const& Vertex::get_children() const { return this->children; }
+bool Vertex::is_root() const { return this->parent_id == INVALID_IDX; }
 
 // setters
-void Vertex::unset_null(){ this->null_ = false;}
-void Vertex::add_obe(std::size_t obe_id) { this->obe.insert(obe_id); }
-void Vertex::add_ibe(std::size_t ibe_id) { this->ibe.insert(ibe_id); }
-void Vertex::add_child(std::size_t e_id) { this->children.insert(e_id); }
-void Vertex::set_parent(std::size_t n_id) { this->parent_id = n_id; }
-void Vertex::set_g_v_id(std::size_t g_v_id) { this->g_v_id_ = g_v_id; }
+void Vertex::add_obe(pt::idx_t obe_id) { this->obe.insert(obe_id); }
+void Vertex::add_ibe(pt::idx_t ibe_id) { this->ibe.insert(ibe_id); }
+void Vertex::add_child(pt::idx_t e_id) { this->children.insert(e_id); }
+void Vertex::set_parent(pt::idx_t n_id) { this->parent_id = n_id; }
+void Vertex::set_g_v_id(pt::idx_t g_v_id) { this->g_v_id_ = g_v_id; }
 void Vertex::set_type(v_type_e t) { this->type_ = t; }
-void Vertex::set_hi(std::size_t val) { this->hi_ = val; }
-void Vertex::set_dfs_num(std::size_t idx) { this->dfs_num_ = idx; }
+void Vertex::set_hi(pt::idx_t val) { this->hi_ = val; }
+void Vertex::set_dfs_num(pt::idx_t idx) { this->dfs_num_ = idx; }
 
 /*
  * Tree
@@ -360,8 +329,8 @@ void Tree::add_tree_edge(pt::idx_t frm, pt::idx_t to, pgt::color_e c) {
   this->edge_id_map_[edge_count] = std::make_pair(be_type_e::tree_edge, edge_idx);
 
   // TODO: what are these for?
-  this->nodes[frm].unset_null();
-  this->nodes[to].unset_null();
+  //this->nodes[frm].unset_null();
+  //this->nodes[to].unset_null();
 
   this->nodes[frm].add_child(edge_idx);
   this->nodes[to].set_parent(edge_idx);
@@ -512,23 +481,15 @@ void Tree::print_dot(std::ostream &os) {
     std::string cl = f > 10000 ? "\u2205" : std::to_string(f);
     // a capping backedge is red and can never have been gray
     BackEdge be = this->get_backedge_given_id(f);
-    bool is_capping = be.is_capping_backedge();
     std::string class_ = be.get_class() == INVALID_CLS ? "" : std::to_string(be.get_class());
 
-    std::string color {};
-
-    if (is_capping) {
-      color = pc::RED;
-    }
-    else if (this->get_backedge_given_id(f).get_color() == color::gray) {
-      color = pc::GRAY;
-    }
-    else if (this->get_backedge_given_id(f).get_color() == color::black) {
-      color = pc::BLACK;
-    }
-    else {
-      color = pc::BLUE;
-    }
+    std::string color = [&]() -> std::string {
+      switch (be.type()) {
+      case be_type_e::capping_back_edge: return pc::RED;
+      case be_type_e::simplifying_back_edge: return pc::BLUE;
+      default: return pc::GRAY; // "Normal" backedge
+      }
+    }();
 
     os << std::format("\t{} -- {} [label=\"{} {}\" style=\"dotted\" "
                              "penwidth=\"3\" color=\"{}\"];\n",
