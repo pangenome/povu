@@ -63,7 +63,7 @@ bd::VG *to_bd(const char* filename, const core::config& app_config) {
         if (!h) { continue; }
 
         lq::strand s = lq::get_ref_strand(ls_g->rs->s, lq_v_idx, ref_idx);
-        pgt::or_t o = (s == lq::strand::FORWARD) ? pgt::or_t::forward : pgt::or_t::reverse;
+        pgt::or_e o = (s == lq::strand::FORWARD) ? pgt::or_e::forward : pgt::or_e::reverse;
 
         bd::Vertex& v = vg->get_vertex_mut_by_id(ls_g->v[lq_v_idx].id);
 

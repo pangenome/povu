@@ -60,6 +60,7 @@ template <typename T> struct unordered_pair {
 
 
 namespace povu::graph_types {
+namespace pt = povu::types;
 
 // should this be renamed to clr_e or color_e?
 enum class color {
@@ -116,7 +117,7 @@ struct path_t {
 
 struct side_n_id_t {
   v_end_e v_end;
-  std::size_t v_idx;
+  pt::id_t v_idx; // TODO [B] rename v_idx to v_id
 
   // -------
   // methods
@@ -133,41 +134,37 @@ struct canonical_sese {
   std::set<std::size_t> in_sese; // set of sese ids that contain this sese excluding the start and end
 };
 
-enum class orientation_t {
+enum class or_e {
   forward,
   reverse
 };
-typedef orientation_t or_t;
-typedef orientation_t or_e;
-std::ostream& operator<<(std::ostream& os, const orientation_t& o);
-std::string or_to_str (orientation_t o);
+std::ostream& operator<<(std::ostream& os, const or_e& o);
+std::string or_to_str (or_e o);
 
-// TODO rename to id_or ?
-struct id_n_orientation_t {
-  std::size_t v_idx; // TODO change type and name to id to pt::id_t
-  orientation_t orientation;
+struct id_or_t {
+  pt::id_t v_id; // TODO change type and name to id to pt::id_t
+  or_e orientation;
 
   std::string as_str() const {
-    return std::format("{}{}", or_to_str(this->orientation) , this->v_idx);
+    return std::format("{}{}", or_to_str(this->orientation) , this->v_id);
   }
 };
-typedef id_n_orientation_t id_or;
-typedef id_n_orientation_t id_or_t;
 
-std::ostream& operator<<(std::ostream& os, const id_n_orientation_t& x);
-bool operator!=(const id_n_orientation_t & lhs, const id_n_orientation_t& rhs);
-bool operator==(const id_n_orientation_t & lhs, const id_n_orientation_t& rhs);
-bool operator<(const id_n_orientation_t& lhs, const id_n_orientation_t& rhs);
+std::ostream& operator<<(std::ostream& os, const id_or_t& x);
+bool operator!=(const id_or_t & lhs, const id_or_t& rhs);
+bool operator==(const id_or_t & lhs, const id_or_t& rhs);
+bool operator<(const id_or_t& lhs, const id_or_t& rhs);
 
-typedef std::vector<graph_types::id_n_orientation_t> walk; // a walk is a sequence of vertices also a path
+// a walk is a sequence of vertices also a path
+typedef std::vector<id_or_t> walk;
 
 struct flubble {
-  id_n_orientation_t start_;
-  id_n_orientation_t end_;
+  id_or_t start_;
+  id_or_t end_;
 
 // constructors
 
-flubble(id_or start, id_or end) : start_(start), end_(end) {}
+flubble(id_or_t start, id_or_t end) : start_(start), end_(end) {}
 
 flubble(const std::string& s) {
 
@@ -180,15 +177,16 @@ flubble(const std::string& s) {
 
   // substring based on first and last occurences and store them as size_t
 
-  this->start_.v_idx = std::stoull(s.substr(first + 1, last - first - 1));
-  this->start_.orientation = s[first] == '>' ? orientation_t::forward : orientation_t::reverse;
+  this->start_.v_id = std::stoull(s.substr(first + 1, last - first - 1));
+  this->start_.orientation = s[first] == '>' ? or_e::forward : or_e::reverse;
 
 
-  this->end_.v_idx = std::stoull(s.substr(last + 1, s.size() - last - 1));
-  this->end_.orientation = s[last] == '>' ? orientation_t::forward : orientation_t::reverse;
-
+  this->end_.v_id = std::stoull(s.substr(last + 1, s.size() - last - 1));
+  this->end_.orientation = s[last] == '>' ? or_e::forward : or_e::reverse;
 }
 };
+
+typedef  flubble flubble_t ;
 
 } // namespace povu::graph_types
 

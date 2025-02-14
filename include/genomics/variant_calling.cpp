@@ -64,7 +64,7 @@ std::map<pt::id_t, pt::Stride> find_walk_refs(const bd::VG& bd_vg,
 
   auto get_v_refs = [&](std::size_t v_idx) -> std::set<std::size_t> {
     std::set<std::size_t> refs;
-    for (const auto& p : bd_vg.get_vertex(v_idx).get_paths()) {
+    for (const auto& p : bd_vg.get_vertex_by_idx(v_idx).get_refs()) {
       refs.insert(p.path_id);
     }
 
@@ -199,18 +199,18 @@ std::vector<Bubble> find_haplotypes(
  * @param in_sese The set of vertices in the SESE
  * @param start_id The id of the vertex to get the orientation for
  */
-bd::VertexEnd
-get_boundary_incidence(const bd::VG& g,
-                       const std::set<std::size_t>& in_sese,
-                       std::size_t v_id, std::size_t alt_id) {
+//bd::VertexEnd
+pgt::v_end_e get_boundary_incidence(const bd::VG& g,
+                                    const std::set<std::size_t>& in_sese,
+                                    std::size_t v_id, std::size_t alt_id) {
   std::string fn_name = std::format("[povu::genomics::]", __func__);
 
-  std::size_t v_idx = g.id_to_idx(v_id);
-  const bd::Vertex& v = g.get_vertex(v_idx);
+  std::size_t v_idx = g.v_id_to_idx(v_id);
+  const bd::Vertex& v = g.get_vertex_by_idx(v_idx);
 
   auto foo = [&](std::size_t e_idx) ->bool {
-    auto [side, alt_v_idx] = g.get_edge(e_idx).get_other_vertex(v_idx);
-    return in_sese.count(g.idx_to_id(alt_v_idx)) || g.idx_to_id(alt_v_idx) == alt_id ;
+    auto [side, alt_v_idx] = g.get_edge(e_idx).get_other_vtx(v_idx);
+    return in_sese.count(g.v_idx_to_id(alt_v_idx)) || g.v_idx_to_id(alt_v_idx) == alt_id ;
   };
 
   bool allLeftInSet = std::any_of(v.get_edges_l().begin(), v.get_edges_l().end(), foo);
@@ -221,7 +221,7 @@ get_boundary_incidence(const bd::VG& g,
     throw std::runtime_error(std::format("{} {} {}", v_idx, allLeftInSet, allRightNotInSet));
   }
 
-  bd::VertexEnd o = allLeftInSet ? bd::VertexEnd::l : bd::VertexEnd::r;
+  pgt::v_end_e o = allLeftInSet ? pgt::v_end_e::l : pgt::v_end_e::r;
 
   return o;
 }
@@ -237,8 +237,8 @@ foo(const bd::VG& g, const pgt::canonical_sese& sese) {
   /*
     assume e is the incoming vertex end
    */
-  auto v_end_to_orientation = [&](pgt::VertexEnd e) -> bd::orientation_t {
-    if (e == pgt::VertexEnd::l ) {
+  auto v_end_to_orientation = [&](pgt::v_end_e e) -> bd::orientation_t {
+    if (e == pgt::v_end_e::l ) {
       return bd::orientation_t::forward;
     }
 
@@ -248,7 +248,7 @@ foo(const bd::VG& g, const pgt::canonical_sese& sese) {
   /*
     Determine start side and orientation
    */
-  bd::VertexEnd start_end;
+  pgt::v_end_e start_end;
   try {
     start_end = get_boundary_incidence(g, in_sese, start_id, stop_id);
   }
@@ -257,7 +257,7 @@ foo(const bd::VG& g, const pgt::canonical_sese& sese) {
     return{};
   }
 
-  bd::VertexEnd stop_end;
+  pgt::v_end_e stop_end;
   try {
     stop_end = get_boundary_incidence(g, in_sese, stop_id, start_id);
   }
@@ -271,16 +271,16 @@ foo(const bd::VG& g, const pgt::canonical_sese& sese) {
 
     // TODO: remove when sort is implemented
   // if SESE is flipped then we need to reverse the start and stop
-  if (start_id > stop_id && start_end == bd::VertexEnd::l && stop_end == bd::VertexEnd::r) {
+  if (start_id > stop_id && start_end == pgt::v_end_e::l && stop_end == pgt::v_end_e::r) {
     std::swap(start_id, stop_id);
     std::swap(start_end, stop_end);
   }
 
   bd::orientation_t start_o =
-    start_end == pgt::VertexEnd::r ? bd::orientation_t::forward : bd::orientation_t::reverse;
+    start_end == pgt::v_end_e::r ? bd::orientation_t::forward : bd::orientation_t::reverse;
 
   bd::orientation_t stop_o =
-    stop_end == pgt::VertexEnd::l ? bd::orientation_t::forward : bd::orientation_t::reverse;
+    stop_end == pgt::v_end_e::l ? bd::orientation_t::forward : bd::orientation_t::reverse;
 
   bd::id_n_orientation_t entry { start_id, start_o };
   bd::id_n_orientation_t exit { stop_id, stop_o };
@@ -297,9 +297,6 @@ void find_bubble_paths(const std::vector<pgt::flubble>& canonical_flubbles,
   std::string fn_name { std::format("[povu::genomics::{}]" , __func__) };
 
   for (std::size_t i{}; i < canonical_flubbles.size(); ++i) {
-    //const pgt::flubble& f = canonical_flubbles[i];
-    //std::pair<pgt::id_n_orientation_t, pgt::id_n_orientation_t> bub_boundary = foo(bd_vg, f);
-    // bubble_boundaries.push_back(bub_boundary);
 
     const auto& [entry, exit] = canonical_flubbles[i];
     std::vector<pgt::walk> paths = bd_vg.get_paths(entry, exit);

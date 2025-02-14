@@ -42,13 +42,13 @@ namespace pgt = povu::graph_types;
 */
 struct PathInfo {
   pt::id_t path_id;
-  pgt::or_t strand;
+  pgt::or_e strand;
   pt::idx_t step_index;
 
   // --------------
   // constructor(s)
   // --------------
-  PathInfo(pt::id_t path_id, pgt::or_t strand, pt::id_t step_index)
+  PathInfo(pt::id_t path_id, pgt::or_e strand, pt::id_t step_index)
     : path_id(path_id),strand(strand), step_index(step_index)  {}
 };
 
@@ -100,15 +100,17 @@ public:
   // ---------
   pt::id_t id() const;
   const std::string& get_label() const;
+  std::string get_rc_label() const; // reverse complement of the label
   const std::set<pt::idx_t>& get_edges_l() const;
   const std::set<pt::idx_t>& get_edges_r() const;
+  const std::vector<PathInfo>& get_refs() const;
 
   // ---------
   // setter(s)
   // ---------
   void add_edge_l(pt::idx_t e_idx);
   void add_edge_r(pt::idx_t e_idx);
-  void add_ref(pt::id_t path_id, pgt::or_t strand, pt::idx_t step_index);
+  void add_ref(pt::id_t path_id, pgt::or_e strand, pt::idx_t step_index);
 };
 
 
@@ -136,6 +138,7 @@ public:
   pt::idx_t edge_count() const;
   const std::set<pgt::side_n_id_t>& tips() const;
   const Edge& get_edge(pt::idx_t e_idx) const;
+  // TODO replace vertex with v?
   const Vertex& get_vertex_by_idx(pt::idx_t v_idx) const;
   const Vertex& get_vertex_by_id(pt::id_t v_id) const;
   Vertex& get_vertex_mut_by_id(pt::id_t v_id);
@@ -161,6 +164,14 @@ typedef VariationGraph VG;
 std::vector<VG *> componetize(const VG &g);
 
 pst::Tree compute_spanning_tree(const VG &g);
+
+/**
+  * @brief Get the paths between the flubble start and end
+ */
+std::vector<pgt::walk> get_walks(const VG &g,
+                                 const id_or_t &entry,
+                                 const id_or_t &exit,
+                                 pt::idx_t max_steps);
 
 } // namespace povu::bidirected
 #endif

@@ -50,7 +50,7 @@ void read_lines_to_vec_str(const std::string &fp, std::vector<std::string> *v);
 }; // namespace io::generic
 
 namespace povu::io::bub {
-using povu::graph_types::id_n_orientation_t;
+using povu::graph_types::id_or_t;
 using povu::graph_types::id_n_cls;
 namespace pvtr = povu::tree;
 namespace pgt = povu::graph_types;

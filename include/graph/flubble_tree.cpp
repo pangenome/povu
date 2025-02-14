@@ -31,15 +31,13 @@ struct oic_t {
 };
 
 
-inline flubble forwardise(std::size_t start_id, pgt::or_t start_or, std::size_t end_id, pgt::or_t end_or) {
-  //flubble fl;
-  if (start_or == pgt::or_t::reverse && end_or == pgt::or_t::reverse) {
-    return {pgt::id_n_orientation_t{end_id, pgt::or_t::forward},
-          pgt::id_n_orientation_t{start_id, pgt::or_t::forward}};
+inline flubble forwardise(std::size_t start_id, pgt::or_e start_or, std::size_t end_id, pgt::or_e end_or) {
+
+  if (start_or == pgt::or_e::reverse && end_or == pgt::or_e::reverse) {
+    return {pgt::id_or_t{end_id, pgt::or_e::forward}, pgt::id_or_t{start_id, pgt::or_e::forward}};
   }
   else {
-    return {pgt::id_n_orientation_t{start_id, start_or},
-          pgt::id_n_orientation_t{end_id, end_or}};
+    return {pgt::id_or_t{start_id, start_or}, pgt::id_or_t{end_id, end_or}};
   }
 }
 
@@ -161,7 +159,7 @@ std::vector<oic_t> compute_eq_class_stack(pst::Tree &t) {
   for (pt::idx_t v{t.vtx_count() - 1}; v > t.get_root_idx(); --v) {
     const pst::Edge &e = t.get_parent_edge(v);
     if (e.get_color() == color::black) {
-      or_e o = t.get_vertex(v).type() == pgt::v_type_e::r ? pgt::or_t::forward : pgt::or_t::reverse;
+      or_e o = t.get_vertex(v).type() == pgt::v_type_e::r ? pgt::or_e::forward : pgt::or_e::reverse;
       stack.push_back({o, t.get_vertex(v).g_v_id(), e.get_class()});
     }
   }

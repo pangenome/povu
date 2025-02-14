@@ -83,36 +83,36 @@ side_n_id_t side_n_id_t::complement() const {
  * ------------
  */
 // >> and << might be better than + and -
-std::ostream& operator<<(std::ostream& os, const orientation_t& o) {
+std::ostream& operator<<(std::ostream& os, const or_e& o) {
   switch (o) {
-  case orientation_t::forward:
+  case or_e::forward:
   os << ">";
   break;
-  case orientation_t::reverse:
+  case or_e::reverse:
   os << "<";
   break;
   }
 
   return os;
 }
-std::string or_to_str (orientation_t o) {
-  return o == orientation_t::forward ? ">" : "<";
+std::string or_to_str (or_e o) {
+  return o == or_e::forward ? ">" : "<";
 };
 
 /*
  * id and orientation
  * -----------------
  */
-std::ostream& operator<<(std::ostream& os, const id_n_orientation_t& x) {
-  os << x.orientation << x.v_idx;
+std::ostream& operator<<(std::ostream& os, const id_or_t& x) {
+  os << x.orientation << x.v_id;
   return os;
 }
 
-bool operator<(const id_n_orientation_t& lhs, const id_n_orientation_t& rhs) {
-  if (lhs.v_idx < rhs.v_idx) {
+bool operator<(const id_or_t& lhs, const id_or_t& rhs) {
+  if (lhs.v_id < rhs.v_id) {
     return true;
   }
-  else if (lhs.v_idx == rhs.v_idx) {
+  else if (lhs.v_id == rhs.v_id) {
     return lhs.orientation < rhs.orientation;
   }
   else {
@@ -120,11 +120,11 @@ bool operator<(const id_n_orientation_t& lhs, const id_n_orientation_t& rhs) {
   }
 }
 
-bool operator!=(const id_n_orientation_t & lhs, const id_n_orientation_t& rhs) {
-    return lhs.v_idx != rhs.v_idx || lhs.orientation != rhs.orientation;
+bool operator!=(const id_or_t & lhs, const id_or_t& rhs) {
+    return lhs.v_id != rhs.v_id || lhs.orientation != rhs.orientation;
 }
 
-bool operator==(const id_n_orientation_t & lhs, const id_n_orientation_t& rhs) {
-    return lhs.v_idx == rhs.v_idx && lhs.orientation == rhs.orientation;
+bool operator==(const id_or_t & lhs, const id_or_t& rhs) {
+    return lhs.v_id == rhs.v_id && lhs.orientation == rhs.orientation;
 }
 } // namespace povu::graph_types

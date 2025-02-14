@@ -1,7 +1,5 @@
 #include "./subcommands.hpp"
-#include <cstddef>
-#include <cstdint>
-#include <vector>
+
 
 namespace povu::subcommands {
 
@@ -40,16 +38,29 @@ pt::status_t get_refs(core::config &app_config) {
   return 0;
 }
 
+
 void do_call(core::config &app_config) {
   std::string fn_name = std::format("[povu::main::{}]", __func__);
 
-  // TODO: [c] parallelise
-  // read the input gfa into a bidirected variation graph
-  bd::VG *g = get_vg(app_config);
-  std::vector<pgt::flubble> canonical_flubbles = get_can_flubbles(app_config);
-  pt::status_t _ = get_refs(app_config);
+  /* parallel read for the graph, flubbles and references */
 
-  // povu::genomics::call_variants(canonical_flubbles, *g, app_config);
+  bd::VG *g { nullptr };
+  std::vector<pgt::flubble> canonical_flubbles;
+  pt::status_t _;
+
+  std::thread t1([&] { g = get_vg(app_config); });
+  std::thread t2([&] { canonical_flubbles = get_can_flubbles(app_config); });
+  std::thread t3([&] { _ = get_refs(app_config); });
+
+  t1.join();
+  t2.join();
+  t3.join();
+
+  if (false) { // debug
+    g->summary();
+    std::cerr << "flubble count = " << canonical_flubbles.size() << "\n";
+    std::cerr << "reference count = " << app_config.get_reference_paths().size() << "\n";
+  }
 
   return;
 }

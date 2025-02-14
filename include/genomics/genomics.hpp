@@ -6,11 +6,16 @@
 #include <string>
 #include <vector>
 
-#include "../cli/app.hpp"
+#include "../../src/cli/app.hpp"
 #include "../common/types.hpp"
 #include "../common/types.hpp"
 #include "../graph/bidirected.hpp"
 
+
+namespace povu::variants {
+
+
+}
 
 namespace povu::genomics {
 namespace bd = povu::bidirected;
@@ -54,7 +59,7 @@ class Path {
 
 private:
   std::string to_g_id (const bd::VG& bd_vg, pgt::id_n_orientation_t const& x) const {
-    return std::format("{}{}", or_to_str(x.orientation), bd_vg.idx_to_id(x.v_idx));
+    return std::format("{}{}", or_to_str(x.orientation), bd_vg.v_idx_to_id(x.v_idx));
   }
 
 public:
@@ -83,7 +88,7 @@ public:
   std::string as_DNA_str(const bd::VG& bd_vg, std::size_t w_idx) const {
     // skip the first and last vertices in the path
     auto [idx, o] = this->walk_[w_idx];
-    bd::Vertex const& v = bd_vg.get_vertex(idx);
+    bd::Vertex const& v = bd_vg.get_vertex_by_idx(idx);
     return o == pgt::orientation_t::forward ? v.get_label() : v.get_rc_label();
   }
 

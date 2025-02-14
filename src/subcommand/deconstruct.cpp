@@ -1,5 +1,9 @@
 #include "./subcommands.hpp"
+#include <cstddef>
+#include <cstdint>
 #include <iostream>
+#include <sys/types.h>
+#include <utility>
 
 
 namespace povu::subcommands {
@@ -7,6 +11,8 @@ namespace povu::subcommands {
 void deconstruct_component(bd::VG *g, std::size_t component_id, const core::config& app_config) {
   std::string fn_name = std::format("[povu::deconstruct::{}]", __func__);
 
+
+  //if (component_id !=2) return;
 
   //g->print_dot(std::cerr);
   //g->untip();
@@ -27,7 +33,17 @@ void deconstruct_component(bd::VG *g, std::size_t component_id, const core::conf
   povu::io::bub::write_bub(flubble_tree, std::to_string(component_id), app_config);
 }
 
+std::pair<uint32_t, uint32_t> thread_count(const core::config &app_config, std::size_t item_count) {
+  /* Divide the number of components into chunks for each thread */
+  unsigned int total_threads = std::thread::hardware_concurrency();
 
+  // std::cerr << std::format("{} Max threads: {}\n", fn_name, total_threads);
+  std::size_t conf_num_threads = static_cast<std::size_t>(app_config.thread_count());
+  uint32_t num_threads = (conf_num_threads > total_threads) ? total_threads : conf_num_threads;
+  uint32_t chunk_size = item_count / num_threads;
+
+  return std::make_pair(num_threads, chunk_size);
+}
 
 void do_deconstruct(const core::config &app_config) {
   std::string fn_name = std::format("[povu::deconstruct::{}]", __func__);
@@ -42,12 +58,7 @@ void do_deconstruct(const core::config &app_config) {
 
   if (ll > 1) std::cerr << std::format("{} Found {} components\n", fn_name, components.size());
 
-  /* Divide the number of components into chunks for each thread */
-  unsigned int total_threads = std::thread::hardware_concurrency();
-  //std::cerr << std::format("{} Max threads: {}\n", fn_name, total_threads);
-  std::size_t conf_num_threads = static_cast<std::size_t>(app_config.thread_count());
-  unsigned int num_threads = (conf_num_threads > total_threads) ? total_threads : conf_num_threads;
-  std::size_t chunk_size = components.size() / num_threads;
+  auto [num_threads, chunk_size] = thread_count(app_config, components.size());
 
   /* Create and launch threads */
   std::vector<std::thread> threads(num_threads);
