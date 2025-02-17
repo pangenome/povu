@@ -40,10 +40,10 @@ bd::VG *to_bd(const char* filename, const core::config& app_config) {
   /* add edges */
   for (std::size_t i {}; i < ls_g->edge_count; ++i) {
     std::size_t v1 = ls_g->e[i].v1_id;
-    pgt::v_end_e v1_end = ls_g->e[i].v1_side == lq::vtx_side::LEFT ? pgt::v_end_e::l : pgt::v_end_e::r;
+    pgt::v_end_e v1_end = ls_g->e[i].v1_side == lq::vtx_side_e::LEFT ? pgt::v_end_e::l : pgt::v_end_e::r;
 
     std::size_t v2 = ls_g->e[i].v2_id;
-    pgt::v_end_e v2_end = ls_g->e[i].v2_side == lq::vtx_side::LEFT ? pgt::v_end_e::l : pgt::v_end_e::r;
+    pgt::v_end_e v2_end = ls_g->e[i].v2_side == lq::vtx_side_e::LEFT ? pgt::v_end_e::l : pgt::v_end_e::r;
 
     vg->add_edge(v1, v1_end, v2, v2_end);
   }
@@ -62,8 +62,8 @@ bd::VG *to_bd(const char* filename, const core::config& app_config) {
         bool h = lq::vec_has_ref(ls_g->rs->x, lq_v_idx, ref_idx);
         if (!h) { continue; }
 
-        lq::strand s = lq::get_ref_strand(ls_g->rs->s, lq_v_idx, ref_idx);
-        pgt::or_e o = (s == lq::strand::FORWARD) ? pgt::or_e::forward : pgt::or_e::reverse;
+        lq::strand_e s = lq::get_ref_strand(ls_g->rs->s, lq_v_idx, ref_idx);
+        pgt::or_e o = (s == lq::strand_e::FORWARD) ? pgt::or_e::forward : pgt::or_e::reverse;
 
         bd::Vertex& v = vg->get_vertex_mut_by_id(ls_g->v[lq_v_idx].id);
 
