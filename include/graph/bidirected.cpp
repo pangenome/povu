@@ -154,15 +154,13 @@ void VG::print_dot(std::ostream& os) const {
 
   os << "graph G {" << std::endl;
   os << "\t" << "graph [rankdir=LR];" << std::endl;
-  os << "\t" << "node [shape=rectangle];" << std::endl;
+  os << "\t" << "node [shape=cds, style=filled, fillcolor=lightblue, fontsize=\"10pt\"];" << std::endl;
   for (size_t v_idx {}; v_idx < this->vtx_count(); ++v_idx) {
     const Vertex& v = this->get_vertex_by_idx(v_idx);
     std::string v_id = v.id() == constants::UNDEFINED_ID ? "d" : std::to_string(v.id());
 
     os << "\t" << v_idx
-       << std::format(
-              "[style=filled, fillcolor=lightblue, label=\"+ {} - \\n ({})\"];",
-              v_id, v_idx)
+       << std::format("[label=\"+ {} - \\n ({})\"];", v_id, v_idx)
        << std::endl;
   }
 
