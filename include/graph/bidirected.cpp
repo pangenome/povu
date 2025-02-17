@@ -1,6 +1,4 @@
 #include "./bidirected.hpp"
-#include <vector>
-
 
 namespace povu::bidirected {
 
@@ -147,32 +145,40 @@ void VG::summary() const {
 
 void VG::print_dot(std::ostream& os) const {
 
+  const std::string header = R"(
+graph G {
+    graph [rankdir=LR];
+    node [shape=cds, style=filled, fillcolor=lightblue, fontsize="10pt"];
+)";
+
+  /* helper fns */
   // map v end left and right to dot west and east for rectangular vertices
-  auto v_end_to_dot = [](pgt::v_end_e e) {
+  auto v_end_to_dot = [](pgt::v_end_e e) -> std::string {
     return e == pgt::v_end_e::l ? "w" : "e";
   };
 
-  os << "graph G {" << std::endl;
-  os << "\t" << "graph [rankdir=LR];" << std::endl;
-  os << "\t" << "node [shape=cds, style=filled, fillcolor=lightblue, fontsize=\"10pt\"];" << std::endl;
+  /* header */
+  os << header;
+
+  /* vertices */
   for (size_t v_idx {}; v_idx < this->vtx_count(); ++v_idx) {
     const Vertex& v = this->get_vertex_by_idx(v_idx);
     std::string v_id = v.id() == constants::UNDEFINED_ID ? "d" : std::to_string(v.id());
 
-    os << "\t" << v_idx
-       << std::format("[label=\"+ {} - \\n ({})\"];", v_id, v_idx)
-       << std::endl;
+    os << std::format("\t{}[label=\"+ {} - \\n ({})\"];\n", v_idx, v_id, v_idx);
   }
 
+  /* edges */
   for (const Edge& e: this->edges) {
-    os << "\t"
-       << e.get_v1_idx() << ":" << v_end_to_dot(e.get_v1_end())
-       << " -- "
-       << e.get_v2_idx() << ":" << v_end_to_dot(e.get_v2_end())
-       << "[color=gray];"
-       << std::endl;
+    pt::idx_t v1_idx = e.get_v1_idx();
+    std::string v1_e = v_end_to_dot(e.get_v1_end());
+    pt::idx_t v2_idx = e.get_v2_idx();
+    std::string v2_e = v_end_to_dot(e.get_v2_end());
+
+    os << std::format("\t{}:{}--{}:{}[color=gray];\n", v1_idx, v1_e, v2_idx, v2_e);
   }
 
+  /* footer */
   os << "}" << std::endl;
 }
 
@@ -434,7 +440,6 @@ pst::Tree compute_spanning_tree(const VG &g) {
 void populate_walks(const VG &g, pvt::RoV &r, pt::idx_t max_steps) {
   const std::string fn_name = std::format("[povu::bidirected::{}]", __func__);
 
-  
   typedef id_or_t idx_or_t; // specifically for idx instead of id
   typedef idx_or_t step;
   enum class dir_e { in, out }; // direction
@@ -573,6 +578,5 @@ void populate_walks(const VG &g, pvt::RoV &r, pt::idx_t max_steps) {
   r.set_walks(std::move(in_walks[{stop_id, stop_o}]));
   return;
 }
-
 
 } // namespace povu::bidirected
