@@ -1,14 +1,5 @@
-#include <cstddef>
-#include <cstdint>
-#include <iostream>
-#include <stack>
-#include <string>
-#include <sys/types.h>
-#include <unordered_set>
-#include <utility>
-#include <vector>
-
 #include "./bidirected.hpp"
+#include <vector>
 
 
 namespace povu::bidirected {
@@ -441,15 +432,33 @@ pst::Tree compute_spanning_tree(const VG &g) {
   return t;
 }
 
-std::vector<pgt::walk> get_walks(const VG &g,
-                                 const pgt::id_or_t &entry,
-                                 const pgt::id_or_t &exit,
-                                 pt::idx_t max_steps) {
-  std::string fn_name = std::format("[povu::bidirected::{}]", __func__);
 
+void populate_walks(const VG &g, pvt::RoV &r, pt::idx_t max_steps) {
+  const std::string fn_name = std::format("[povu::bidirected::{}]", __func__);
+
+  
   typedef id_or_t idx_or_t; // specifically for idx instead of id
   typedef idx_or_t step;
   enum class dir_e { in, out }; // direction
+
+  std::queue<idx_or_t> q;
+
+  // a map to keep track of the vertices whose incoming neighbours paths we have
+  // extended so far key is the vertex and value is the set of vertices whose
+  // paths we have extended
+  std::map<idx_or_t, std::set<idx_or_t>> seen;
+
+  // a set to keep track of the vertices we've seen
+  std::set<idx_or_t> explored;
+
+  bool all_incoming_explored{true};
+
+  std::size_t counter {}; // a counter to keep track of the number of iterations
+  // allows us to short circuit the traversal if counter > max_steps
+
+  // a map of an idx and orientation to the incoming walk from the entry to the
+  // idx and side that is incoming for the orientation
+  std::map<idx_or_t, std::vector<pvt::Walk>> in_walks;
 
   // Returns the edge set for a vertex based on orientation and direction.
   auto get_edges = [](const Vertex &v, pgt::or_e o, dir_e d) -> const std::set<pt::idx_t> & {
@@ -489,8 +498,19 @@ std::vector<pgt::walk> get_walks(const VG &g,
     return neighbours;
   };
 
-  auto [start_id, start_o] = entry;
-  auto [stop_id, stop_o] = exit;
+  auto append_q = [&](idx_or_t current) {
+    for (const idx_or_t &out_n : get_neighbours(current, dir_e::out)) {
+      if (!explored.contains(current) || !explored.contains(out_n)) {
+        q.push(out_n);
+      }
+    }
+  };
+
+  //const pgt::id_or_t &entry = r.get_entry();
+  //const pgt::id_or_t &exit = r.get_exit();
+
+  auto [start_id, start_o] = r.get_entry();
+  auto [stop_id, stop_o] = r.get_exit();
 
   pt::idx_t start_idx = g.v_id_to_idx(start_id);
   pt::idx_t stop_idx = g.v_id_to_idx(stop_id);
@@ -498,43 +518,26 @@ std::vector<pgt::walk> get_walks(const VG &g,
   idx_or_t s = {start_idx, start_o};
   idx_or_t t = {stop_idx, stop_o};
 
-  // each side has a set of paths associated with it
-  std::map<idx_or_t, std::vector<std::vector<step>>> paths_map;
-
-  std::queue<idx_or_t> q;
+  /* initialise the traversal */
   q.push(s);
-
-  // a map to keep track of the vertices whose incoming neighbours paths we have
-  // extended so far key is the vertex and value is the set of vertices whose
-  // paths we have extended
-  std::map<idx_or_t, std::set<idx_or_t>> seen;
-
-  // a set to keep track of the vertices we've seen
-  std::set<idx_or_t> explored;
-
-  std::size_t counter{}; // a counter to keep track of the number of iterations
-  // allows us to short circuit the traversal if counter > max_steps
-
-  bool all_incoming_explored { true };
+  in_walks[{start_id, start_o}].emplace_back( pvt::Walk{start_id, start_o} );
+  append_q({g.v_idx_to_id(start_id), start_o});
 
   while (!q.empty()) {
     if (counter++ > max_steps) {
-      std::cerr << fn_name << " max_steps reached for flubble " << entry << " ~> " << exit << std::endl;
+      std::cerr << fn_name << " max_steps reached for flubble "
+                << r.get_entry() << " ~> "
+                << r.get_exit() << std::endl;
       break;
     }
 
     idx_or_t current = q.front();
-
     auto [c_v_idx, c_o] = current;
     pgt::id_or_t c_id_or { g.v_idx_to_id(c_v_idx), c_o };
     q.pop();
 
     all_incoming_explored = true;
 
-    if (__builtin_expect((current == s), 0)) {
-      paths_map[current].push_back({c_id_or});
-      continue;
-    }
 
     for (const idx_or_t &n : get_neighbours(current, dir_e::in)) {
 
@@ -550,22 +553,17 @@ std::vector<pgt::walk> get_walks(const VG &g,
         continue;
       }
 
-      std::vector<std::vector<step>> neighbour_paths = paths_map[n];
-      for (const auto &path : neighbour_paths) {
-        std::vector<step> new_path = path;
-        new_path.push_back(c_id_or);            // push the exit vertex as well
-        paths_map[current].push_back(new_path); // update or insert new path
+      // append the current step to the incoming walks of n
+      in_walks[current] = in_walks[n];
+      for (pvt::Walk &w : in_walks[current]) {
+        w.append_step(c_id_or);
       }
 
       seen[current].insert(n);
     }
 
     if (current != t) {
-      for (const idx_or_t &out_n : get_neighbours(current, dir_e::out)) {
-        if (!explored.contains(current) || !explored.contains(out_n)) {
-          q.push(out_n);
-        }
-      }
+      append_q(current);
     }
 
     if (all_incoming_explored) {
@@ -574,7 +572,8 @@ std::vector<pgt::walk> get_walks(const VG &g,
 
   }
 
-  return paths_map[t];
+  r.set_walks(std::move(in_walks[{stop_id, stop_o}]));
+  return;
 }
 
 

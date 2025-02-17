@@ -141,6 +141,7 @@ enum class or_e {
 std::ostream& operator<<(std::ostream& os, const or_e& o);
 std::string or_to_str (or_e o);
 
+// TODO: move to povu::types::variation
 struct id_or_t {
   pt::id_t v_id; // TODO change type and name to id to pt::id_t
   or_e orientation;

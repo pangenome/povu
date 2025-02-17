@@ -27,6 +27,7 @@
 #include "../../src/cli/app.hpp" // for core::config TODO: find a proper place for the app config
 #include "../common/types.hpp"
 #include "../common/utils.hpp"
+#include "../common/variation.hpp"
 #include "./spanning_tree.hpp"
 
 namespace povu::bidirected {
@@ -36,6 +37,7 @@ namespace pt = povu::types;
 namespace pc = povu::constants;
 using namespace povu::graph_types;
 namespace pgt = povu::graph_types;
+namespace pvt = povu::types::variation;
 
 /**
  *
@@ -51,6 +53,7 @@ struct PathInfo {
   PathInfo(pt::id_t path_id, pgt::or_e strand, pt::id_t step_index)
     : path_id(path_id),strand(strand), step_index(step_index)  {}
 };
+typedef PathInfo pi_t;
 
 // undirected edge
 // stores the index of the vertex in the graph not the id
@@ -168,10 +171,7 @@ pst::Tree compute_spanning_tree(const VG &g);
 /**
   * @brief Get the paths between the flubble start and end
  */
-std::vector<pgt::walk> get_walks(const VG &g,
-                                 const id_or_t &entry,
-                                 const id_or_t &exit,
-                                 pt::idx_t max_steps);
+void populate_walks(const VG &g, pvt::RoV &r, pt::idx_t max_steps);
 
 } // namespace povu::bidirected
 #endif
