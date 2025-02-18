@@ -59,8 +59,9 @@ ADD_LIBRARY(LibsModule
   # src/io/vcf.cpp
 
   # genomics
-  #src/genomics/untangle.cpp
-  #src/genomics/variant_calling.cpp
+  ${INCLUDE_DIR}/genomics/untangle.cpp
+  ${INCLUDE_DIR}/genomics/variants.cpp
+  ${INCLUDE_DIR}/genomics/genomics.cpp
   #src/genomics/vcf.cpp
 
   # graph
@@ -77,7 +78,9 @@ ADD_LIBRARY(LibsModule
 
   # algorithms
   ${INCLUDE_DIR}/algorithms/algorithms.cpp
-  # src/algorithms/align.cpp
+
+  # align
+  # ${INCLUDE_DIR}/align/align.cpp
 )
 
 

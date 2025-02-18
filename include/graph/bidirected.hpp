@@ -27,7 +27,7 @@
 #include "../../src/cli/app.hpp" // for core::config TODO: find a proper place for the app config
 #include "../common/types.hpp"
 #include "../common/utils.hpp"
-#include "../common/variation.hpp"
+#include "../common/genomics.hpp"
 #include "./spanning_tree.hpp"
 
 namespace povu::bidirected {
@@ -37,7 +37,7 @@ namespace pt = povu::types;
 namespace pc = povu::constants;
 using namespace povu::graph_types;
 namespace pgt = povu::graph_types;
-namespace pvt = povu::types::variation;
+namespace pvt = povu::types::genomics;
 
 /**
  *

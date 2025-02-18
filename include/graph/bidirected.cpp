@@ -440,6 +440,7 @@ pst::Tree compute_spanning_tree(const VG &g) {
 void populate_walks(const VG &g, pvt::RoV &r, pt::idx_t max_steps) {
   const std::string fn_name = std::format("[povu::bidirected::{}]", __func__);
 
+  //TODO use Step class
   typedef id_or_t idx_or_t; // specifically for idx instead of id
   typedef idx_or_t step;
   enum class dir_e { in, out }; // direction
