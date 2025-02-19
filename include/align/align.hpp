@@ -10,6 +10,7 @@ namespace povu::align {
 namespace pt = povu::types;
 namespace pc = povu::constants;
 namespace pvt = povu::types::genomics;
+namespace pgt = povu::graph_types;
 
 struct aln_scores_t {
   pt::idx_t match;
@@ -20,11 +21,43 @@ struct aln_scores_t {
 
 struct aln_result_t {
   pt::idx_t score;
-  std::string alignment;
+  std::string et; // edit transcript
 };
 
-void align_steps(const pvt::ref_walk &iw, const pvt::ref_walk &jw);
-void align_rovs(const pvt::ref_walk &iw, const pvt::ref_walk &jw);
+class Matrix {
+  std::vector<pt::idx_t> data;
+  pt::idx_t row_count_;
+  pt::idx_t col_count_;
+
+public:
+  Matrix(pt::idx_t row_count, pt::idx_t col_count)
+    : data(row_count * col_count, pc::INVALID_IDX), row_count_(row_count),
+        col_count_(col_count) {}
+
+  pt::idx_t &operator()(pt::idx_t row, pt::idx_t col) {
+    return data[row * this->col_count_ + col];
+  }
+
+  pt::idx_t operator()(pt::idx_t row, pt::idx_t col) const {
+    return data[row * this->col_count_ + col];
+  }
+
+  // Print the matrix to an output stream (default is std::cout)
+  void print(std::ostream &os = std::cout) const {
+    for (pt::idx_t i = 0; i < this->row_count_; ++i) {
+      for (pt::idx_t j = 0; j < this->col_count_; ++j) {
+        os << ((*this)(i, j) == pc::INVALID_IDX ? pc::INF
+                                                : std::to_string((*this)(i, j)))
+           << " ";
+      }
+      os << "\n";
+    }
+  }
+};
+
+
+
+std::string align(const pvt::Itn &iw, const pvt::Itn &jw, pvt::aln_level_e level);
 
 } // namespace povu::align
 

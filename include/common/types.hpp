@@ -217,8 +217,9 @@ const pt::idx_t INVALID_CLS = MAX_IDX; // equivalence class
 
 // strings
 const std::string EMPTY_SET = "\u2205";
-const std::string UNDEFINED_VALUE = "\u2205";
+const std::string UNDEFINED_VALUE = EMPTY_SET;
 const std::string WAVY_ARROW = "\u2933";
+const std::string INF = "\u221E"; //infinity
 
 // genomics constants
 const std::string UNDEFINED_PATH_LABEL{"undefined"};

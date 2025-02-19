@@ -1,150 +1,211 @@
 #include "./align.hpp"
+#include <cstdlib>
 
 
 namespace povu::align {
-
-std::vector<std::vector<pt::idx_t>> matrix;
-
-class Matrix {
-  std::vector<pt::idx_t> data;
-  // pt::idx_t row_count_;
-  pt::idx_t col_count_;
-
-public:
-  Matrix(pt::idx_t row_count, pt::idx_t col_count)
-    : data(row_count * col_count, 0), col_count_() {}
-
-  pt::idx_t &operator()(pt::idx_t row, pt::idx_t col) {
-    return data[row * col_count_ + col];
-  }
+struct match_res_t {
+  pt::idx_t a_inc;
+  pt::idx_t b_inc;
+  bool is_match;
 };
-
-inline pt::idx_t min(pt::idx_t a, pt::idx_t b) {
-  return std::min(a, b);
-}
+inline pt::idx_t min(pt::idx_t a, pt::idx_t b) { return std::min(a, b); }
 inline pt::idx_t min(pt::idx_t a, pt::idx_t b, pt::idx_t c) {
   return std::min(a, std::min(b, c));
 }
 
+inline match_res_t eq_step(const pvt::Itn &a, pt::idx_t a_idx,
+                           const pvt::Itn &b, pt::idx_t b_idx) {
 
-// smith waterman alignment, affine gap penalty
-aln_result_t sw_align(pt::idx_t col_count, pt::idx_t row_count,
-                      const std::string &str1, const std::string &str2,
-                      bool (*eq)(pt::idx_t, pt::idx_t, const std::string &str1,
-                                 const std::string &str2)) {
+  if (a_idx >= a.step_count() || b_idx >= b.step_count()) {
+    std::cerr << "Index out of bounds\n";
+    exit(1);
+  }
 
-  aln_scores_t scores = {
-    .match = 0,
-    .mismatch = 1,
-    .gap_open = 2,
-    .gap_extend = 1
+  auto is_match = [](const pvt::Step &a, const pvt::Step &b) {
+    return a.get_v_id() == b.get_v_id() && a.get_o() == b.get_o();
   };
 
-  // init M , I , D matrices
+
+  const pvt::Step &a_step = a.get_step(a_idx);
+  const pvt::Step b_step = b.get_step(b_idx);
+
+
+  if (is_match(a_step, b_step)) {
+    return {1, 1, true};
+  }
+
+  return {1, 1, false};
+}
+
+/*for RoV inc by the length of the walk*/
+inline match_res_t eq_rov(const pvt::Itn &a, pt::idx_t a_idx,
+                          const pvt::Itn &b, pt::idx_t b_idx) {
+
+  // if any of the steps is not a match in the ROV then it is not a match
+  const pvt::Walk &a_walk = a.get_walk_by_step_idx(a_idx);
+  const pvt::Walk &b_walk = b.get_walk_by_step_idx(b_idx);
+
+  pt::idx_t a_jmp = a_walk.step_count();
+  pt::idx_t b_jmp = b_walk.step_count();
+
+  if (a_jmp != b_jmp) {
+    return {a_jmp, b_jmp, false};
+  }
+
+  auto is_match = [](const pvt::Step &a, const pvt::Step &b) {
+    return a.get_v_id() == b.get_v_id() && a.get_o() == b.get_o() &&
+           a.get_loop_no() == b.get_loop_no();
+  };
+
+  // check for the order as well
+
+  for (pt::idx_t i {}; i < a_jmp; i++) {
+    if (!is_match(a_walk.get_step(i), b_walk.get_step(i))) {
+      return {a_jmp, b_jmp, false};
+    }
+  }
+
+  return {a_jmp, b_jmp, true};
+}
+
+aln_result_t global_align(const pvt::Itn &str1, pt::idx_t str1_len,
+                          const pvt::Itn &str2, pt::idx_t str2_len,
+                          const aln_scores_t &scores,
+                          match_res_t (*eq)(const pvt::Itn &, pt::idx_t, const pvt::Itn &, pt::idx_t)) {
+  // Define the scoring parameters
+  const pt::idx_t a = scores.match;
+  const pt::idx_t x = scores.mismatch;
+  const pt::idx_t o = scores.gap_open;
+  const pt::idx_t e = scores.gap_extend;
+
+  pt::idx_t row_count = str1_len + 1;
+  pt::idx_t col_count = str2_len + 1;
+
+  // Initialize M, I, D matrices.
   Matrix M(row_count, col_count);
   Matrix I(row_count, col_count);
   Matrix D(row_count, col_count);
 
-  // init I top row
-  for (pt::idx_t i = 0; i < col_count; ++i) {
-    I(0, i) = pc::INVALID_IDX;
+  // Initialize the top row of I.
+  for (pt::idx_t j = 0; j < col_count; ++j) {
+    I(0, j) = pc::INVALID_IDX;
   }
 
-  // init D left column
+  // Initialize the left column of D.
   for (pt::idx_t i = 0; i < row_count; ++i) {
     D(i, 0) = pc::INVALID_IDX;
   }
 
-  // init M
+  // Initialize M(0,0)
   M(0, 0) = 0;
+  // Initialize first column: gap penalties for aligning str1 with an empty string.
+  for (pt::idx_t i = 1; i < row_count; ++i) {
+    M(i, 0) = (i * e) + o;
+  }
+  // Initialize first row.
+  for (pt::idx_t j = 1; j < col_count; ++j) {
+    M(0, j) = (j * e) + o;
+  }
 
-  // fill M, I, D matrices
-  for (pt::idx_t i = 1; i < row_count; ++i) { // rows
-    for (pt::idx_t j = 1; j < col_count; ++j) { // cols
-      // fill M
-      M(i, j) = min(M(i - 1, j - 1) + (eq(i,j, str1, str2) ? scores.match : scores.mismatch),
-                    I(i - 1, j),
-                    D(i, j - 1));
+  // Fill M, I, D matrices.
+  for (pt::idx_t i = 1; i < row_count;) {  // rows
+    for (pt::idx_t j = 1; j < col_count;) {  // cols
 
-      // fill I
+      // Fill I (gap in str2, insertion in str1)
       I(i, j) = min(
-        M(i - 1, j) + scores.gap_open + scores.gap_extend,
-        I(i - 1, j) + scores.gap_extend
+        M(i - 1, j) + o + e,
+        I(i - 1, j) + e
       );
 
-      // fill D
+      // Fill D (gap in str1, deletion in str1)
       D(i, j) = min(
-        M(i, j - 1) + scores.gap_open + scores.gap_extend,
-        D(i, j - 1) + scores.gap_extend
+        M(i, j - 1) + o + e,
+        D(i, j - 1) + e
       );
 
+      auto [i_inc, j_inc, is_match] = eq(str1, i - 1, str2, j - 1);
+
+      // Fill M (match/mismatch from diagonal).
+      // Use i-1 and j-1 for the characters from the strings.
+      M(i, j) = min(
+        M(i - 1, j - 1) + (is_match ? a : x),
+        I(i, j),
+        D(i, j)
+      );
+
+      i += i_inc;
+      j += j_inc;
     }
   }
 
-  pt::idx_t aln_score = M(row_count - 1, col_count - 1);
-  std::cout << "aln score: " << aln_score << std::endl;
+  pt::idx_t aln_score = M(row_count-1, col_count - 1);
 
-  // backtrace
-  std::string aln;
-  pt::idx_t i = row_count - 1;
-  pt::idx_t j = col_count - 1;
+  // Define an enum to track which matrix we’re in.
+
+
+  pt::idx_t i = str1_len;
+  pt::idx_t j = str2_len;
+  std::string et;
+  et.reserve(std::max(str1_len, str2_len));
+
+  if (false) { // Debug output: print matrices.
+    std::cerr << "[" << row_count << "," << col_count << "]\n";
+    std::cerr << "M Matrix:\n";
+    M.print(std::cerr);
+    std::cerr << "I Matrix:\n";
+    I.print(std::cerr);
+    std::cerr << "D Matrix:\n";
+    D.print(std::cerr);
+    std::cerr << "\n";
+  }
+
+  /* Trace back to reconstruct the alignment. */
   while (i > 0 && j > 0) {
-    pt::idx_t score = M(i, j);
-    pt::idx_t score_diag = M(i - 1, j - 1);
-    pt::idx_t score_up = I(i, j);
-    pt::idx_t score_left = D(i, j);
-
-    if (score == score_diag + (eq(i,j, str1, str2) ? scores.match : scores.mismatch)) {
-      aln.push_back('M');
-      --i;
-      --j;
-    } else if (score == score_up) {
-      aln.push_back('I');
-      --i;
-    } else if (score == score_left) {
-      aln.push_back('D');
-      --j;
-    } else {
-      std::cerr << "error" << std::endl;
-      break;
+    auto [dec_i, dec_j, is_match] = eq(str1, i - 1, str2, j - 1);
+    if (M(i,j) == min(M(i-1,j), M(i, j-1), (M(i-1, j-1) + (is_match ? a : x)))) {
+      et.push_back((is_match ? 'M' : 'X'));
+      i -= dec_i;
+      j -= dec_j;
+    }
+    else if (M(i-1,j) == min(M(i-1,j), M(i,j-1), M(i, j)) ) {
+      et.push_back('I');
+      i -= dec_i;
+    }
+    else if (M(i,j-1) == min(M(i-1,j), M(i, j-1), M(i, j)) ) {
+      et.push_back('D');
+      j -= dec_j;
     }
   }
 
-  std::reverse(aln.begin(), aln.end());
+  /* If one string is exhausted before the other, add the necessary indels. */
+  while (i > 0) {  // remaining vertical moves are insertions.
+    et.push_back('I');
+    i--;
+  }
+  while (j > 0) {  // remaining horizontal moves are deletions.
+    et.push_back('D');
+    j--;
+  }
 
-  return {aln_score, aln};
+  std::reverse(et.begin(), et.end());
+
+  return {aln_score, et};
 }
 
-bool eq_step(pt::idx_t x, pt::idx_t y) {}
+std::string align(const pvt::Itn &i_itn, const pvt::Itn &j_itn, pvt::aln_level_e level) {
 
-bool eq_rov(pt::idx_t x, pt::idx_t y) {}
+  aln_scores_t scores = ([&]() {
+    switch (level) {
+    case pvt::aln_level_e::rov:
+      return aln_scores_t{0, 1, 2, 1};
+    case pvt::aln_level_e::step:
+      return aln_scores_t{0, 1, 4, 1};
+    }
+  })();
 
-void align_steps(const pvt::ref_walk &iw, const pvt::ref_walk &jw) {
+  auto [_, et] = global_align(i_itn, i_itn.step_count(), j_itn, j_itn.step_count(), scores, eq_rov);
 
-  // two steps are equal if they
-  // share the same vertex id, the same loop id, and the same orientation
-  // false otherwise
-  pt::idx_t i_step_count = iw.size();
-  pt::idx_t j_step_count = jw.size();
-
-  sw_align(i_step_count, j_step_count, eq_step);
-
-}
-
-
-void align_rovs(const pvt::ref_walk &iw, const pvt::ref_walk &jw) {
-
-
-}
-
-bool eq_chars(pt::idx_t idx1,
-              pt::idx_t idx2,
-              const std::string &str1,
-              const std::string &str2) {
-  return str1[idx1] == str2[idx2];
-}
-void align_strings(const std::string &str1, const std::string &str2) {
-  sw_align(str1.length(), str2.length(), str1, str2, eq_chars);
+  return et;
 }
 
 } // namespace povu::align
