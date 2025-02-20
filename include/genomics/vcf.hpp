@@ -2,13 +2,15 @@
 #define POVU_GENOMICS_VCF_HPP
 
 #include "../common/genomics.hpp"
+#include "../common/types.hpp"
 #include "../graph/bidirected.hpp"
 
 namespace povu::genomics::vcf {
-namespace pvt = povu::types::genomics;
+namespace pt = povu::types;
 namespace bd = povu::bidirected;
+namespace pvt = povu::types::genomics;
 
-void gen_vcfs(const bd::VG &g, const std::vector<pvt::RefWalks> &ref_walks);
+pvt::VcfRecIdx to_vcf_records(const std::vector<pvt::RefWalks> &ref_walks);
 
 } // namespace povu::genomics::vcf
 

@@ -62,7 +62,7 @@ ADD_LIBRARY(LibsModule
   ${INCLUDE_DIR}/genomics/untangle.cpp
   ${INCLUDE_DIR}/genomics/variants.cpp
   ${INCLUDE_DIR}/genomics/genomics.cpp
-  #src/genomics/vcf.cpp
+  ${INCLUDE_DIR}/genomics/vcf.cpp
 
   # graph
   ${INCLUDE_DIR}/graph/bidirected.cpp
@@ -93,6 +93,7 @@ set(SOURCE_FILES
   ${SRC_DIR}/io/bub.cpp
   ${SRC_DIR}/io/from_gfa.cpp
   ${SRC_DIR}/io/common.cpp
+  ${SRC_DIR}/io/to_vcf.cpp
 
   # subcommand
   ${SRC_DIR}/subcommand/common.cpp

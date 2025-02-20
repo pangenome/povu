@@ -15,9 +15,9 @@ namespace bd = povu::bidirected;
 namespace pvt = povu::types::genomics;
 namespace pgv = povu::genomics::vcf;
 
-void to_vcf(const std::vector<pgt::flubble> &canonical_flubbles,
-            const bd::VG &g,
-            const core::config &app_config);
+pvt::VcfRecIdx gen_vcf_rec_map(const std::vector<pgt::flubble> &canonical_flubbles,
+                               const bd::VG &g,
+                               const core::config &app_config);
 
 } // namespace povu::genomics
 

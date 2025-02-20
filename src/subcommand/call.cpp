@@ -62,6 +62,10 @@ void do_call(core::config &app_config) {
     std::cerr << "reference count = " << app_config.get_reference_paths().size() << "\n";
   }
 
+  pvt::VcfRecIdx vcf_recs = pg::gen_vcf_rec_map(canonical_flubbles, *g, app_config);
+
+  piv::write_vcfs(vcf_recs, *g, app_config);
+
   return;
 }
 

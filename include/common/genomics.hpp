@@ -57,6 +57,7 @@ void append_step(Step s) { this->steps_.emplace_back(s); }
 };
 
 typedef Walk StepSeq;
+typedef Walk AT ; // allele traversal
 
 /* region of variation */
 class RoV {
@@ -82,7 +83,7 @@ std::string as_str() const {
 }
 };
 
- /* a sequence of walks in a RoV --- especially for a given ref */
+ /* a sequence of looped walks in a RoV for a given ref */
 class It {
   std::vector<Walk> it_;
   pt::idx_t len;
@@ -196,11 +197,11 @@ public:
 };
 
 class VcfRec {
-  std::string chrom;
-  pt::idx_t pos;
+  pt::id_t ref; // chrom
+  pt::idx_t pos; // 1-based step idx
   std::string id;
-  std::string ref;
-  std::vector<std::string> alt;
+  AT ref_at; // 
+  std::vector<AT> alt_ats;
   // std::string qual;
   // std::string filter;
   // std::string info;
@@ -208,19 +209,42 @@ class VcfRec {
 
 public:
   /* constructor */
-  VcfRec(std::string chrom, pt::idx_t pos, std::string id, std::string ref,
-         std::vector<std::string> alt, std::string format)
-      : chrom(chrom), pos(pos), id(id), ref(ref), alt(alt), format(format) {}
+  VcfRec(pt::id_t ref, pt::idx_t pos, std::string id, Walk ref_at,
+         std::vector<Walk> alt_ats, std::string format)
+      : ref(ref), pos(pos), id(id), ref_at(ref_at), alt_ats(alt_ats), format(format) {}
 
   /*getters*/
   /*setters*/
 };
 
+// TODO: find a better name
+class VcfRecIdx {
+  std::map<pt::idx_t, std::vector<VcfRec>> vcf_recs_;
+
+  public:
+  /* constructor */
+  VcfRecIdx() : vcf_recs_() {}
+
+  /*getters*/
+
+  /*setters*/
+  void add_rec(pt::idx_t ref_idx, VcfRec &&vcf_rec) {
+    if (this->vcf_recs_.find(ref_idx) == this->vcf_recs_.end()) {
+      this->vcf_recs_[ref_idx] = std::vector<VcfRec>{vcf_rec};
+    } else {
+      this->vcf_recs_[ref_idx].emplace_back(vcf_rec);
+    }
+  }
+
+};
 /*
   enums
   -----
 */
-enum class aln_level_e { step, at };
+enum class aln_level_e {
+  step,
+  at // allele traversal
+};
 
 } // namespace povu::types::variation
 
