@@ -145,11 +145,12 @@ public:
   const Vertex& get_vertex_by_idx(pt::idx_t v_idx) const;
   const Vertex& get_vertex_by_id(pt::id_t v_id) const;
   Vertex& get_vertex_mut_by_id(pt::id_t v_id);
+  const std::string &get_ref_name(pt::id_t ref_id) const;
 
   // ---------
   // setter(s)
   // ---------
-  void add_tip(std::size_t v_id, pgt::v_end_e end);
+  void add_tip(pt::id_t v_id, pgt::v_end_e end);
   // returns the index (v_idx) of the added vertex
   pt::idx_t add_vertex(pt::id_t v_id, const std::string& label);
   // returns the index (e_idx) of the added edge

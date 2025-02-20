@@ -157,6 +157,10 @@ public:
     return this->ref_walks_.at(ref_id);
   }
 
+  const std::map<pt::id_t, It> &get_ref_walks() const {
+    return this->ref_walks_;
+  }
+
   /*setters*/
   void add_walk(id_t ref_id, Walk &&w) {
     if (this->ref_walks_.find(ref_id) == this->ref_walks_.end()) {
@@ -191,12 +195,32 @@ public:
   }
 };
 
+class VcfRec {
+  std::string chrom;
+  pt::idx_t pos;
+  std::string id;
+  std::string ref;
+  std::vector<std::string> alt;
+  // std::string qual;
+  // std::string filter;
+  // std::string info;
+  std::string format;
+
+public:
+  /* constructor */
+  VcfRec(std::string chrom, pt::idx_t pos, std::string id, std::string ref,
+         std::vector<std::string> alt, std::string format)
+      : chrom(chrom), pos(pos), id(id), ref(ref), alt(alt), format(format) {}
+
+  /*getters*/
+  /*setters*/
+};
 
 /*
   enums
   -----
 */
-enum class aln_level_e { step, rov };
+enum class aln_level_e { step, at };
 
 } // namespace povu::types::variation
 

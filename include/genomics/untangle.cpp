@@ -1,7 +1,4 @@
 #include "./untangle.hpp"
-#include <string>
-#include <vector>
-
 
 namespace povu::untangle {
 #define MODULE "povu::untangle"
@@ -58,21 +55,8 @@ pvt::RefWalks get_ref_traversals(const bd::VG &g, pvt::RoV &r) {
 void compare_traversals(const pvt::Itn &rw1, const pvt::Itn &rw2) {
   std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
-  // compare at the itn level
-  std::string et = pa::align(rw1, rw2, pvt::aln_level_e::rov);
-
-  bool aln_step = false;
-  for (auto c : et) {
-    if (c != 'M') {
-      aln_step= true;
-      break;
-    }
-  }
-
-  std::string et_step;
-  if (aln_step) {
-    et_step = pa::align(rw1, rw2, pvt::aln_level_e::step);
-  }
+  // compare at the at level
+  std::string et = pa::align(rw1, rw2, pvt::aln_level_e::at);
 
   return;
 }
@@ -113,15 +97,18 @@ void untangle_flb(pvt::RefWalks rt) {
  return;
 }
 
-void untangle_flb_rovs(const bd::VG &g, std::vector<pvt::RoV> rovs) {
+std::vector<pvt::RefWalks> untangle_flb_rovs(const bd::VG &g, std::vector<pvt::RoV> rovs) {
   std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
+  std::vector<pvt::RefWalks> all_rt;
+  all_rt.reserve(rovs.size());
   for (pvt::RoV &r : rovs) {
     pvt::RefWalks rt = get_ref_traversals(g, r);
     untangle_flb(rt);
+    all_rt.push_back(rt);
   }
 
-  return;
+  return all_rt;
 }
 
 } // namespace povu::untangle

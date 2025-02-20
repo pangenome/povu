@@ -1,7 +1,5 @@
 #include "./variants.hpp"
 
-
-
 namespace povu::variants {
 #define MODULE "povu::variants"
 

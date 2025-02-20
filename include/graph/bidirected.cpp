@@ -85,14 +85,16 @@ const Vertex &VG::get_vertex_by_id(pt::id_t v_id) const {
   return vertices[this->v_id_to_idx_.get_value(v_id)];
 }
 Vertex& VG::get_vertex_mut_by_id(pt::id_t v_id) {
-    return vertices[this->v_id_to_idx_.get_value(v_id)];
+  return vertices[this->v_id_to_idx_.get_value(v_id)];
 }
-
-void VG::add_tip(std::size_t v_id, pgt::v_end_e end) {
-  this->tips_.insert( pgt::side_n_id_t{end, v_id} );
+const std::string &VG::get_ref_name(pt::id_t ref_id) const {
+  return this->refs_.at(ref_id);
 }
 
 /* setters */
+void VG::add_tip(pt::id_t v_id, pgt::v_end_e end) {
+  this->tips_.insert(pgt::side_n_id_t{end, v_id});
+}
 
 pt::idx_t VG::add_vertex(pt::id_t v_id, const std::string &label) {
   vertices.push_back(Vertex{v_id, label});

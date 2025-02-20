@@ -1,8 +1,7 @@
 #include "./align.hpp"
-#include <cstdlib>
-
 
 namespace povu::align {
+// match result
 struct match_res_t {
   pt::idx_t a_inc;
   pt::idx_t b_inc;
@@ -38,7 +37,7 @@ inline match_res_t eq_step(const pvt::Itn &a, pt::idx_t a_idx,
 }
 
 /*for RoV inc by the length of the walk*/
-inline match_res_t eq_rov(const pvt::Itn &a, pt::idx_t a_idx,
+inline match_res_t eq_at(const pvt::Itn &a, pt::idx_t a_idx,
                           const pvt::Itn &b, pt::idx_t b_idx) {
 
   // if any of the steps is not a match in the ROV then it is not a match
@@ -49,7 +48,7 @@ inline match_res_t eq_rov(const pvt::Itn &a, pt::idx_t a_idx,
   pt::idx_t b_jmp = b_walk.step_count();
 
   if (a_jmp != b_jmp) {
-    return {a_jmp, b_jmp, false};
+    return {1, 1, false};
   }
 
   auto is_match = [](const pvt::Step &a, const pvt::Step &b) {
@@ -61,11 +60,11 @@ inline match_res_t eq_rov(const pvt::Itn &a, pt::idx_t a_idx,
 
   for (pt::idx_t i {}; i < a_jmp; i++) {
     if (!is_match(a_walk.get_step(i), b_walk.get_step(i))) {
-      return {a_jmp, b_jmp, false};
+      return {1, 1, false};
     }
   }
 
-  return {a_jmp, b_jmp, true};
+  return {1, 1, true};
 }
 
 aln_result_t global_align(const pvt::Itn &str1, pt::idx_t str1_len,
@@ -107,9 +106,11 @@ aln_result_t global_align(const pvt::Itn &str1, pt::idx_t str1_len,
     M(0, j) = (j * e) + o;
   }
 
+
   // Fill M, I, D matrices.
-  for (pt::idx_t i = 1; i < row_count;) {  // rows
-    for (pt::idx_t j = 1; j < col_count;) {  // cols
+  // TODO: is it possible to depend on the i and j inc values?
+  for (pt::idx_t i = 1; i < row_count; i++) {  // rows
+    for (pt::idx_t j = 1; j < col_count; j++) {  // cols
 
       // Fill I (gap in str2, insertion in str1)
       I(i, j) = min(
@@ -123,18 +124,14 @@ aln_result_t global_align(const pvt::Itn &str1, pt::idx_t str1_len,
         D(i, j - 1) + e
       );
 
-      auto [i_inc, j_inc, is_match] = eq(str1, i - 1, str2, j - 1);
-
       // Fill M (match/mismatch from diagonal).
       // Use i-1 and j-1 for the characters from the strings.
+      auto [_, __, is_match] = eq(str1, i - 1, str2, j - 1);
       M(i, j) = min(
         M(i - 1, j - 1) + (is_match ? a : x),
         I(i, j),
         D(i, j)
       );
-
-      i += i_inc;
-      j += j_inc;
     }
   }
 
@@ -194,16 +191,33 @@ aln_result_t global_align(const pvt::Itn &str1, pt::idx_t str1_len,
 
 std::string align(const pvt::Itn &i_itn, const pvt::Itn &j_itn, pvt::aln_level_e level) {
 
-  aln_scores_t scores = ([&]() {
+  struct aln_args {
+    pt::idx_t i_len;
+    pt::idx_t j_len;
+    match_res_t (*eq)(const pvt::Itn &, pt::idx_t, const pvt::Itn &, pt::idx_t);
+    aln_scores_t scores;
+    pvt::aln_level_e level;
+  };
+
+  auto [il, jl, eq, s, l] = ([&]() {
     switch (level) {
-    case pvt::aln_level_e::rov:
-      return aln_scores_t{0, 1, 2, 1};
+    case pvt::aln_level_e::at:
+      return aln_args{i_itn.walk_count(),
+                      j_itn.walk_count(),
+                      eq_at,
+                      {0, 1, 2, 1},
+                      pvt::aln_level_e::at};
+
     case pvt::aln_level_e::step:
-      return aln_scores_t{0, 1, 4, 1};
+      return aln_args{i_itn.step_count(),
+                      j_itn.step_count(),
+                      eq_step,
+                      {0, 1, 4, 1},
+                      pvt::aln_level_e::step};
     }
   })();
 
-  auto [_, et] = global_align(i_itn, i_itn.step_count(), j_itn, j_itn.step_count(), scores, eq_rov);
+  auto [_, et] = global_align(i_itn, il, j_itn, jl, s, eq);
 
   return et;
 }
