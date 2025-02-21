@@ -539,7 +539,8 @@ void populate_walks(const VG &g, pvt::RoV &r, pt::idx_t max_steps) {
 
     idx_or_t current = q.front();
     auto [c_v_idx, c_o] = current;
-    pgt::id_or_t c_id_or { g.v_idx_to_id(c_v_idx), c_o };
+    //pgt::id_or_t c_id_or { g.v_idx_to_id(c_v_idx), c_o };
+    
     q.pop();
 
     all_incoming_explored = true;
@@ -562,7 +563,7 @@ void populate_walks(const VG &g, pvt::RoV &r, pt::idx_t max_steps) {
       // append the current step to the incoming walks of n
       in_walks[current] = in_walks[n];
       for (pvt::Walk &w : in_walks[current]) {
-        w.append_step(c_id_or);
+        w.append_step( pvt::Step{g.v_idx_to_id(c_v_idx), c_o} );
       }
 
       seen[current].insert(n);

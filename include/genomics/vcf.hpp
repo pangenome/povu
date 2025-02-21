@@ -10,7 +10,7 @@ namespace pt = povu::types;
 namespace bd = povu::bidirected;
 namespace pvt = povu::types::genomics;
 
-pvt::VcfRecIdx to_vcf_records(const std::vector<pvt::RefWalks> &ref_walks);
+pvt::VcfRecIdx gen_vcf_records(const std::vector<pvt::RefWalks> &ref_walks);
 
 } // namespace povu::genomics::vcf
 

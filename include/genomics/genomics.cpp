@@ -7,7 +7,7 @@ pvt::VcfRecIdx gen_vcf_rec_map(const std::vector<pgt::flubble> &canonical_flubbl
                                const core::config &app_config) {
   std::vector<pvt::RoV> rovs = pv::gen_rov(canonical_flubbles, g, app_config);
   std::vector<pvt::RefWalks> rts = put::untangle_flb_rovs(g, rovs);
-  pvt::VcfRecIdx rs = pgv::to_vcf_records(rts);
+  pvt::VcfRecIdx rs = pgv::gen_vcf_records(rts);
 
   return rs;
 }

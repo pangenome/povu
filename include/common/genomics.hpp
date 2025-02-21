@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #include "./types.hpp"
@@ -57,7 +58,9 @@ void append_step(Step s) { this->steps_.emplace_back(s); }
 };
 
 typedef Walk StepSeq;
-typedef Walk AT ; // allele traversal
+
+/*allele traversal---a walk taken by a reference*/
+typedef Walk AT;
 
 /* region of variation */
 class RoV {
@@ -83,7 +86,10 @@ std::string as_str() const {
 }
 };
 
- /* a sequence of looped walks in a RoV for a given ref */
+/*
+ * an interrupted
+ * sequence of looped walks in a RoV for a given ref
+*/
 class It {
   std::vector<Walk> it_;
   pt::idx_t len;
@@ -133,11 +139,23 @@ typedef It Itn;
 
 /*  map of ref_id to the walk of the ref in a RoV */
 class RefWalks {
+  // up = unordered pair
+  typedef std::pair<pt::id_t, pt::id_t> up_t;
+
   // use Walk instead of vector<Step>?
   // map of ref_id to the walk of the ref in a RoV
   // a ref can have multiple walks in a RoV
   // the order of walks is not assured
   std::map<pt::id_t, It> ref_walks_;
+
+  //alignment between two refs
+  std::map<up_t, std::string> aln;
+
+  /* private methods */
+  // returns an unordered pair
+  up_t to_up (pt::id_t a, pt::id_t b) const {
+    return {std::min(a, b), std::max(a, b)};
+  };
 
 public:
   /* constructor */
@@ -158,8 +176,22 @@ public:
     return this->ref_walks_.at(ref_id);
   }
 
+
+
   const std::map<pt::id_t, It> &get_ref_walks() const {
     return this->ref_walks_;
+  }
+
+  bool has_aln(pt::id_t ref_id1, pt::id_t ref_id2) const {
+    return this->aln.find(to_up(ref_id1, ref_id2)) != this->aln.end();
+  }
+
+  const std::string &get_aln(pt::id_t ref_id1, pt::id_t ref_id2) const {
+    return this->aln.at(to_up(ref_id1, ref_id2));
+  }
+
+  const std::map<up_t, std::string> &get_alns() const {
+    return this->aln;
   }
 
   /*setters*/
@@ -194,6 +226,10 @@ public:
       }
     }
   }
+
+  void add_aln(pt::id_t ref_id1, pt::id_t ref_id2 , std::string &&aln) {
+    this->aln[to_up(ref_id1, ref_id2)] = aln;
+  }
 };
 
 class VcfRec {
@@ -214,6 +250,10 @@ public:
       : ref(ref), pos(pos), id(id), ref_at(ref_at), alt_ats(alt_ats), format(format) {}
 
   /*getters*/
+  pt::idx_t get_pos() const { return this->pos; }
+  const AT &get_ref_at() const { return this->ref_at; }
+  const std::vector<AT> &get_alt_ats() const { return this->alt_ats; }
+
   /*setters*/
 };
 
@@ -226,6 +266,9 @@ class VcfRecIdx {
   VcfRecIdx() : vcf_recs_() {}
 
   /*getters*/
+  const std::map<pt::idx_t, std::vector<VcfRec>> &get_recs() const {
+    return this->vcf_recs_;
+  }
 
   /*setters*/
   void add_rec(pt::idx_t ref_idx, VcfRec &&vcf_rec) {

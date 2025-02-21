@@ -52,45 +52,22 @@ pvt::RefWalks get_ref_traversals(const bd::VG &g, pvt::RoV &r) {
 }
 
 
-void compare_traversals(const pvt::Itn &rw1, const pvt::Itn &rw2) {
-  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
-
-  // compare at the at level
-  std::string et = pa::align(rw1, rw2, pvt::aln_level_e::at);
-
-  return;
-}
-
 void untangle_flb(pvt::RefWalks rt) {
-
-  // up = unordered pair
-  typedef std::pair<pt::id_t, pt::id_t> up_t;
-  std::set<up_t> compared;
-
-  auto to_up = [](pt::id_t a, pt::id_t b) -> up_t {
-    return {std::min(a, b), std::max(a, b)};
-  };
-
-  auto add_to_compared = [&](pt::id_t ref_id1, pt::id_t ref_id2) {
-    compared.insert(to_up(ref_id1, ref_id2));
-  };
-
-  auto is_compared = [&](pt::id_t ref_id1, pt::id_t ref_id2) -> bool {
-    return compared.contains(to_up(ref_id1, ref_id2));
-  };
-
   std::set<pt::id_t> ref_ids = rt.get_ref_ids();
 
   // all vs all compare
  for (pt::id_t ref_id1 : ref_ids) {
    const pvt::Itn &rw1 = rt.get_itn(ref_id1);
    for (pt::id_t ref_id2 : ref_ids) {
-     if (ref_id1 == ref_id2 || is_compared(ref_id1, ref_id2)) {
+     if (ref_id1 == ref_id2 || rt.has_aln(ref_id1, ref_id2)) {
        continue;
      }
      const pvt::Itn &rw2 = rt.get_itn(ref_id2);
-     compare_traversals(rw1, rw2);
-     add_to_compared(ref_id1, ref_id2);
+
+     // compare at the at level
+     std::string et = pa::align(rw1, rw2, pvt::aln_level_e::at);
+
+     rt.add_aln(ref_id1, ref_id2, std::move(et));
    }
  }
 

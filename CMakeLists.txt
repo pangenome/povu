@@ -56,8 +56,6 @@ include_directories(
 
 ADD_LIBRARY(LibsModule
 
-  # src/io/vcf.cpp
-
   # genomics
   ${INCLUDE_DIR}/genomics/untangle.cpp
   ${INCLUDE_DIR}/genomics/variants.cpp
@@ -66,7 +64,6 @@ ADD_LIBRARY(LibsModule
 
   # graph
   ${INCLUDE_DIR}/graph/bidirected.cpp
-  #${INCLUDE_DIR}/graph/biedged.cpp
   ${INCLUDE_DIR}/graph/flubble_tree.cpp
   #src/graph/graph.cpp
   ${INCLUDE_DIR}/graph/spanning_tree.cpp
@@ -80,7 +77,7 @@ ADD_LIBRARY(LibsModule
   ${INCLUDE_DIR}/algorithms/algorithms.cpp
 
   # align
-  # ${INCLUDE_DIR}/align/align.cpp
+  ${INCLUDE_DIR}/align/align.cpp
 )
 
 
