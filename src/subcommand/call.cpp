@@ -1,4 +1,6 @@
 #include "./call.hpp"
+#include <set>
+#include <vector>
 
 
 namespace povu::subcommands::call {
@@ -38,6 +40,17 @@ pt::status_t get_refs(core::config &app_config) {
   return 0;
 }
 
+inline std::set<pt::id_t> get_ref_ids(const bd::VG &g, const core::config &app_config) {
+  const std::vector<std::string> &refs = app_config.get_reference_paths();
+  std::set<pt::id_t> ref_ids;
+
+  for (const auto &[ref_id, ref_name] : g.get_refs()) {
+    if (std::find(refs.begin(), refs.end(), ref_name) != refs.end()) {
+      ref_ids.insert(ref_id);
+    }
+  }
+  return ref_ids;
+}
 
 void do_call(core::config &app_config) {
   std::string fn_name = std::format("[povu::main::{}]", __func__);
@@ -62,7 +75,9 @@ void do_call(core::config &app_config) {
     std::cerr << "reference count = " << app_config.get_reference_paths().size() << "\n";
   }
 
-  pvt::VcfRecIdx vcf_recs = pg::gen_vcf_rec_map(canonical_flubbles, *g, app_config);
+  std::set<pt::id_t> ref_ids = get_ref_ids(*g, app_config);
+
+  pvt::VcfRecIdx vcf_recs = pg::gen_vcf_rec_map(canonical_flubbles, *g, ref_ids, app_config);
 
   piv::write_vcfs(vcf_recs, *g, app_config);
 

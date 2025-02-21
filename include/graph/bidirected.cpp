@@ -91,6 +91,10 @@ const std::string &VG::get_ref_name(pt::id_t ref_id) const {
   return this->refs_.at(ref_id);
 }
 
+const std::map<pt::id_t, std::string> &VG::get_refs() const {
+  return this->refs_;
+}
+
 /* setters */
 void VG::add_tip(pt::id_t v_id, pgt::v_end_e end) {
   this->tips_.insert(pgt::side_n_id_t{end, v_id});

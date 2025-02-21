@@ -146,6 +146,7 @@ public:
   const Vertex& get_vertex_by_id(pt::id_t v_id) const;
   Vertex& get_vertex_mut_by_id(pt::id_t v_id);
   const std::string &get_ref_name(pt::id_t ref_id) const;
+  const std::map<id_t, std::string>& get_refs() const;
 
   // ---------
   // setter(s)

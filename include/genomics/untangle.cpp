@@ -4,7 +4,9 @@ namespace povu::untangle {
 #define MODULE "povu::untangle"
 
 /* get traversals for all refs in a single *walk* */
-std::map<pt::id_t, pvt::Walk> get_walk_refs(const bd::VG &g, const pvt::Walk &w) {
+std::map<pt::id_t, pvt::Walk>
+get_walk_refs(const bd::VG &g, const pvt::Walk &w,
+              const std::set<pt::id_t> &ref_ids) {
   std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
   std::map<pt::id_t, pvt::Walk> ref_map;
@@ -17,6 +19,9 @@ std::map<pt::id_t, pvt::Walk> get_walk_refs(const bd::VG &g, const pvt::Walk &w)
 
     for (const bd::PathInfo &ref : v_ref_data) {
       auto [ref_id, p_o, step_idx] = ref;
+      if (!ref_ids.contains(ref_id)) {
+        continue;
+      }
       if (p_o != o) {
         std::cerr << std::format(
             "{} WARN: walk_to_refs: mismatched orientations\n", fn_name);
@@ -32,7 +37,8 @@ std::map<pt::id_t, pvt::Walk> get_walk_refs(const bd::VG &g, const pvt::Walk &w)
 }
 
 /* untangle RoVs that are flubbles linearise refs in the flubble */
-pvt::RefWalks get_ref_traversals(const bd::VG &g, pvt::RoV &r) {
+pvt::RefWalks get_ref_traversals(const bd::VG &g, pvt::RoV &r,
+                                 const std::set<pt::id_t> &ref_ids) {
   std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
   pvt::RefWalks rw;
@@ -40,7 +46,7 @@ pvt::RefWalks get_ref_traversals(const bd::VG &g, pvt::RoV &r) {
   /* a walk is a single traversal from the start to the end of an RoV */
 
   for (const pvt::Walk &w : r.get_walks()) {
-    std::map<pt::id_t, pvt::Walk> walk_rt = get_walk_refs(g, w);
+    std::map<pt::id_t, pvt::Walk> walk_rt = get_walk_refs(g, w, ref_ids);
     // merge the ref_walks
     for (auto &[ref_id, w] : walk_rt) {
       rw.add_walk(ref_id, std::move(w));
@@ -50,7 +56,6 @@ pvt::RefWalks get_ref_traversals(const bd::VG &g, pvt::RoV &r) {
   rw.sort_by_step_idx();
   return rw;
 }
-
 
 void untangle_flb(pvt::RefWalks rt) {
   std::set<pt::id_t> ref_ids = rt.get_ref_ids();
@@ -74,13 +79,16 @@ void untangle_flb(pvt::RefWalks rt) {
  return;
 }
 
-std::vector<pvt::RefWalks> untangle_flb_rovs(const bd::VG &g, std::vector<pvt::RoV> rovs) {
+std::vector<pvt::RefWalks>
+untangle_flb_rovs(const bd::VG &g,
+                  std::vector<pvt::RoV> rovs,
+                  const std::set<pt::id_t> &ref_ids) {
   std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
   std::vector<pvt::RefWalks> all_rt;
   all_rt.reserve(rovs.size());
   for (pvt::RoV &r : rovs) {
-    pvt::RefWalks rt = get_ref_traversals(g, r);
+    pvt::RefWalks rt = get_ref_traversals(g, r, ref_ids);
     untangle_flb(rt);
     all_rt.push_back(rt);
   }
