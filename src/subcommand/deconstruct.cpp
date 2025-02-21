@@ -1,12 +1,8 @@
-#include "./subcommands.hpp"
-#include <cstddef>
-#include <cstdint>
-#include <iostream>
-#include <sys/types.h>
-#include <utility>
+#include "./deconstruct.hpp"
 
 
-namespace povu::subcommands {
+
+namespace povu::subcommands::deconstruct {
 
 void deconstruct_component(bd::VG *g, std::size_t component_id, const core::config& app_config) {
   std::string fn_name = std::format("[povu::deconstruct::{}]", __func__);

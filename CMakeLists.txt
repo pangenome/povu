@@ -56,6 +56,16 @@ include_directories(
 
 ADD_LIBRARY(LibsModule
 
+  # algorithms
+  ${INCLUDE_DIR}/algorithms/algorithms.cpp
+
+  # align
+  ${INCLUDE_DIR}/align/align.cpp
+
+  # common
+  ${INCLUDE_DIR}/common/types.cpp
+  ${INCLUDE_DIR}/common/utils.cpp
+
   # genomics
   ${INCLUDE_DIR}/genomics/untangle.cpp
   ${INCLUDE_DIR}/genomics/variants.cpp
@@ -65,19 +75,8 @@ ADD_LIBRARY(LibsModule
   # graph
   ${INCLUDE_DIR}/graph/bidirected.cpp
   ${INCLUDE_DIR}/graph/flubble_tree.cpp
-  #src/graph/graph.cpp
-  ${INCLUDE_DIR}/graph/spanning_tree.cpp
   ${INCLUDE_DIR}/graph/bracket_list.cpp
-
-  # common
-  ${INCLUDE_DIR}/common/types.cpp
-  ${INCLUDE_DIR}/common/utils.cpp
-
-  # algorithms
-  ${INCLUDE_DIR}/algorithms/algorithms.cpp
-
-  # align
-  ${INCLUDE_DIR}/align/align.cpp
+  ${INCLUDE_DIR}/graph/spanning_tree.cpp
 )
 
 

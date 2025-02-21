@@ -1,6 +1,8 @@
 #include <iostream>
 
-#include "./subcommand/subcommands.hpp"
+#include "./subcommand/call.hpp"
+#include "./subcommand/deconstruct.hpp"
+#include "./subcommand/info.hpp"
 
 namespace pv = povu::subcommands;
 
@@ -14,13 +16,13 @@ int main(int argc, char *argv[]) {
 
   switch (app_config.get_task()) {
   case core::task_e::deconstruct:
-    pv::do_deconstruct(app_config);
+    pv::deconstruct::do_deconstruct(app_config);
     break;
   case core::task_e::call:
-    pv::do_call(app_config);
+    pv::call::do_call(app_config);
     break;
   case core::task_e::info:
-    pv::do_info(app_config);
+    pv::info::do_info(app_config);
     break;
   default:
     std::cerr << std::format("{} Task not recognized\n", fn_name);

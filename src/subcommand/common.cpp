@@ -1,10 +1,6 @@
-/* Utility functions shared by various subcommands
- *
- */
+#include "./common.hpp"
 
-#include "./subcommands.hpp"
-
-namespace  povu::subcommands {
+namespace  povu::subcommands::common {
 /**
  * Read the input gfa into a bidirected variation graph
  */
@@ -17,8 +13,7 @@ bd::VG *get_vg(const core::config &app_config) {
 
   if (ll > 2)
     std::cerr << std::format("{} Reading graph\n", fn_name);
-  bd::VG *g =
-      io::from_gfa::to_bd(app_config.get_input_gfa().c_str(), app_config);
+  bd::VG *g = povu::io::from_gfa::to_bd(app_config.get_input_gfa().c_str(), app_config);
 
   if (ll > 1) {
     timeRefRead = pt::Time::now() - t0;

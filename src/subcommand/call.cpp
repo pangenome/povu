@@ -1,7 +1,7 @@
-#include "./subcommands.hpp"
+#include "./call.hpp"
 
 
-namespace povu::subcommands {
+namespace povu::subcommands::call {
 
 std::vector<pgt::flubble> get_can_flubbles(const core::config &app_config) {
   std::string fn_name = std::format("[povu::subcommands::{}]", __func__);
@@ -48,7 +48,7 @@ void do_call(core::config &app_config) {
   std::vector<pgt::flubble> canonical_flubbles;
   pt::status_t _;
 
-  std::thread t1([&] { g = get_vg(app_config); });
+  std::thread t1([&] { g = pcs::get_vg(app_config); });
   std::thread t2([&] { canonical_flubbles = get_can_flubbles(app_config); });
   std::thread t3([&] { _ = get_refs(app_config); });
 

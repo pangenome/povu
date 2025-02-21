@@ -19,15 +19,6 @@
 #include "../../include/graph/tree.hpp"
 
 
-namespace povu::io::from_gfa {
-namespace lq = liteseq;
-namespace bd = povu::bidirected;
-namespace pgt = povu::graph_types;
-namespace pt = povu::types;
-
-bd::VG *to_bd(const char* filename, const core::config& app_config);
-}; // namespace io::from_gfa
-
 namespace povu::io::common {
 namespace pgt = povu::graph_types;
 namespace fs = std::filesystem;

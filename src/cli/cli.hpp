@@ -1,3 +1,6 @@
+#ifndef PV_CLI_HPP
+#define PV_CLI_HPP
+
 #include "./app.hpp"
 #include "../io/io.hpp"
 
@@ -17,3 +20,5 @@ const std::string VERSION = "0.0.0-alpha";
 
 int cli(int argc, char **argv, core::config& app_config);
 } // namespace cli
+
+#endif // PV_CLI_HPP
