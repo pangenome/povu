@@ -3,7 +3,20 @@
 namespace povu::variants {
 #define MODULE "povu::variants"
 
-std::vector<pvt::RoV> par_populate_walks(const bd::VG &g, std::vector<pvt::RoV> rs) {
+void populate_walks(const bd::VG &g, std::vector<pvt::RoV> &rovs) {
+  for (pt::idx_t i {}; i < 5; i++) {
+    bd::populate_walks(g, rovs[i], MAX_FLUBBLE_STEPS);
+  }
+
+  //std::cerr << "\n\n";
+  //for (auto &rov: rovs) {
+  //    bd::populate_walks(g, rov, MAX_FLUBBLE_STEPS);
+  //}
+
+  return;
+}
+
+std::vector<pvt::RoV> par_populate_walks(const bd::VG &g, std::vector<pvt::RoV> &rs) {
   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
   std::size_t cfl_count = rs.size();
@@ -45,16 +58,24 @@ std::vector<pvt::RoV> par_populate_walks(const bd::VG &g, std::vector<pvt::RoV> 
 }
 
  /* filter out RoVs whose walk count is less than 2 */
-inline void filter_invalid(std::vector<pvt::RoV> &r) {
-  const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
-  for (auto it = r.begin(); it != r.end(); ++it) {
-    if (it->walk_count() < 2) {
-      std::cerr << std::format("{} WARN: flubble {} has {} paths\n",
-                               fn_name, it->as_str(), it->walk_count());
-      it = r.erase(it);
-    }
-  }
-};
+// inline void filter_invalid(std::vector<pvt::RoV> &r) {
+//   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+//   int y = 0;
+//   int z = 0;
+
+//   for (auto x: r) {
+//     if( x.walk_count() < 2) {
+//       z += 1;
+//     }
+//     else {
+//       y += 1;
+//     }
+//   }
+
+//   std::cerr << "removed " << z << " keppt " << y << "\n";
+
+//   return;
+// };
 
 /* initialize RoVs from flubbles */
 inline std::vector<pvt::RoV> init_rovs(const std::vector<pgt::flubble_t> &fls) {
@@ -68,14 +89,15 @@ inline std::vector<pvt::RoV> init_rovs(const std::vector<pgt::flubble_t> &fls) {
 }
 
 std::vector<pvt::RoV> gen_rov(const std::vector<pgt::flubble_t> &canonical_flubbles,
-                              const bd::VG &g, const core::config &app_config) {
+                              const bd::VG &g,
+                              const core::config &app_config) {
   std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
   std::vector<pvt::RoV> rs = init_rovs(canonical_flubbles);
-  std::vector<pvt::RoV> rovs = par_populate_walks(g, rs); // par for parallel
-  filter_invalid(rovs);
+  populate_walks(g, rs); // par for parallel
+  //filter_invalid(rs);
 
-  return rovs;
+  return rs;
 }
 
 } // namespace povu::variants

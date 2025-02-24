@@ -1,11 +1,6 @@
 #include "./vcf.hpp"
-#include <string>
-#include <utility>
-#include <vector>
 
 namespace povu::genomics::vcf {
-
-
 
 std::vector<pvt::AT> get_alts(pt::id_t ref_id, pt::idx_t at_idx, const pvt::RefWalks &rws) {
   std::vector<pvt::AT> alt_ats;
@@ -24,18 +19,38 @@ std::vector<pvt::AT> get_alts(pt::id_t ref_id, pt::idx_t at_idx, const pvt::RefW
   return alt_ats;
 }
 
-void add_vcf_recs(const pvt::RefWalks &rws, pvt::VcfRecIdx &vcf_recs) {
+void add_vcf_recs(const bd::VG &g, const pvt::RefWalks &rws,
+                  pvt::VcfRecIdx &vcf_recs) {
+
   for (const auto &[ref_id, itn] : rws.get_ref_walks()) {
+
+    std::cerr << "walks for " << g.get_ref_name(ref_id) << " (" << ref_id << ")\n";
+    for (auto &w : itn.get_walks()) {
+      std::cerr << w.as_str() << "\n";
+    }
+
     const std::vector<pvt::AT> ws = itn.get_walks();
     const pvt::AT &wf = ws.front();
     pt::idx_t pos = wf.get_steps().front().get_step_idx();
-    std::string id = "";
+
+    std::string id = rws.get_flb().as_str();
     std::string format = "";
 
+    /* determine allele traversals */
+
+    /* populate info field */
     for (pt::idx_t at_idx {}; at_idx < ws.size(); ++at_idx) {
       std::vector<pvt::AT> alt_ats = get_alts(ref_id, at_idx, rws);
       if (alt_ats.empty()) {
-        continue;
+        //std::cerr << "no alts for " << ref_id << " at " << rws.get_flb().as_str() << "\n";
+        //for (auto &w : rws.get_itn(ref_id).get_walks()) {
+          
+        //std::cerr << w.as_str() << "\n";
+          
+          
+        //}
+        
+        //continue;
       }
 
       const pvt::AT &ref_at = ws[at_idx];
@@ -43,15 +58,19 @@ void add_vcf_recs(const pvt::RefWalks &rws, pvt::VcfRecIdx &vcf_recs) {
       vcf_recs.add_rec(ref_id, std::move(r));
     }
   }
+
+  std::cerr << "now has " << vcf_recs.get_recs().size() << " recs \n";
 }
 
-pvt::VcfRecIdx gen_vcf_records(const std::vector<pvt::RefWalks> &ref_walks) {
+pvt::VcfRecIdx gen_vcf_records(const bd::VG &g,
+                               const std::vector<pvt::RefWalks> &ref_walks) {
 
   pvt::VcfRecIdx vcf_recs;
 
-  for (pt::idx_t fl_idx {}; fl_idx < ref_walks.size(); ++fl_idx) {
+  for (pt::idx_t fl_idx {}; fl_idx < 5; ++fl_idx) {
+    std::cerr << " Ref AT: " << ref_walks[fl_idx].get_flb().as_str() << "\n";
     const pvt::RefWalks &rw = ref_walks[fl_idx];
-    add_vcf_recs(rw, vcf_recs);
+    add_vcf_recs(g, rw, vcf_recs);
   }
 
   return vcf_recs;

@@ -163,8 +163,7 @@ struct flubble {
   id_or_t start_;
   id_or_t end_;
 
-// constructors
-
+/* constructor(s) */
 flubble(id_or_t start, id_or_t end) : start_(start), end_(end) {}
 
 flubble(const std::string& s) {
@@ -184,6 +183,15 @@ flubble(const std::string& s) {
 
   this->end_.v_id = std::stoull(s.substr(last + 1, s.size() - last - 1));
   this->end_.orientation = s[last] == '>' ? or_e::forward : or_e::reverse;
+}
+
+/* other(s) */
+std::string as_str() const {
+  std::string s;
+  s += this->start_.as_str();
+  s += this->end_.as_str();
+  return s;
+  //return std::format("{}{}", this->start_.as_str(), this->end_.as_str());
 }
 };
 

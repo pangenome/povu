@@ -52,6 +52,15 @@ pt::idx_t step_count() const { return this->steps_.size(); }
 const std::vector<Step> &get_steps() const { return this->steps_; }
 std::vector<Step> &get_steps_mut() { return this->steps_; }
 const Step &get_step(pt::idx_t idx) const { return this->steps_[idx]; }
+std::string as_str() const {
+  std::string s;
+    for (const Step &step : this->steps_) {
+      
+      s += std::format("{}{}", step.get_o() == pgt::or_e::forward ? ">" : "<",
+                       step.get_v_id());
+    }
+    return s;
+  }
 
 /*setters*/
 void append_step(Step s) { this->steps_.emplace_back(s); }
@@ -74,6 +83,7 @@ RoV(pgt::flubble_t fl) : walks_(), fl_(fl) {}
 pt::idx_t walk_count() const { return this->walks_.size(); }
 const pgt::id_or_t &get_entry() const { return this->fl_.start_; }
 const pgt::id_or_t &get_exit() const { return this->fl_.end_; }
+pgt::flubble_t get_flb() const { return this->fl_; }
 const std::vector<Walk> &get_walks() const { return this->walks_; }
 std::vector<Walk> &get_walks_mut() { return this->walks_; }
 
@@ -151,6 +161,8 @@ class RefWalks {
   //alignment between two refs
   std::map<up_t, std::string> aln;
 
+  pgt::flubble_t fl_;
+
   /* private methods */
   // returns an unordered pair
   up_t to_up (pt::id_t a, pt::id_t b) const {
@@ -159,10 +171,11 @@ class RefWalks {
 
 public:
   /* constructor */
-  RefWalks() : ref_walks_() {}
+  RefWalks(pgt::flubble_t fl) : ref_walks_(), fl_(fl) {}
 
   /*getters*/
   pt::idx_t ref_count() const { return this->ref_walks_.size(); }
+  const pgt::flubble_t &get_flb() const { return this->fl_; }
 
   std::set<pt::id_t> get_ref_ids() const {
     std::set<pt::id_t> ref_ids;
@@ -175,8 +188,6 @@ public:
   const Itn &get_itn(pt::id_t ref_id) const {
     return this->ref_walks_.at(ref_id);
   }
-
-
 
   const std::map<pt::id_t, It> &get_ref_walks() const {
     return this->ref_walks_;
@@ -235,8 +246,8 @@ public:
 class VcfRec {
   pt::id_t ref; // chrom
   pt::idx_t pos; // 1-based step idx
-  std::string id;
-  AT ref_at; // 
+  std::string id; // start and end of a RoV e.g >1>4
+  AT ref_at; //
   std::vector<AT> alt_ats;
   // std::string qual;
   // std::string filter;
@@ -251,6 +262,7 @@ public:
 
   /*getters*/
   pt::idx_t get_pos() const { return this->pos; }
+  std::string get_id() const { return this->id; }
   const AT &get_ref_at() const { return this->ref_at; }
   const std::vector<AT> &get_alt_ats() const { return this->alt_ats; }
 

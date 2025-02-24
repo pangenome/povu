@@ -67,7 +67,14 @@ bd::VG *to_bd(const char* filename, const core::config& app_config) {
 
         bd::Vertex& v = vg->get_vertex_mut_by_id(ls_g->v[lq_v_idx].id);
 
-        v.add_ref(ref_idx, o, path_pos);
+        if (ls_g->v[lq_v_idx].id < 10) {
+          std::cerr << std::format(" {} {} {} {} \n", fn_name,
+                                   ls_g->v[lq_v_idx].id,
+                                   ls_g->rs->names[ref_idx],
+                                   path_pos);
+        }
+
+                v.add_ref(ref_idx, o, path_pos);
         path_pos += v.get_label().length();
       }
     }
