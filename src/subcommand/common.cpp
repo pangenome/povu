@@ -11,9 +11,10 @@ bd::VG *get_vg(const core::config &app_config) {
   std::chrono::duration<double> timeRefRead;
   auto t0 = pt::Time::now();
 
-  if (ll > 2)
-    std::cerr << std::format("{} Reading graph\n", fn_name);
-  bd::VG *g = povu::io::from_gfa::to_bd(app_config.get_input_gfa().c_str(), app_config);
+  // if (ll > 2) {
+  //   std::cerr << std::format("{} Reading graph\n", fn_name);
+  // }
+  bd::VG *g = povu::io::from_gfa::to_bd(app_config);
 
   if (ll > 1) {
     timeRefRead = pt::Time::now() - t0;

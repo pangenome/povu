@@ -1,6 +1,5 @@
 #include "./from_gfa.hpp"
 
-
 namespace povu::io::from_gfa {
 
 /**
@@ -10,40 +9,36 @@ namespace povu::io::from_gfa {
  * @param [in] app_config The application configuration
  * @return A VariationGraph object from the GFA file
  */
-bd::VG *to_bd(const char* filename, const core::config& app_config) {
+bd::VG *to_bd(const core::config& app_config) {
   std::string fn_name { std::format("[povu::io::{}]", __func__) };
 
-  /* initialize a liteseq graph */
-  lq::vg *ls_g = lq::vg_new();
-  lq::vg_props ls_cfg = {
-    .inc_vtx_labels = app_config.inc_vtx_labels(),
-    .inc_refs = app_config.inc_refs()
-  };
+  /* initialize a liteseq gfa */
+  std::vector<const char *> refs {};
+  lq::gfa_props *gfa = lq::gfa_new(app_config.inc_refs(),
+                                   app_config.inc_vtx_labels(),
+                                   refs.data(),
+                                   app_config.get_input_gfa().c_str());
 
-  lq::gfa_to_vg(filename, ls_g, &ls_cfg); // read the GFA file into a liteseq graph
-
-  std::size_t vtx_count = ls_g->vtx_count;
-  std::size_t edge_count = ls_g->edge_count;
-  std::size_t ref_count = ls_g->ref_count;
+  pt::idx_t vtx_count = gfa->s_line_count;
+  pt::idx_t edge_count = gfa->l_line_count;
+  pt::idx_t ref_count = gfa->p_line_count;
 
   bd::VG *vg = new bd::VG(vtx_count, edge_count); // initialize a bidirected graph
 
-  //bd::VG vg(vtx_count, edge_count); // initialize a bidirected graph
-
   /* add vertices */
-  for (size_t i {}; i < ls_g->vtx_count; ++i) {
-    std::size_t v_id = ls_g->v[i].id;
-    std::string label = app_config.inc_vtx_labels() ? ls_g->v[i].seq : std::string();
+  for (size_t i {}; i < vtx_count; ++i) {
+    std::size_t v_id = gfa->v[i].id;
+    std::string label = app_config.inc_vtx_labels() ? std::string(gfa->v[i].seq) : std::string();
     vg->add_vertex(v_id, label);
   }
 
   /* add edges */
-  for (std::size_t i {}; i < ls_g->edge_count; ++i) {
-    std::size_t v1 = ls_g->e[i].v1_id;
-    pgt::v_end_e v1_end = ls_g->e[i].v1_side == lq::vtx_side_e::LEFT ? pgt::v_end_e::l : pgt::v_end_e::r;
+  for (std::size_t i {}; i < edge_count; ++i) {
+    std::size_t v1 = gfa->e[i].v1_id;
+    pgt::v_end_e v1_end = gfa->e[i].v1_side == lq::vtx_side_e::LEFT ? pgt::v_end_e::l : pgt::v_end_e::r;
 
-    std::size_t v2 = ls_g->e[i].v2_id;
-    pgt::v_end_e v2_end = ls_g->e[i].v2_side == lq::vtx_side_e::LEFT ? pgt::v_end_e::l : pgt::v_end_e::r;
+    std::size_t v2 = gfa->e[i].v2_id;
+    pgt::v_end_e v2_end = gfa->e[i].v2_side == lq::vtx_side_e::LEFT ? pgt::v_end_e::l : pgt::v_end_e::r;
 
     vg->add_edge(v1, v1_end, v2, v2_end);
   }
@@ -52,35 +47,26 @@ bd::VG *to_bd(const char* filename, const core::config& app_config) {
   // TODO: to parallise run in parallel for each vertex
   if (app_config.inc_refs()) {
     std::size_t path_pos {}; // the position of a base in a reference path
-    for (std::size_t ref_idx {}; ref_idx < ref_count; ++ref_idx) {
+    for (pt::idx_t ref_idx {}; ref_idx < ref_count; ++ref_idx) {
 
-      vg->add_ref(ls_g->rs->names[ref_idx]);
+      pt::id_t vg_ref_id = vg->add_ref(gfa->refs[ref_idx].name);
       path_pos = 1; // this is 1 indexed
 
       // color each vertex in the path
-      for (std::size_t lq_v_idx {}; lq_v_idx < vtx_count; ++lq_v_idx) {
-        bool h = lq::vec_has_ref(ls_g->rs->x, lq_v_idx, ref_idx);
-        if (!h) { continue; }
-
-        lq::strand_e s = lq::get_ref_strand(ls_g->rs->s, lq_v_idx, ref_idx);
+      for (pt::idx_t step_idx{}; step_idx < gfa->refs[ref_idx].step_count; ++step_idx) {
+        pt::id_t v_id = gfa->refs[ref_idx].steps[step_idx].v_id;
+        lq::strand_e s = gfa->refs[ref_idx].steps[step_idx].s;
         pgt::or_e o = (s == lq::strand_e::FORWARD) ? pgt::or_e::forward : pgt::or_e::reverse;
 
-        bd::Vertex& v = vg->get_vertex_mut_by_id(ls_g->v[lq_v_idx].id);
-
-        if (ls_g->v[lq_v_idx].id < 10) {
-          std::cerr << std::format(" {} {} {} {} \n", fn_name,
-                                   ls_g->v[lq_v_idx].id,
-                                   ls_g->rs->names[ref_idx],
-                                   path_pos);
-        }
-
-                v.add_ref(ref_idx, o, path_pos);
+        bd::Vertex& v = vg->get_vertex_mut_by_id(v_id);
+        v.add_ref(vg_ref_id, o, path_pos);
         path_pos += v.get_label().length();
       }
+
     }
   }
 
-  lq::vg_free(ls_g, &ls_cfg); // very important: free the liteseq graph
+  gfa_free(gfa); // very important free the gfa props
 
   /* populate tips */
   for (std::size_t v_idx{}; v_idx < vg->vtx_count(); ++v_idx) {

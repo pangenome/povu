@@ -95,6 +95,7 @@ const std::string &VG::get_ref_name(pt::id_t ref_id) const {
   return this->refs_.at(ref_id);
 }
 
+
 const std::map<pt::id_t, std::string> &VG::get_refs() const {
   return this->refs_;
 }
@@ -133,9 +134,10 @@ pt::idx_t VG::add_edge(pt::id_t v1_id, pgt::v_end_e v1_end, pt::id_t v2_id, pgt:
   return e_idx;
 }
 
-void VG::add_ref(const std::string& ref_name) {
-  std::size_t ref_id = this->refs_.size();
+pt::id_t VG::add_ref(const std::string& ref_name) {
+  pt::id_t ref_id = this->refs_.size();
   this->refs_[ref_id] = ref_name;
+  return ref_id;
 }
 
 void VG::shrink_to_fit() {

@@ -156,7 +156,7 @@ public:
   pt::idx_t add_vertex(pt::id_t v_id, const std::string& label);
   // returns the index (e_idx) of the added edge
   pt::idx_t add_edge(pt::id_t v1_id, pgt::v_end_e v1_end, pt::id_t v2_id, pgt::v_end_e v2_end);
-  void add_ref(const std::string &ref_name);
+  pt::id_t add_ref(const std::string &ref_name);
   void shrink_to_fit();
 
   // other
