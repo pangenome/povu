@@ -55,7 +55,7 @@ const Step &get_step(pt::idx_t idx) const { return this->steps_[idx]; }
 std::string as_str() const {
   std::string s;
     for (const Step &step : this->steps_) {
-      
+
       s += std::format("{}{}", step.get_o() == pgt::or_e::forward ? ">" : "<",
                        step.get_v_id());
     }
@@ -101,24 +101,26 @@ std::string as_str() const {
  * sequence of looped walks in a RoV for a given ref
 */
 class It {
-  std::vector<Walk> it_;
+  std::vector<AT> it_;
   pt::idx_t len;
 
 public:
-  /* constructor */
+  /* constructors */
   It() : it_(), len(0) {}
-  It(Walk &&w) : it_(std::vector<Walk>{w}), len(w.step_count()) {}
+  It(AT &&w) : it_(std::vector<AT>{w}), len(w.step_count()) {}
 
-  /*getters*/
+  /* getters */
   pt::idx_t walk_count() const { return this->it_.size(); }
   pt::idx_t step_count() const { return this->len; }
 
-  const std::vector<Walk> &get_walks() const { return this->it_; }
-  std::vector<Walk> &get_walks_mut() { return this->it_; }
+  const std::vector<AT> &get_walks() const { return this->it_; }
+  std::vector<AT> &get_walks_mut() { return this->it_; }
+
+  AT &get_walk_mut(pt::idx_t w_idx) { return this->it_[w_idx]; }
 
   const Step &get_step(pt::idx_t idx) const {
     pt::idx_t i = 0;
-    for (const Walk &w : this->it_) {
+    for (const AT &w : this->it_) {
       if (i + w.step_count() > idx) {
         return w.get_steps()[idx - i];
       }
@@ -127,9 +129,9 @@ public:
     throw std::out_of_range("step index out of range");
   }
 
-  const Walk &get_walk_by_step_idx(pt::idx_t idx) const {
+  const AT &get_walk_by_step_idx(pt::idx_t idx) const {
     pt::idx_t i = 0;
-    for (const Walk &w : this->it_) {
+    for (const AT &w : this->it_) {
       if (i + w.step_count() > idx) {
         return w;
       }
@@ -138,8 +140,8 @@ public:
     throw std::out_of_range("step index out of range");
   }
 
-  /*setters*/
-  void add_walk(Walk &&w) {
+  /* setters */
+  void add_walk(AT &&w) {
     this->it_.emplace_back(w);
     this->len += w.step_count();
   }
@@ -156,12 +158,14 @@ class RefWalks {
   // map of ref_id to the walk of the ref in a RoV
   // a ref can have multiple walks in a RoV
   // the order of walks is not assured
-  std::map<pt::id_t, It> ref_walks_;
+  std::map<pt::id_t, Itn> ref_walks_;
 
   //alignment between two refs
   std::map<up_t, std::string> aln;
 
   pgt::flubble_t fl_;
+
+  bool is_tangled_;
 
   /* private methods */
   // returns an unordered pair
@@ -171,7 +175,9 @@ class RefWalks {
 
 public:
   /* constructor */
-  RefWalks(pgt::flubble_t fl) : ref_walks_(), fl_(fl) {}
+  RefWalks(pgt::flubble_t fl) : ref_walks_(), fl_(fl) {
+    is_tangled_ = false;
+  }
 
   /*getters*/
   pt::idx_t ref_count() const { return this->ref_walks_.size(); }
@@ -205,12 +211,20 @@ public:
     return this->aln;
   }
 
+  bool is_tangled() const { return this->is_tangled_; }
+
   /*setters*/
-  void add_walk(id_t ref_id, Walk &&w) {
+  // returns true to mean that tangling exists. a walk traverses an RoV more than once
+  void add_itn(id_t ref_id, Itn &&itn) {
     if (this->ref_walks_.find(ref_id) == this->ref_walks_.end()) {
-      this->ref_walks_[ref_id] = It(std::move(w));
+      this->ref_walks_[ref_id] = std::move(itn);
     } else {
-      this->ref_walks_[ref_id].add_walk(std::move(w));
+      Itn &itn_ = this->ref_walks_[ref_id];
+      for (auto &w : itn.get_walks_mut()) {
+        itn_.add_walk(std::move(w));
+      }
+
+      is_tangled_ = true;
     }
   }
 

@@ -4,7 +4,7 @@ namespace povu::variants {
 #define MODULE "povu::variants"
 
 void populate_walks(const bd::VG &g, std::vector<pvt::RoV> &rovs) {
-  for (pt::idx_t i {}; i < 5; i++) {
+  for (pt::idx_t i {}; i < rovs.size(); i++) {
     bd::populate_walks(g, rovs[i], MAX_FLUBBLE_STEPS);
   }
 
