@@ -11,17 +11,17 @@ std::vector<pvt::AT> get_alts(pt::id_t ref_id, pt::idx_t at_idx, const pvt::RefW
     }
 
     auto alt_id = up_ref1 == ref_id ? up_ref2 : up_ref1;
+    // TODO: call from rws
     pvt::It alt_itn = rws.get_itn(alt_id);
-    pvt::AT alt_at = alt_itn.get_walk_by_step_idx(at_idx);
+    pvt::AT alt_at = alt_itn.get_at(at_idx);
     alt_ats.push_back(alt_at);
   }
 
   return alt_ats;
-}
 
+}
 void add_untangled_vcf_recs(const bd::VG &g, const pvt::RefWalks &rws,
                   pvt::VcfRecIdx &vcf_recs) {
-
 
   const std::map<pt::id_t, pvt::Itn> &refs = rws.get_ref_walks();
 
@@ -42,9 +42,12 @@ void add_untangled_vcf_recs(const bd::VG &g, const pvt::RefWalks &rws,
 
   for (const auto &[ref_id, itn] : rws.get_ref_walks()) {
 
-    const std::vector<pvt::AT> ws = itn.get_walks();
+    const std::vector<pvt::AT> ws = itn.get_ats();
     const pvt::AT &wf = ws.front();
-    pt::idx_t pos = wf.get_steps().front().get_step_idx();
+    // TODO[A]: fix
+    pt::id_t pos = wf.is_del()? 666 : wf.get_steps().front().get_step_idx();
+
+
 
     std::string id = rws.get_flb().as_str();
     std::string format = "";
@@ -52,7 +55,7 @@ void add_untangled_vcf_recs(const bd::VG &g, const pvt::RefWalks &rws,
     /* determine allele traversals */
 
     // has only one
-    const pvt::AT &ref_at = rws.get_itn(ref_id).get_walks().front();
+    const pvt::AT &ref_at = rws.get_itn(ref_id).get_ats().front();
 
     /* populate info field */
     std::vector<pvt::AT> alt_ats;
@@ -61,25 +64,19 @@ void add_untangled_vcf_recs(const bd::VG &g, const pvt::RefWalks &rws,
         continue;
       }
 
-      const pvt::AT &alt_at = alt_itn.get_walks().front();
+      const pvt::AT &alt_at = alt_itn.get_ats().front();
       if (at_match(ref_at, alt_at)) {
         continue;
       }
-      alt_ats.push_back(alt_itn.get_walks().front());
+      alt_ats.push_back(alt_itn.get_ats().front());
     }
 
     pvt::VcfRec r {ref_id, pos, id, ref_at, alt_ats, format};
     vcf_recs.add_rec(ref_id, std::move(r));
   }
-
 }
 
-  //std::cerr << "now has " << vcf_recs.get_recs().size() << " recs \n";
-
-
-
-pvt::VcfRecIdx gen_vcf_records(const bd::VG &g,
-                               const std::vector<pvt::RefWalks> &ref_walks) {
+pvt::VcfRecIdx gen_vcf_records(const bd::VG &g, const std::vector<pvt::RefWalks> &ref_walks) {
   pvt::VcfRecIdx vcf_recs;
 
   for (pt::idx_t fl_idx {}; fl_idx < ref_walks.size(); ++fl_idx) {
@@ -89,6 +86,8 @@ pvt::VcfRecIdx gen_vcf_records(const bd::VG &g,
     }
     add_untangled_vcf_recs(g, rw, vcf_recs);
   }
+
+  std::cerr << "here\n";
 
   return vcf_recs;
 }

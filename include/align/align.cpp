@@ -41,8 +41,9 @@ inline match_res_t eq_at(const pvt::Itn &a, pt::idx_t a_idx,
                           const pvt::Itn &b, pt::idx_t b_idx) {
 
   // if any of the steps is not a match in the ROV then it is not a match
-  const pvt::Walk &a_walk = a.get_walk_by_step_idx(a_idx);
-  const pvt::Walk &b_walk = b.get_walk_by_step_idx(b_idx);
+  const pvt::AT &a_walk = a.get_at(a_idx);
+  const pvt::AT &b_walk = b.get_at(b_idx);
+
 
   pt::idx_t a_jmp = a_walk.step_count();
   pt::idx_t b_jmp = b_walk.step_count();
@@ -51,9 +52,9 @@ inline match_res_t eq_at(const pvt::Itn &a, pt::idx_t a_idx,
     return {1, 1, false};
   }
 
+  // TODO: also compare loop no
   auto is_match = [](const pvt::Step &a, const pvt::Step &b) {
-    return a.get_v_id() == b.get_v_id() && a.get_o() == b.get_o() &&
-           a.get_loop_no() == b.get_loop_no();
+    return a.get_v_id() == b.get_v_id() && a.get_o() == b.get_o();
   };
 
   // check for the order as well
@@ -199,11 +200,11 @@ std::string align(const pvt::Itn &i_itn, const pvt::Itn &j_itn, pvt::aln_level_e
     pvt::aln_level_e level;
   };
 
-  auto [il, jl, eq, s, l] = ([&]() {
+  auto [il, jl, eq, s, l] = ([&]() -> aln_args {
     switch (level) {
     case pvt::aln_level_e::at:
-      return aln_args{i_itn.walk_count(),
-                      j_itn.walk_count(),
+      return aln_args{i_itn.at_count(),
+                      j_itn.at_count(),
                       eq_at,
                       {0, 1, 2, 1},
                       pvt::aln_level_e::at};
@@ -216,6 +217,15 @@ std::string align(const pvt::Itn &i_itn, const pvt::Itn &j_itn, pvt::aln_level_e
                       pvt::aln_level_e::step};
     }
   })();
+
+
+  if (il == 1 && jl == 1) {
+    if (eq(i_itn, 0, j_itn, 0).is_match) {
+      return "M";
+    }
+
+    return "X";
+  }
 
   auto [_, et] = global_align(i_itn, il, j_itn, jl, s, eq);
 

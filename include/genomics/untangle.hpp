@@ -5,6 +5,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 #include "../../src/cli/app.hpp"
 #include "../common/genomics.hpp"

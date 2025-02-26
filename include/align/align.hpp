@@ -46,16 +46,13 @@ public:
   void print(std::ostream &os = std::cout) const {
     for (pt::idx_t i = 0; i < this->row_count_; ++i) {
       for (pt::idx_t j = 0; j < this->col_count_; ++j) {
-        os << ((*this)(i, j) == pc::INVALID_IDX ? pc::INF
-                                                : std::to_string((*this)(i, j)))
+        os << ((*this)(i, j) == pc::INVALID_IDX ? pc::INF : std::to_string((*this)(i, j)))
            << " ";
       }
       os << "\n";
     }
   }
 };
-
-
 
 std::string align(const pvt::Itn &iw, const pvt::Itn &jw, pvt::aln_level_e level);
 
