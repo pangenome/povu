@@ -1,4 +1,5 @@
 #include "./untangle.hpp"
+#include <sys/types.h>
 #include <unordered_set>
 
 
@@ -6,6 +7,7 @@ namespace povu::untangle {
 #define MODULE "povu::untangle"
 
 // typedef std::map<pt::id_t, pvt::Itn> RefItns;
+//typedef std::pair<pt::id_t, pt::id_t> up_t;
 
 /**
  * get traversals for all refs in a single *walk*
@@ -60,7 +62,7 @@ std::map<pt::id_t, pvt::Itn> get_itns(const bd::VG &g, const pvt::Walk &w) {
     }
   }
 
-  // how to avoid this 
+  // how to avoid this
   // because we only pass those with more than 2 steps
   // delete those with a single step
   for (auto it = ref_map.begin(); it != ref_map.end();) {
@@ -75,7 +77,7 @@ std::map<pt::id_t, pvt::Itn> get_itns(const bd::VG &g, const pvt::Walk &w) {
   return ref_map;
 }
 
-/*
+/**
   assumption:
    - a deletion is in both s and t
      * even if orientation matches RoV (s or t) and is only in s or t it is not
@@ -155,18 +157,12 @@ pvt::RefWalks get_ref_traversals(const bd::VG &g, pvt::RoV &r) {
 
   return rw;
 }
-typedef std::pair<pt::id_t, pt::id_t> up_t;
 
-inline std::vector<up_t> comp_pairs(pvt::RefWalks rt) {
+inline std::vector<pt::up_t<pt::id_t>> compute_pairs(pvt::RefWalks rt) {
   std::set<pt::id_t> ref_ids = rt.get_ref_ids();
 
-
-  std::set<up_t> done;
-  std::vector<up_t> aln_pairs;
-
-  auto to_up = [](pt::id_t a, pt::id_t b) -> std::pair<pt::id_t, pt::id_t> {
-    return std::make_pair(std::min(a, b), std::max(a, b));
-  };
+  std::set<pt::up_t<pt::id_t>> done;
+  std::vector<pt::up_t<pt::id_t>> aln_pairs;
 
   // all vs all compare
   for (pt::id_t ref_id1 : ref_ids) {
@@ -176,7 +172,8 @@ inline std::vector<up_t> comp_pairs(pvt::RefWalks rt) {
         continue;
       }
 
-      auto p = to_up(ref_id1, ref_id2);
+      pt::up_t<pt::id_t> p{ref_id1, ref_id2};
+
       if (done.find(p) != done.end()) {
         continue;
       }
@@ -189,39 +186,37 @@ inline std::vector<up_t> comp_pairs(pvt::RefWalks rt) {
   return aln_pairs;
 }
 
-void untangle_flb(pvt::RefWalks rt, const bd::VG &g) {
+void untangle_flb(pvt::RefWalks rt) {
   std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
-  std::vector<up_t> aln_pairs = comp_pairs(rt);
+  std::vector<pt::up_t<pt::id_t>> aln_pairs = compute_pairs(rt);
 
   for (auto [ref_id1, ref_id2] : aln_pairs) {
 
     const pvt::Itn &itn1 = rt.get_itn(ref_id1);
     const pvt::Itn &itn2 = rt.get_itn(ref_id2);
 
-    std::cerr << "ref pairs " << g.get_ref_name(ref_id1) << " vs " << g.get_ref_name(ref_id2) << "\n";
-    std::cerr << itn1.at_count() << " " << itn2.at_count() << "\n";
-    for (auto x : itn1.get_ats()) {
-      std::cerr << x.as_str() << ", ";
-    }
-    std::cerr << " vs  ";
-    for (auto x : itn2.get_ats()) {
-      std::cerr << x.as_str() << ", ";
-    }
-    std::cerr << "\n";
+    // std::cerr << "ref pairs " << g.get_ref_name(ref_id1) << " vs " << g.get_ref_name(ref_id2) << "\n";
+    // std::cerr << itn1.at_count() << " " << itn2.at_count() << "\n";
+    // for (auto x : itn1.get_ats()) {
+    //   std::cerr << x.as_str() << ", ";
+    // }
+    // std::cerr << " vs  ";
+    // for (auto x : itn2.get_ats()) {
+    //   std::cerr << x.as_str() << ", ";
+    // }
+    // std::cerr << "\n";
 
 
     std::string et = pa::align(itn1, itn2, pvt::aln_level_e::at);
 
-    std::cerr << et << "\n";
+    //std::cerr << et << "\n";
 
     rt.add_aln(ref_id1, ref_id2, std::move(et));
   }
 }
 
-std::vector<pvt::RefWalks> untangle_flb_rovs(const bd::VG &g,
-                                             std::vector<pvt::RoV> &rovs,
-                                             const std::set<pt::id_t> &ref_ids) {
+std::vector<pvt::RefWalks> untangle_flb_rovs(const bd::VG &g, std::vector<pvt::RoV> &rovs) {
   std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
   std::vector<pvt::RefWalks> all_rt;
@@ -232,13 +227,11 @@ std::vector<pvt::RefWalks> untangle_flb_rovs(const bd::VG &g,
     pvt::RefWalks rt = get_ref_traversals(g, r);
 
     if (rt.is_tangled()) {
-      untangle_flb(rt, g);
+      untangle_flb(rt);
     }
 
-    
     all_rt.push_back(rt);
   }
-
 
   return all_rt;
 }

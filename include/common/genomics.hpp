@@ -30,18 +30,17 @@ public:
     :v_id_(v_id), step_idx_(step_idx), o_(o) {}
 
     /*getters*/
-    pt::idx_t get_step_idx() const {
-  return this->step_idx_;
-}
-pt::id_t get_v_id() const { return this->v_id_; }
-pgt::or_e get_o() const { return this->o_; }
+  pt::idx_t get_step_idx() const {
+    return this->step_idx_;
+  }
+  pt::id_t get_v_id() const { return this->v_id_; }
+  pgt::or_e get_o() const { return this->o_; }
   //pt::id_t get_loop_no() const { return this->loop_no_; }
 
-/*setters*/
-void set_step_idx(pt::idx_t step_idx) { this->step_idx_ = step_idx; }
+  /*setters*/
+  void set_step_idx(pt::idx_t step_idx) { this->step_idx_ = step_idx; }
   //void set_loop_no(pt::id_t loop_id) { this->loop_no_ = loop_id; }
 };
-
 
 /* an uninterrupted ordered sequence of steps bound by the start end of a RoV */
 class Walk {
@@ -105,9 +104,9 @@ std::string as_str() const {
 
 /*allele traversal---a walk taken by a reference*/
 // when the AT is a deletion, the walk is empty
-//typedef Walk AT; 
+//typedef Walk AT;
 class AT : public Walk {
-  
+
 public:
   /* constructors */
   AT() : Walk(){}
@@ -115,8 +114,6 @@ public:
 
   /*getters*/
   bool is_del() const { return this->step_count() == 2; }
-
-
 };
 
 /*
@@ -181,24 +178,20 @@ public:
 
   //void dec_step_count(pt::idx_t dec) { this->len -= dec; }
 };
-
 typedef It Itn;
-
-
 
 /*  map of ref_id to the walk of the ref in a RoV */
 class RefWalks {
-  // up = unordered pair
-  typedef std::pair<pt::id_t, pt::id_t> up_t;
+  
 
   // use Walk instead of vector<Step>?
   // map of ref_id to the walk of the ref in a RoV
   // a ref can have multiple walks in a RoV
   // the order of walks is not assured
-  std::map<pt::id_t, Itn> ref_walks_;
+  std::map<pt::id_t, Itn> ref_itns_;
 
   //alignment between two refs
-  std::map<up_t, std::string> aln;
+  std::map<pt::up_t<pt::id_t>, std::string> aln;
 
   pgt::flubble_t fl_;
 
@@ -206,34 +199,34 @@ class RefWalks {
 
   /* private methods */
   // returns an unordered pair
-  up_t to_up (pt::id_t a, pt::id_t b) const {
-    return {std::min(a, b), std::max(a, b)};
-  };
+  // up_t to_up (pt::id_t a, pt::id_t b) const {
+  //   return {std::min(a, b), std::max(a, b)};
+  // };
 
 public:
   /* constructor */
-  RefWalks(pgt::flubble_t fl) : ref_walks_(), fl_(fl) {
+  RefWalks(pgt::flubble_t fl) : ref_itns_(), fl_(fl) {
     is_tangled_ = false;
   }
 
   /*getters*/
-  pt::idx_t ref_count() const { return this->ref_walks_.size(); }
+  pt::idx_t ref_count() const { return this->ref_itns_.size(); }
   const pgt::flubble_t &get_flb() const { return this->fl_; }
 
   std::set<pt::id_t> get_ref_ids() const {
     std::set<pt::id_t> ref_ids;
-    for (const auto &p : this->ref_walks_) {
+    for (const auto &p : this->ref_itns_) {
       ref_ids.insert(p.first);
     }
     return ref_ids;
   }
 
   const Itn &get_itn(pt::id_t ref_id) const {
-    return this->ref_walks_.at(ref_id);
+    return this->ref_itns_.at(ref_id);
   }
 
-  const std::map<pt::id_t, It> &get_ref_walks() const {
-    return this->ref_walks_;
+  const std::map<pt::id_t, It> &get_ref_itns() const {
+    return this->ref_itns_;
   }
 
   // bool has_aln(pt::id_t ref_id1, pt::id_t ref_id2) const {
@@ -241,10 +234,10 @@ public:
   // }
 
   const std::string &get_aln(pt::id_t ref_id1, pt::id_t ref_id2) const {
-    return this->aln.at(to_up(ref_id1, ref_id2));
+    return this->aln.at(pt::up_t<pt::id_t>{ref_id1, ref_id2});
   }
 
-  const std::map<up_t, std::string> &get_alns() const {
+  const std::map<pt::up_t<pt::id_t>, std::string> &get_alns() const {
     return this->aln;
   }
 
@@ -253,10 +246,10 @@ public:
   /*setters*/
   // returns true to mean that tangling exists. a walk traverses an RoV more than once
   void add_itn(id_t ref_id, Itn &&itn) {
-    if (this->ref_walks_.find(ref_id) == this->ref_walks_.end()) {
-      this->ref_walks_[ref_id] = std::move(itn);
+    if (this->ref_itns_.find(ref_id) == this->ref_itns_.end()) {
+      this->ref_itns_[ref_id] = std::move(itn);
     } else {
-      Itn &itn_ = this->ref_walks_[ref_id];
+      Itn &itn_ = this->ref_itns_[ref_id];
       for (auto &w : itn.get_ats_mut()) {
         itn_.add_at(std::move(w));
       }
@@ -272,7 +265,7 @@ public:
     };
 
     // for each ref, sort the walks by step_idx of the first step
-    for (auto &[_, itn] : this->ref_walks_) {
+    for (auto &[_, itn] : this->ref_itns_) {
       std::sort(itn.get_ats_mut().begin(), itn.get_ats_mut().end(), compare_si);
     }
   }
@@ -289,7 +282,7 @@ public:
     //   }
 
   void add_aln(pt::id_t ref_id1, pt::id_t ref_id2 , std::string &&aln) {
-    this->aln[to_up(ref_id1, ref_id2)] = aln;
+    this->aln[pt::up_t<pt::id_t>{ref_id1, ref_id2}] = aln;
   }
 };
 
@@ -306,9 +299,8 @@ class VcfRec {
 
 public:
   /* constructor */
-  VcfRec(pt::id_t ref, pt::idx_t pos, std::string id, AT ref_at,
-         std::vector<AT> alt_ats, std::string format)
-      : ref(ref), pos(pos), id(id), ref_at(ref_at), alt_ats(alt_ats), format(format) {}
+  VcfRec(pt::id_t ref, pt::idx_t pos, std::string id, AT ref_at, std::vector<AT> alt_ats)
+      : ref(ref), pos(pos), id(id), ref_at(ref_at), alt_ats(alt_ats) {}
 
   /*getters*/
   pt::idx_t get_pos() const { return this->pos; }

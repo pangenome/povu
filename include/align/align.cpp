@@ -41,12 +41,12 @@ inline match_res_t eq_at(const pvt::Itn &a, pt::idx_t a_idx,
                           const pvt::Itn &b, pt::idx_t b_idx) {
 
   // if any of the steps is not a match in the ROV then it is not a match
-  const pvt::AT &a_walk = a.get_at(a_idx);
-  const pvt::AT &b_walk = b.get_at(b_idx);
+  const pvt::AT &a_at = a.get_at(a_idx);
+  const pvt::AT &b_at = b.get_at(b_idx);
 
 
-  pt::idx_t a_jmp = a_walk.step_count();
-  pt::idx_t b_jmp = b_walk.step_count();
+  pt::idx_t a_jmp = a_at.step_count();
+  pt::idx_t b_jmp = b_at.step_count();
 
   if (a_jmp != b_jmp) {
     return {1, 1, false};
@@ -60,7 +60,7 @@ inline match_res_t eq_at(const pvt::Itn &a, pt::idx_t a_idx,
   // check for the order as well
 
   for (pt::idx_t i {}; i < a_jmp; i++) {
-    if (!is_match(a_walk.get_step(i), b_walk.get_step(i))) {
+    if (!is_match(a_at.get_step(i), b_at.get_step(i))) {
       return {1, 1, false};
     }
   }
@@ -87,24 +87,28 @@ aln_result_t global_align(const pvt::Itn &str1, pt::idx_t str1_len,
   Matrix D(row_count, col_count);
 
   // Initialize the top row of I.
-  for (pt::idx_t j = 0; j < col_count; ++j) {
-    I(0, j) = pc::INVALID_IDX;
+  for (pt::idx_t j = 1; j < col_count; ++j) {
+    D(0, j) = pc::INVALID_IDX;
+    I(0, j) = (j * e) + o;
   }
 
   // Initialize the left column of D.
-  for (pt::idx_t i = 0; i < row_count; ++i) {
-    D(i, 0) = pc::INVALID_IDX;
+  for (pt::idx_t i = 1; i < row_count; ++i) {
+    I(i, 0) = pc::INVALID_IDX;
+    D(i, 0) = (i * e) + o;
   }
 
   // Initialize M(0,0)
   M(0, 0) = 0;
+  D(0,0) = pc::INVALID_IDX;
+  I(0,0) = pc::INVALID_IDX;
   // Initialize first column: gap penalties for aligning str1 with an empty string.
   for (pt::idx_t i = 1; i < row_count; ++i) {
-    M(i, 0) = (i * e) + o;
+    M(i, 0) = pc::INVALID_IDX;
   }
   // Initialize first row.
   for (pt::idx_t j = 1; j < col_count; ++j) {
-    M(0, j) = (j * e) + o;
+    M(0, j) = pc::INVALID_IDX;
   }
 
 
@@ -128,6 +132,9 @@ aln_result_t global_align(const pvt::Itn &str1, pt::idx_t str1_len,
       // Fill M (match/mismatch from diagonal).
       // Use i-1 and j-1 for the characters from the strings.
       auto [_, __, is_match] = eq(str1, i - 1, str2, j - 1);
+
+      //std::cerr << "i: " << i << " j: " << j << " is_match: " << is_match << "\n";
+
       M(i, j) = min(
         M(i - 1, j - 1) + (is_match ? a : x),
         I(i, j),
@@ -137,6 +144,9 @@ aln_result_t global_align(const pvt::Itn &str1, pt::idx_t str1_len,
   }
 
   pt::idx_t aln_score = M(row_count-1, col_count - 1);
+
+
+  //std::cerr << "Score: " << aln_score << "\n";
 
   // Define an enum to track which matrix we’re in.
 
@@ -160,20 +170,35 @@ aln_result_t global_align(const pvt::Itn &str1, pt::idx_t str1_len,
   /* Trace back to reconstruct the alignment. */
   while (i > 0 && j > 0) {
     auto [dec_i, dec_j, is_match] = eq(str1, i - 1, str2, j - 1);
+    // std::cerr << "i: " << i << " j: " << j << " is_match: " << is_match << "\n";
+
     if (M(i,j) == min(M(i-1,j), M(i, j-1), (M(i-1, j-1) + (is_match ? a : x)))) {
+      //std::cerr << "ps M\n";
       et.push_back((is_match ? 'M' : 'X'));
-      i -= dec_i;
-      j -= dec_j;
+      i -= 1;
+      j -= 1;
     }
     else if (M(i-1,j) == min(M(i-1,j), M(i,j-1), M(i, j)) ) {
+      //std::cerr << "ps I\n";
       et.push_back('I');
-      i -= dec_i;
+      i -= 1;
     }
     else if (M(i,j-1) == min(M(i-1,j), M(i, j-1), M(i, j)) ) {
+      //std::cerr << "ps D\n";
       et.push_back('D');
-      j -= dec_j;
+      j -= 1;
+    }
+    else {
+      //std::cerr << "ps U\n";
+      //std::reverse(et.begin(), et.end());
+      //std::cerr << "Edit transcript: \n" << et << "\n";
+      // TODO: throw decent error
+      exit(1);
     }
   }
+
+  //std::cerr << "i: " << i << " j: " << j << "\n";
+
 
   /* If one string is exhausted before the other, add the necessary indels. */
   while (i > 0) {  // remaining vertical moves are insertions.
@@ -184,6 +209,8 @@ aln_result_t global_align(const pvt::Itn &str1, pt::idx_t str1_len,
     et.push_back('D');
     j--;
   }
+
+  //std::cerr << "Edit transcript: " << et << "\n";
 
   std::reverse(et.begin(), et.end());
 

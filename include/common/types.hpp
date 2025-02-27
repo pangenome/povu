@@ -45,6 +45,9 @@ template <typename T> struct Pair {
   friend constexpr auto operator<=>(Pair, Pair) = default;
 };
 
+/**
+ * unordered pair with same type on both sides
+ */
 template <typename T> struct unordered_pair {
   T l;
   T r;
@@ -55,6 +58,11 @@ template <typename T> struct unordered_pair {
   friend constexpr auto operator<=>(const unordered_pair &,
                                     const unordered_pair &) = default;
 };
+
+template <typename T>
+using up_t = unordered_pair<T>;
+// up = unordered pair
+//typedef std::pair<id_t, id_t> up_t;
 
 } // namespace povu::types
 

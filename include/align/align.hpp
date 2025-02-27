@@ -31,7 +31,7 @@ class Matrix {
 
 public:
   Matrix(pt::idx_t row_count, pt::idx_t col_count)
-    : data(row_count * col_count, pc::INVALID_IDX), row_count_(row_count),
+    : data(row_count * col_count, 0), row_count_(row_count),
         col_count_(col_count) {}
 
   pt::idx_t &operator()(pt::idx_t row, pt::idx_t col) {

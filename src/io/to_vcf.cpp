@@ -46,7 +46,7 @@ void write_vcf(const bd::VG &g, const std::string &chrom,
 
   auto at_as_str = [](const pvt::AT &at) -> std::string {
     std::string str;
-    
+
     for (auto &s: at.get_steps()) {
       str += std::format("{}{}",
                          s.get_o() == pgt::or_e::forward ? ">" : "<",
@@ -72,7 +72,7 @@ void write_vcf(const bd::VG &g, const std::string &chrom,
     s += ats_as_str(std::vector<pvt::AT>{r.get_ref_at()});
     s += ",";
     s += ats_as_str(r.get_alt_ats());
-    
+
     return s;
   };
 

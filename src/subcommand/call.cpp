@@ -77,7 +77,7 @@ void do_call(core::config &app_config) {
 
   std::set<pt::id_t> ref_ids = get_ref_ids(*g, app_config);
 
-  pvt::VcfRecIdx vcf_recs = pg::gen_vcf_rec_map(canonical_flubbles, *g, ref_ids, app_config);
+  pvt::VcfRecIdx vcf_recs = pg::gen_vcf_rec_map(canonical_flubbles, *g, app_config);
 
   piv::write_vcfs(vcf_recs, *g, app_config);
 
