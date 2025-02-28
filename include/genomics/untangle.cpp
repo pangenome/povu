@@ -1,13 +1,8 @@
 #include "./untangle.hpp"
-#include <sys/types.h>
-#include <unordered_set>
 
 
 namespace povu::untangle {
 #define MODULE "povu::untangle"
-
-// typedef std::map<pt::id_t, pvt::Itn> RefItns;
-//typedef std::pair<pt::id_t, pt::id_t> up_t;
 
 /**
  * get traversals for all refs in a single *walk*
@@ -146,15 +141,25 @@ pvt::RefWalks get_ref_traversals(const bd::VG &g, pvt::RoV &r) {
 
 
   // print the ref walks
+  if (false && rw.is_tangled()) {
   std::cerr << "flubble " << r.get_flb().as_str() << "\n";
   std::cerr << "is tangled " << rw.is_tangled() << "\n";
-  for (auto &[ref_id, itn] : rw.get_ref_walks()) {
+  for (auto &[ref_id, itn] : rw.get_ref_itns()) {
     std::cerr << "ref " << g.get_ref_name(ref_id) << "\n";
-    for (auto &at : itn.get_ats()) {
-      std::cerr << at.as_str() << "\n";
+    std::cerr << "ATs: ";
+    for (pt::idx_t at_idx {}; at_idx < itn.at_count(); at_idx++){
+      const pvt::AT &at = itn.get_at(at_idx);
+      std::cerr << at.as_str();
+      if (at_idx < itn.at_count() - 1) {
+        std::cerr << ", ";
+      }
+      else {
+        std::cerr << "\n";
+      }
     }
   }
-
+  exit(1);
+  }
   return rw;
 }
 
@@ -186,7 +191,7 @@ inline std::vector<pt::up_t<pt::id_t>> compute_pairs(pvt::RefWalks rt) {
   return aln_pairs;
 }
 
-void untangle_flb(pvt::RefWalks rt) {
+void untangle_flb(pvt::RefWalks &rt) {
   std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
   std::vector<pt::up_t<pt::id_t>> aln_pairs = compute_pairs(rt);

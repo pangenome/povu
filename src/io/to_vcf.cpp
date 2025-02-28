@@ -1,4 +1,5 @@
 #include "./to_vcf.hpp"
+#include <string>
 #include <vector>
 
 namespace povu::io::to_vcf {
@@ -14,10 +15,9 @@ inline void write_header(const std::string &chrom , std::ostream &os) {
   os << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\n";
 }
 
-
-void write_vcf(const bd::VG &g, const std::string &chrom,
-               std::vector<pvt::VcfRec> recs, std::ostream &os) {
-
+void write_vcf_rec(const bd::VG &g, const pvt::VcfRec &r,
+                   const std::string &chrom, std::ostream &os) {
+  const std::string qual = "60";
   auto get_label = [&](const pvt::Step &s) -> std::string {
     if (s.get_o() == pgt::or_e::forward) {
       return g.get_vertex_by_id(s.get_v_id()).get_label();
@@ -26,31 +26,42 @@ void write_vcf(const bd::VG &g, const std::string &chrom,
     }
   };
 
-  auto at_to_dna_str = [&](const std::vector<pvt::AT> &ats) -> std::string {
+  auto at_to_dna_str = [&](const pvt::AT &at) -> std::string {
     std::string at_str = "";
-    for (std::size_t step_idx {}; step_idx< ats.size(); ++step_idx) {
-      const auto &at = ats[step_idx];
-      for (auto &s: at.get_steps()) {
-        at_str += get_label(s);
-      }
 
-      if (step_idx < ats.size() - 1) {
-        at_str += ",";
+    if (at.is_del()) {
+      const pvt::Step &s = at.get_step(0);
+      at_str += get_label(s).back();
+    }
+    else {
+      for (pt::idx_t step_idx {1}; step_idx < at.step_count() - 1; ++step_idx) {
+        const auto &s = at.get_step(step_idx);
+        at_str += get_label(s);
       }
     }
     return at_str;
   };
 
-  const std::string qual = "60";
+  auto ats_to_dna_str = [&](std::string &&prefix, const std::vector<pvt::AT> &ats) -> std::string {
+    std::string ats_str = "";
+    for (std::size_t step_idx {}; step_idx < ats.size(); ++step_idx) {
+      const auto &at = ats[step_idx];
+      ats_str += prefix;
+      ats_str += at_to_dna_str(at);
 
+      if (step_idx < ats.size() - 1) {
+        ats_str += ",";
+      }
+    }
+    return ats_str;
+  };
 
   auto at_as_str = [](const pvt::AT &at) -> std::string {
     std::string str;
 
-    for (auto &s: at.get_steps()) {
-      str += std::format("{}{}",
-                         s.get_o() == pgt::or_e::forward ? ">" : "<",
-                         s.get_v_id() );
+    for (auto &s : at.get_steps()) {
+      str += std::format("{}{}", s.get_o() == pgt::or_e::forward ? ">" : "<",
+                         s.get_v_id());
     }
     return str;
   };
@@ -69,54 +80,52 @@ void write_vcf(const bd::VG &g, const std::string &chrom,
 
   auto fmt_field = [&](const pvt::VcfRec &r) -> std::string {
     std::string s;
-    s += ats_as_str(std::vector<pvt::AT>{r.get_ref_at()});
+    s += at_as_str(r.get_ref_at());
     s += ",";
     s += ats_as_str(r.get_alt_ats());
 
     return s;
   };
 
-  auto ref_dna_str = [&](const pvt::VcfRec &r) -> std::string {
-    return at_to_dna_str(std::vector<pvt::AT>{r.get_ref_at()});
-  };
+  std::string ref_dna = at_to_dna_str(r.get_ref_at());
+  std::string alt_dna =
+    ats_to_dna_str(r.get_ref_at().is_del() ? ref_dna : "", r.get_alt_ats());
 
-  auto alt_dna_strs = [&](const pvt::VcfRec &r) {
-    return at_to_dna_str(r.get_alt_ats());
-  };
+  os << chrom
+     << "\t" << r.get_pos()
+     << "\t" << r.get_id()
+     << "\t" << ref_dna
+     << "\t" << alt_dna
+     << "\t" << qual
+     << "\t" << "."
+     << "\t" << "AT=" << fmt_field(r)
+     << "\t" << "GT"
+     << "\n";
+}
+
+void write_vcf(const bd::VG &g, const std::string &chrom,
+               std::vector<pvt::VcfRec> recs, std::ostream &os) {
 
   write_header(chrom, os);
-
   for (const pvt::VcfRec &r: recs) {
-    os << chrom
-       << "\t" << r.get_pos()
-       << "\t" << r.get_id()
-       << "\t" << ref_dna_str(r)
-       << "\t" << alt_dna_strs(r)
-       << "\t" << qual
-       << "\t" << "."
-       << "\t" << "AT=" << fmt_field(r)
-       << "\t" << "GT"
-       << "\n";
+    write_vcf_rec(g, r, chrom, os);
   }
 
   return;
 }
 
+
+
 void write_vcfs(const pvt::VcfRecIdx &vcf_recs, const bd::VG &g, const core::config &app_config) {
 
   std::string out_dir = std::string(app_config.get_output_dir());
 
-  std::cerr << "called write_vcfs\n";
-
   for (const auto &[ref_id, recs] : vcf_recs.get_recs()) {
-
     std::string ref_name = g.get_ref_name(ref_id);
     std::string vcf_fp = std::format("{}/{}.vcf", out_dir, ref_name);
-
-    std::cerr << "writing " << vcf_fp << "\n";
-
     std::ofstream os(vcf_fp);
     write_vcf(g, ref_name, recs, os);
+    std::cerr << "wrote " << vcf_fp << "\n";
   }
 
   return;
