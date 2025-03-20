@@ -39,6 +39,11 @@ void write_vcf_rec(const bd::VG &g, const pvt::VcfRec &r,
         at_str += get_label(s);
       }
     }
+
+    if (at_str.empty()) {
+      at_str = ".";
+    }
+
     return at_str;
   };
 

@@ -19,7 +19,7 @@ class Step {
   // TODO: remove loop_no?
   //pt::id_t loop_no_; // the nth time that a ref is going through a flubble RoV
   pt::id_t v_id_;
-  pt::idx_t step_idx_;
+  pt::idx_t step_idx_; // also locus
   pgt::or_e o_;
 
 public:
@@ -29,10 +29,8 @@ public:
   Step(pt::id_t v_id, pt::idx_t step_idx, pgt::or_e o )
     :v_id_(v_id), step_idx_(step_idx), o_(o) {}
 
-    /*getters*/
-  pt::idx_t get_step_idx() const {
-    return this->step_idx_;
-  }
+  /*getters*/
+  pt::idx_t get_step_idx() const { return this->step_idx_; }
   pt::id_t get_v_id() const { return this->v_id_; }
   pgt::or_e get_o() const { return this->o_; }
   //pt::id_t get_loop_no() const { return this->loop_no_; }
@@ -106,14 +104,17 @@ std::string as_str() const {
 // when the AT is a deletion, the walk is empty
 //typedef Walk AT;
 class AT : public Walk {
-
+bool is_del_;
 public:
   /* constructors */
   AT() : Walk(){}
   AT(Step s) : Walk(s) {}
 
   /*getters*/
-  bool is_del() const { return this->step_count() == 2; }
+  bool is_del() const { return this->is_del_; }
+
+  /* setters */
+  void set_is_del(bool is_del) { this->is_del_ = is_del; }
 };
 
 /*
@@ -127,7 +128,7 @@ class It {
 public:
   /* constructors */
   It() : it_(), len(0) {}
-  It(AT &&w) : it_(std::vector<AT>{w}), len(w.step_count()) {}
+  //It(AT &&w) : it_(std::vector<AT>{w}), len(w.step_count()) {}
 
   /* getters */
   pt::idx_t at_count() const { return this->it_.size(); }
@@ -162,12 +163,12 @@ public:
   // }
 
   /* setters */
-  void add_at(AT &&w) {
+  void append_at(AT &&w) {
     this->it_.emplace_back(w);
     this->len += w.step_count();
   }
 
-  void append_step(pt::idx_t at_idx,Step s) {
+  void append_step(pt::idx_t at_idx, Step s) {
     if (at_idx >= this->at_count()) {
       throw std::out_of_range("at index out of range");
     }
@@ -176,13 +177,21 @@ public:
     this->len++;
   }
 
+  void remove_at(pt::idx_t at_idx) {
+    if (at_idx >= this->at_count()) {
+      throw std::out_of_range("at index out of range");
+    }
+
+    this->len -= this->it_[at_idx].step_count();
+    this->it_.erase(this->it_.begin() + at_idx);
+  }
+
   //void dec_step_count(pt::idx_t dec) { this->len -= dec; }
 };
 typedef It Itn;
 
 /*  map of ref_id to the walk of the ref in a RoV */
 class RefWalks {
-  
 
   // use Walk instead of vector<Step>?
   // map of ref_id to the walk of the ref in a RoV
@@ -205,9 +214,7 @@ class RefWalks {
 
 public:
   /* constructor */
-  RefWalks(pgt::flubble_t fl) : ref_itns_(), fl_(fl) {
-    is_tangled_ = false;
-  }
+  RefWalks(pgt::flubble_t fl) : ref_itns_(), fl_(fl), is_tangled_(false) {}
 
   /*getters*/
   pt::idx_t ref_count() const { return this->ref_itns_.size(); }
@@ -225,7 +232,11 @@ public:
     return this->ref_itns_.at(ref_id);
   }
 
-  const std::map<pt::id_t, It> &get_ref_itns() const {
+  const std::map<pt::id_t, Itn> &get_ref_itns() const {
+    return this->ref_itns_;
+  }
+
+  std::map<pt::id_t, Itn> &get_ref_itns_mut() {
     return this->ref_itns_;
   }
 
@@ -251,11 +262,15 @@ public:
     } else {
       Itn &itn_ = this->ref_itns_[ref_id];
       for (auto &w : itn.get_ats_mut()) {
-        itn_.add_at(std::move(w));
+        itn_.append_at(std::move(w));
       }
 
-      is_tangled_ = true;
+      //is_tangled_ = true;
     }
+  }
+
+  void replace_itn(pt::id_t ref_id, Itn &&itn) {
+    this->ref_itns_[ref_id] = std::move(itn);
   }
 
   void sort_by_step_idx() {
@@ -284,6 +299,8 @@ public:
   void add_aln(pt::id_t ref_id1, pt::id_t ref_id2 , std::string &&aln) {
     this->aln[pt::up_t<pt::id_t>{ref_id1, ref_id2}] = aln;
   }
+
+  void set_tangled(bool is_tangled) { this->is_tangled_ = is_tangled; }
 };
 
 class VcfRec {

@@ -1,6 +1,9 @@
 #ifndef POVU_GENOMICS_VCF_HPP
 #define POVU_GENOMICS_VCF_HPP
 
+#include <algorithm>
+#include <vector>
+
 #include "../common/genomics.hpp"
 #include "../common/types.hpp"
 #include "../graph/bidirected.hpp"
