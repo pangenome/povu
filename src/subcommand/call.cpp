@@ -61,13 +61,16 @@ void do_call(core::config &app_config) {
   std::vector<pgt::flubble> canonical_flubbles;
   pt::status_t _;
 
-  std::thread t1([&] { g = pcs::get_vg(app_config); });
+  std::thread t1([&] {
+    get_refs(app_config);
+    g = pcs::get_vg(app_config);
+  });
   std::thread t2([&] { canonical_flubbles = get_can_flubbles(app_config); });
-  std::thread t3([&] { _ = get_refs(app_config); });
+  //std::thread t3([&] { _ = get_refs(app_config); });
 
   t1.join();
   t2.join();
-  t3.join();
+  //t3.join();
 
   if (true) { // debug
     g->summary();

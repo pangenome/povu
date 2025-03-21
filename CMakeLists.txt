@@ -54,7 +54,7 @@ include_directories(
   #${CMAKE_CURRENT_SOURCE_DIR}/deps/WFA2-lib/bindings/cpp
 )
 
-ADD_LIBRARY(LibsModule
+ADD_LIBRARY(povulib
 
   # algorithms
   ${INCLUDE_DIR}/algorithms/algorithms.cpp
@@ -108,7 +108,7 @@ add_executable(povu
 # Link the library (LibsModule) and libhandlegraph to your executable
 target_link_libraries(povu
   PRIVATE
-  LibsModule
+  povulib
   #handlegraph_shared
   #wfa2cpp
   liteseqlib
