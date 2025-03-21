@@ -1,10 +1,9 @@
 # povu
-Find flubbles in a variation graph
 
+Explore regions of variation
 
-## Install
+## Building povu
 
-### Compile from source
 
 1. Fetch the source code
 ```
@@ -19,7 +18,21 @@ cmake -H. -Bbuild && cmake --build build -- -j 3
 3. The binary should be in `./bin/povu`
 
 
-## Usage
+### Building specific target
+
+Building only the povu library
+
+```
+cmake -H. -DCMAKE_BUILD_TYPE=Debug -Bbuild && cmake --build build --target povulib -- -j 8
+```
+
+Building only the povu binary
+
+```
+cmake -H. -DCMAKE_BUILD_TYPE=Debug -Bbuild && cmake --build build --target povu -- -j 8
+```
+
+## Usage and Examples
 
 For general help text run `./bin/povu -h` or just `./bin/povu`
 
