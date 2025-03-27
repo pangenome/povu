@@ -42,7 +42,6 @@ inline flubble forwardise(std::size_t start_id, pgt::or_e start_or, std::size_t 
 }
 
 
-
 /**
   * @brief Enumerate the flubbles
  */
@@ -132,7 +131,7 @@ std::vector<pt::idx_t> compute_eq_class_metadata(const std::vector<oic_t> &stack
 
   for (std::size_t i {stack_.size()};  i-- > 0; ) {
     auto [or_curr, id_curr, cl_curr] = stack_[i];
-    pt::idx_t next_idx = (next_seen_map.contains(cl_curr)) ? next_seen_map[cl_curr] : i;
+    pt::idx_t next_idx = next_seen_map.contains(cl_curr) ? next_seen_map[cl_curr] : i;
     next_seen[i] = next_idx;
     next_seen_map[cl_curr] = i;
   }
@@ -160,28 +159,22 @@ std::vector<oic_t> compute_eq_class_stack(pst::Tree &t) {
       or_e o = t.get_vertex(v).type() == pgt::v_type_e::r ? pgt::or_e::forward : pgt::or_e::reverse;
       stack.push_back({o, t.get_vertex(v).g_v_id(), e.get_class()});
     }
+    else {
+      stack.push_back({pgt::or_e::forward, pc::INVALID_ID, e.get_class()});
+    }
   }
 
   stack.shrink_to_fit();
   std::reverse(stack.begin(), stack.end());
 
-
-  // print stack contents to stderr
-   for (const auto &oic : stack) {
-     std::cerr << "or " << oic.orientation << " id " << oic.id << " class " << oic.cls << "\n";
-   }
-
   return stack;
 }
-
 
 pvtr::Tree<flubble> st_to_ft(pst::Tree& t) {
   std::string fn_name = std::format("[povu::algorithms::{}]", __func__);
 
   std::vector<oic_t> s { compute_eq_class_stack(t) };
-
   std::vector<pt::idx_t> next_seen = compute_eq_class_metadata(s);
-
   pvtr::Tree<flubble> ft = construct_flubble_tree(s, next_seen);
 
   return ft;
