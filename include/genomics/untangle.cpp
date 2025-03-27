@@ -396,10 +396,10 @@ pvt::Itn remove_invalid_ats(pvt::Itn &itn) {
 pvt::RefWalks get_ref_traversals(const bd::VG &g, pvt::RoV &r) {
   std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
-  // auto [s_v_id, _] = r.get_entry();
-  // auto [e_v_id, __] = r.get_exit();
-  // bool dbg = s_v_id == 1546 && e_v_id == 1551 ? true : false;
-  bool dbg = true;
+  auto [s_v_id, _] = r.get_entry();
+  auto [e_v_id, __] = r.get_exit();
+  bool dbg = s_v_id == 106 && e_v_id == 109 ? true : false;
+  dbg = false;
 
   pvt::RefWalks rw { r.get_flb() };
 
@@ -442,7 +442,7 @@ pvt::RefWalks get_ref_traversals(const bd::VG &g, pvt::RoV &r) {
     }
   }
 
-  if (dbg && rw.is_tangled()) {
+  if (dbg) {
     std::cerr <<
       std::format("{} flubble: {} is tangled: {}\n"
                   "walks:\n",
@@ -472,7 +472,7 @@ pvt::RefWalks get_ref_traversals(const bd::VG &g, pvt::RoV &r) {
         }
       }
     }
-    // exit(1);
+    exit(1);
   }
 
   return rw;
@@ -512,7 +512,7 @@ inline std::vector<pt::up_t<pt::id_t>> compute_pairs(pvt::RefWalks rt) {
 void untangle_flb(const bd::VG &g, pvt::RefWalks &rt) {
   std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
-  bool dbg = true;
+  bool dbg = false;
 
   std::vector<pt::up_t<pt::id_t>> aln_pairs = compute_pairs(rt);
 

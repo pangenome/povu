@@ -13,6 +13,8 @@
 
 
 namespace povu::variants {
+#define MODULE "povu::variants"
+
 namespace pgt = povu::graph_types;
 namespace bd = povu::bidirected;
 namespace pt= povu::types;

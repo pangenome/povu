@@ -46,9 +46,7 @@ inline flubble forwardise(std::size_t start_id, pgt::or_e start_or, std::size_t 
 /**
   * @brief Enumerate the flubbles
  */
-pvtr::Tree<flubble>
-construct_flubble_tree(const std::vector<oic_t> &stack_,
-                       const std::vector<pt::idx_t> &next_seen) {
+pvtr::Tree<flubble> construct_flubble_tree(const std::vector<oic_t> &stack_, const std::vector<pt::idx_t> &next_seen) {
   std::string fn_name = std::format("[povu::algorithms::flubble_tree::{}]", __func__);
 
   pvtr::Tree<flubble> ft;
@@ -167,8 +165,15 @@ std::vector<oic_t> compute_eq_class_stack(pst::Tree &t) {
   stack.shrink_to_fit();
   std::reverse(stack.begin(), stack.end());
 
+
+  // print stack contents to stderr
+   for (const auto &oic : stack) {
+     std::cerr << "or " << oic.orientation << " id " << oic.id << " class " << oic.cls << "\n";
+   }
+
   return stack;
 }
+
 
 pvtr::Tree<flubble> st_to_ft(pst::Tree& t) {
   std::string fn_name = std::format("[povu::algorithms::{}]", __func__);

@@ -1,7 +1,6 @@
 #include "./deconstruct.hpp"
 
 
-
 namespace povu::subcommands::deconstruct {
 
 void deconstruct_component(bd::VG *g, std::size_t component_id, const core::config& app_config) {
@@ -24,6 +23,9 @@ void deconstruct_component(bd::VG *g, std::size_t component_id, const core::conf
   //povu::algorithms::eulerian_cycle_equiv(st);
   //std::cerr << std::format("{} Find equiv classes for component {}\n", fn_name, component_id);
   povu::algorithms::simple_cycle_equiv(st); // find equivalence classes
+
+  //st.print_dot(std::cerr);
+
   //std::cerr << std::format("{} Constructing fl tree for component {}\n", fn_name, component_id);
   pvtr::Tree<pgt::flubble> flubble_tree = povu::graph::flubble_tree::st_to_ft(st);
   povu::io::bub::write_bub(flubble_tree, std::to_string(component_id), app_config);
