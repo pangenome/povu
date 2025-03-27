@@ -84,11 +84,17 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
 
 void deconstruct_handler(args::Subparser &parser, core::config& app_config) {
   args::Group arguments("arguments");
+  args::Flag hairpins(parser, "hairpins", "Find hairpins in the variation graph", {'h', "hairpins"});
   args::ValueFlag<std::string> input_gfa(parser, "gfa", "path to input gfa [required]", {'i', "input-gfa"}, args::Options::Required);
   args::ValueFlag<std::string> output_dir(parser, "output_dir", "Output directory [default: .]", {'o', "output-dir"});
 
   parser.Parse();
   app_config.set_task(core::task_e::deconstruct);
+
+  if (hairpins) {
+    app_config.set_hairpins(true);
+  }
+
   // input gfa is already a c_str
   app_config.set_input_gfa(args::get(input_gfa));
 

@@ -22,7 +22,7 @@ void deconstruct_component(bd::VG *g, std::size_t component_id, const core::conf
 
   //povu::algorithms::eulerian_cycle_equiv(st);
   //std::cerr << std::format("{} Find equiv classes for component {}\n", fn_name, component_id);
-  povu::algorithms::simple_cycle_equiv(st); // find equivalence classes
+  povu::algorithms::simple_cycle_equiv(st, app_config); // find equivalence classes
 
   //st.print_dot(std::cerr);
 

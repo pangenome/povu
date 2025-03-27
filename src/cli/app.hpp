@@ -48,6 +48,8 @@ enum class subgraph_category {
  */
 struct config {
   task_e task;
+
+  bool inc_hairpins_;
   std::string input_gfa;
   std::filesystem::path forest_dir;
   std::string chrom;
@@ -77,6 +79,7 @@ struct config {
   // constructor(s)
   config()
       : task(task_e::unset),
+        inc_hairpins_(false),
         forest_dir("."),
         chrom(""), // default is empty string
         output_dir("."),                // default is current directory
@@ -93,6 +96,7 @@ struct config {
   // ---------
   // getter(s)
   // ---------
+  bool inc_hairpins() const { return this->inc_hairpins_; }
   std::string get_input_gfa() const { return this->input_gfa; }
   std::filesystem::path get_forest_dir() const { return this->forest_dir; }
   std::filesystem::path get_output_dir() const { return this->output_dir; }
@@ -109,11 +113,11 @@ struct config {
   bool gen_undefined_vcf() const { return this->undefined_vcf; }
   task_e get_task() const { return this->task; }
   
-
   // ---------
   // setter(s)
   // ---------
   // as it os from the user not the handlegraph stuff
+  void set_hairpins(bool b) { this->inc_hairpins_ = b; }
   void set_chrom(std::string&& s) { this->chrom = s; }
   void set_inc_vtx_labels(bool b) { this->inc_vtx_labels_ = b; }
   void set_inc_refs(bool b) { this->inc_refs_ = b; }
@@ -138,6 +142,7 @@ struct config {
     std::cerr << "CLI parameters: " << std::endl;
     std::cerr << "\t" << "verbosity: " << this->verbosity() << "\n";
     std::cerr << "\t" << "thread count: " << this->thread_count() << "\n";
+    std::cerr << "\t" << "print hairpins: " << (this->inc_hairpins_ ? "yes" : "no") << "\n";
     std::cerr << "\t" << "print dot: " << (this->print_dot() ? "yes" : "no") << "\n";
     std::cerr << "\t" << "task: " << this->task << std::endl;
     std::cerr << "\t" << "input gfa: " << this->input_gfa << std::endl;

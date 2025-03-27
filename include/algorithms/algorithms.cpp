@@ -438,7 +438,7 @@ void handle_vertex(pst::Tree &t,
   }
 }
 
-void simple_cycle_equiv(pst::Tree &t) {
+void simple_cycle_equiv(pst::Tree &t, const core::config &app_config) {
   std::string fn_name = std::format("[povu::algorithms::{}]", __func__);
 
   std::set<std::size_t> articulated_vertices;
@@ -454,8 +454,11 @@ void simple_cycle_equiv(pst::Tree &t) {
   }
 
   // print boundaries
-  for (auto b: boundaries) {
-    std::cerr << "Boundary: " << b.b1 << " " << b.b2 << std::endl;
+  if (app_config.inc_hairpins()) {
+    for (auto b : boundaries) {
+      std::cerr << "Boundary: " << b.b1 << " " << b.b2 << std::endl;
+    }
   }
+  
 }
 } // namespace algorithms
