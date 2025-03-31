@@ -1,0 +1,9 @@
+* Test Data
+
+This directory contains two main directories for test data:
+ - ~real~: actual data collected from real-world sources
+ - ~synthetic~: hand written ~.gfa~ files
+
+
+For human data, consider using the HPRC datasets, which are available through the [[https://github.com/human-pangenomics/hpp_pangenome_resources][Human Pangenome Project resources README on GitHub]].
+For the experiments in the preprint refer to the [[https://s3-us-west-2.amazonaws.com/human-pangenomics/index.html?prefix=pangenomes/freeze/freeze1/pggb/chroms/][PGGB GFA files]].

@@ -1,0 +1,10 @@
+build/
+bin/
+Debug/
+Testing/
+.cache/
+__pycache__/
+test_data/HPRC
+*.vcf
+*.dot
+*.bub

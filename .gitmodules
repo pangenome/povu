@@ -1,0 +1,6 @@
+[submodule "deps/args"]
+	path = deps/args
+	url = https://github.com/Taywee/args.git
+[submodule "deps/liteseq"]
+	path = deps/liteseq
+	url = https://github.com/urbanslug/liteseq.git
