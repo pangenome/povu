@@ -2,6 +2,12 @@
 
 A lightweight tool for exploring regions of genomic variation
 
+## Table of Contents
+ - [Usage and Examples](#usage-and-examples)
+ - [Building povu](#building-povu)
+   * [Building specific target](#building-specific-target)
+   * [Development](#development)
+
 
 ## Usage and Examples
 
@@ -17,7 +23,7 @@ povu currently has two subcommands:
  - **deconstruct**: finds flubbles, reports hairpin inversion boundaries
  - **call**: call variants
 
-for more documentation on the subcommands see the [docs/](./docs) directory
+for more documentation refer to the [docs/](./docs) directory
 
 ## Building povu
 Prerequisites:

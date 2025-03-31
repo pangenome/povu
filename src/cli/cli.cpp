@@ -117,12 +117,12 @@ void info_handler(args::Subparser &parser, core::config& app_config) {
 
 int cli(int argc, char **argv, core::config& app_config) {
 
-  args::ArgumentParser p("Use cycle equivalence to analyse a variation graph");
+  args::ArgumentParser p("Explore genomic variation in a variation graph");
   args::Group commands(p, "commands");
 
-  args::Command deconstruct(commands, "deconstruct", "Find flubbles in the variation graph",
+  args::Command deconstruct(commands, "deconstruct", "Find regions of variation",
                        [&](args::Subparser &parser) { deconstruct_handler(parser, app_config); });
-  args::Command call(commands, "call", "Call variants in the variation graph",
+  args::Command call(commands, "call", "Generate a VCF from the variation graph",
                        [&](args::Subparser &parser) { call_handler(parser, app_config); });
   args::Command info(commands, "info", "Print information about the graph [use 1 thread for meaningful results]",
                      [&](args::Subparser &parser) { info_handler(parser, app_config); });

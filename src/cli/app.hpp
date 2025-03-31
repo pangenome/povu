@@ -76,7 +76,6 @@ struct config {
   // Contructor(s)
   // -------------
 
-  // constructor(s)
   config()
       : task(task_e::unset),
         inc_hairpins_(false),
@@ -112,7 +111,7 @@ struct config {
   bool print_dot() const { return this->print_dot_; }
   bool gen_undefined_vcf() const { return this->undefined_vcf; }
   task_e get_task() const { return this->task; }
-  
+
   // ---------
   // setter(s)
   // ---------

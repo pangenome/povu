@@ -73,13 +73,6 @@ std::vector<pvt::AT> get_alts_tangled(const bd::VG &g,
     }
 
 
-    // std::cerr <<
-    //   std::format(
-    //     "{} {}"
-    //     "\n {} alt {}\n",
-    //     g.get_ref_name(up_ref1), g.get_ref_name(up_ref2), at_idx, alt_at.as_str());
-
-
     alt_ats.push_back(alt_at);
   }
 
@@ -93,15 +86,6 @@ std::vector<pvt::AT> get_alts_tangled(const bd::VG &g,
  */
 void add_vcf_recs(const bd::VG &g, const pvt::RefWalks &rws, pvt::VcfRecIdx &vcf_recs) {
 
-  auto [s_v_id, _] = rws.get_flb().start_;
-  auto [e_v_id, __] = rws.get_flb().end_;
-  
-  bool dbg = s_v_id == 106 && e_v_id == 109 ? true : false;
-
-  if (dbg) {
-    std::cerr << "flb: " << rws.get_flb().as_str() << "\n";
-  }
-
   std::string id = rws.get_flb().as_str();
 
   for (const auto &[ref_id, itn] : rws.get_ref_itns()) {
@@ -113,7 +97,7 @@ void add_vcf_recs(const bd::VG &g, const pvt::RefWalks &rws, pvt::VcfRecIdx &vcf
       const pvt::Step &s = ref_at.get_step(1);
 
       pt::id_t pos = ref_at.is_del() ? s.get_step_idx() - 1 : s.get_step_idx();
-      
+
       std::vector<pvt::AT> alt_ats = rws.is_tangled() ?
         get_alts_tangled(g, ref_id, at_idx, rws) : get_alts(ref_id, rws);
 
@@ -123,18 +107,9 @@ void add_vcf_recs(const bd::VG &g, const pvt::RefWalks &rws, pvt::VcfRecIdx &vcf
 
       pvt::VcfRec r{ref_id, pos, id, ref_at, alt_ats};
 
-      if (dbg) {
-        std::cerr << "adding " << g.get_ref_name(ref_id) << " " << r.get_id() << "\n";
-      }
-      //std::cerr << "adding " << r.get_id() << "\n";
-
       vcf_recs.add_rec(ref_id, std::move(r));
     }
   }
-
-  //if (dbg && rws.is_tangled()) {
-    // exit(1);
-  //}
 }
 
 pvt::VcfRecIdx gen_vcf_records(const bd::VG &g, const std::vector<pvt::RefWalks> &ref_walks) {

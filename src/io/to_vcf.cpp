@@ -96,9 +96,6 @@ void write_vcf_rec(const bd::VG &g, const pvt::VcfRec &r,
   std::string alt_dna =
     ats_to_dna_str(r.get_ref_at().is_del() ? ref_dna : "", r.get_alt_ats());
 
-  if (r.get_id() == ">106>109")
-    std::cerr << "writing " << chrom << " " << r.get_pos() << " " << r.get_id()
-              << "\n";
 
   os << chrom
      << "\t" << r.get_pos()
