@@ -11,12 +11,12 @@
 
 povu provides a set of tools that we can use to analyse genomic variation. Currently these are under two main subcommands.
 
- - `call`:
- - `deconstruct`:
+ - `deconstruct`: find regions of variation in the graph
+ - `call`: generate a VCF file
 
 ## Deconstruct
 
-**help:** `./bin/povu deconstruct -h`
+> **help:** `./bin/povu deconstruct -h`
 
 The `deconstruct` sub-command finds flubbles, reports hairpin inversion boundaries, and generates the flubble forest: a set of flubble trees.
 Currently, each flubble tree is stored in its own flubble file in a directory specified by the user using the `-o` CLI argument.
@@ -51,6 +51,9 @@ Below is a table with the specifics of each column.
 
 
 ## Call
+
+> **help:** `./bin/povu call -h`
+
 
 Using the LPA dataset as an example. Generate a list of references from the P lines.
 ```
