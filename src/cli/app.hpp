@@ -50,9 +50,10 @@ struct config {
   task_e task;
 
   bool inc_hairpins_;
+  bool find_hubbles_;
   std::string input_gfa;
-  std::filesystem::path forest_dir;
-  std::string chrom;
+  std::filesystem::path forest_dir; //directory containing the flb files
+  std::string chrom; // TODO: remove or use
   //std::optional<std::filesystem::path> pvst_path;
   std::filesystem::path output_dir; // output directory for task and deconstruct
 
@@ -70,7 +71,7 @@ struct config {
   std::string references_txt; // the path to the file containing the reference paths
   input_format_e ref_input_format;
   std::vector<std::string> reference_paths; // or just references
-  bool undefined_vcf;
+  bool undefined_vcf; // TODO: remove or use
 
   // -------------
   // Contructor(s)
@@ -79,9 +80,10 @@ struct config {
   config()
       : task(task_e::unset),
         inc_hairpins_(false),
+        find_hubbles_(false),
         forest_dir("."),
         chrom(""), // default is empty string
-        output_dir("."),                // default is current directory
+        output_dir("."), // default is current directory
         inc_vtx_labels_(false),
         inc_refs_(false),
         v(0),
@@ -96,6 +98,7 @@ struct config {
   // getter(s)
   // ---------
   bool inc_hairpins() const { return this->inc_hairpins_; }
+  bool find_hubbles() const { return this->find_hubbles_; }
   std::string get_input_gfa() const { return this->input_gfa; }
   std::filesystem::path get_forest_dir() const { return this->forest_dir; }
   std::filesystem::path get_output_dir() const { return this->output_dir; }
@@ -117,6 +120,7 @@ struct config {
   // ---------
   // as it os from the user not the handlegraph stuff
   void set_hairpins(bool b) { this->inc_hairpins_ = b; }
+  void set_hubbles(bool b) { this->find_hubbles_ = b; }
   void set_chrom(std::string&& s) { this->chrom = s; }
   void set_inc_vtx_labels(bool b) { this->inc_vtx_labels_ = b; }
   void set_inc_refs(bool b) { this->inc_refs_ = b; }
@@ -139,22 +143,38 @@ struct config {
   // --------
   void dbg_print() {
     std::cerr << "CLI parameters: " << std::endl;
+
+    /* common for all tasks */
+    std::cerr << "\t" << "task: " << this->task << std::endl;
     std::cerr << "\t" << "verbosity: " << this->verbosity() << "\n";
     std::cerr << "\t" << "thread count: " << this->thread_count() << "\n";
-    std::cerr << "\t" << "print hairpins: " << (this->inc_hairpins_ ? "yes" : "no") << "\n";
-    std::cerr << "\t" << "print dot: " << (this->print_dot() ? "yes" : "no") << "\n";
-    std::cerr << "\t" << "task: " << this->task << std::endl;
     std::cerr << "\t" << "input gfa: " << this->input_gfa << std::endl;
-    std::cerr << "\t" << "forest dir: " << this->forest_dir << std::endl;
     std::cerr << "\t" << "output dir: " << this->output_dir << std::endl;
-    std::cerr << "\t" << "chrom: " << this->chrom << std::endl;
-    std::cerr << "\t" << "Generate undefined vcf: " << std::boolalpha << this->undefined_vcf << std::endl;
-    if (this->ref_input_format == input_format_e::file_path) {
-      std::cerr << "\t" << "Reference paths file: " << this->references_txt << std::endl;
-    }
 
-    std::cerr << "\t" << "Reference paths (" << this->reference_paths.size() << "): ";
-    pu::print_with_comma(std::cerr, this->reference_paths, ',');
+    //std::cerr << "\t" << "chrom: " << this->chrom << std::endl;
+    //std::cerr << "\t" << "Generate undefined vcf: " << std::boolalpha << this->undefined_vcf << std::endl;
+
+    if (this->get_task() == task_e::call) {
+      std::cerr << "\t" << "forest dir: " << this->forest_dir << std::endl;
+      if (this->ref_input_format == input_format_e::file_path) {
+        std::cerr << "\t" << "Reference paths file: " << this->references_txt << std::endl;
+      }
+
+      std::cerr << "\t" << "Reference paths (" << this->reference_paths.size() << "): ";
+      pu::print_with_comma(std::cerr, this->reference_paths, ',');
+      std::cerr << std::endl;
+
+    }
+    else if (this->get_task() == task_e::deconstruct) {
+#ifdef DEBUG
+      std::cerr << "\t" << "print dot: " << (this->print_dot() ? "yes" : "no") << "\n";
+#endif
+      std::cerr << "\t" << "print hairpins: " << (this->inc_hairpins_ ? "yes" : "no") << "\n";
+      std::cerr << "\t" << "find hubbles: " << (this->find_hubbles_ ? "yes" : "no") << "\n";
+    }
+    else if (this->get_task() == task_e::info) {
+      //
+    }
 
     std::cerr << std::endl;
     }

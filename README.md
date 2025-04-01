@@ -22,6 +22,7 @@ For general help, run:
 povu currently has two subcommands:
  - **deconstruct**: finds flubbles, reports hairpin inversion boundaries
  - **call**: call variants
+ - **info**: get a summary of the input GFA
 
 for more documentation refer to the [docs/](./docs) directory
 
