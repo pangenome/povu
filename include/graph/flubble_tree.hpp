@@ -9,6 +9,9 @@
 #include "../common/types.hpp"
 
 namespace povu::graph::flubble_tree {
+
+#define MODULE "povu::graph::flubble_tree"
+
 namespace pvtr = povu::tree;
 namespace pst = povu::spanning_tree;
 namespace pgt = povu::graph_types;

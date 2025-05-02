@@ -58,6 +58,7 @@ ADD_LIBRARY(povulib
 
   # algorithms
   ${INCLUDE_DIR}/algorithms/algorithms.cpp
+  ${INCLUDE_DIR}/algorithms/hubbles.cpp
 
   # align
   ${INCLUDE_DIR}/align/align.cpp

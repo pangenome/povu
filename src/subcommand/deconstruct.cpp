@@ -3,32 +3,75 @@
 
 namespace povu::subcommands::deconstruct {
 
-void deconstruct_component(bd::VG *g, std::size_t component_id, const core::config& app_config) {
+void deconstruct_component(bd::VG *g,
+                           std::size_t component_id,
+                           const core::config &app_config) {
   std::string fn_name = std::format("[povu::deconstruct::{}]", __func__);
 
-
   //if (component_id !=2) return;
+#ifdef DEBUG
+  if (app_config.verbosity() > 1) {
+    std::cerr << "\n";
+    g->print_dot(std::cerr);
+    std::cerr << "\n";
+  }
+#endif
 
-  //g->print_dot(std::cerr);
   //g->untip();
   //std::cerr <<std::format("{} Computing Spanning Tree for component {} with {} vertices and {} edges\n", fn_name, component_id, g->vtx_count(), g->edge_count());
-  
+
+
+
   pst::Tree st { bd::compute_spanning_tree(*g) };
 
-  //st.print_dot(std::cerr);
+
+
+#ifdef DEBUG
+  if (app_config.verbosity() > 1) {
+    std::cerr << "\n";
+    st.print_dot(std::cerr);
+    std::cerr << "\n";
+  }
+#endif
+
 
   delete g;
+
+
+  //if (!app_config.find_hubbles()) {
+  //  delete g;
+  //}
+
   //return;
+
+
 
   //povu::algorithms::eulerian_cycle_equiv(st);
   //std::cerr << std::format("{} Find equiv classes for component {}\n", fn_name, component_id);
   povu::algorithms::simple_cycle_equiv(st, app_config); // find equivalence classes
 
+#ifdef DEBUG
+  if (app_config.verbosity() > 1) {
+    std::cerr << "\n";
+    st.print_dot(std::cerr);
+    std::cerr << "\n";
+  }
+#endif
+
   //st.print_dot(std::cerr);
 
-  //std::cerr << std::format("{} Constructing fl tree for component {}\n", fn_name, component_id);
   pvtr::Tree<pgt::flubble> flubble_tree = povu::graph::flubble_tree::st_to_ft(st);
+
+  if (app_config.find_hubbles()) {
+    povu::hubbles::find_hubbles(st, flubble_tree);
+    //povu::algorithms::find_hubbles(st, flubble_tree, g);
+    //delete g;
+  }
+
+  //std::cerr << std::format("{} Constructing fl tree for component {}\n", fn_name, component_id);
   povu::io::bub::write_bub(flubble_tree, std::to_string(component_id), app_config);
+
+  return;
 }
 
 std::pair<uint32_t, uint32_t> thread_count(const core::config &app_config, std::size_t item_count) {
@@ -84,6 +127,7 @@ void do_deconstruct(const core::config &app_config) {
         if (app_config.verbosity() > 3 && num_threads == 1) {
           components[i]->summary();
         }
+
 
         deconstruct_component(components[i], component_id, std::ref(app_config)); // Pass by reference
       }

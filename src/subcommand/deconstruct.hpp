@@ -8,6 +8,7 @@
 #include <thread>
 #include <utility>
 
+#include "../../include/algorithms/hubbles.hpp"
 #include "../../include/algorithms/algorithms.hpp"
 #include "../../include/common/types.hpp"
 #include "../../include/graph/flubble_tree.hpp"

@@ -375,7 +375,7 @@ void handle_vertex(pst::Tree &t,
     t.push(v, be_idx);
   }
 
-  
+
   if (t.get_bracket_list(v).empty()) {
     std::size_t dest_v = t.get_root_idx();
     if (t.get_vertex(v).type() != v_type_e::dummy) {
@@ -439,6 +439,7 @@ void handle_vertex(pst::Tree &t,
 }
 
 void simple_cycle_equiv(pst::Tree &t, const core::config &app_config) {
+
   std::string fn_name = std::format("[povu::algorithms::{}]", __func__);
 
   std::set<std::size_t> articulated_vertices;
@@ -459,6 +460,6 @@ void simple_cycle_equiv(pst::Tree &t, const core::config &app_config) {
       std::cerr << "Boundary: " << b.b1 << " " << b.b2 << std::endl;
     }
   }
-  
+
 }
-} // namespace algorithms
+} // namespace povu::algorithms

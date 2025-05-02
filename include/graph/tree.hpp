@@ -48,7 +48,9 @@ public:
       return ".";
     }
   }
-
+  std::string as_str() const {
+    return std::format("v{}:{}", this->get_id(), this->data_as_str());
+  }
   // ---------
   // setter(s)
   // ---------
@@ -84,7 +86,13 @@ public:
   // ---------
   // getter(s)
   // ---------
+  // deprecated
+  [[deprecated("use vtx_count() instead")]]
   std::size_t size() const {
+    return this->vertices.size();
+  }
+
+  std::size_t vtx_count() const {
     return this->vertices.size();
   }
 

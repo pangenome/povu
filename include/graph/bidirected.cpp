@@ -13,8 +13,10 @@ namespace povu::bidirected {
 Edge::Edge(pt::idx_t v1_idx, pgt::v_end_e v1_end , pt::idx_t v2_idx, pgt::v_end_e v2_end)
   : v1_idx_{v1_idx}, v1_end{v1_end}, v2_idx_{v2_idx}, v2_end{v2_end} {}
 pt::idx_t Edge::get_v1_idx() const { return this->v1_idx_; }
+pt::idx_t &Edge::get_v1_idx_mut() { return this->v1_idx_; }
 pgt::v_end_e Edge::get_v1_end() const { return this->v1_end; }
 pt::idx_t Edge::get_v2_idx() const { return this->v2_idx_; }
+pt::idx_t &Edge::get_v2_idx_mut() { return this->v2_idx_; }
 pgt::v_end_e Edge::get_v2_end() const { return this->v2_end; }
 pgt::side_n_idx_t Edge::get_other_vtx(pt::idx_t v_idx) const {
   return (get_v1_idx() == v_idx) ? pgt::side_n_id_t{v2_end, v2_idx_}
@@ -83,9 +85,10 @@ pt::idx_t VG::edge_count() const { return this->edges.size(); }
 const std::set<pgt::side_n_id_t> &VG::tips() const {
   return this->tips_;
 }
-const Edge &VG::get_edge(pt::idx_t e_idx) const { return edges[e_idx]; }
+const Edge& VG::get_edge(pt::idx_t e_idx) const { return edges[e_idx]; }
+Edge& VG::get_edge_mut(pt::idx_t e_idx) { return edges[e_idx]; }
 const Vertex& VG::get_vertex_by_idx(pt::idx_t v_idx) const { return vertices[v_idx]; }
-const Vertex &VG::get_vertex_by_id(pt::id_t v_id) const {
+const Vertex& VG::get_vertex_by_id(pt::id_t v_id) const {
   return vertices[this->v_id_to_idx_.get_value(v_id)];
 }
 Vertex& VG::get_vertex_mut_by_id(pt::id_t v_id) {
@@ -314,6 +317,9 @@ pst::Tree compute_spanning_tree(const VG &g) {
   std::set<std::pair<pt::idx_t, pt::idx_t>> added_edges;
   std::unordered_set<pt::idx_t> self_loops;
 
+  pt::idx_t order {};
+  //pt::idx_t post_order {};
+
   pt::idx_t counter{0}; // dfs num
   bool found_new_neighbour { false }; // neighbours exhausted
 
@@ -350,7 +356,6 @@ pst::Tree compute_spanning_tree(const VG &g) {
     return {s, v_id};
   };
 
-
   auto end2typ = [](pgt::v_end_e e) -> pgt::v_type_e {
     return pgt::v_end_e::l == e ? pgt::v_type_e::l : pgt::v_type_e::r;
   };
@@ -358,8 +363,14 @@ pst::Tree compute_spanning_tree(const VG &g) {
   auto add_vertex_to_tree = [&](pgt::v_end_e e, pt::idx_t bd_v_idx) -> void {
     const Vertex &v = g.get_vertex_by_idx(bd_v_idx);
 
-    t.add_vertex({counter++, v.id(), end2typ(e)});
-    t.add_vertex({counter++, v.id(), end2typ(pgt::complement(e))});
+    pst::Vertex v1{counter++, v.id(), end2typ(e)};
+    v1.set_pre_order(order++);
+    t.add_vertex(std::move(v1));
+
+    pst::Vertex v2{counter++, v.id(), end2typ(pgt::complement(e))};
+    v2.set_pre_order(order++);
+    t.add_vertex(std::move(v2));
+    //t.add_vertex({counter++, v.id(), end2typ(pgt::complement(e))});
 
     be_idx_to_ctr[to_be({e, v.id()})] = counter - 2;
     be_idx_to_ctr[to_be({pgt::complement(e), v.id()})] = counter - 1;
@@ -407,7 +418,9 @@ pst::Tree compute_spanning_tree(const VG &g) {
 
   if (has_tips) { // add a dummy vertex to the tree
     p_idx = counter;
-    t.add_vertex({counter++, pc::DUMMY_VTX_ID, v_type_e::dummy});
+    pst::Vertex v {counter++, pc::DUMMY_VTX_ID, v_type_e::dummy };
+    v.set_pre_order(order++);
+    t.add_vertex(std::move(v));
   }
 
   side_n_id_t start = has_tips ? *g.tips().begin() : pgt::side_n_id_t{pgt::v_end_e::l, g.v_idx_to_id(0)};
@@ -439,10 +452,19 @@ pst::Tree compute_spanning_tree(const VG &g) {
 
     // stop processing edges on the first instance of finding a new neighbour
     for (auto e_idx : neighbours) {
-      if ((found_new_neighbour = process_edge(bd_v_idx, syd, e_idx))) break;
+      if ((found_new_neighbour = process_edge(bd_v_idx, syd, e_idx))) {
+        break;
+      }
     }
 
-    if (!found_new_neighbour) s.pop();
+    if (!found_new_neighbour) {
+      t.get_vertex_mut(p_idx).set_post_order(order++);
+      s.pop();
+    }
+  }
+
+  if (has_tips) {
+    t.get_vertex_mut(0).set_post_order(order++);
   }
 
   return t;

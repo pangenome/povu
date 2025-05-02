@@ -89,7 +89,7 @@ public:
  */
 class Vertex {
   // indexes of the children edges in the tree_edges vector
-  std::set<pt::idx_t> children; // children // index to the tree edge vector
+  std::set<pt::idx_t> children; // children // index to the tree_edges vector
   std::set<pt::idx_t> obe;      // out back edges
   std::set<pt::idx_t> ibe;      // in back edges
 
@@ -101,6 +101,9 @@ class Vertex {
    */
   pt::idx_t hi_;
   pt::idx_t g_v_id_{}; // id/name of the vertex in the input GFA
+
+  pt::idx_t pre_order_;
+  pt::idx_t post_order_;
 
   pgt::v_type_e type_;
 
@@ -116,6 +119,8 @@ public:
   bool is_root() const;
   bool is_leaf() const;
   pt::idx_t dfs_num() const;
+  pt::idx_t pre_order() const;
+  pt::idx_t post_order() const;
   pt::idx_t parent() const; // TODO: remove
   pt::idx_t hi() const; // TODO: remove
   pt::idx_t g_v_id() const;
@@ -130,7 +135,9 @@ public:
   pt::idx_t const& get_parent_idx() const; // TODO: remove, superceded by get_parent_edge_idx
   pt::idx_t get_parent_e_idx() const;
 
+  [[deprecated("use get_child_edge_idxs() instead")]]
   std::set<pt::idx_t> const& get_children() const;
+  std::set<pt::idx_t> const &get_child_edge_idxs() const;
 
   // ---------
   // setter(s)
@@ -147,6 +154,8 @@ public:
   void set_hi(pt::idx_t val);
   // the dfs num of the node
   void set_dfs_num(pt::idx_t idx);
+  void set_pre_order(pt::idx_t idx);
+  void set_post_order(pt::idx_t idx);
 };
 
 class Tree {
@@ -220,6 +229,7 @@ public:
   std::size_t get_root_idx() const;
 
   // number of vertices in the tree
+  [[deprecated("Use vtx_count")]]
   std::size_t size() const;
   pt::idx_t vtx_count() const;
   std::size_t tree_edge_count() const;
@@ -262,7 +272,7 @@ public:
 
   /**
     * @brief get indexes of the vertices the obes from this vertex points to (tgt/targets)
-   */
+    */
     // TODO rename to get_obe_tgts
   std::set<size_t> get_obe(std::size_t vertex); // get backedge target indexes
 
@@ -305,7 +315,6 @@ public:
 
   // given a vertex id, return a reference to the edge that points to the parent
   Edge const& get_parent_edge(std::size_t vertex) const;
-
 
   // TODO: rename to get_parent_edge_mut
   Edge& get_incoming_edge(std::size_t vertex);

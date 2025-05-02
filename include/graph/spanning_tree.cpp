@@ -52,6 +52,8 @@ pt::idx_t Vertex::g_v_id() const { return this->g_v_id_; }
 v_type_e Vertex::type() const { return this->type_; }
 pt::idx_t  Vertex::hi() const { return this->hi_; }
 pt::idx_t  Vertex::dfs_num() const { return this->dfs_num_; }
+pt::idx_t  Vertex::pre_order() const { return this->pre_order_; }
+pt::idx_t  Vertex::post_order() const { return this->post_order_; }
 bool Vertex::is_leaf() const { return this->children.empty(); }
 pt::idx_t  Vertex::parent() const { return this->parent_id; }
 std::set<pt::idx_t> const &Vertex::get_ibe() const { return this->ibe; }
@@ -70,6 +72,8 @@ void Vertex::set_g_v_id(pt::idx_t g_v_id) { this->g_v_id_ = g_v_id; }
 void Vertex::set_type(v_type_e t) { this->type_ = t; }
 void Vertex::set_hi(pt::idx_t val) { this->hi_ = val; }
 void Vertex::set_dfs_num(pt::idx_t idx) { this->dfs_num_ = idx; }
+void Vertex::set_pre_order(pt::idx_t idx) { this->pre_order_ = idx; }
+void Vertex::set_post_order(pt::idx_t idx) { this->post_order_ = idx; }
 
 /*
  * Tree
@@ -460,8 +464,8 @@ void Tree::print_dot(std::ostream &os) {
     case v_type_e::r:
       std::string sign = (vertex.type() == pgt::v_type_e::l) ? "+" : "-";
       str = std::format(
-          "\t{} [style=filled, fillcolor=lightblue, label = \"{} \\n ({}{})\"];\n",
-          i, i, vertex.g_v_id(), sign);
+          "\t{} [style=filled, fillcolor=lightblue, label = \"{} \\n ({}{}) \\n [{},{}]\"];\n",
+                                                                                            i, i, vertex.g_v_id(), sign, vertex.pre_order(), vertex.post_order());
       break;
     }
 
@@ -506,12 +510,12 @@ void Tree::print_dot(std::ostream &os) {
   );
 
   //print the vertices
-  for (std::size_t i{}; i < this->size(); i++){
+  for (std::size_t i{}; i < this->vtx_count(); i++){
     vtx_to_dot(i);
   }
 
   // print the edges
-  for (std::size_t i{}; i < this->size(); i++) {
+  for (std::size_t i{}; i < this->vtx_count(); i++) {
     for (auto &c : this->get_child_edges(i)) { // tree edges
       tree_edge_to_dot(i, c);
     }

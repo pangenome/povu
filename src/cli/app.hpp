@@ -142,35 +142,41 @@ struct config {
   // other(s)
   // --------
   void dbg_print() {
+
+    const std::string spc = "  "; // could use \t
+
+#ifdef DEBUG
+    std::cerr << "povu is in debug mode" << std::endl;
+#endif
     std::cerr << "CLI parameters: " << std::endl;
 
     /* common for all tasks */
-    std::cerr << "\t" << "task: " << this->task << std::endl;
-    std::cerr << "\t" << "verbosity: " << this->verbosity() << "\n";
-    std::cerr << "\t" << "thread count: " << this->thread_count() << "\n";
-    std::cerr << "\t" << "input gfa: " << this->input_gfa << std::endl;
-    std::cerr << "\t" << "output dir: " << this->output_dir << std::endl;
+    std::cerr << spc << "task: " << this->task << std::endl;
+    std::cerr << spc << "verbosity: " << this->verbosity() << "\n";
+    std::cerr << spc << "thread count: " << this->thread_count() << "\n";
+    std::cerr << spc << "input gfa: " << this->input_gfa << std::endl;
+    std::cerr << spc << "output dir: " << this->output_dir << std::endl;
 
-    //std::cerr << "\t" << "chrom: " << this->chrom << std::endl;
-    //std::cerr << "\t" << "Generate undefined vcf: " << std::boolalpha << this->undefined_vcf << std::endl;
+    //std::cerr << spc << "chrom: " << this->chrom << std::endl;
+    //std::cerr << spc << "Generate undefined vcf: " << std::boolalpha << this->undefined_vcf << std::endl;
 
     if (this->get_task() == task_e::call) {
-      std::cerr << "\t" << "forest dir: " << this->forest_dir << std::endl;
+      std::cerr << spc << "forest dir: " << this->forest_dir << std::endl;
       if (this->ref_input_format == input_format_e::file_path) {
-        std::cerr << "\t" << "Reference paths file: " << this->references_txt << std::endl;
+        std::cerr << spc << "Reference paths file: " << this->references_txt << std::endl;
       }
 
-      std::cerr << "\t" << "Reference paths (" << this->reference_paths.size() << "): ";
+      std::cerr << spc << "Reference paths (" << this->reference_paths.size() << "): ";
       pu::print_with_comma(std::cerr, this->reference_paths, ',');
       std::cerr << std::endl;
 
     }
     else if (this->get_task() == task_e::deconstruct) {
 #ifdef DEBUG
-      std::cerr << "\t" << "print dot: " << (this->print_dot() ? "yes" : "no") << "\n";
+      std::cerr << spc << "print dot: " << (this->print_dot() ? "yes" : "no") << "\n";
 #endif
-      std::cerr << "\t" << "print hairpins: " << (this->inc_hairpins_ ? "yes" : "no") << "\n";
-      std::cerr << "\t" << "find hubbles: " << (this->find_hubbles_ ? "yes" : "no") << "\n";
+      std::cerr << spc << "print hairpins: " << (this->inc_hairpins_ ? "yes" : "no") << "\n";
+      std::cerr << spc << "find hubbles: " << (this->find_hubbles_ ? "yes" : "no") << "\n";
     }
     else if (this->get_task() == task_e::info) {
       //

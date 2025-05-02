@@ -101,7 +101,7 @@ void write_bub(const pvtr::Tree<pgt::flubble>& bt,
     std::exit(1);
   }
 
-  for (std::size_t i {}; i < bt.size(); ++i) {
+  for (std::size_t i {}; i < bt.vtx_count(); ++i) {
 
     //std::cerr << "i: " << i << std::endl;
 

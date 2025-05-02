@@ -73,8 +73,10 @@ public:
   // getter(s)
   // ---------
   pt::idx_t get_v1_idx() const;
+  pt::idx_t &get_v1_idx_mut();
   pgt::v_end_e get_v1_end() const;
   pt::idx_t get_v2_idx() const;
+  pt::idx_t &get_v2_idx_mut();
   pgt::v_end_e get_v2_end() const;
   pgt::side_n_idx_t get_other_vtx(pt::idx_t v_id, pgt::v_end_e v_end) const;
   pgt::side_n_idx_t get_other_vtx(pt::idx_t v_id) const; // if you don't care for self loops
@@ -141,6 +143,7 @@ public:
   pt::idx_t edge_count() const;
   const std::set<pgt::side_n_id_t>& tips() const;
   const Edge& get_edge(pt::idx_t e_idx) const;
+  Edge & get_edge_mut(pt::idx_t e_idx);
   // TODO replace vertex with v?
   const Vertex& get_vertex_by_idx(pt::idx_t v_idx) const;
   const Vertex& get_vertex_by_id(pt::id_t v_id) const;
