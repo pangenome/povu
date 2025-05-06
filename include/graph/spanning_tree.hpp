@@ -260,7 +260,8 @@ public:
 
   // return edges that point to children of the vertex
   std::vector<Edge> get_child_edges(std::size_t vertex);
-
+  // returns v_idxs of the children of the vertex
+  std::set<std::size_t> get_children(std::size_t vertex);
 
   // get index of the  be in back_edges vector
   std::set<std::size_t> get_obe_idxs(std::size_t vertex);
@@ -308,7 +309,7 @@ public:
   BackEdge& get_backedge_ref_given_id(std::size_t backedge_id);
   // given the back edge's unique back edge id return a reference to the backedge
   BackEdge get_backedge_given_id(std::size_t backedge_id);
-  std::set<std::size_t> get_children(std::size_t vertex);
+  
 
   bool is_root(std::size_t vertex) const;
   bool is_leaf(std::size_t vertex) const;

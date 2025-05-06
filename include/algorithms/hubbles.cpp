@@ -1,6 +1,7 @@
 #include "./hubbles.hpp"
 #include <cstddef>
 #include <iostream>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -183,6 +184,13 @@ struct tree_meta {
   //std::map<pt::idx_t, std::vector<std::pair<pt::idx_t, pt::idx_t>>> branch_map;
   std::vector<pt::idx_t> first; // idx is v_idx value is the first time it is seen in E
   std::vector<pt::idx_t> lo;
+
+  std::map<pt::idx_t, pt::idx_t> pre; // idx is the pre-order the value is the v_idx
+  std::map<pt::idx_t, pt::idx_t> post; // idx is the post-order the value is the v_idx
+
+  
+
+  //std::vector<pt::idx_t> be_count; // number of back edges from descendants of this vertex whose targets are above this vertex
 
   void print() {
 
@@ -694,9 +702,6 @@ pt::idx_t ei_case_one(pst::Tree &st, const tree_meta &tm,
   };
   max_d min_depth{pc::INVALID_IDX, pc::INVALID_IDX};
 
-  //std::cerr << "with E_i\n";
-  //std::cerr << "si " << si_v_idx << " ei " << ei_v_idx << "\n";
-
   for (pt::idx_t be_idx : st.get_obe_idxs(ei_v_idx)) {
     const pst::BackEdge& be = st.get_backedge(be_idx);
 
@@ -710,9 +715,6 @@ pt::idx_t ei_case_one(pst::Tree &st, const tree_meta &tm,
       min_depth = {tgt_v_idx, tm.D[tgt_v_idx]};
     }
   }
-
-  // get trunk be srcs
-
 
   // print ends
   if (min_depth.v_idx != pc::INVALID_IDX) {
@@ -729,29 +731,87 @@ pt::idx_t ei_case_one(pst::Tree &st, const tree_meta &tm,
   return min_depth_v_idx;
 }
 
- std::vector<pt::idx_t> ei_case_two(pst::Tree &st, const tree_meta &tm,
+std::vector<pt::idx_t> ei_case_two(pst::Tree &st, const tree_meta &tm,
                                    pt::idx_t si_v_idx, pt::idx_t ei_v_idx,
-                                   pt::idx_t max_depth_v_idx) {
-  std::vector<pt::idx_t> ends;
+                                   pt::idx_t min_depth_v_idx, std::vector<pt::idx_t> &ends) {
+
+  const std::vector<pt::idx_t> &depth = tm.D;
+
+  const std::map<pt::idx_t, pt::idx_t> &pres = tm.pre;
+  const std::map<pt::idx_t, pt::idx_t> &posts = tm.post;
+  //std::vector<pt::idx_t> ends;
+
+
+  std::vector<pt::idx_t> branch_be_srcs;
 
   // filter branches
-  std::vector<pt::idx_t> branch_be_srcs;
+  // ensure the depth of hi from a branch is greater than the min depth
   for (pt::idx_t c_v_idx : st.get_children(ei_v_idx)) {
-    if (tm.D[st.get_vertex(c_v_idx).hi()] <= tm.D[max_depth_v_idx]) {
+    pt::idx_t hi_v_idx = st.get_vertex(c_v_idx).hi();
+    if (depth[min_depth_v_idx] > depth[hi_v_idx]) {
       branch_be_srcs.push_back(c_v_idx);
     }
   }
 
-  // TODO replace with O(1) op
-  pt::idx_t curr_v_idx = ei_v_idx;
-  while (tm.D[curr_v_idx] >= tm.D[max_depth_v_idx]) {
+  std::set<pt::idx_t> vs;
+  pt::idx_t post_max = st.get_vertex(min_depth_v_idx).post_order();
+  pt::idx_t ei_post = st.get_vertex(ei_v_idx).post_order();
+  for (auto x {ei_post}; x < post_max; ++x) {
 
-    std::set<std::size_t> ibe_src_v_idxs = st.get_ibe(curr_v_idx);
-    for (auto src_v_idx : ibe_src_v_idxs) {
-      ends.push_back(st.get_vertex(src_v_idx).g_v_id());
+    // check if x exists in posts
+    if (posts.find(x) == posts.end()) {
+      std::cerr << std::format("x {} not found in posts {} c {}\n", x, posts.size(), st.vtx_count());
+      exit(1);
     }
 
-    curr_v_idx = st.get_parent_v_idx(curr_v_idx);
+    pt::idx_t po_v_idx = posts.at(x);
+    
+    vs.insert(po_v_idx);
+  }
+
+  pt::idx_t pre_min = st.get_vertex(min_depth_v_idx).pre_order();
+  pt::idx_t ei_pre = st.get_vertex(ei_v_idx).pre_order();
+  for (auto p {pre_min} ; p <= ei_pre ; ++p) {
+
+    // check if p exists in pres
+    if (pres.find(p) == pres.end()) {
+      std::cerr << std::format("p {} not found in pres\n", p);
+      exit(1);
+    }
+
+    pt::idx_t pr_v_idx = pres.at(p);
+    vs.insert(pr_v_idx);
+  }
+
+  std::map<pt::idx_t, std::vector<pt::idx_t>> m;
+
+  for (pt::idx_t v_idx : vs) {
+    if (st.get_ibe(v_idx).empty()) {
+      continue;
+    }
+
+    for (auto ibe_idx : st.get_ibe_idxs(v_idx)) {
+      const pst::BackEdge& be = st.get_backedge(ibe_idx);
+
+      if (be.type() != pst::be_type_e::back_edge) {
+        continue;
+      }
+
+      pt::idx_t src_v_idx = be.get_src();
+      for (pt::idx_t c_v_idx : st.get_children(ei_v_idx)) {
+        if ( st.get_vertex(c_v_idx).pre_order() < st.get_vertex(src_v_idx).pre_order() &&
+             st.get_vertex(c_v_idx).post_order() > st.get_vertex(src_v_idx).post_order()) {
+          m[c_v_idx].push_back(src_v_idx);
+        }
+      }
+    }
+  }
+
+  for (auto [k,v]: m) {
+    if (v.size() == 1) {
+      pt::idx_t v_idx = v.front();
+      ends.push_back(st.get_vertex(v_idx).g_v_id());
+    }
   }
 
   // print ends
@@ -790,9 +850,6 @@ pt::idx_t find_min_depth_vtx(pst::Tree &st, const tree_meta &tm, pt::idx_t si_v_
     }
   }
 
-  
-  //for (pt::idx_t src_v_idx : st.get_ibe(si_v_idx)) {}
-
   // happens if there are no backedges or if the only backedge is E_i -> S_i
   if (max_depth.v_idx == pc::INVALID_IDX){
     max_depth.v_idx = si_v_idx;
@@ -801,18 +858,17 @@ pt::idx_t find_min_depth_vtx(pst::Tree &st, const tree_meta &tm, pt::idx_t si_v_
   return max_depth.v_idx;
 }
 
-std::vector<pt::idx_t> with_ei(pst::Tree &st, const tree_meta &tm,
-                               pt::idx_t si_v_idx, pt::idx_t ei_v_idx) {
+std::vector<pt::idx_t> with_ei(pst::Tree &st, const tree_meta &tm, pt::idx_t si_v_idx, pt::idx_t ei_v_idx) {
   std::vector<pt::idx_t> ends;
 
   // we care about the be below here
   pt::idx_t min_depth_v_idx = find_min_depth_vtx(st, tm, si_v_idx, ei_v_idx);
 
-  // xxx
-  ei_case_one(st, tm, si_v_idx, ei_v_idx, min_depth_v_idx);
+  pt::idx_t trunk_end = ei_case_one(st, tm, si_v_idx, ei_v_idx, min_depth_v_idx);
+  ends.push_back(trunk_end);
 
-  //
-  // ei_case_two(st, tm, si_v_idx, ei_v_idx, max_depth_v_idx);
+  
+  ei_case_two(st, tm, si_v_idx, ei_v_idx, min_depth_v_idx, ends);
 
   return ends;
 }
@@ -879,16 +935,94 @@ void foo(pst::Tree &st, const pvtr::Tree<pgt::flubble> &ft) {
 
 }
 
+void compute_pre_post(pst::Tree &st, tree_meta &tm) {
+  std::map<pt::idx_t, pt::idx_t> &pre = tm.pre;
+  std::map<pt::idx_t, pt::idx_t> &post = tm.post;
+
+  pt::idx_t exp_size = st.vtx_count();
+
+
+  // for (pt::idx_t i = 0; i < exp_size; ++i) {
+  //   pre.push_back(pc::INVALID_IDX);
+  //   post.push_back(pc::INVALID_IDX);
+  // }
+
+  for (pt::idx_t i = 0; i < st.vtx_count(); ++i) {
+    const pst::Vertex &v = st.get_vertex(i);
+    pre[v.pre_order()] = i;
+    post[v.post_order()] = i;
+  }
+
+  // for (pt::idx_t i {}; i < exp_size; ++i) {
+   
+  //   if (pre[i] != pc::INVALID_IDX) {
+  //     std::cerr << std::format("pre: {}  found\n", i);
+  //   }
+  //   if (post[i] != pc::INVALID_IDX) {
+  //     std::cerr << std::format("post: {}  found\n", i);
+  //     break;
+  //   }
+  // }
+}
+
+// void compute_obe_count(pst::Tree &st, tree_meta &tm) {
+
+//   const std::vector<pt::idx_t> &depth = tm.D;
+
+//   std::vector<pt::idx_t> &be_count = tm.be_count;
+//   for (pt::idx_t i = 0; i < st.vtx_count(); ++i) {
+//     be_count.push_back(0);
+//   }
+
+//   // temp map
+//   std::unordered_map<pt::idx_t, std::vector<pt::idx_t>> be_map;
+
+//   for (pt::idx_t v_idx{st.vtx_count()}; v_idx-- > 0;) {
+//     if (st.is_leaf(v_idx)) {
+//       be_count[v_idx] = 0;
+//       be_map[v_idx] = {};
+//     }
+//     else {
+
+//       for (auto c_v_idx : st.get_children(v_idx)) {
+//         for (auto be_idx : be_map[c_v_idx]) {
+//           pt::idx_t tgt_v_idx = st.get_backedge(be_idx).get_tgt();
+//           if( depth[tgt_v_idx] < depth[v_idx] ) {
+//             be_map[v_idx].push_back(be_idx);
+//           }
+//         }
+//         be_map.erase(c_v_idx);
+//       }
+
+//       be_count[v_idx] = be_map[v_idx].size();
+
+//       for (pt::idx_t be_idx : st.get_obe_idxs(v_idx)) {
+//         const pst::BackEdge& be = st.get_backedge(be_idx);
+
+//         if (be.type() != pst::be_type_e::back_edge) {
+//           continue;
+//         }
+
+//         be_map[v_idx].push_back(be_idx);
+        
+//       }
+//     }
+//   }
+
+// }
+
 void find_hubbles(pst::Tree &st, const pvtr::Tree<pgt::flubble> &ft) {
   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
   // debug fn
-  foo(st, ft);
+  //foo(st, ft);
 
   std::vector<fl_in_tr> bar = find_in_st(st, ft);
   tree_meta tm;
   euler_tour(st, tm);
   compute_lo(st, tm);
+  compute_pre_post(st, tm);
+
   //tm.print();
   /* a for ancestor, d for descendant */
   for (auto [si, ei] : bar) {
