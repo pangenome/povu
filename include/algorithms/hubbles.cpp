@@ -1,5 +1,7 @@
 #include "./hubbles.hpp"
 #include <cstddef>
+#include <iostream>
+#include <utility>
 #include <vector>
 
 namespace povu::hubbles {
@@ -472,7 +474,11 @@ pt::idx_t find_lca(pst::Tree &st, const tree_meta &tm, std::vector<pt::idx_t> &v
   return lca;
 }
 
-
+/*
+  -----------------
+  Handle S_i
+  -----------------
+*/
 
 /**
  * from the branches
@@ -582,6 +588,7 @@ std::vector<pt::idx_t> case_two(pst::Tree &st,
   return ends;
 }
 
+
 void filter_branches(pst::Tree &st, pt::idx_t si_v_idx, pt::idx_t ei_v_idx) {
 
   std::map<pt::idx_t, pt::idx_t> branches;
@@ -589,7 +596,6 @@ void filter_branches(pst::Tree &st, pt::idx_t si_v_idx, pt::idx_t ei_v_idx) {
   for (pt::idx_t c_v_idx : st.get_children(ei_v_idx)) {
     branches[c_v_idx] = pc::INVALID_IDX;
   }
-
 }
 
 std::pair<std::vector<pt::idx_t>, std::vector<pt::idx_t>>
@@ -660,6 +666,153 @@ std::vector<pt::idx_t> with_si(pst::Tree &st, const tree_meta &tm, pt::idx_t si_
   }
 
   ends.insert(ends.end(), ends_one.begin(), ends_one.end());
+
+  return ends;
+}
+
+/*
+  -----------------
+  Handle E_i
+  -----------------
+*/
+
+
+
+// with trunk
+pt::idx_t ei_case_one(pst::Tree &st, const tree_meta &tm,
+                                   pt::idx_t si_v_idx, pt::idx_t ei_v_idx,
+                                   pt::idx_t min_depth_v_idx) {
+
+  std::vector<pt::idx_t> ends;
+
+  const std::vector<pt::idx_t> &depth = tm.D;
+
+  // max depth
+  struct max_d {
+    pt::idx_t v_idx;
+    pt::idx_t depth;
+  };
+  max_d min_depth{pc::INVALID_IDX, pc::INVALID_IDX};
+
+  //std::cerr << "with E_i\n";
+  //std::cerr << "si " << si_v_idx << " ei " << ei_v_idx << "\n";
+
+  for (pt::idx_t be_idx : st.get_obe_idxs(ei_v_idx)) {
+    const pst::BackEdge& be = st.get_backedge(be_idx);
+
+    if (be.type() != pst::be_type_e::back_edge) {
+      continue;
+    }
+
+    pt::idx_t tgt_v_idx = be.get_tgt();
+    //std::cerr << std::format("tgt_v_idx: {} \n", tgt_v_idx);
+    if (depth[tgt_v_idx] > depth[min_depth_v_idx] && depth[tgt_v_idx] < min_depth.depth) {
+      min_depth = {tgt_v_idx, tm.D[tgt_v_idx]};
+    }
+  }
+
+  // get trunk be srcs
+
+
+  // print ends
+  if (min_depth.v_idx != pc::INVALID_IDX) {
+    ends.push_back(st.get_vertex(min_depth.v_idx).g_v_id());
+
+     std::cerr << "with E_i\n";
+    // std::cerr << "si " << si_v_idx << " ei " << ei_v_idx << "\n";
+    //std::cerr << min_depth_v_idx << " " << ei_v_idx << "\n";
+    std::cerr << "v " << st.get_vertex(min_depth.v_idx).g_v_id() << " E_i " << st.get_vertex(ei_v_idx).g_v_id() << "\n";
+    std::cerr << "------------\n";
+  }
+
+
+  return min_depth_v_idx;
+}
+
+ std::vector<pt::idx_t> ei_case_two(pst::Tree &st, const tree_meta &tm,
+                                   pt::idx_t si_v_idx, pt::idx_t ei_v_idx,
+                                   pt::idx_t max_depth_v_idx) {
+  std::vector<pt::idx_t> ends;
+
+  // filter branches
+  std::vector<pt::idx_t> branch_be_srcs;
+  for (pt::idx_t c_v_idx : st.get_children(ei_v_idx)) {
+    if (tm.D[st.get_vertex(c_v_idx).hi()] <= tm.D[max_depth_v_idx]) {
+      branch_be_srcs.push_back(c_v_idx);
+    }
+  }
+
+  // TODO replace with O(1) op
+  pt::idx_t curr_v_idx = ei_v_idx;
+  while (tm.D[curr_v_idx] >= tm.D[max_depth_v_idx]) {
+
+    std::set<std::size_t> ibe_src_v_idxs = st.get_ibe(curr_v_idx);
+    for (auto src_v_idx : ibe_src_v_idxs) {
+      ends.push_back(st.get_vertex(src_v_idx).g_v_id());
+    }
+
+    curr_v_idx = st.get_parent_v_idx(curr_v_idx);
+  }
+
+  // print ends
+  if (!ends.empty()) std::cerr << "with E_i\n";
+  for (auto e : ends) {
+    std::cerr << std::format("branch boundary: {} {}\n", st.get_vertex(ei_v_idx).g_v_id(), e);
+  }
+  if (!ends.empty()) std::cerr << "------------\n";
+
+  return ends;
+}
+
+// get the max depth of a backedge from the trunk into S_i
+pt::idx_t find_min_depth_vtx(pst::Tree &st, const tree_meta &tm, pt::idx_t si_v_idx, pt::idx_t ei_v_idx) {
+
+  const std::vector<pt::idx_t> &depth = tm.D;
+
+  // max depth
+  struct max_d {
+    pt::idx_t v_idx;
+    pt::idx_t depth;
+  };
+  max_d max_depth{pc::INVALID_IDX, 0};
+
+  for (pt::idx_t be_idx : st.get_ibe_idxs(si_v_idx)) {
+    const pst::BackEdge& be = st.get_backedge(be_idx);
+
+    if (be.type() != pst::be_type_e::back_edge) {
+      continue;
+    }
+
+    pt::idx_t src_v_idx = be.get_src();
+    // excludes backedge E_i -> S_i
+    if (depth[src_v_idx] > max_depth.depth && depth[src_v_idx] < depth[ei_v_idx]) {
+      max_depth = {src_v_idx, depth[src_v_idx]};
+    }
+  }
+
+  
+  //for (pt::idx_t src_v_idx : st.get_ibe(si_v_idx)) {}
+
+  // happens if there are no backedges or if the only backedge is E_i -> S_i
+  if (max_depth.v_idx == pc::INVALID_IDX){
+    max_depth.v_idx = si_v_idx;
+  }
+
+  return max_depth.v_idx;
+}
+
+std::vector<pt::idx_t> with_ei(pst::Tree &st, const tree_meta &tm,
+                               pt::idx_t si_v_idx, pt::idx_t ei_v_idx) {
+  std::vector<pt::idx_t> ends;
+
+  // we care about the be below here
+  pt::idx_t min_depth_v_idx = find_min_depth_vtx(st, tm, si_v_idx, ei_v_idx);
+
+  // xxx
+  ei_case_one(st, tm, si_v_idx, ei_v_idx, min_depth_v_idx);
+
+  //
+  // ei_case_two(st, tm, si_v_idx, ei_v_idx, max_depth_v_idx);
 
   return ends;
 }
@@ -742,9 +895,14 @@ void find_hubbles(pst::Tree &st, const pvtr::Tree<pgt::flubble> &ft) {
     //std::cerr << std::format("x: {} y: {}\n", si, ei);
     //pt::idx_t si_v_id = st.get_vertex(si).g_v_id();
     //pt::idx_t boundary = with_top(st, si, ei);
-    for (auto _ : with_si(st, tm, si, ei)) {
-      //std::cerr << std::format("boundary: {} {}\n", si_v_id, b);
+    // for (auto _ : with_si(st, tm, si, ei)) {
+    //   //std::cerr << std::format("boundary: {} {}\n", si_v_id, b);
+    // }
+
+    for (auto _ : with_ei(st, tm, si, ei)) {
+      // std::cerr << std::format("boundary: {} {}\n", si_v_id, b);
     }
+
     //std::cerr << std::format("boundary: {} {}\n", si_v_id, boundary);
   }
 }
