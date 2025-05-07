@@ -188,9 +188,27 @@ struct tree_meta {
   std::map<pt::idx_t, pt::idx_t> pre; // idx is the pre-order the value is the v_idx
   std::map<pt::idx_t, pt::idx_t> post; // idx is the post-order the value is the v_idx
 
-  
+  // Gather all backedges
+  std::vector<pt::idx_t> B;
 
-  //std::vector<pt::idx_t> be_count; // number of back edges from descendants of this vertex whose targets are above this vertex
+  // prefix sum of the number of backedges
+  std::vector<pt::idx_t> off;
+
+  // a flat list of backedges
+  std::vector<pt::idx_t> BE;
+  
+  std::vector<pt::idx_t> get_brackets(pt::idx_t v_idx) {
+    std::vector<pt::idx_t> brackets;
+    pt::idx_t start = off[v_idx];
+    pt::idx_t end = off[v_idx + 1];
+
+    for (pt::idx_t i{start}; i < end; i++) {
+      pt::idx_t be_idx = BE[i];
+      brackets.push_back(be_idx);
+    }
+
+    return brackets;
+  }
 
   void print() {
 
@@ -1067,9 +1085,10 @@ std::vector<pt::idx_t> count_brackets(pst::Tree &st, const std::vector<pt::idx_t
  * @param B the backedges
  * @param off the offset table/prefix sum
  */
-std::vector<pt::idx_t> collect_backedges_by_vertex(pst::Tree &st,
-                                                   const std::vector<pt::idx_t> &B,
-                                                   const std::vector<pt::idx_t> &off) {
+std::vector<pt::idx_t>
+collect_backedges_by_vertex(pst::Tree &st, const std::vector<pt::idx_t> &B,
+                            const std::vector<pt::idx_t> &off,
+                            std::vector<pt::idx_t> &BE) {
   const pt::idx_t n = st.vtx_count();
 
   // build diff array
@@ -1090,26 +1109,19 @@ std::vector<pt::idx_t> collect_backedges_by_vertex(pst::Tree &st,
   }
 
   // 4) Allocate flat storage and a little cursor per‐vertex
-  std::vector<pt::idx_t> BE(off[n]);
+  
   std::vector<pt::idx_t> cursor(n, 0);
 
   // 5) Fill in each block BE[off[v] .. off[v+1]) by
   //    walking the parent‐chain from parent(u) up to w
   for (pt::idx_t be_idx : B) {
     auto &be = st.get_backedge(be_idx);
-    //int u = be.get_src(), w = be.get_tgt();
 
     pt::idx_t u = be.get_src();
     pt::idx_t w = be.get_tgt();
 
     if (st.is_root(u))
       continue;
-
-    // walk up from parent(u) until we hit w
-    // for (int v = st.get_parent(u); v != w && !st.is_root(v);
-    //      v = st.get_parent(v)) {
-    //   BE[off[v] + (cursor[v]++)] = be_idx;
-    // }
 
     pt::idx_t v = st.get_parent(u);
     while (!st.is_root(v) && v != w) {
@@ -1122,15 +1134,14 @@ std::vector<pt::idx_t> collect_backedges_by_vertex(pst::Tree &st,
   return BE;
 }
 
-void pre_process(pst::Tree &st) {
+void pre_process(pst::Tree &st, tree_meta &tm) {
 
   // u is in the subtree of v
   // if preorder(v) < preorder(u) and postorder(v) >= postorder(u)
   // or preorder(v) < preorder(u) and preorder(u) < postorder(v) ?? confirm?
 
-  // Gather all backedges
-  std::vector<pt::idx_t> B;
-
+  // populate B
+  std::vector<pt::idx_t> &B = tm.B;
   for (pt::idx_t be_idx {}; be_idx < st.back_edge_count(); ++be_idx) {
     const pst::BackEdge & be = st.get_backedge(be_idx);
 
@@ -1144,83 +1155,32 @@ void pre_process(pst::Tree &st) {
   // compute be count
   std::vector<pt::idx_t> count = count_brackets(st, B);
 
-  // // print brackets
-  // std::cerr << "Brackets\n";
-  // for (pt::idx_t i = 0; i < count.size(); ++i) {
-  //   std::cerr << std::format("({}, {}), ", i, count[i]);
-  // }
+  std::vector<pt::idx_t> &off = tm.off;
 
-  // std::cerr << "\n\n";
-
-  // prefix sum
-  //std::cerr << "Counted\n";
-  // build offset table
-  std::vector<pt::idx_t> off(st.vtx_count()+1, 0);
+  // init off
+  for (pt::idx_t i = 0; i < st.vtx_count()+1; ++i) {
+    off.push_back(0);
+  }
+  //std::vector<pt::idx_t> off(st.vtx_count() + 1, 0);
   for (pt::idx_t i = 0; i < st.vtx_count(); ++i) {
     off[i+1] = off[i] + count[i];
   }
 
-  // prefix sum
-  // std::vector<pt::idx_t> off(st.vtx_count(), 0);
-  // // the root will have no brackets
-  // for (pt::idx_t v = 1; v < st.vtx_count(); ++v) {
-  //   off[v] = off[v-1] + count[v-1];
-  // }
-
-
-  // reset all values of count to 0
-  // for (pt::idx_t i = 0; i < st.vtx_count(); ++i) {
-  //   count[i] = 0;
-  // }
-
-  //  std::cerr << "computed prefix sum \n";
-
-  std::vector<pt::idx_t> BE = collect_backedges_by_vertex(st, B, off);
-  
-  // std::cerr << "filled\n";
-
-  // // print BE
-  // std::cerr << "BE: \n";
-  // for (pt::idx_t i = 0; i < BE.size(); ++i) {
-  //   std::cerr << std::format("({}, {}), ", i, BE[i]);
-  // }
-  // std::cerr << "\n\n";
-
-  // // print offset
-  // std::cerr << "offset: \n";
-  // for (pt::idx_t i = 0; i < off.size(); ++i) {
-  //   std::cerr << std::format("({}, {}), ", i, off[i]);
-  // }
-  // std::cerr << "\n\n";
-
-  for (pt::idx_t v = {}; v < st.vtx_count(); ++v) {
-
-    std::cerr << std::format("v: {} \n", v);
-
-    pt::idx_t start = off[v], end = off[v + 1];
-
-    for (pt::idx_t i{start}; i < end; i++) {
-      pt::idx_t be_idx = BE[i];
-      const pst::BackEdge &be = st.get_backedge(be_idx);
-
-      pt::idx_t src_v_idx = be.get_src();
-      pt::idx_t tgt_v_idx = be.get_tgt();
-
-      std::cerr << std::format("({}, {}),", src_v_idx, tgt_v_idx);
-    }
-
-    std::cerr << "\n";
+  std::vector<pt::idx_t> &BE = tm.BE;
+  for (pt::idx_t i = 0; i < off[st.vtx_count()]; ++i) {
+    BE.push_back(0);
   }
-    
-  
+  //std::vector<pt::idx_t> BE(off[n]);
 
+  //std::vector<pt::idx_t> BE =
+  collect_backedges_by_vertex(st, B, off, BE);
 }
 
 void find_hubbles(pst::Tree &st, const pvtr::Tree<pgt::flubble> &ft) {
    const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
-   pre_process(st);
-   return;
+   
+   //return;
 
   // debug fn
   //foo(st, ft);
@@ -1230,6 +1190,19 @@ void find_hubbles(pst::Tree &st, const pvtr::Tree<pgt::flubble> &ft) {
   euler_tour(st, tm);
   compute_lo(st, tm);
   compute_pre_post(st, tm);
+  pre_process(st, tm);
+
+  for (pt::idx_t i = 0; i < st.vtx_count(); ++i) {
+    std::cerr << std::format("vtx: {} \n", i);
+
+    for (pt::idx_t be_idx : tm.get_brackets(i)) {
+      pst::BackEdge be = st.get_backedge(be_idx);
+      std::cerr << std::format("({}, {}),", be.get_src(), be.get_tgt());
+    }
+    std::cerr << "\n";
+  }
+
+  return;
 
   //tm.print();
   /* a for ancestor, d for descendant */
