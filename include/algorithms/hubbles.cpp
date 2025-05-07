@@ -965,54 +965,262 @@ void compute_pre_post(pst::Tree &st, tree_meta &tm) {
   // }
 }
 
-// void compute_obe_count(pst::Tree &st, tree_meta &tm) {
+// compute for each vertex the number of backedges starting from a descendant of
+// v to an ancestor of v
+std::vector<pt::idx_t> compute_be_count(pst::Tree &st) {
+  
 
-//   const std::vector<pt::idx_t> &depth = tm.D;
+  std::vector<pt::idx_t> be_count(st.vtx_count(), 0);
+  std::map<pt::idx_t, std::vector<pt::idx_t>> be_map; // a temp map
 
-//   std::vector<pt::idx_t> &be_count = tm.be_count;
-//   for (pt::idx_t i = 0; i < st.vtx_count(); ++i) {
-//     be_count.push_back(0);
-//   }
+  // in reverse DFS
+  for (pt::idx_t v_idx {st.vtx_count()} ; v_idx-- > 0 ; ) {
 
-//   // temp map
-//   std::unordered_map<pt::idx_t, std::vector<pt::idx_t>> be_map;
+    const pst::Vertex &curr_v = st.get_vertex(v_idx);
 
-//   for (pt::idx_t v_idx{st.vtx_count()}; v_idx-- > 0;) {
-//     if (st.is_leaf(v_idx)) {
-//       be_count[v_idx] = 0;
-//       be_map[v_idx] = {};
-//     }
-//     else {
+    // for each child of v, check if the backedges from the child to v
+    // are backedges from a descendant of v to an ancestor of v
+    for (pt::idx_t c_v_idx : st.get_children(v_idx)) {
+      for (pt::idx_t be_idx : be_map[c_v_idx]) {
+        const pst::BackEdge &be = st.get_backedge(be_idx);
 
-//       for (auto c_v_idx : st.get_children(v_idx)) {
-//         for (auto be_idx : be_map[c_v_idx]) {
-//           pt::idx_t tgt_v_idx = st.get_backedge(be_idx).get_tgt();
-//           if( depth[tgt_v_idx] < depth[v_idx] ) {
-//             be_map[v_idx].push_back(be_idx);
-//           }
-//         }
-//         be_map.erase(c_v_idx);
-//       }
+        const pst::Vertex &v = st.get_vertex(be.get_tgt());
 
-//       be_count[v_idx] = be_map[v_idx].size();
+        if (v.pre_order() < curr_v.pre_order() && v.post_order() > curr_v.post_order()) {
+          // be is a backedge from a descendant of v to an ancestor of v
+          be_map[v_idx].push_back(be_idx);
+        }
+      }
 
-//       for (pt::idx_t be_idx : st.get_obe_idxs(v_idx)) {
-//         const pst::BackEdge& be = st.get_backedge(be_idx);
+      be_map.erase(c_v_idx);
+    }
 
-//         if (be.type() != pst::be_type_e::back_edge) {
-//           continue;
-//         }
+    be_count[v_idx] = be_map[v_idx].size();
 
-//         be_map[v_idx].push_back(be_idx);
-        
-//       }
-//     }
-//   }
+    //::idx_t be_count {0};
+    std::set<std::size_t> be_idxs = st.get_obe_idxs(v_idx);
 
-// }
+    for (auto be_idx : be_idxs) {
+
+      if (st.get_backedge(be_idx).type() != pst::be_type_e::back_edge) {
+        // filter out special types of backedges
+        continue;
+      }
+
+      be_map[v_idx].push_back(be_idx);
+    }
+  }
+
+  return be_count;
+}
+
+// count the number of backedges from a descendant of v to an ancestor of v
+// using the difference on tree
+std::vector<pt::idx_t> count_brackets(pst::Tree &st, const std::vector<pt::idx_t> &B) {
+
+  const pt::idx_t n = st.vtx_count();
+
+  std::vector<pt::idx_t> be_count(n, 0); // how many we’ve collected so far
+  std::vector<pt::idx_t> diff(n, 0);
+
+  // sweep over backedges
+  for(pt::idx_t be_idx : B){
+    const pst::BackEdge &be = st.get_backedge(be_idx);
+
+    pt::idx_t u = be.get_src();
+    pt::idx_t w = be.get_tgt();
+
+    // strict descendant: bump at parent(u)
+    if (!st.is_root(u))
+      diff[st.get_parent(u)] += 1;
+
+    // strict ancestor: subtract at w itself
+    diff[w] -= 1;
+  }
+
+  // Traverse vertices in reverse DFS (so children first, then parent)
+  // visits every child before its parent
+  for (pt::idx_t v_idx = n; v_idx-- > 0;) {
+    pt::idx_t subtotal = diff[v_idx];
+
+    for (auto c_v_idx : st.get_children(v_idx)) {
+      subtotal += be_count[c_v_idx];
+    }
+
+    be_count[v_idx] = subtotal;
+  }
+
+  // print be_count
+  // for (pt::idx_t i = 0; i < be_count.size(); ++i) {
+  //   std::cerr << std::format("({}, {}), ", i, be_count[i]);
+  // }
+
+  return be_count;
+}
+
+
+/**
+ * compute the flat list for backedges from a descendant of v to an ancestor of
+ * v
+ *
+ * @param st the tree
+ * @param B the backedges
+ * @param off the offset table/prefix sum
+ */
+std::vector<pt::idx_t> collect_backedges_by_vertex(pst::Tree &st,
+                                                   const std::vector<pt::idx_t> &B,
+                                                   const std::vector<pt::idx_t> &off) {
+  const pt::idx_t n = st.vtx_count();
+
+  // build diff array
+  std::vector<pt::idx_t> diff(n, 0);
+  // sweep over backedges
+  for (pt::idx_t be_idx : B) {
+    const pst::BackEdge &be = st.get_backedge(be_idx);
+
+    pt::idx_t u = be.get_src();
+    pt::idx_t w = be.get_tgt();
+
+    // strict descendant: bump at parent(u)
+    if (!st.is_root(u))
+      diff[st.get_parent(u)] += 1;
+
+    // strict ancestor: subtract at w itself
+    diff[w] -= 1;
+  }
+
+  // 4) Allocate flat storage and a little cursor per‐vertex
+  std::vector<pt::idx_t> BE(off[n]);
+  std::vector<pt::idx_t> cursor(n, 0);
+
+  // 5) Fill in each block BE[off[v] .. off[v+1]) by
+  //    walking the parent‐chain from parent(u) up to w
+  for (pt::idx_t be_idx : B) {
+    auto &be = st.get_backedge(be_idx);
+    //int u = be.get_src(), w = be.get_tgt();
+
+    pt::idx_t u = be.get_src();
+    pt::idx_t w = be.get_tgt();
+
+    if (st.is_root(u))
+      continue;
+
+    // walk up from parent(u) until we hit w
+    // for (int v = st.get_parent(u); v != w && !st.is_root(v);
+    //      v = st.get_parent(v)) {
+    //   BE[off[v] + (cursor[v]++)] = be_idx;
+    // }
+
+    pt::idx_t v = st.get_parent(u);
+    while (!st.is_root(v) && v != w) {
+      BE[off[v] + cursor[v]] = be_idx;
+      ++cursor[v];
+      v = st.get_parent(v);
+    }
+  }
+
+  return BE;
+}
+
+void pre_process(pst::Tree &st) {
+
+  // u is in the subtree of v
+  // if preorder(v) < preorder(u) and postorder(v) >= postorder(u)
+  // or preorder(v) < preorder(u) and preorder(u) < postorder(v) ?? confirm?
+
+  // Gather all backedges
+  std::vector<pt::idx_t> B;
+
+  for (pt::idx_t be_idx {}; be_idx < st.back_edge_count(); ++be_idx) {
+    const pst::BackEdge & be = st.get_backedge(be_idx);
+
+    if (be.type() != pst::be_type_e::back_edge) {
+      continue;
+    }
+
+    B.push_back(be_idx);
+  }
+
+  // compute be count
+  std::vector<pt::idx_t> count = count_brackets(st, B);
+
+  // // print brackets
+  // std::cerr << "Brackets\n";
+  // for (pt::idx_t i = 0; i < count.size(); ++i) {
+  //   std::cerr << std::format("({}, {}), ", i, count[i]);
+  // }
+
+  // std::cerr << "\n\n";
+
+  // prefix sum
+  //std::cerr << "Counted\n";
+  // build offset table
+  std::vector<pt::idx_t> off(st.vtx_count()+1, 0);
+  for (pt::idx_t i = 0; i < st.vtx_count(); ++i) {
+    off[i+1] = off[i] + count[i];
+  }
+
+  // prefix sum
+  // std::vector<pt::idx_t> off(st.vtx_count(), 0);
+  // // the root will have no brackets
+  // for (pt::idx_t v = 1; v < st.vtx_count(); ++v) {
+  //   off[v] = off[v-1] + count[v-1];
+  // }
+
+
+  // reset all values of count to 0
+  // for (pt::idx_t i = 0; i < st.vtx_count(); ++i) {
+  //   count[i] = 0;
+  // }
+
+  //  std::cerr << "computed prefix sum \n";
+
+  std::vector<pt::idx_t> BE = collect_backedges_by_vertex(st, B, off);
+  
+  // std::cerr << "filled\n";
+
+  // // print BE
+  // std::cerr << "BE: \n";
+  // for (pt::idx_t i = 0; i < BE.size(); ++i) {
+  //   std::cerr << std::format("({}, {}), ", i, BE[i]);
+  // }
+  // std::cerr << "\n\n";
+
+  // // print offset
+  // std::cerr << "offset: \n";
+  // for (pt::idx_t i = 0; i < off.size(); ++i) {
+  //   std::cerr << std::format("({}, {}), ", i, off[i]);
+  // }
+  // std::cerr << "\n\n";
+
+  for (pt::idx_t v = {}; v < st.vtx_count(); ++v) {
+
+    std::cerr << std::format("v: {} \n", v);
+
+    pt::idx_t start = off[v], end = off[v + 1];
+
+    for (pt::idx_t i{start}; i < end; i++) {
+      pt::idx_t be_idx = BE[i];
+      const pst::BackEdge &be = st.get_backedge(be_idx);
+
+      pt::idx_t src_v_idx = be.get_src();
+      pt::idx_t tgt_v_idx = be.get_tgt();
+
+      std::cerr << std::format("({}, {}),", src_v_idx, tgt_v_idx);
+    }
+
+    std::cerr << "\n";
+  }
+    
+  
+
+}
 
 void find_hubbles(pst::Tree &st, const pvtr::Tree<pgt::flubble> &ft) {
-  const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+
+   pre_process(st);
+   return;
 
   // debug fn
   //foo(st, ft);
