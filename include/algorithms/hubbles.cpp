@@ -196,8 +196,8 @@ struct tree_meta {
 
   // a flat list of backedges
   std::vector<pt::idx_t> BE;
-  
-  std::vector<pt::idx_t> get_brackets(pt::idx_t v_idx) {
+
+  std::vector<pt::idx_t> get_brackets(pt::idx_t v_idx) const {
     std::vector<pt::idx_t> brackets;
     pt::idx_t start = off[v_idx];
     pt::idx_t end = off[v_idx + 1];
@@ -754,90 +754,167 @@ std::vector<pt::idx_t> ei_case_two(pst::Tree &st, const tree_meta &tm,
                                    pt::idx_t min_depth_v_idx, std::vector<pt::idx_t> &ends) {
 
   const std::vector<pt::idx_t> &depth = tm.D;
+  const std::vector<pt::idx_t> &lo = tm.lo;
 
-  const std::map<pt::idx_t, pt::idx_t> &pres = tm.pre;
-  const std::map<pt::idx_t, pt::idx_t> &posts = tm.post;
-  //std::vector<pt::idx_t> ends;
+  std::vector<pt::idx_t> ch;
 
-
-  std::vector<pt::idx_t> branch_be_srcs;
-
-  // filter branches
-  // ensure the depth of hi from a branch is greater than the min depth
+  // filter out children whose hi is not less than min depth
   for (pt::idx_t c_v_idx : st.get_children(ei_v_idx)) {
     pt::idx_t hi_v_idx = st.get_vertex(c_v_idx).hi();
-    if (depth[min_depth_v_idx] > depth[hi_v_idx]) {
-      branch_be_srcs.push_back(c_v_idx);
-    }
-  }
-
-  std::set<pt::idx_t> vs;
-  pt::idx_t post_max = st.get_vertex(min_depth_v_idx).post_order();
-  pt::idx_t ei_post = st.get_vertex(ei_v_idx).post_order();
-  for (auto x {ei_post}; x < post_max; ++x) {
-
-    // check if x exists in posts
-    if (posts.find(x) == posts.end()) {
-      std::cerr << std::format("x {} not found in posts {} c {}\n", x, posts.size(), st.vtx_count());
-      exit(1);
-    }
-
-    pt::idx_t po_v_idx = posts.at(x);
+    bool hi_is_below_min = depth[hi_v_idx] > depth[min_depth_v_idx];
+    bool hi_is_above_ei = depth[hi_v_idx] < depth[ei_v_idx];
     
-    vs.insert(po_v_idx);
-  }
-
-  pt::idx_t pre_min = st.get_vertex(min_depth_v_idx).pre_order();
-  pt::idx_t ei_pre = st.get_vertex(ei_v_idx).pre_order();
-  for (auto p {pre_min} ; p <= ei_pre ; ++p) {
-
-    // check if p exists in pres
-    if (pres.find(p) == pres.end()) {
-      std::cerr << std::format("p {} not found in pres\n", p);
-      exit(1);
+    if (hi_is_above_ei && hi_is_below_min ) {
+      ch.push_back(c_v_idx);
     }
-
-    pt::idx_t pr_v_idx = pres.at(p);
-    vs.insert(pr_v_idx);
   }
 
-  std::map<pt::idx_t, std::vector<pt::idx_t>> m;
+  // get only children descendants have 1 obe and the tgt of that OBE lies between min depth and
+  // E_i
 
-  for (pt::idx_t v_idx : vs) {
-    if (st.get_ibe(v_idx).empty()) {
+  // only one bracket must go above E_i
+  std::set<pt::idx_t> invalid_c;
+  for (pt::idx_t c_v_idx : ch) {
+    std::vector<pt::idx_t> brackets = tm.get_brackets(c_v_idx);
+    //bool is_valid = true;
+    pt::idx_t cnt {}; // no of brackets that go above E_i
+    for (auto be_idx : brackets) {
+      if(cnt > 1){
+        invalid_c.insert(c_v_idx);
+        break;
+      }
+
+      const pst::BackEdge& be = st.get_backedge(be_idx);
+
+
+      pt::idx_t y = be.get_tgt();
+
+      if (depth[y] < depth[ei_v_idx]) {
+        cnt++;
+      }
+     }
+  }
+
+  // ch without be into E_i
+  for  (auto c_v_idx : ch) {
+
+    if(invalid_c.contains(c_v_idx)) {
       continue;
     }
 
-    for (auto ibe_idx : st.get_ibe_idxs(v_idx)) {
-      const pst::BackEdge& be = st.get_backedge(ibe_idx);
+    // TODO:[B] query the count
+    std::vector<pt::idx_t> brackets = tm.get_brackets(c_v_idx);
+    if (brackets.size() > 1) {
+      continue;
+    }
 
-      if (be.type() != pst::be_type_e::back_edge) {
+    pt::idx_t be_idx = brackets[0];
+    const pst::BackEdge& be = st.get_backedge(be_idx);
+    pt::idx_t x = be.get_src();
+    pt::idx_t y = be.get_tgt();
+
+    //std::cerr << std::format("src: {} tgt: {} \n", st.get_vertex(x).g_v_id(), st.get_vertex(y).g_v_id());
+
+    if (!st.is_leaf(x)){
+      continue;
+    }
+
+    // the only be we allow to bracket y between E_i and S_i is the E_i, S_i back edge
+    bool y_is_invalid = false;
+    for (auto be_idx : tm.get_brackets(y)){
+      const pst::BackEdge& be = st.get_backedge(be_idx);
+      pt::idx_t src_v_idx = be.get_src();
+      pt::idx_t tgt_v_idx = be.get_tgt();
+
+      bool a = src_v_idx == ei_v_idx && tgt_v_idx == si_v_idx; // allowed
+
+      bool b = depth[src_v_idx] < depth[ei_v_idx] || depth[tgt_v_idx] > depth[si_v_idx]; // 
+      // not allowed
+
+      if (!a || b) {
+        y_is_invalid = true;
+        break;
+      }
+    }
+
+    if (y_is_invalid) {
+      continue;
+    }
+
+    std::cerr << std::format("with E_i branch  ({}: {}, {})\n",
+                             st.get_vertex(c_v_idx).g_v_id(),
+                             st.get_vertex(y).g_v_id(),
+                             st.get_vertex(ei_v_idx).g_v_id());
+  }
+
+
+  // ch with be into E_i
+  // get the lowest src of a be into E_i
+  for  (auto c_v_idx : ch) {
+
+    if(invalid_c.contains(c_v_idx)) {
+      continue;
+    }
+
+    bool lo_is_ei = lo[c_v_idx] == ei_v_idx; // we have a be into E_i
+
+    if (!lo_is_ei) {
+      continue;
+    }
+
+    pt::idx_t max_src {c_v_idx};
+
+    // TODO:[B] query the count
+    std::vector<pt::idx_t> brackets = tm.get_brackets(c_v_idx);
+    for (auto be_idx : brackets) {
+      const pst::BackEdge &be = st.get_backedge(be_idx);
+
+      pt::idx_t x = be.get_src();
+      pt::idx_t y = be.get_tgt();
+
+      //std::cerr << std::format("br src: {} tgt: {} \n", st.get_vertex(x).g_v_id(), st.get_vertex(y).g_v_id());
+
+      if (y != ei_v_idx) {
         continue;
       }
 
-      pt::idx_t src_v_idx = be.get_src();
-      for (pt::idx_t c_v_idx : st.get_children(ei_v_idx)) {
-        if ( st.get_vertex(c_v_idx).pre_order() < st.get_vertex(src_v_idx).pre_order() &&
-             st.get_vertex(c_v_idx).post_order() > st.get_vertex(src_v_idx).post_order()) {
-          m[c_v_idx].push_back(src_v_idx);
-        }
+
+
+      if (x > max_src) {
+        max_src = x;
       }
-    }
-  }
 
-  for (auto [k,v]: m) {
-    if (v.size() == 1) {
-      pt::idx_t v_idx = v.front();
-      ends.push_back(st.get_vertex(v_idx).g_v_id());
     }
-  }
 
-  // print ends
-  if (!ends.empty()) std::cerr << "with E_i\n";
-  for (auto e : ends) {
-    std::cerr << std::format("branch boundary: {} {}\n", st.get_vertex(ei_v_idx).g_v_id(), e);
+    //pt::idx_t be_idx = brackets[0];
+    //const pst::BackEdge& be = st.get_backedge(be_idx);
+
+    //pt::idx_t x = be.get_src();
+
+    // x has a descendant that whose backedge goes to E_i
+
+    //std::cerr << "is leaf " << st.is_leaf(max_src) << "\n";
+
+    pt::idx_t a;
+    if (st.is_leaf(max_src)) {
+      a = st.get_vertex(c_v_idx).hi();
+    }
+    else {
+      a = max_src;
+    }
+
+
+    // note that the closest thing to a flubble in this case is the lowest src of a be into E_i
+
+    ends.push_back(st.get_vertex(max_src).g_v_id());
+
+
+    std::cerr << std::format("with E_i branch be into E_i ({} {}, {})\n",
+                              st.get_vertex(c_v_idx).g_v_id(),
+                             st.get_vertex(a).g_v_id(),
+                             st.get_vertex(ei_v_idx).g_v_id());
+    //std::cerr << "----\n";
   }
-  if (!ends.empty()) std::cerr << "------------\n";
 
   return ends;
 }
@@ -882,10 +959,10 @@ std::vector<pt::idx_t> with_ei(pst::Tree &st, const tree_meta &tm, pt::idx_t si_
   // we care about the be below here
   pt::idx_t min_depth_v_idx = find_min_depth_vtx(st, tm, si_v_idx, ei_v_idx);
 
-  pt::idx_t trunk_end = ei_case_one(st, tm, si_v_idx, ei_v_idx, min_depth_v_idx);
-  ends.push_back(trunk_end);
+  //pt::idx_t trunk_end = ei_case_one(st, tm, si_v_idx, ei_v_idx, min_depth_v_idx);
+  //ends.push_back(trunk_end);
 
-  
+
   ei_case_two(st, tm, si_v_idx, ei_v_idx, min_depth_v_idx, ends);
 
   return ends;
@@ -972,7 +1049,7 @@ void compute_pre_post(pst::Tree &st, tree_meta &tm) {
   }
 
   // for (pt::idx_t i {}; i < exp_size; ++i) {
-   
+
   //   if (pre[i] != pc::INVALID_IDX) {
   //     std::cerr << std::format("pre: {}  found\n", i);
   //   }
@@ -986,7 +1063,7 @@ void compute_pre_post(pst::Tree &st, tree_meta &tm) {
 // compute for each vertex the number of backedges starting from a descendant of
 // v to an ancestor of v
 std::vector<pt::idx_t> compute_be_count(pst::Tree &st) {
-  
+
 
   std::vector<pt::idx_t> be_count(st.vtx_count(), 0);
   std::map<pt::idx_t, std::vector<pt::idx_t>> be_map; // a temp map
@@ -1109,7 +1186,7 @@ collect_backedges_by_vertex(pst::Tree &st, const std::vector<pt::idx_t> &B,
   }
 
   // 4) Allocate flat storage and a little cursor per‐vertex
-  
+
   std::vector<pt::idx_t> cursor(n, 0);
 
   // 5) Fill in each block BE[off[v] .. off[v+1]) by
@@ -1179,7 +1256,7 @@ void pre_process(pst::Tree &st, tree_meta &tm) {
 void find_hubbles(pst::Tree &st, const pvtr::Tree<pgt::flubble> &ft) {
    const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
-   
+
    //return;
 
   // debug fn
@@ -1192,17 +1269,17 @@ void find_hubbles(pst::Tree &st, const pvtr::Tree<pgt::flubble> &ft) {
   compute_pre_post(st, tm);
   pre_process(st, tm);
 
-  for (pt::idx_t i = 0; i < st.vtx_count(); ++i) {
-    std::cerr << std::format("vtx: {} \n", i);
+  // for (pt::idx_t i = 0; i < st.vtx_count(); ++i) {
+  //   std::cerr << std::format("vtx: {} \n", i);
 
-    for (pt::idx_t be_idx : tm.get_brackets(i)) {
-      pst::BackEdge be = st.get_backedge(be_idx);
-      std::cerr << std::format("({}, {}),", be.get_src(), be.get_tgt());
-    }
-    std::cerr << "\n";
-  }
+  //   for (pt::idx_t be_idx : tm.get_brackets(i)) {
+  //     pst::BackEdge be = st.get_backedge(be_idx);
+  //     std::cerr << std::format("({}, {}),", be.get_src(), be.get_tgt());
+  //   }
+  //   std::cerr << "\n";
+  // }
 
-  return;
+  // return;
 
   //tm.print();
   /* a for ancestor, d for descendant */
