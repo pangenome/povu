@@ -3,10 +3,28 @@ cmake_minimum_required(VERSION 3.14)
 # Project name and language
 project(povu LANGUAGES C CXX)
 
+option(BUILD_STATIC
+  "Build a fully static executable (including libstdc++, libgcc, glibc, etc.)"
+  OFF
+)
+
+# 2) If static was requested, force static libs & flags
+if(BUILD_STATIC)
+  # Make all add_library() calls STATIC by default
+  set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+  # Only search for .a
+  set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
+
+  # Pass -static to the linker
+  if(UNIX AND NOT APPLE)
+    set(CMAKE_EXE_LINKER_FLAGS
+      "${CMAKE_EXE_LINKER_FLAGS} -static -static-libgcc -static-libstdc++")
+  endif()
+endif()
+
 # GoogleTest requires at least C++14
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 # Check if CMAKE_BUILD_TYPE is set; if not, default to Release
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build (Debug, Release)" FORCE)
@@ -39,19 +57,13 @@ set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(TEST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests)
 
-# add_subdirectory(deps/libhandlegraph)
-# add_subdirectory(deps/WFA2-lib)
+
 add_subdirectory(deps/liteseq)
 
 # deps
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/deps/liteseq/include
   ${CMAKE_CURRENT_SOURCE_DIR}/deps/args/
-  #${CMAKE_CURRENT_SOURCE_DIR}/deps/libhandlegraph/src/include
-  #${CMAKE_CURRENT_SOURCE_DIR}/deps/WFA2-lib
-  #${CMAKE_CURRENT_SOURCE_DIR}/deps/WFA2-lib/system
-  #${CMAKE_CURRENT_SOURCE_DIR}/deps/WFA2-lib/wavefront
-  #${CMAKE_CURRENT_SOURCE_DIR}/deps/WFA2-lib/bindings/cpp
 )
 
 ADD_LIBRARY(povulib
@@ -106,14 +118,7 @@ add_executable(povu
   ${SOURCE_FILES}
 )
 
-# Link the library (LibsModule) and libhandlegraph to your executable
-target_link_libraries(povu
-  PRIVATE
-  povulib
-  #handlegraph_shared
-  #wfa2cpp
-  liteseqlib
-)
+target_link_libraries(povu PRIVATE povulib liteseqlib)
 
 # create a bin directory (bin) and copy the binary to the bin directory
 set(BINARY_DIR ./bin)
