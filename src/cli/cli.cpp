@@ -112,9 +112,16 @@ void deconstruct_handler(args::Subparser &parser, core::config& app_config) {
 void info_handler(args::Subparser &parser, core::config& app_config) {
   args::Group arguments("arguments");
   args::ValueFlag<std::string> input_gfa(parser, "gfa", "path to input gfa [required]", {'i', "input-gfa"}, args::Options::Required);
+  args::Flag tips(parser, "tips", "print the tips", {'t', "print_tips"});
+
 
   parser.Parse();
   app_config.set_task(core::task_e::info);
+
+  if (tips) {
+    app_config.set_print_tips(true);
+  }
+
   // input gfa is already a c_str
   app_config.set_input_gfa(args::get(input_gfa));
 }

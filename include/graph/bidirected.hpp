@@ -163,7 +163,7 @@ public:
   void shrink_to_fit();
 
   // other
-  void summary() const;
+  void summary(bool print_tips) const;
   void print_dot(std::ostream& os) const;
 };
 

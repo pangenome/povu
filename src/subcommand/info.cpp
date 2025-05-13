@@ -11,9 +11,21 @@ void do_info(const core::config &app_config) {
   // -----
 
   bd::VG *g = povu::subcommands::common::get_vg(app_config);
-  //bd::VG *g = io::from_gfa::to_bd(app_config.get_input_gfa().c_str(), app_config);
 
-  g->summary();
+  std::vector<bd::VG *> components = bd::componetize(*g);
+
   delete g;
+
+  std::cerr << std::format("{} Component count {}\n", fn_name, components.size());
+
+  for (pt::idx_t i{}; i < components.size(); ++i) {
+    bd::VG *c = components[i];
+    c->summary(app_config.print_tips());
+    delete c;
+    components[i] = nullptr;
+  }
+  components.clear();
+
+  return;
 }
 }

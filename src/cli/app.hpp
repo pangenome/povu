@@ -57,6 +57,9 @@ struct config {
   //std::optional<std::filesystem::path> pvst_path;
   std::filesystem::path output_dir; // output directory for task and deconstruct
 
+  // info
+  bool print_tips_; // whether to print tips
+
   // graph
   bool inc_vtx_labels_; // whether to include vertex labels
   bool inc_refs_; // whether to include references/paths
@@ -84,6 +87,7 @@ struct config {
         forest_dir("."),
         chrom(""), // default is empty string
         output_dir("."), // default is current directory
+        print_tips_(false),
         inc_vtx_labels_(false),
         inc_refs_(false),
         v(0),
@@ -102,6 +106,7 @@ struct config {
   std::string get_input_gfa() const { return this->input_gfa; }
   std::filesystem::path get_forest_dir() const { return this->forest_dir; }
   std::filesystem::path get_output_dir() const { return this->output_dir; }
+  bool print_tips() const { return this->print_tips_; }
   bool inc_vtx_labels() const { return this->inc_vtx_labels_; }
   bool inc_refs() const { return this->inc_refs_; }
   const std::string& get_chrom() const { return this->chrom; }
@@ -122,6 +127,7 @@ struct config {
   void set_hairpins(bool b) { this->inc_hairpins_ = b; }
   void set_hubbles(bool b) { this->find_hubbles_ = b; }
   void set_chrom(std::string&& s) { this->chrom = s; }
+  void set_print_tips(bool b) { this->print_tips_ = b; }
   void set_inc_vtx_labels(bool b) { this->inc_vtx_labels_ = b; }
   void set_inc_refs(bool b) { this->inc_refs_ = b; }
   void set_ref_input_format(input_format_e f) { this->ref_input_format = f; }

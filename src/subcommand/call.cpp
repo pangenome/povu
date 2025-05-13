@@ -73,7 +73,7 @@ void do_call(core::config &app_config) {
   //t3.join();
 
   if (true) { // debug
-    g->summary();
+    g->summary(false);
     std::cerr << "flubble count = " << canonical_flubbles.size() << "\n";
     std::cerr << "reference count = " << app_config.get_reference_paths().size() << "\n";
   }

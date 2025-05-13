@@ -148,14 +148,17 @@ void VG::shrink_to_fit() {
   this->edges.shrink_to_fit();
 }
 
-void VG::summary() const {
+void VG::summary(bool print_tips) const {
   std::cout << "Bidirected Graph: " << std::endl;
   std::cout << "\t" << "vertex count: " << this->vtx_count() << std::endl;
   std::cout << "\t" << "edge count: " << this->edge_count() << std::endl;
   std::cout << "\t" << "Tip count " << this->tips().size() << std::endl;
-  std::cout << "\t";
-  pu::print_with_comma(std::cout, this->tips(), ',');
-  std::cout << std::endl;
+  if (print_tips) {
+    std::cerr << "\t" << "Tips: ";
+    std::cout << "\t";
+    pu::print_with_comma(std::cout, this->tips(), ',');
+    std::cout << std::endl;
+  }
 }
 
 void VG::print_dot(std::ostream& os) const {

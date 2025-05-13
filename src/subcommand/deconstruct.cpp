@@ -125,7 +125,7 @@ void do_deconstruct(const core::config &app_config) {
         }
 
         if (app_config.verbosity() > 3 && num_threads == 1) {
-          components[i]->summary();
+          components[i]->summary(false);
         }
 
 
