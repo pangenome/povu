@@ -15,7 +15,7 @@ namespace povu::graph::flubble_tree {
 namespace pvtr = povu::tree;
 namespace pst = povu::spanning_tree;
 namespace pgt = povu::graph_types;
-  // TODO: rename to something related to reflect return type
+// TODO: rename to something related to reflect return type
 
 /**
  * @brief
@@ -23,11 +23,10 @@ namespace pgt = povu::graph_types;
 std::vector<graph_types::canonical_sese> find_seses(pst::Tree& t);
 
 /**
- * @brief spanning tree vertex to bubble tree
+ * @brief Generate flubble tree from spanning tree
  *
  */
 pvtr::Tree<pgt::flubble> st_to_ft(pst::Tree& t);
-  //std::vector<pgt::flubble> enumerate(pst::Tree& t);
 }
 
 
