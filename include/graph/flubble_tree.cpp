@@ -43,9 +43,10 @@ inline flubble forwardise(std::size_t start_id, pgt::or_e start_or, std::size_t 
 
 
 /**
-  * @brief Enumerate the flubbles
+  * @brief
  */
-pvtr::Tree<flubble> construct_flubble_tree(const std::vector<oic_t> &stack_, const std::vector<pt::idx_t> &next_seen) {
+pvtr::Tree<flubble> construct_flubble_tree(const std::vector<oic_t> &stack_,
+                                           const std::vector<pt::idx_t> &next_seen) {
   std::string fn_name = std::format("[povu::algorithms::flubble_tree::{}]", __func__);
 
   pvtr::Tree<flubble> ft;
@@ -54,63 +55,56 @@ pvtr::Tree<flubble> construct_flubble_tree(const std::vector<oic_t> &stack_, con
     pt::idx_t cl; // class
     pt::idx_t idx; // index in stack_
   };
-  
+
   std::stack<ci> s;
-  //s.reserve(stack_.size());
   std::unordered_set<pt::idx_t> in_s; // classes in s
 
   pt::idx_t prt_v { ft.root_idx() }; // parent vertex
 
-  //std::cerr << "stack size: " << stack_.size() << "\n";
-
 
   for (pt::idx_t i {}; i < stack_.size(); ++i) {
-    
+
     auto [or_curr, id_curr, cl_curr] = stack_[i];
 
-    //std::cerr << "i "  << i << " id " << id_curr << "\n";
+    if (id_curr == pc::INVALID_IDX) {
+      continue;
+    }
 
+    // find the parent vertex, applies for non-siblings
     if (in_s.contains(cl_curr)) {
 
-      // TODO [A] what is this condition about and next one about?
-      while (!s.empty() && s.top().cl != cl_curr) {
+      // pop until (and including) the one whose cl equals cl_curr
+      while(!s.empty()){
+        auto [cl, _] = s.top();
         s.pop();
-        in_s.erase(cl_curr);
+        in_s.erase(cl);
+
+        if (cl == cl_curr){
+          break;
+        }
       }
 
-      if (!s.empty()) {
-        
-        s.pop();
-      }
-      else {
-        // throw std::runtime_error(std::format("{} Stack is empty for class: {}", fn_name, cl_curr));
-      }
-
-      
       if (prt_v != ft.root_idx()) {
         prt_v = ft.get_parent_idx(prt_v);
       }
     }
 
-    //std::cerr << "i " << i << " cl " << cl_curr << " next_seen " << next_seen[i] << "\n";
-
     if ((i + 1) < next_seen[i]) {
       auto [or_nxt, id_nxt, _] = stack_[next_seen[i]];
+
+      if (id_nxt == pc::INVALID_IDX) {
+        continue;
+      }
+
       flubble fl = forwardise(id_curr, or_curr, id_nxt, or_nxt);
       pvtr::Vertex<flubble> v(id_curr, fl);
       pt::idx_t v_idx = ft.add_vertex(v);
       ft.add_edge(prt_v, v_idx);
       prt_v = v_idx;
     }
-    else {
-      ;
-    }
 
-    //std::cerr << "pushing " << cl_curr << " " << i << "\n";
     s.push( {cl_curr, i} );
-    //std::cerr << "pushed " << cl_curr << " " << i << "\n";
     in_s.insert(cl_curr);
-    //std::cerr << "inserted " << cl_curr << "\n";
   }
 
   return ft;
@@ -126,12 +120,14 @@ std::vector<pt::idx_t> compute_eq_class_metadata(const std::vector<oic_t> &stack
 
   std::vector<pt::idx_t> next_seen(stack_.size(), pc::INVALID_CLS);
 
+  // an eq class and the index of the next time it is encountered in stack_
   std::unordered_map<pt::idx_t, pt::idx_t> next_seen_map;
   next_seen_map.reserve(stack_.size());
 
   for (std::size_t i {stack_.size()};  i-- > 0; ) {
     auto [or_curr, id_curr, cl_curr] = stack_[i];
     pt::idx_t next_idx = next_seen_map.contains(cl_curr) ? next_seen_map[cl_curr] : i;
+    //std::cerr << std::format("i: {} \t id_curr: {} \t cl_curr: {} \t next: {}\n", i, id_curr, cl_curr, next_idx);
     next_seen[i] = next_idx;
     next_seen_map[cl_curr] = i;
   }
@@ -149,18 +145,24 @@ std::vector<oic_t> compute_eq_class_stack(pst::Tree &t) {
   std::string fn_name = std::format("[povu::algorithms::flubble_tree::{}]", __func__);
   const pt::idx_t EXPECTED_BLACK_EDGE_COUNT = t.vtx_count() / 2;
 
+  pt::idx_t root_idx = t.get_root_idx();
+
   std::vector<oic_t> stack;
   stack.reserve(EXPECTED_BLACK_EDGE_COUNT);
 
-  // can this for loop condition be better?
-  for (pt::idx_t v{t.vtx_count() - 1}; v > t.get_root_idx(); --v) {
-    const pst::Edge &e = t.get_parent_edge(v);
+  for (pt::idx_t v_idx{t.vtx_count()}; v_idx-- > 0; ) {
+
+    if (v_idx == root_idx) { continue; }
+
+    const pst::Edge &e = t.get_parent_edge(v_idx);
+    // std::cerr << "i: " << v_idx << "\tid: " << t.get_vertex(v_idx).g_v_id() << "\tclass: " << e.get_class() << "\tclr: " << e.get_color() << "\n";
+
     if (e.get_color() == color::black) {
-      or_e o = t.get_vertex(v).type() == pgt::v_type_e::r ? pgt::or_e::forward : pgt::or_e::reverse;
-      stack.push_back({o, t.get_vertex(v).g_v_id(), e.get_class()});
+      or_e o = t.get_vertex(v_idx).type() == pgt::v_type_e::r ? pgt::or_e::forward : pgt::or_e::reverse;
+      stack.push_back({o, t.get_vertex(v_idx).g_v_id(), e.get_class()});
     }
     else {
-      stack.push_back({pgt::or_e::forward, pc::INVALID_ID, e.get_class()});
+      stack.push_back({pgt::or_e::forward, pc::INVALID_IDX, e.get_class()});
     }
   }
 
