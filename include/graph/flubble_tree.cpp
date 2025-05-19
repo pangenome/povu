@@ -155,7 +155,7 @@ std::vector<oic_t> compute_eq_class_stack(pst::Tree &t) {
     if (v_idx == root_idx) { continue; }
 
     const pst::Edge &e = t.get_parent_edge(v_idx);
-    std::cerr << "i: " << v_idx << "\tid: " << t.get_vertex(v_idx).g_v_id() << "\tclass: " << e.get_class() << "\tclr: " << e.get_color() << "\n";
+    // std::cerr << "i: " << v_idx << "\tid: " << t.get_vertex(v_idx).g_v_id() << "\tclass: " << e.get_class() << "\tclr: " << e.get_color() << "\n";
 
     if (e.get_color() == color::black) {
       or_e o = t.get_vertex(v_idx).type() == pgt::v_type_e::r ? pgt::or_e::forward : pgt::or_e::reverse;

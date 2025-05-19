@@ -126,16 +126,15 @@ public:
   pt::idx_t g_v_id() const;
   v_type_e type() const;
 
-  std::set<pt::idx_t> const& get_obe() const;
+  std::set<pt::idx_t> const &get_obe() const;
   std::set<pt::idx_t> const& get_ibe() const;
-  //bool is_null() const;
 
   // get the index of the edge that points to the parent in the tree
 
   pt::idx_t const& get_parent_idx() const; // TODO: remove, superceded by get_parent_edge_idx
   pt::idx_t get_parent_e_idx() const;
 
-  [[deprecated("use get_child_edge_idxs() instead")]]
+  [[deprecated("use get_child_edge_idxs()")]]
   std::set<pt::idx_t> const& get_children() const;
   std::set<pt::idx_t> const &get_child_edge_idxs() const;
 
@@ -274,14 +273,16 @@ public:
   /**
     * @brief get indexes of the vertices the obes from this vertex points to (tgt/targets)
     */
-    // TODO rename to get_obe_tgts
+  [[deprecated("use get_obe_tgt_v_idxs()")]]
   std::set<size_t> get_obe(std::size_t vertex); // get backedge target indexes
+  std::set<size_t> get_obe_tgt_v_idxs(std::size_t v_idx);
 
   /**
     * @brief get sources of the vertices the ibes from this vertex points from (srcs)
    */
-      // TODO rename to get_obe_srcs
+  [[deprecated("use get_ibe_src_v_idxs()")]]
   std::set<size_t> get_ibe(std::size_t vertex);
+  std::set<size_t> get_ibe_src_v_idxs(std::size_t v_idx);
 
   /**
    * @brief a reference to the tree edge given the index in the tree_edges vector
