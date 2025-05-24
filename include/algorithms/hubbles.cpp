@@ -586,6 +586,7 @@ struct mn_t {
 };
 
 pt::idx_t compute_m(pst::Tree &st, const tree_meta &tm, pt::idx_t ii_v_idx, pt::idx_t ji_v_idx) {
+  const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
   if (st.get_ibe_src_v_idxs(ii_v_idx).size() == 0) {
     return ii_v_idx;
   }
@@ -605,14 +606,18 @@ pt::idx_t compute_m(pst::Tree &st, const tree_meta &tm, pt::idx_t ii_v_idx, pt::
     }
 
     pt::idx_t src_v_idx = st.get_backedge(be_idx).get_src();
+    std::vector<pt::idx_t> p {src_v_idx, ji_v_idx};
+    pt::idx_t l = find_lca(tm, p);
 
-    if (height[src_v_idx] >= height[ji_v_idx]) {
+    if (height[l] >= height[ji_v_idx]) {
+      std::cerr << fn_name << "hight[src] " << height[src_v_idx] << " h[ji] " << height[ji_v_idx] << "\n";
+      std::cerr << fn_name << " skipping " << src_v_idx << "\n";
       continue;
     }
 
-    if (height[src_v_idx] > max_height.height) {
+    if (height[l] > max_height.height) {
       // TODO: [c] remove type cast
-      max_height = {(pt::idx_t)src_v_idx, height[src_v_idx]};
+      max_height = {(pt::idx_t)l, height[l]};
     }
   }
 
@@ -674,9 +679,16 @@ get Ii trunk back edges
  */
 pt::idx_t ii_trunk(pst::Tree &st, const tree_meta &tm, const mn_t &mn,
                    pt::idx_t ii_v_idx, pt::idx_t ji_v_idx) {
+  const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+
+  std::cerr << fn_name << "\n";
 
   auto [m, n] = mn;
-  std::vector<pt::idx_t> height = tm.depth;
+  //std::vector<pt::idx_t> height = tm.depth;
+  const std::vector<pt::idx_t> &height = tm.depth; // rename to depth
+
+  std::cerr << fn_name << " m: " << m << " height[m] " << height[m] << " n "
+            << n << " height[n]: " << height[n] << "\n";
 
   if (n == pc::INVALID_IDX || m == pc::INVALID_IDX || height[m] > height[n]) {
     return pc::INVALID_IDX; // invalid
@@ -685,13 +697,35 @@ pt::idx_t ii_trunk(pst::Tree &st, const tree_meta &tm, const mn_t &mn,
   // v_idx, height
   std::vector<std::pair<pt::idx_t, pt::idx_t>> x;
 
-  for (auto be_src_v_idx : st.get_ibe_src_v_idxs(ii_v_idx)) {
-    if (height[be_src_v_idx] > height[m]) {
+  for (pt::idx_t be_idx : st.get_ibe_idxs(ii_v_idx)) {
+    const pst::BackEdge &be = st.get_backedge(be_idx);
+
+    if (be.type() != pst::be_type_e::back_edge) {
       continue;
     }
 
-    x.push_back({be_src_v_idx, height[be_src_v_idx]});
+    pt::idx_t be_src_v_idx = be.get_src();
+    std::vector<pt::idx_t> p{be_src_v_idx, ji_v_idx};
+    pt::idx_t l = find_lca(tm, p);
+    if (height[l] > height[m]) {
+      std::cerr << fn_name << " skipping " << be_src_v_idx << "\n";
+      continue;
+    }
+
+
+    std::cerr << fn_name << " pushing back " << be_src_v_idx << "\n";
+    x.push_back({l, height[l]});
   }
+
+  //for (auto be_src_v_idx : st.get_ibe_src_v_idxs(ii_v_idx)) {
+    
+  //}
+
+  // a is ancestor, d is descendant
+  auto is_descendant =[&st](pt::idx_t a, pt::idx_t d)->bool{
+    return st.get_vertex(a).post_order() > st.get_vertex(d).post_order() &&
+      st.get_vertex(a).pre_order() < st.get_vertex(d).pre_order();
+  };
 
   // sort by height in descending order
   std::sort(x.begin(), x.end(),
@@ -702,13 +736,22 @@ pt::idx_t ii_trunk(pst::Tree &st, const tree_meta &tm, const mn_t &mn,
 
   // loop from start to end of x and get the first one whose bracket source is
   // not from below m and is not ji already handled in x
-  for (auto [be_src_v_idx, h] : x) {
+  for (auto [k, h] : x) {
     bool invalid {false};
-    for (auto be_idx : tm.get_brackets(be_src_v_idx)) {
+    for (auto be_idx : st.get_ibe_idxs(k)) {
       const pst::BackEdge &be = st.get_backedge(be_idx);
-      pt::idx_t src_v_idx = be.get_src();
+      pt::idx_t br_src_v_idx = be.get_src();
 
-      if (height[src_v_idx] > height[m]) {
+      if (is_descendant(ji_v_idx, br_src_v_idx)) {
+        invalid = true;
+        break;
+      }
+
+      //
+      std::vector<pt::idx_t> p{ji_v_idx, br_src_v_idx};
+      pt::idx_t l = find_lca(tm, p);
+
+      if (height[l] > height[m]) {
         invalid = true;
         break;
       }
@@ -718,8 +761,33 @@ pt::idx_t ii_trunk(pst::Tree &st, const tree_meta &tm, const mn_t &mn,
       continue;
     }
 
-    std::vector<pt::idx_t> s = { be_src_v_idx, ji_v_idx };
-    return find_lca(tm, s);
+    for (auto be_idx : tm.get_brackets(k)) {
+      const pst::BackEdge &be = st.get_backedge(be_idx);
+      pt::idx_t br_src_v_idx = be.get_src();
+      pt::idx_t br_tgt_v_idx = be.get_tgt();
+
+      if (is_descendant(ji_v_idx, br_src_v_idx) && is_descendant(ii_v_idx, br_tgt_v_idx)) {
+        invalid = true;
+        break;
+      }
+
+      std::vector<pt::idx_t> p{k, br_src_v_idx};
+      pt::idx_t l = find_lca(tm, p);
+
+      if (height[l] > height[m]) {
+        invalid = true;
+        break;
+      }
+    }
+
+    if (invalid) {
+      continue;
+    }
+
+    return  k;
+
+    //std::vector<pt::idx_t> s = { be_src_v_idx, ji_v_idx };
+    //return find_lca(tm, s);
     //return be_src_v_idx;
     //return st.get_vertex(be_src_v_idx).g_v_id();
   }
@@ -831,25 +899,120 @@ std::vector<pt::idx_t> with_ii(pst::Tree &st, const tree_meta &tm,
 
 /*
   -----------------
-  Handle E_i
+  Handle j_i
   -----------------
 */
+
+pt::idx_t override_ji_trunk(pst::Tree &st, const tree_meta &tm, const mn_t &mn,
+                            pt::idx_t ii_v_idx, pt::idx_t ji_v_idx) {
+
+  const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+
+  //std::cerr << std::format("{}\n", fn_name);
+
+  auto [m, n] = mn;
+  const std::vector<pt::idx_t> &height = tm.depth; // rename to depth
+
+  if (height[m] > height[n]) {
+    return pc::INVALID_IDX; // invalid
+  }
+
+  std::cerr << fn_name << " m: " << m << " height[m] " << height[m] << " n " << n
+            << " height[n]: " << height[n] << "\n";
+
+  std::vector<pt::idx_t> case_ii_a_y;
+  for (pt::idx_t c_v_idx: st.get_children(ji_v_idx)) {
+    if (height [st.get_vertex(c_v_idx).hi()] < height [ii_v_idx]) {
+      // when true the child is j_x
+      std::cerr << fn_name << " skip child " << c_v_idx << "\n";
+      continue;
+    }
+
+    std::cerr << fn_name << " c : " << c_v_idx << "\n";
+    for (pt::idx_t be_idx : tm.get_brackets(c_v_idx)){
+      const pst::BackEdge &be = st.get_backedge(be_idx);
+      pt::idx_t src_v_idx = be.get_src();
+      pt::idx_t tgt_v_idx = be.get_tgt();
+
+      std::cerr << fn_name << " src: " << src_v_idx << " tgt: " << tgt_v_idx << "\n";
+
+    }
+
+
+    if (tm.get_brackets(c_v_idx).size() == 1) { // case (ii)
+      std::vector<pt::idx_t> br = tm.get_brackets(c_v_idx);
+      pt::idx_t be_idx = br.front();
+      const pst::BackEdge &be = st.get_backedge(be_idx);
+      pt::idx_t src_v_idx = be.get_src();
+      pt::idx_t tgt_v_idx = be.get_tgt();
+
+      
+
+      if (height[m] < height[tgt_v_idx] && height[n] > height[tgt_v_idx]) {
+        case_ii_a_y.push_back(tgt_v_idx); // case (ii) (a)
+      }
+    }
+  }
+
+  pt::idx_t min_v {n};
+  // no branching path from source of only bracket to above j_i
+  for (auto v_idx : case_ii_a_y) {
+    bool valid {true};
+    for (pt::idx_t be_idx: tm.get_brackets(v_idx)) {
+      const pst::BackEdge &be = st.get_backedge(be_idx);
+      pt::idx_t src_v_idx = be.get_src();
+      pt::idx_t tgt_v_idx = be.get_tgt();
+
+      if (height[src_v_idx] < height[ji_v_idx] || height[tgt_v_idx] > height[ii_v_idx]) {
+        valid = false;
+        break;
+      }
+    }
+
+    if (valid && height[v_idx] < height[min_v]) {
+      min_v = v_idx;
+    }
+  }
+
+  if (min_v == n){
+    return pc::INVALID_IDX;
+  }
+  else {
+    return min_v;
+  }
+
+  // return pc::INVALID_IDX;
+
+}
 
 pt::idx_t ji_trunk(pst::Tree &st, const tree_meta &tm, const mn_t &mn,
                    pt::idx_t ii_v_idx, pt::idx_t ji_v_idx) {
 
+  const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+
+  std::cerr << std::format("{}\n", fn_name);
+
   auto [m, n] = mn;
-  const std::vector<pt::idx_t> &height = tm.D;
+  const std::vector<pt::idx_t> &height = tm.depth;
   const std::vector<pt::idx_t> &lo = tm.lo;
 
   if (n == pc::INVALID_IDX || m == pc::INVALID_IDX || height[m] > height[n]) {
     return pc::INVALID_IDX; // invalid
   }
 
+  pt::idx_t res = override_ji_trunk(st, tm, mn, ii_v_idx, ji_v_idx);
+  if (res != pc::INVALID_IDX) {
+    return res;
+  }
+
   // v_idx, height
   std::vector<std::pair<pt::idx_t, pt::idx_t>> x;
 
-  for (pt::idx_t tgt_v_idx : st.get_obe_tgt_v_idxs(ji_v_idx)) {
+  for (pt::idx_t be_idx : st.get_obe_idxs(ji_v_idx)){
+    if (st.get_backedge(be_idx).type() != pst::be_type_e::back_edge) {
+      continue;
+    }
+    pt::idx_t tgt_v_idx = st.get_backedge(be_idx).get_tgt();
     if (height[tgt_v_idx] < height[n]) {
       continue;
     }
@@ -864,9 +1027,30 @@ pt::idx_t ji_trunk(pst::Tree &st, const tree_meta &tm, const mn_t &mn,
             });
 
   for (auto [tgt_v_idx, h] : x) {
-    if (lo[tgt_v_idx] >= height[tgt_v_idx]) {
-      return tgt_v_idx;
+    bool valid {true};
+
+    std::cerr << fn_name << " tgt: " << tgt_v_idx << "\n";
+
+    for (pt::idx_t be_idx : tm.get_brackets(tgt_v_idx)) {
+
+      if (st.get_backedge(be_idx).type() != pst::be_type_e::back_edge) {
+        continue;
+      }
+
+      pt::idx_t br_tgt_v_idx = st.get_backedge(be_idx).get_tgt();
+
+      // if in trunk
+      if (height[br_tgt_v_idx] > height[ii_v_idx]) {
+        valid = false;
+        break;
+      }
     }
+
+    if (!valid) {
+      continue;
+    }
+
+    return tgt_v_idx;
   }
 
   return pc::INVALID_IDX;
@@ -952,24 +1136,24 @@ void ji_branches(pst::Tree &st, const tree_meta &tm, pt::idx_t ii_v_idx,
     //}
 
 
-    std::cerr << "child" << c_v_idx << "\n";
+    //std::cerr << "child" << c_v_idx << "\n";
 
 
-    std::cerr << "a\n";
+    //std::cerr << "a\n";
     pt::idx_t be_idx = brackets.front(); // size should be 1
-    std::cerr << "b\n";
+    //std::cerr << "b\n";
     const pst::BackEdge &be = st.get_backedge(be_idx);
     pt::idx_t src_v_idx = be.get_src();
     pt::idx_t tgt_v_idx = be.get_tgt();
 
-    std::cerr << src_v_idx << " - - -> " << tgt_v_idx << "\n";
+    //std::cerr << src_v_idx << " - - -> " << tgt_v_idx << "\n";
 
     pt::idx_t curr_v_idx = src_v_idx;
     while (st.get_parent_v_idx(curr_v_idx) != ji_v_idx) {
       std::size_t p_v_idx = st.get_parent_v_idx(curr_v_idx);
 
       if (st.get_child_edges(p_v_idx).size() > 1) {
-        std::cerr << "pushing back (iv) g(c) " << p_v_idx << "\n";
+        //std::cerr << "pushing back (iv) g(c) " << p_v_idx << "\n";
         bb.push_back(p_v_idx);
         break;
       }
@@ -1591,7 +1775,7 @@ void find_hubbles(pst::Tree &st, const pvtr::Tree<pgt::flubble> &ft) {
   pre_process(st, tm);
   compute_depth(st, tm);
 
-  //tm.print();
+  tm.print();
 
   std::cerr << std::format("{} preprocessed\n", fn_name);
 
@@ -1602,16 +1786,18 @@ void find_hubbles(pst::Tree &st, const pvtr::Tree<pgt::flubble> &ft) {
 
     std::cerr << "fl " << st.get_vertex(si).g_v_id() << " ~> " << st.get_vertex(ei).g_v_id() << "\n";
 
+    std::cerr << std::format("si: {} ei: {}\n", si, ei);
     std::cerr << std::format("m: {} n: {}\n", mn.m, mn.n);
 
     pt::idx_t si_v_id = st.get_vertex(si).g_v_id();
+    pt::idx_t ei_v_id = st.get_vertex(ei).g_v_id();
     //pt::idx_t boundary = with_top(st, si, ei);
-    // for (auto b : with_ii(st, tm, mn, si, ei)) {
-    //    std::cerr << std::format("boundary: {} {}\n", si_v_id, b);
-    //  }
+    for (auto b : with_ii(st, tm, mn, si, ei)) {
+      std::cerr << std::format("boundary: {} {}\n", si_v_id, b);
+    }
 
     for (auto b : with_ji(st, tm, mn, si, ei)) {
-       std::cerr << std::format("boundary: {} {}\n", si_v_id, b);
+      std::cerr << std::format("boundary: {} {}\n", b, ei_v_id);
     }
 
     //std::cerr << std::format("boundary: {} {}\n", si_v_id, boundary);
