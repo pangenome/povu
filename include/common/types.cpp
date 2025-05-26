@@ -127,4 +127,9 @@ bool operator!=(const id_or_t & lhs, const id_or_t& rhs) {
 bool operator==(const id_or_t & lhs, const id_or_t& rhs) {
     return lhs.v_id == rhs.v_id && lhs.orientation == rhs.orientation;
 }
+
+bool operator<(const flubble_t &lhs, const flubble_t &rhs){
+  return lhs.start_ < rhs.start_;
+}
+
 } // namespace povu::graph_types

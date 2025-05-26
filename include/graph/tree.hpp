@@ -48,9 +48,11 @@ public:
       return ".";
     }
   }
+
   std::string as_str() const {
     return std::format("v{}:{}", this->get_id(), this->data_as_str());
   }
+
   // ---------
   // setter(s)
   // ---------
@@ -86,7 +88,7 @@ public:
   // ---------
   // getter(s)
   // ---------
-  // deprecated
+
   [[deprecated("use vtx_count() instead")]]
   std::size_t size() const {
     return this->vertices.size();
@@ -143,11 +145,20 @@ public:
   }
 
   void add_edge(std::size_t parent, std::size_t child) {
-
     while (child >= this->parent_v.size()) { this->parent_v.push_back(INVALID_ID); }
     this->parent_v[child] = parent;
     while (parent >= this->children_v.size()) { this->children_v.push_back(std::vector<std::size_t>()); }
     this->children_v[parent].push_back(child);
+  }
+
+  void del_edge(std::size_t parent, std::size_t child) {
+    this->parent_v[child] = INVALID_IDX;
+
+    std::vector<std::size_t>&children = this->children_v[parent];
+    auto it = std::find(children.begin(), children.end(), child);
+    if (it != children.end()) {
+      children.erase(it);
+    }
   }
 
   // ----

@@ -205,6 +205,7 @@ std::string as_str() const {
 
 typedef  flubble flubble_t ;
 
+bool operator<(const flubble_t &lhs, const flubble_t &rhs);
 } // namespace povu::graph_types
 
 namespace povu::constants {
