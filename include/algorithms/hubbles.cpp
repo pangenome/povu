@@ -188,87 +188,6 @@ struct tree_meta {
    * given backedge and ends at a vertex above this vertex
    * does not include the OBE of the vertex itself
    */
-void compute_lo2(pst::Tree &st, tree_meta &tm) {
-  const std::string fn_name = std::format("[povu::hubbles::{}]", __func__);
-
-  const std::vector<pt::idx_t> &depth = tm.depth;
-
-  std::vector<pt::idx_t> &lo = tm.lo;
-  lo.reserve(st.vtx_count());
-  for (pt::idx_t i = 0; i < st.vtx_count(); ++i) {
-    lo.push_back(pc::INVALID_IDX);
-  }
-
-  std::vector<pt::idx_t> lowest_obe_tgt;
-  lowest_obe_tgt.reserve(st.vtx_count());
-  for (pt::idx_t i = 0; i < st.vtx_count(); ++i) {
-    lowest_obe_tgt.push_back(pc::INVALID_IDX);
-  }
-
-  // the lowest vertex reached by all OBE of v
-  auto get_lowest_obe_tgt = [&](pt::idx_t v_idx) {
-    pt::idx_t lowest_tgt {0}; // all obe will be below this vertex
-
-    if (st.get_obe_idxs(v_idx).empty() || st.get_root_idx() == v_idx) {
-      return pc::INVALID_IDX;
-    }
-
-    for (auto be_idx : st.get_obe_idxs(v_idx)) {
-      if (st.get_backedge(be_idx).type() != pst::be_type_e::back_edge) {
-        // filter out special types of backedges
-        continue;
-      }
-
-      pt::idx_t tgt_v_idx = st.get_backedge(be_idx).get_tgt();
-
-      if (depth[tgt_v_idx] > depth[lowest_tgt]) {
-        lowest_tgt = tgt_v_idx;
-      }
-    }
-
-    return lowest_tgt;
-  };
-
-  // all leaves must have an OBE
-
-  // get the lowest bracket for the children that is not the current vertex
-  auto get_lo_child = [&](pt::idx_t v_idx) {
-
-    pt::idx_t lo_child{0};
-    for (pt::idx_t c_v_idx : st.get_children(v_idx)) {
-      // we must exclude the case where the lowest tgt is the current vtx
-      if (depth[lo[c_v_idx]] > depth[lo_child] && lo[c_v_idx] != v_idx) {
-        lo_child = lo[c_v_idx];
-      }
-
-      // check if the lowest OBE target is deeper than the current lo_child
-      if (lowest_obe_tgt[c_v_idx] != v_idx &&
-          lowest_obe_tgt[c_v_idx] != pc::INVALID_IDX &&
-          depth[lowest_obe_tgt[c_v_idx]] > depth[lo_child]) {
-        lo_child = lowest_obe_tgt[c_v_idx];
-      }
-    }
-
-    return lo_child;
-  };
-
-  for (pt::idx_t v_idx {st.vtx_count()} ; v_idx-- > 0 ; ) {
-
-    lowest_obe_tgt[v_idx] = get_lowest_obe_tgt(v_idx);
-
-    pt::idx_t lo_child = get_lo_child(v_idx);
-
-    lo[v_idx] = lo_child;
-
-  }
-
-  // print lowest_obe_tgt
-  std::cerr << std::format("{} lowest_obe_tgt: \n", fn_name);
-  for (pt::idx_t v_idx = 0; v_idx < lowest_obe_tgt.size(); ++v_idx) {
-    std::cerr << std::format("({}, {}), ", v_idx, lowest_obe_tgt[v_idx]);
-  }
-  std::cerr << "\n\n";
-}
 
 void compute_lo(pst::Tree &st, tree_meta &tm) {
   const std::string fn_name = std::format("[povu::hubbles::{}]", __func__);
@@ -295,9 +214,10 @@ void compute_lo(pst::Tree &st, tree_meta &tm) {
 
   for (pt::idx_t v_idx {st.vtx_count()} ; v_idx-- > 0 ; ) {
 
-    if (!pq.empty() && pq.top() == v_idx) {
+    while (!pq.empty() && pq.top() == v_idx) {
       pq.pop();
     }
+
 
     if (!pq.empty()) {
       loa[v_idx] = pq.top();
@@ -1098,26 +1018,26 @@ void ii_branches(pst::Tree &st, const tree_meta &tm,
 
 }
 
-std::vector<pt::idx_t> with_ii(pst::Tree &st, const tree_meta &tm,
-                               const mn_t &mn, pt::idx_t ii_v_idx,
-                               pt::idx_t ji_v_idx) {
+std::vector<std::pair<pt::idx_t, bool>>
+with_ii(pst::Tree &st, const tree_meta &tm, const mn_t &mn, pt::idx_t ii_v_idx,
+        pt::idx_t ji_v_idx) {
 
-  std::vector<pt::idx_t> res;
+  std::vector<std::pair<pt::idx_t, bool>> res;
   pt::idx_t tb = ii_trunk(st, tm, mn, ii_v_idx, ji_v_idx);
   if (tb != pc::INVALID_IDX ) {
-    res.push_back(tb);
-    std::cerr << std::format("ii trunk boundary: {} {}\n",
-                             st.get_vertex(ii_v_idx).g_v_id(),
-                             st.get_vertex(tb).g_v_id());
+    res.push_back({tb, false});
+    // std::cerr << std::format("ii trunk boundary: {} {}\n",
+    //                          st.get_vertex(ii_v_idx).g_v_id(),
+    //                          st.get_vertex(tb).g_v_id());
   }
 
   std::vector<pt::idx_t> bb; // branch boundaries
   ii_branches(st, tm, ii_v_idx, ji_v_idx, bb);
   for (auto b : bb) {
-    res.push_back(b);
-    std::cerr << std::format("ii branch boundary: {} {}\n",
-                             st.get_vertex(ii_v_idx).g_v_id(),
-                             st.get_vertex(b).g_v_id());
+    res.push_back({b, false});
+    // std::cerr << std::format("ii branch boundary: {} {}\n",
+    //                          st.get_vertex(ii_v_idx).g_v_id(),
+    //                          st.get_vertex(b).g_v_id());
   }
 
   return res;
@@ -1403,19 +1323,18 @@ void ji_branches(pst::Tree &st, const tree_meta &tm, pt::idx_t ii_v_idx,
   }
 }
 
-
-
-std::vector<pt::idx_t> with_ji(pst::Tree &st, const tree_meta &tm,
+std::vector<std::pair<pt::idx_t, bool>>
+with_ji(pst::Tree &st, const tree_meta &tm,
                                const mn_t &mn, pt::idx_t ii_v_idx,
                                pt::idx_t ji_v_idx) {
-  std::vector<pt::idx_t> ends;
+  std::vector<std::pair<pt::idx_t, bool>> ends;
 
   pt::idx_t tb = ji_trunk(st, tm, mn, ii_v_idx, ji_v_idx);
   if (tb != pc::INVALID_IDX) {
-    ends.push_back(st.get_vertex(tb).g_v_id());
-    std::cerr << std::format("ji trunk boundary: {} {}\n",
-                             st.get_vertex(ji_v_idx).g_v_id(),
-                             st.get_vertex(tb).g_v_id());
+    ends.push_back(std::make_pair(tb, true));
+    // std::cerr << std::format("ji trunk boundary: {} {}\n",
+    //                          st.get_vertex(ji_v_idx).g_v_id(),
+    //                          st.get_vertex(tb).g_v_id());
   }
   //std::cerr << std::format("ji trunk boundary: {} {}\n",
   //                         st.get_vertex(tb).g_v_id(),
@@ -1424,9 +1343,10 @@ std::vector<pt::idx_t> with_ji(pst::Tree &st, const tree_meta &tm,
   std::vector<pt::idx_t> bb; // branch boundaries
   ji_branches(st, tm, ii_v_idx, ji_v_idx, bb);
   for (auto b : bb) {
-    std::cerr << std::format("ji branch boundary: {} {}\n",
-                             st.get_vertex(ii_v_idx).g_v_id(),
-                             st.get_vertex(b).g_v_id());
+    ends.push_back({b, false});
+    // std::cerr << std::format("ji branch boundary: {} {}\n",
+    //                          st.get_vertex(ii_v_idx).g_v_id(),
+    //                          st.get_vertex(b).g_v_id());
   }
 
   return ends;
@@ -1437,8 +1357,6 @@ std::vector<pt::idx_t> with_ji(pst::Tree &st, const tree_meta &tm,
 void find_hubbles(pst::Tree &st, const pvtr::Tree<pgt::flubble> &ft) {
   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
-  std::cerr << std::format("{}\n", fn_name);
-
   std::vector<fl_in_tr> bar = find_in_st(st, ft);
   tree_meta tm;
   euler_tour(st, tm);
@@ -1447,12 +1365,44 @@ void find_hubbles(pst::Tree &st, const pvtr::Tree<pgt::flubble> &ft) {
   compute_pre_post(st, tm);
   pre_process(st, tm);
 
-
   tm.print();
 
-  //std::cerr << std::format("{} preprocessed\n", fn_name);
+  // get the strand of the slubble
+  auto baz = [&](std::pair<pt::idx_t, bool> a) -> pgt::id_or_t {
+    auto [v_idx, invert] = a;
+    pgt::or_e o;
 
-  //return;
+    switch (st.get_vertex(v_idx).type()) {
+    case pst::v_type_e::l:
+      o = pgt::or_e::forward;
+      break;
+    case pst::v_type_e::r:
+      o = pgt::or_e::reverse;
+      break;
+    case pst::v_type_e::dummy:
+      perror("Dummy vertex is slubble");
+      exit(1);
+      break;
+    }
+
+    if (invert) {
+      switch (o) {
+      case pgt::or_e::forward:
+        o = pgt::or_e::reverse;
+        break;
+      case pgt::or_e::reverse:
+        o = pgt::or_e::forward;
+        break;
+      default:
+        perror("Invalid orientation");
+        exit(1);
+      }
+    }
+
+    pgt::id_or_t k{st.get_vertex(v_idx).g_v_id(), o};
+
+    return k;
+  };
 
   /* a for ancestor, d for descendant */
   for (auto [si, ei] : bar) {
@@ -1471,33 +1421,16 @@ void find_hubbles(pst::Tree &st, const pvtr::Tree<pgt::flubble> &ft) {
 
     pt::idx_t si_v_id = st.get_vertex(si).g_v_id();
     pt::idx_t ei_v_id = st.get_vertex(ei).g_v_id();
-    //pt::idx_t boundary = with_top(st, si, ei);
+
     for (auto b : with_ii(st, tm, mn, si, ei)) {
-      pgt::or_e x;
-
-      switch (st.get_vertex(b).type()) {
-      case pst::v_type_e::l:
-        x = pgt::or_e::forward;
-        break;
-      case pst::v_type_e::r:
-        x = pgt::or_e::reverse;
-        break;
-      case pst::v_type_e::dummy:
-        perror("Dummy vertex is slubble");
-        exit(1);
-        break;
-      }
-
-      pgt::id_or_t k { st.get_vertex(b).g_v_id(), x };
-
+      pgt::id_or_t k = baz(b);
       std::cerr << std::format("boundary: {} {}\n", si_v_id, k.as_str());
     }
 
     for (auto b : with_ji(st, tm, mn, si, ei)) {
-      std::cerr << std::format("boundary: {} {}\n", b, ei_v_id);
+      pgt::id_or_t k = baz(b);
+      std::cerr << std::format("boundary: {} {}\n", k.as_str(), ei_v_id);
     }
-
-    //std::cerr << std::format("boundary: {} {}\n", si_v_id, boundary);
   }
 }
 
