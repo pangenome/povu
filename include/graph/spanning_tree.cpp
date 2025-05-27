@@ -1,4 +1,5 @@
 #include "./spanning_tree.hpp"
+#include <vector>
 
 namespace povu::spanning_tree {
 
@@ -61,6 +62,7 @@ std::set<pt::idx_t> const &Vertex::get_obe() const { return this->obe; }
 pt::idx_t const& Vertex::get_parent_idx() const { return this->parent_id; }
 pt::idx_t Vertex::get_parent_e_idx() const { return this->parent_id; }
 std::set<pt::idx_t> const& Vertex::get_children() const { return this->children; }
+std::set<pt::idx_t> const &Vertex::get_child_edge_idxs() const { return this->children; }
 bool Vertex::is_root() const { return this->parent_id == INVALID_IDX; }
 
 // setters
@@ -170,7 +172,7 @@ std::size_t Tree::get_hi(std::size_t vertex) {
 std::set<std::pair<std::size_t, std::size_t>>
 Tree::get_children_w_id(std::size_t vertex) {
   std::set<std::pair<std::size_t, std::size_t>> res{};
-  for (auto e_idx : this->nodes.at(vertex).get_children()) {
+  for (auto e_idx : this->nodes.at(vertex).get_child_edge_idxs()) {
     res.insert(
       std::make_pair(
         this->tree_edges.at(e_idx).id(),
@@ -183,8 +185,17 @@ Tree::get_children_w_id(std::size_t vertex) {
 std::vector<Edge> Tree::get_child_edges(std::size_t vertex) {
   std::vector<Edge> v{};
 
-  for (auto e_idx : this->nodes.at(vertex).get_children()) {
+  for (auto e_idx : this->nodes.at(vertex).get_child_edge_idxs()) {
     v.push_back(this->tree_edges.at(e_idx));
+  }
+
+  return v;
+}
+
+std::vector<pt::idx_t> Tree::get_child_edge_idxs(std::size_t vertex) const {
+  std::vector<pt::idx_t> v {};
+  for (auto e_idx : this->nodes.at(vertex).get_child_edge_idxs()) {
+    v.push_back(e_idx);
   }
 
   return v;

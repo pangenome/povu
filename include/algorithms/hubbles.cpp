@@ -1303,7 +1303,7 @@ with_ji(pst::Tree &st, const tree_meta &tm,
   if (tb != pc::INVALID_IDX) {
     ends.push_back(std::make_pair(tb, true));
     // std::cerr << std::format("ji trunk boundary: {} {}\n",
-    //                          st.get_vertex(ji_v_idx).g_v_id(),
+    //                          st.get_vertex(ji_3v_idx).g_v_id(),
     //                          st.get_vertex(tb).g_v_id());
   }
   //std::cerr << std::format("ji trunk boundary: {} {}\n",
@@ -1334,46 +1334,6 @@ void update_ft(pst::Tree &st, pvtr::Tree<pgt::flubble> ft,
 
   pt::idx_t counter = ft.vtx_count();
 
-  auto do_leaf = [&](const pvtr::Vertex<pgt::flubble_t> &ft_v, pt::idx_t ft_v_idx, const sls &slubbles) {
-    auto [s, e] = ft_v.get_data().value();
-
-    for (auto k : slubbles.ii_adj) {
-      pgt::flubble_t sl{s, k};
-      pvtr::Vertex<pgt::flubble_t> v = {counter, sl};
-      ft.add_vertex(v);
-      ft.add_edge(ft_v_idx, counter);
-      counter++;
-    }
-
-    for (auto k : slubbles.ji_adj) {
-      pgt::flubble_t sl{k, e};
-      pvtr::Vertex<pgt::flubble_t> v = {counter, sl};
-      ft.add_vertex(v);
-      ft.add_edge(ft_v_idx, counter);
-      counter++;
-    }
-  };
-
-  auto add_sl = [&](const pvtr::Vertex<pgt::flubble_t> &ft_v, pt::idx_t ft_v_idx, const sls &slubbles) {
-    auto [s, e] = ft_v.get_data().value();
-
-    for (auto k : slubbles.ii_adj) {
-      pgt::flubble_t sl{s, k};
-      pvtr::Vertex<pgt::flubble_t> v = {counter, sl};
-      ft.add_vertex(v);
-      ft.add_edge(ft_v_idx, counter);
-      counter++;
-    }
-
-    for (auto k : slubbles.ji_adj) {
-      pgt::flubble_t sl{k, e};
-      pvtr::Vertex<pgt::flubble_t> v = {counter, sl};
-      ft.add_vertex(v);
-      ft.add_edge(ft_v_idx, counter);
-      counter++;
-    }
-  };
-
   for (auto [ft_v_idx, slubbles] : fl_map) {
     const pvtr::Vertex<pgt::flubble_t> &ft_v = ft.get_vertex(ft_v_idx);
 
@@ -1381,45 +1341,88 @@ void update_ft(pst::Tree &st, pvtr::Tree<pgt::flubble> ft,
       continue;
     }
 
-    auto [s, e] = ft_v.get_data().value();
+    auto [s, e] = ft_v.get_data().value(); // start and end (id and or) of the flubble
 
-    std::vector<std::size_t> ch = ft.get_children(ft_v_idx);
-
-    add_sl(ft_v, ft_v_idx, slubbles);
+    std::cerr << fn_name << "get children " << ft_v_idx << " vtx count " << ft.vtx_count() << "\n";
+    const std::vector<pt::idx_t> &ch = ft.get_children(ft_v_idx);
+    std::cerr << fn_name << "get children\n";
 
     if (!ch.empty()) {
-      do_leaf(ft_v, ft_v_idx, slubbles);
+      for (auto k : slubbles.ii_adj) {
+        pgt::flubble_t sl{s, k};
+        pvtr::Vertex<pgt::flubble_t> v = {counter, sl};
+        ft.add_vertex(v);
+        ft.add_edge(ft_v_idx, counter);
+        counter++;
+      }
+
+      for (auto k : slubbles.ji_adj) {
+        pgt::flubble_t sl{k, e};
+        pvtr::Vertex<pgt::flubble_t> v = {counter, sl};
+        ft.add_vertex(v);
+        ft.add_edge(ft_v_idx, counter);
+        counter++;
+      }
     }
     else {
-
-      for (std::size_t c : ch) {
-        const pvtr::Vertex<pgt::flubble_t> &c_v = ft.get_vertex(c);
-
-        if (!c_v.get_data().has_value()) {
-          continue;
-        }
-
-        pt::idx_t c_idx =c_v.get_id();
-
-        auto [ii, ji] = fl_to_st_idxs(st, g_id_to_idx, c_v);
-
-        for (auto k : slubbles.ii_adj) {
-          pgt::flubble_t sl{s, k};
+      // loop through ii_adj
+        for (auto [st_idx_sl, or_sl] : slubbles.ii_adj) {
+          pt::id_t sl_g_v_id = st.get_vertex(st_idx_sl).g_v_id();
+          pgt::id_or_t k = {sl_g_v_id, or_sl};
+          pgt::flubble_t sl {s, k};
           pvtr::Vertex<pgt::flubble_t> v = {counter, sl};
           ft.add_vertex(v);
           ft.add_edge(ft_v_idx, counter);
 
-          ft.del_edge(ft_v_idx, c_idx);
+          for (std::size_t c : ch)  {
+            const pvtr::Vertex<pgt::flubble_t> &c_v = ft.get_vertex(c);
 
-          if (depth[ii] < depth[k.v_id]) {
-            ft.add_edge(c_idx, counter);
+            if (!c_v.get_data().has_value()) {
+              continue;
+            }
+
+            pt::idx_t c_idx = c_v.get_id();
+
+            auto [c_ii, c_ji] = fl_to_st_idxs(st, g_id_to_idx, c_v);
+
+            if (depth[st_idx_sl] > depth[c_ji]) {
+              ft.del_edge(ft_v_idx, c_idx);
+              ft.add_edge(c_idx, counter);
+            }
           }
 
           counter++;
         }
-      }
-    }
 
+        // loop through ii_adj
+        for (auto [st_idx_sl, or_sl] : slubbles.ji_adj) {
+          pt::id_t sl_g_v_id = st.get_vertex(st_idx_sl).g_v_id();
+          pgt::id_or_t k = {sl_g_v_id, or_sl};
+          pgt::flubble_t sl{ k, e };
+          pvtr::Vertex<pgt::flubble_t> v = {counter, sl};
+          ft.add_vertex(v);
+          ft.add_edge(ft_v_idx, counter);
+
+          for (std::size_t c : ch) {
+            const pvtr::Vertex<pgt::flubble_t> &c_v = ft.get_vertex(c);
+
+            if (!c_v.get_data().has_value()) {
+              continue;
+            }
+
+            pt::idx_t c_idx = c_v.get_id();
+
+            auto [c_ii, c_ji] = fl_to_st_idxs(st, g_id_to_idx, c_v);
+
+            if (depth[c_ii] > depth[st_idx_sl]) {
+              ft.del_edge(ft_v_idx, c_idx);
+              ft.add_edge(c_idx, counter);
+            }
+          }
+
+          counter++;
+        }
+    }
   }
 
 }
@@ -1428,6 +1431,8 @@ void update_ft(pst::Tree &st, pvtr::Tree<pgt::flubble> ft,
 
 void find_hubbles(pst::Tree &st, const pvtr::Tree<pgt::flubble> &ft) {
   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+
+  ft.print_dot();
 
   tree_meta tm;
   euler_tour(st, tm);
@@ -1490,13 +1495,16 @@ void find_hubbles(pst::Tree &st, const pvtr::Tree<pgt::flubble> &ft) {
 
     for (auto b : with_ii(st, tm, mn, si, ei)) {
       pgt::id_or_t k = to_id_or(st, b);
-      ii_adj.push_back(k);
+      pgt::id_or_t k_ = {b.first, k.orientation};
+      ii_adj.push_back(k_);
       std::cerr << std::format("boundary: {} {}\n", si_v_id, k.as_str());
     }
 
     for (auto b : with_ji(st, tm, mn, si, ei)) {
       pgt::id_or_t k = to_id_or(st, b);
-      ji_adj.push_back(k);
+      pgt::id_or_t k_ = {b.first, k.orientation};
+      //ii_adj.push_back(k_);
+      ji_adj.push_back(k_);
       std::cerr << std::format("boundary: {} {}\n", k.as_str(), ei_v_id);
     }
 

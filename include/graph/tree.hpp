@@ -21,21 +21,21 @@ using namespace povu::constants;
 
 
 template <typename T> class Vertex {
-  std::size_t id;
+  pt::idx_t id;
   std::optional<T> data_;
 
 public:
   // --------------
   // constructor(s)
   // --------------
-  Vertex(std::size_t id) : id(id), data_(std::nullopt) {}
-  Vertex(std::size_t id, T d) : id(id), data_(d) {}
+  Vertex(pt::idx_t id) : id(id), data_(std::nullopt) {}
+  Vertex(pt::idx_t id, T d) : id(id), data_(d) {}
   //Vertex(std::size_t id, id_n_cls r) : id(id), data_({r}) {}
 
   // ---------
   // getter(s)
   // ---------
-  std::size_t get_id() const { return id; }
+  pt::idx_t get_id() const { return id; }
   //  VertexType get_type() const { return type_; }
   std::optional<T> get_data() const { return data_; }
 
@@ -65,8 +65,8 @@ public:
 // always has a dummy root vertex
 template <typename T>  class Tree {
   std::vector<Vertex<T>> vertices;
-  std::vector<std::size_t> parent_v; // parent of each vertex
-  std::vector<std::vector<std::size_t>> children_v; // children of each vertex
+  std::vector<pt::idx_t> parent_v; // parent of each vertex
+  std::vector<std::vector<pt::idx_t>> children_v; // children of each vertex
   pt::idx_t root_idx_; // index of the root vertex in the vertices vector
 
 public:
@@ -79,10 +79,10 @@ public:
     root_idx_ = vertices.size() - 1;
   }
 
-  Tree(std::size_t expected_size) : Tree() {
+  Tree(pt::idx_t expected_size) : Tree() {
     vertices.reserve(expected_size);
-    this->parent_v = std::vector<std::size_t>(expected_size+1, INVALID_ID);
-    this->children_v = std::vector<std::vector<std::size_t>>(1+expected_size);
+    this->parent_v = std::vector<pt::idx_t>(expected_size+1, INVALID_ID);
+    this->children_v = std::vector<std::vector<pt::idx_t>>(1+expected_size);
   }
 
   // ---------
@@ -90,11 +90,11 @@ public:
   // ---------
 
   [[deprecated("use vtx_count() instead")]]
-  std::size_t size() const {
+  pt::idx_t size() const {
     return this->vertices.size();
   }
 
-  std::size_t vtx_count() const {
+  pt::idx_t vtx_count() const {
     return this->vertices.size();
   }
 
@@ -106,27 +106,27 @@ public:
     return this->vertices[this->root_idx()];
   }
 
-  const Vertex<T>& get_vertex(std::size_t v_idx) const {
+  const Vertex<T>& get_vertex(pt::idx_t v_idx) const {
     return this->vertices[v_idx];
   }
 
-  Vertex<T>& get_vertex_mut(std::size_t v_idx) {
+  Vertex<T>& get_vertex_mut(pt::idx_t v_idx) {
     return this->vertices[v_idx];
   }
 
-  const Vertex<T>& get_parent(std::size_t v_idx) const {
+  const Vertex<T>& get_parent(pt::idx_t v_idx) const {
     return this->vertices[parent_v[v_idx]];
   }
 
-  std::size_t get_parent_idx(std::size_t v_idx) const {
+  pt::idx_t get_parent_idx(pt::idx_t v_idx) const {
     return this->parent_v[v_idx];
   }
 
-  bool is_leaf(std::size_t v_idx) const {
+  bool is_leaf(pt::idx_t v_idx) const {
     return  v_idx >= this->children_v.size() || this->children_v[v_idx].empty();
   }
 
-  const std::vector<std::size_t>& get_children(std::size_t v_idx) const {
+  const std::vector<pt::idx_t>& get_children(pt::idx_t v_idx) const {
     return this->children_v[v_idx];
   }
 
@@ -139,22 +139,22 @@ public:
     * @param v Vertex to be added
     * @return Index of the added vertex
    */
-  std::size_t add_vertex(Vertex<T> v) {
+  pt::idx_t add_vertex(Vertex<T> v) {
     this->vertices.push_back(v);
     return this->vertices.size() - 1;
   }
 
-  void add_edge(std::size_t parent, std::size_t child) {
+  void add_edge(pt::idx_t parent, pt::idx_t child) {
     while (child >= this->parent_v.size()) { this->parent_v.push_back(INVALID_ID); }
     this->parent_v[child] = parent;
-    while (parent >= this->children_v.size()) { this->children_v.push_back(std::vector<std::size_t>()); }
+    while (parent >= this->children_v.size()) { this->children_v.push_back(std::vector<pt::idx_t>()); }
     this->children_v[parent].push_back(child);
   }
 
-  void del_edge(std::size_t parent, std::size_t child) {
+  void del_edge(pt::idx_t parent, pt::idx_t child) {
     this->parent_v[child] = INVALID_IDX;
 
-    std::vector<std::size_t>&children = this->children_v[parent];
+    std::vector<pt::idx_t>&children = this->children_v[parent];
     auto it = std::find(children.begin(), children.end(), child);
     if (it != children.end()) {
       children.erase(it);
@@ -164,7 +164,7 @@ public:
   // ----
   // misc
   // ----
-  void print_dot() {
+  void print_dot() const {
   std::cout << std::format(
     "graph G {{\n"
     "\trankdir = TD;\n"
@@ -173,12 +173,13 @@ public:
   );
 
   // print vertices
-  for (std::size_t i{}; i < this->size(); i++) {
+  for (pt::idx_t i{}; i < this->vtx_count(); i++) {
+    std::cout << std::format("\t{} [label=\"{}\"];\n", i, this->get_vertex(i).as_str());
   }
 
   // print edges
-  for (std::size_t i{}; i < this->size(); i++) {
-    for (std::size_t c : this->get_children(i)) {
+  for (pt::idx_t i{}; i < this->vtx_count(); i++) {
+    for (pt::idx_t c : this->get_children(i)) {
       std::cout << std::format("\t{} -- {};\n", i, c);
     }
   }

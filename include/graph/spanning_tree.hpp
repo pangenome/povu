@@ -259,6 +259,7 @@ public:
 
   // return edges that point to children of the vertex
   std::vector<Edge> get_child_edges(std::size_t vertex);
+  std::vector<pt::idx_t> get_child_edge_idxs(std::size_t vertex) const;
   // returns v_idxs of the children of the vertex
   std::set<std::size_t> get_children(std::size_t vertex);
 
