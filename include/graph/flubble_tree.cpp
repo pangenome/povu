@@ -34,7 +34,7 @@ struct oic_t {
 };
 
 
-inline flubble forwardise(std::size_t start_id, pgt::or_e start_or, std::size_t end_id, pgt::or_e end_or) {
+inline flubble_t forwardise(std::size_t start_id, pgt::or_e start_or, std::size_t end_id, pgt::or_e end_or) {
 
   if (start_or == pgt::or_e::reverse && end_or == pgt::or_e::reverse) {
     return {pgt::id_or_t{end_id, pgt::or_e::forward}, pgt::id_or_t{start_id, pgt::or_e::forward}};
@@ -48,11 +48,17 @@ inline flubble forwardise(std::size_t start_id, pgt::or_e start_or, std::size_t 
 /**
   * @brief
  */
-pvtr::Tree<flubble> construct_flubble_tree(const std::vector<oic_t> &stack_,
-                                           const std::vector<pt::idx_t> &next_seen) {
+pvtr::Tree<pvst::Vertex> construct_flubble_tree(const std::vector<oic_t> &stack_,
+                                                const std::vector<pt::idx_t> &next_seen) {
   std::string fn_name = std::format("[povu::algorithms::flubble_tree::{}]", __func__);
 
-  pvtr::Tree<flubble> ft;
+  pvtr::Tree<pvst::Vertex> ft;
+  pt::id_t root_idx {};
+  pvst::Vertex root_v(root_idx, pgt::id_or_t{pc::INVALID_IDX, pgt::or_e::forward},
+                                             pgt::id_or_t{pc::INVALID_IDX, pgt::or_e::forward},
+                                             pvst::VertexType::dummy);
+  ft.add_vertex(root_v);
+  ft.set_root_idx(root_idx);
 
   struct ci {
     pt::idx_t cl; // class
@@ -101,8 +107,12 @@ pvtr::Tree<flubble> construct_flubble_tree(const std::vector<oic_t> &stack_,
         continue;
       }
 
-      flubble fl = forwardise(id_curr, or_curr, id_nxt, or_nxt);
-      pvtr::Vertex<flubble> v(id_curr, fl);
+      auto [ i, j] = forwardise(id_curr, or_curr, id_nxt, or_nxt);
+      //pgt::id_or_t i = {id_curr, or_curr}; // start
+      //pgt::id_or_t j = {id_nxt, or_nxt}; // end
+
+      pvst::Vertex v(id_curr, i, j, pvst::VertexType::flubble);
+
       pt::idx_t v_idx = ft.add_vertex(v);
       ft.add_edge(prt_v, v_idx);
       prt_v = v_idx;
@@ -380,7 +390,7 @@ std::vector<oic_t> compute_eq_class_stack(pst::Tree &t) {
           ce.erase(std::remove(ce.begin(), ce.end(), add_last), ce.end());
         }
       }
-     
+
       std::sort(ce.begin(), ce.end(), [&](pt::idx_t a, pt::idx_t b) {
         return t.get_tree_edge(a).get_child_v_idx() < t.get_tree_edge(b).get_child_v_idx();
       });
@@ -401,7 +411,7 @@ std::vector<oic_t> compute_eq_class_stack(pst::Tree &t) {
       }
       //cache.clear();
     }
-    
+
   }
 
   stack = stack2[root_idx];
@@ -423,14 +433,14 @@ std::vector<oic_t> compute_eq_class_stack(pst::Tree &t) {
   return stack;
 }
 
-pvtr::Tree<flubble> st_to_ft(pst::Tree& t) {
+pvtr::Tree<pvst::Vertex> st_to_ft(pst::Tree &t) {
   std::string fn_name = std::format("[povu::algorithms::{}]", __func__);
 
   std::vector<oic_t> s { compute_eq_class_stack(t) };
   std::vector<pt::idx_t> next_seen = compute_eq_class_metadata(s);
-  pvtr::Tree<flubble> ft = construct_flubble_tree(s, next_seen);
+  //pvtr::Tree<pvtr::Vertex<pvst::Vertex>> ft construct_flubble_tree(s, next_seen);
+  pvtr::Tree<pvst::Vertex> ft = construct_flubble_tree(s, next_seen);
 
   return ft;
 }
-
 }

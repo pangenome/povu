@@ -167,6 +167,7 @@ bool operator<(const id_or_t& lhs, const id_or_t& rhs);
 // a walk is a sequence of vertices also a path
 typedef std::vector<id_or_t> walk;
 
+
 struct flubble {
   id_or_t start_;
   id_or_t end_;
@@ -245,12 +246,82 @@ const std::size_t UNDEFINED_PATH_POS{INVALID_ID};
 
 const char PVST_HEADER_SYMBOL = 'H';
 const char PVST_FLUBBLE_SYMBOL = 'F';
+const char PVST_SLUBBLE_SYMBOL = 'S';
+const char PVST_DUMMY_SYMBOL = 'D';
+
+const std::string PVST_VERSION = "0.2";
 
 // VCF
 const char COL_SEP = '\t'; // column separator
 const char NO_VALUE = '.'; // null character
 } // namespace povu::constants
 
+// PVST pangenome variation structure tree
+namespace povu::types::pvst {
 
+enum class VertexType {
+  dummy,
+  flubble,
+  slubble
+};
+
+typedef VertexType vt_e; // to use in the tree;
+
+class Vertex {
+  // TODO rename to idx
+  povu::types::id_t id_; // id of the vertex in the tree
+
+  povu::graph_types::id_or_t start_;
+  povu::graph_types::id_or_t end_;
+
+  VertexType type_;
+
+public:
+  // --------------
+  // constructor(s)
+  // --------------
+  Vertex(povu::types::id_t id, povu::graph_types::id_or_t start,
+         povu::graph_types::id_or_t end, VertexType type)
+    : id_(id), start_(start), end_(end), type_(type) {}
+
+  // ---------
+  // getter(s)
+  // ---------
+
+  povu::types::id_t get_id() const {
+    return this->id_;
+  }
+
+  povu::graph_types::id_or_t get_start() const {
+    return this->start_;
+  }
+
+
+  povu::graph_types::id_or_t get_end() const {
+    return this->end_;
+  }
+
+  VertexType get_type() const {
+    return this->type_;
+  }
+
+
+  // ---------
+  // other(s)
+  // ---------
+  std::string as_str() const {
+
+    if (this->type_ == VertexType::dummy) {
+      return ".";
+    }
+
+    std::string s;
+    s += this->start_.as_str();
+    s += this->end_.as_str();
+    return s;
+  }
+};
+
+} // namespace povu::types::pvst
 
 #endif

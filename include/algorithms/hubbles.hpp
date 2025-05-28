@@ -18,8 +18,9 @@ namespace pgt = povu::graph_types;
 namespace pvtr = povu::tree;
 namespace pt = povu::types;
 namespace pst = povu::spanning_tree;
+namespace pvst= povu::types::pvst;
 
-void find_hubbles(pst::Tree &st, pvtr::Tree<pgt::flubble> &ft);
+void find_hubbles(pst::Tree &st, pvtr::Tree<pvst::Vertex> &ft);
 
 } // namespace povu::hubbles
 

@@ -88,10 +88,8 @@ std::vector<pgt::flubble> read_canonical_fl(const std::string& fp) {
   return canonical_fl;
 }
 
-
-void write_bub(const pvtr::Tree<pgt::flubble>& bt,
-               const std::string& base_name,
-               const core::config& app_config) {
+void write_bub(const pvtr::Tree<pvst::Vertex> &bt, const std::string &base_name,
+               const core::config &app_config) {
   // TODO: combine and pass as single arg
   std::string bub_file_name = std::format("{}/{}.flb", std::string{app_config.get_output_dir()}, base_name); // file path and name
   std::ofstream bub_file(bub_file_name);
@@ -101,37 +99,37 @@ void write_bub(const pvtr::Tree<pgt::flubble>& bt,
     std::exit(1);
   }
 
+  // writer header line
+  bub_file << constants::PVST_HEADER_SYMBOL << pc::COL_SEP << pc::PVST_VERSION
+           << pc::COL_SEP << "." << pc::COL_SEP << "." << "\n";
 
-  bub_file << constants::PVST_HEADER_SYMBOL << pc::COL_SEP << "0.1" << pc::COL_SEP << "." << pc::COL_SEP << "." << "\n";
+  for (std::size_t i {}; i < bt.vtx_count(); ++i) {
 
-  for (std::size_t i {}; i < bt.size(); ++i) {
+    pvst::Vertex v = bt.get_vertex(i);
 
-
-    //std::cerr << "i: " << i << std::endl;
-
-    bub_file << pc::PVST_FLUBBLE_SYMBOL << pc::COL_SEP;
-    //bub_file << pc::COL_SEP;
-
-    // vertex
+    // line identifier
     {
-      bub_file << i;
+    switch (v.get_type()) {
+      case pvst::vt_e::slubble:
+        bub_file << pc::PVST_SLUBBLE_SYMBOL << pc::COL_SEP;
+        break;
+      case pvst::vt_e::flubble:
+        bub_file << pc::PVST_FLUBBLE_SYMBOL << pc::COL_SEP;
+        break;
+      case pvst::vt_e::dummy:
+        bub_file << pc::PVST_DUMMY_SYMBOL << pc::COL_SEP;
+        break;
+      default:
+        std::cerr << "ERROR: unknown vertex type in write_bub: " << v.as_str() << "\n";
+        std::exit(1);
     }
-    bub_file << pc::COL_SEP;
-
-    // range
-    {
-      std::optional<pgt::flubble> data = bt.get_vertex(i).get_data();
-      if (data.has_value()) {
-        auto [s, e] = data.value();
-
-        bub_file << std::format("{},{}", s.as_str(), e.as_str());
-      }
-      else {
-        bub_file << pc::NO_VALUE;
-      }
-
     }
-    bub_file << pc::COL_SEP;
+
+    // vertex idx
+    bub_file << i << pc::COL_SEP;
+
+    // vertex as str
+    bub_file << v.as_str() << pc::COL_SEP;
 
 
     // children

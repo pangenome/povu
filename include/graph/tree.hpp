@@ -64,7 +64,7 @@ public:
 
 // always has a dummy root vertex
 template <typename T>  class Tree {
-  std::vector<Vertex<T>> vertices;
+  std::vector<T> vertices;
   std::vector<pt::idx_t> parent_v; // parent of each vertex
   std::vector<std::vector<pt::idx_t>> children_v; // children of each vertex
   pt::idx_t root_idx_; // index of the root vertex in the vertices vector
@@ -74,10 +74,7 @@ public:
   // constructor(s)
   // --------------
 
-  Tree() {
-    vertices.push_back(Vertex<T>(INVALID_ID));
-    root_idx_ = vertices.size() - 1;
-  }
+  Tree(): root_idx_(INVALID_IDX) {}
 
   Tree(pt::idx_t expected_size) : Tree() {
     vertices.reserve(expected_size);
@@ -102,19 +99,19 @@ public:
     return this->root_idx_;
   }
 
-  const Vertex<T>& get_root() const {
-    return this->vertices[this->root_idx()];
+  const T& get_root() const {
+    return this->get_vertex(this->root_idx());
   }
 
-  const Vertex<T>& get_vertex(pt::idx_t v_idx) const {
+  const T& get_vertex(pt::idx_t v_idx) const {
     return this->vertices[v_idx];
   }
 
-  Vertex<T>& get_vertex_mut(pt::idx_t v_idx) {
+  T& get_vertex_mut(pt::idx_t v_idx) {
     return this->vertices[v_idx];
   }
 
-  const Vertex<T>& get_parent(pt::idx_t v_idx) const {
+  const T& get_parent(pt::idx_t v_idx) const {
     return this->vertices[parent_v[v_idx]];
   }
 
@@ -134,12 +131,24 @@ public:
   // setter(s)
   // ---------
 
+  void set_root_idx(pt::idx_t v_idx) {
+    if (this->root_idx_ != INVALID_IDX){
+      throw std::logic_error("Root index is already set");
+    }
+
+    if (v_idx >= this->vertices.size()) {
+      throw std::out_of_range("Vertex index out of range");
+    }
+
+    this->root_idx_ = v_idx;
+  }
+
   /**
     * @brief Add a vertex to the tree
     * @param v Vertex to be added
     * @return Index of the added vertex
    */
-  pt::idx_t add_vertex(Vertex<T> v) {
+  pt::idx_t add_vertex(T v) {
     this->vertices.push_back(v);
     return this->vertices.size() - 1;
   }
@@ -190,9 +199,7 @@ public:
 };
 
 
-} // namespace tree
-
-
+} // namespace povu::tree
 
 
 #endif

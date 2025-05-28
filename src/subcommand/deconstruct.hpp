@@ -29,7 +29,7 @@ namespace pgt = povu::graph_types;
 namespace pst = povu::spanning_tree;
 namespace pgt = povu::graph_types;
 namespace pvtr = povu::tree;
-
+namespace pvst = povu::types::pvst;
 namespace pic = povu::io::common;
 
 

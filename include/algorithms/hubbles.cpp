@@ -37,11 +37,12 @@ struct fl_in_tr {
 */
 
 fl_in_tr fl_to_st_idxs(pst::Tree &st,
-             std::map<pt::idx_t, std::pair<pt::idx_t, pt::idx_t>> g_id_to_idx,
-             const pvtr::Vertex<pgt::flubble_t> &ft_v) {
-  auto [s, e] = ft_v.get_data().value();
-  auto [start_id, start_or] = s;
-  auto [end_id, end_or] = e;
+              std::map<pt::idx_t, std::pair<pt::idx_t, pt::idx_t>> g_id_to_idx,
+              const pvst::Vertex &ft_v) {
+  const std::string fn_name = std::format("[povu::hubbles::{}]", __func__);
+
+  auto [start_id, start_or] = ft_v.get_start();
+  auto [end_id, end_or] = ft_v.get_end();
 
   pt::idx_t x = (start_or == pgt::or_e::forward) ? g_id_to_idx[start_id].second
                                                  : g_id_to_idx[start_id].first;
@@ -1324,7 +1325,7 @@ with_ji(pst::Tree &st, const tree_meta &tm,
 
 
 
-void update_ft(pst::Tree &st, pvtr::Tree<pgt::flubble> &ft,
+  void update_ft(pst::Tree &st, pvtr::Tree<pvst::Vertex> &ft,
                const tree_meta &tm,
                std::map<pt::idx_t, std::pair<pt::idx_t, pt::idx_t>> g_id_to_idx,
                std::map<pt::idx_t, sls> fl_map) {
@@ -1335,31 +1336,31 @@ void update_ft(pst::Tree &st, pvtr::Tree<pgt::flubble> &ft,
   pt::idx_t counter = ft.vtx_count();
 
   for (auto [ft_v_idx, slubbles] : fl_map) {
-    const pvtr::Vertex<pgt::flubble_t> &ft_v = ft.get_vertex(ft_v_idx);
+    const pvst::Vertex &ft_v = ft.get_vertex(ft_v_idx);
 
-    if (!ft_v.get_data().has_value()) {
-      continue;
-    }
+    // start and end (id and or) of the flubble
+    pgt::id_or_t s = ft_v.get_start();
+    pgt::id_or_t e = ft_v.get_end();
 
-    auto [s, e] = ft_v.get_data().value(); // start and end (id and or) of the flubble
+    std::cerr << fn_name << " flubble " << ft_v.as_str() << "\n";
 
-    std::cerr << fn_name << " flubble " << ft_v.get_data().value().as_str() << "\n";
-    //std::cerr << fn_name << "get children " << ft_v_idx << " vtx count " << ft.vtx_count() << "\n";
     const std::vector<pt::idx_t> &ch = ft.get_children(ft_v_idx);
-    //std::cerr << fn_name << "get children\n";
+
 
     if (!ch.empty()) {
       for (auto k : slubbles.ii_adj) {
-        pgt::flubble_t sl{s, k};
-        pvtr::Vertex<pgt::flubble_t> v = {counter, sl};
+        //pgt::flubble_t sl{s, k};
+        pvst::Vertex v(counter, s, k, pvst::VertexType::slubble);
+        //pvtr::Vertex<pgt::flubble_t> v = {counter, sl};
         ft.add_vertex(v);
         ft.add_edge(ft_v_idx, counter);
         counter++;
       }
 
       for (auto k : slubbles.ji_adj) {
-        pgt::flubble_t sl{k, e};
-        pvtr::Vertex<pgt::flubble_t> v = {counter, sl};
+        pvst::Vertex v(counter, k, e, pvst::VertexType::slubble);
+        // pgt::flubble_t sl{k, e};
+        // pvtr::Vertex<pgt::flubble_t> v = {counter, sl};
         ft.add_vertex(v);
         ft.add_edge(ft_v_idx, counter);
         counter++;
@@ -1370,15 +1371,19 @@ void update_ft(pst::Tree &st, pvtr::Tree<pgt::flubble> &ft,
         for (auto [st_idx_sl, or_sl] : slubbles.ii_adj) {
           pt::id_t sl_g_v_id = st.get_vertex(st_idx_sl).g_v_id();
           pgt::id_or_t k = {sl_g_v_id, or_sl};
-          pgt::flubble_t sl {s, k};
-          pvtr::Vertex<pgt::flubble_t> v = {counter, sl};
+          //pgt::flubble_t sl {s, k};
+          //pvtr::Vertex<pgt::flubble_t> v = {counter, sl};
+          pvst::Vertex v(counter, s, k, pvst::VertexType::slubble);
           ft.add_vertex(v);
           ft.add_edge(ft_v_idx, counter);
 
           for (std::size_t c : ch)  {
-            const pvtr::Vertex<pgt::flubble_t> &c_v = ft.get_vertex(c);
+            const pvst::Vertex &c_v = ft.get_vertex(c);
 
-            if (!c_v.get_data().has_value()) {
+            // if (!c_v.get_data().has_value()) {
+            //   continue;
+            // }
+            if (c_v.get_type() != pvst::VertexType::flubble) {
               continue;
             }
 
@@ -1399,15 +1404,21 @@ void update_ft(pst::Tree &st, pvtr::Tree<pgt::flubble> &ft,
         for (auto [st_idx_sl, or_sl] : slubbles.ji_adj) {
           pt::id_t sl_g_v_id = st.get_vertex(st_idx_sl).g_v_id();
           pgt::id_or_t k = {sl_g_v_id, or_sl};
-          pgt::flubble_t sl{ k, e };
-          pvtr::Vertex<pgt::flubble_t> v = {counter, sl};
+          //pgt::flubble_t sl{ k, e };
+          //pvtr::Vertex<pgt::flubble_t> v = {counter, sl};
+          pvst::Vertex v(counter, k, e, pvst::VertexType::slubble);
           ft.add_vertex(v);
           ft.add_edge(ft_v_idx, counter);
 
           for (std::size_t c : ch) {
-            const pvtr::Vertex<pgt::flubble_t> &c_v = ft.get_vertex(c);
+            //const pvtr::Vertex<pgt::flubble_t> &c_v = ft.get_vertex(c);
+            const pvst::Vertex &c_v = ft.get_vertex(c);
 
-            if (!c_v.get_data().has_value()) {
+            // if (!c_v.get_data().has_value()) {
+            //   continue;
+            // }
+
+            if (c_v.get_type() != pvst::VertexType::flubble) {
               continue;
             }
 
@@ -1430,7 +1441,7 @@ void update_ft(pst::Tree &st, pvtr::Tree<pgt::flubble> &ft,
 
 
 
-void find_hubbles(pst::Tree &st, pvtr::Tree<pgt::flubble> &ft) {
+void find_hubbles(pst::Tree &st, pvtr::Tree<pvst::Vertex> &ft) {
   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
   //ft.print_dot();
@@ -1451,26 +1462,17 @@ void find_hubbles(pst::Tree &st, pvtr::Tree<pgt::flubble> &ft) {
   pop_id_idx(st, g_id_to_idx);
 
   for (pt::idx_t ft_v_idx{}; ft_v_idx < ft.vtx_count(); ft_v_idx++) {
-    const pvtr::Vertex<pgt::flubble_t> &ft_v = ft.get_vertex(ft_v_idx);
+    // const pvtr::Vertex<pgt::flubble_t> &ft_v = ft.get_vertex(ft_v_idx);
 
-    if (!ft_v.get_data().has_value()) {
+    const pvst::Vertex ft_v = ft.get_vertex(ft_v_idx);
+
+    if (ft_v.get_type() != pvst::vt_e::flubble) {
       continue;
     }
 
-    // auto [s, e] = ft_v.get_data().value();
-    // auto [start_id, start_or] = s;
-    // auto [end_id, end_or] = e;
-
-    // pt::idx_t x = (start_or == pgt::or_e::forward)
-    //                   ? g_id_to_idx[start_id].second
-    //                   : g_id_to_idx[start_id].first;
-
-    // pt::idx_t y = (end_or == pgt::or_e::forward)
-    //                   ? g_id_to_idx[end_id].first
-    //                   : g_id_to_idx[end_id].second;
-
-    // fl_in_tr ij_pair = (st.get_vertex(x).dfs_num() < st.get_vertex(y).dfs_num())
-    //   ? fl_in_tr{x, y} : fl_in_tr{y, x};
+    // if (!ft_v.get_data().has_value()) {
+    //   continue;
+    // }
 
     auto [si, ei] = fl_to_st_idxs(st, g_id_to_idx, ft_v);
 
@@ -1510,7 +1512,7 @@ void find_hubbles(pst::Tree &st, pvtr::Tree<pgt::flubble> &ft) {
     }
 
     if ((ii_adj.size() + ji_adj.size()) == 0) {
-      std::cerr << std::format("{}: no slubbles found for flubble: {}\n", fn_name, ft_v.get_data().value().as_str());
+      std::cerr << std::format("{}: no slubbles found for flubble: {}\n", fn_name, ft_v.as_str());
       continue;
     }
 
