@@ -19,7 +19,7 @@ namespace pvtr = povu::tree;
 namespace pt = povu::types;
 namespace pst = povu::spanning_tree;
 
-void find_hubbles(pst::Tree &st, const pvtr::Tree<pgt::flubble> &ft);
+void find_hubbles(pst::Tree &st, pvtr::Tree<pgt::flubble> &ft);
 
 } // namespace povu::hubbles
 

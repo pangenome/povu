@@ -1324,7 +1324,7 @@ with_ji(pst::Tree &st, const tree_meta &tm,
 
 
 
-void update_ft(pst::Tree &st, pvtr::Tree<pgt::flubble> ft,
+void update_ft(pst::Tree &st, pvtr::Tree<pgt::flubble> &ft,
                const tree_meta &tm,
                std::map<pt::idx_t, std::pair<pt::idx_t, pt::idx_t>> g_id_to_idx,
                std::map<pt::idx_t, sls> fl_map) {
@@ -1343,9 +1343,10 @@ void update_ft(pst::Tree &st, pvtr::Tree<pgt::flubble> ft,
 
     auto [s, e] = ft_v.get_data().value(); // start and end (id and or) of the flubble
 
-    std::cerr << fn_name << "get children " << ft_v_idx << " vtx count " << ft.vtx_count() << "\n";
+    std::cerr << fn_name << " flubble " << ft_v.get_data().value().as_str() << "\n";
+    //std::cerr << fn_name << "get children " << ft_v_idx << " vtx count " << ft.vtx_count() << "\n";
     const std::vector<pt::idx_t> &ch = ft.get_children(ft_v_idx);
-    std::cerr << fn_name << "get children\n";
+    //std::cerr << fn_name << "get children\n";
 
     if (!ch.empty()) {
       for (auto k : slubbles.ii_adj) {
@@ -1429,10 +1430,10 @@ void update_ft(pst::Tree &st, pvtr::Tree<pgt::flubble> ft,
 
 
 
-void find_hubbles(pst::Tree &st, const pvtr::Tree<pgt::flubble> &ft) {
+void find_hubbles(pst::Tree &st, pvtr::Tree<pgt::flubble> &ft) {
   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
-  ft.print_dot();
+  //ft.print_dot();
 
   tree_meta tm;
   euler_tour(st, tm);
@@ -1441,7 +1442,7 @@ void find_hubbles(pst::Tree &st, const pvtr::Tree<pgt::flubble> &ft) {
   compute_pre_post(st, tm);
   pre_process(st, tm);
 
-  tm.print();
+  //tm.print();
 
   std::map<pt::idx_t, sls> flubble_map;
 
@@ -1508,10 +1509,19 @@ void find_hubbles(pst::Tree &st, const pvtr::Tree<pgt::flubble> &ft) {
       std::cerr << std::format("boundary: {} {}\n", k.as_str(), ei_v_id);
     }
 
-    flubble_map[ft_v_idx]= sls{ii_adj, ji_adj};
+    if ((ii_adj.size() + ji_adj.size()) == 0) {
+      std::cerr << std::format("{}: no slubbles found for flubble: {}\n", fn_name, ft_v.get_data().value().as_str());
+      continue;
+    }
+
+    flubble_map[ft_v_idx] = sls{ii_adj, ji_adj};
   }
 
+  std::cerr << fn_name << " flubble count " << ft.vtx_count() << "\n";
+  
   update_ft(st, ft, tm, g_id_to_idx, flubble_map);
+
+  std::cerr << fn_name << " flubble count " << ft.vtx_count() << "\n";
 }
 
 } // namespace povu::hubbles
