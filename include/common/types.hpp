@@ -243,6 +243,9 @@ const std::string UNDEFINED_PATH_LABEL{"undefined"};
 const std::size_t UNDEFINED_PATH_ID{INVALID_ID};
 const std::size_t UNDEFINED_PATH_POS{INVALID_ID};
 
+const char PVST_HEADER_SYMBOL = 'H';
+const char PVST_FLUBBLE_SYMBOL = 'F';
+
 // VCF
 const char COL_SEP = '\t'; // column separator
 const char NO_VALUE = '.'; // null character
