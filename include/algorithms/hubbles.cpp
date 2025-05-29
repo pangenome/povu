@@ -918,20 +918,23 @@ void ii_branches(pst::Tree &st, const tree_meta &tm,
                  pt::idx_t ii_v_idx, pt::idx_t ji_v_idx,
                  std::vector<pt::idx_t> &bb) {
 
+  // condition (i)
   if (st.get_children(ji_v_idx).size() < 2) {
     return;
   }
 
-  // std::map<pt::idx_t, pt::idx_t> branches;
-
   const std::vector<pt::idx_t> &height = tm.D;
   const std::vector<pt::idx_t> &lo = tm.lo;
+
 
   // children who meet condition (i) and (ii)
   std::vector<pt::idx_t> x;
   for (pt::idx_t c_v_idx : st.get_children(ji_v_idx)) {
     if (st.get_vertex(c_v_idx).hi() == lo[c_v_idx] && st.get_vertex(c_v_idx).hi() == ii_v_idx) {
-      x.push_back(c_v_idx);
+      std::vector<pt::idx_t> c_br = tm.get_brackets(c_v_idx);
+      if (c_br.size() > 1) {
+        x.push_back(c_v_idx);
+      }
     }
   }
 
@@ -1348,7 +1351,9 @@ with_ji(pst::Tree &st, const tree_meta &tm,
 
 
     if (!ch.empty()) {
-      for (auto k : slubbles.ii_adj) {
+      for (auto [st_idx_sl, or_sl] : slubbles.ii_adj) {
+        pt::id_t sl_g_v_id = st.get_vertex(st_idx_sl).g_v_id();
+        pgt::id_or_t k = {sl_g_v_id, or_sl};
         //pgt::flubble_t sl{s, k};
         pvst::Vertex v(counter, s, k, pvst::VertexType::slubble);
         //pvtr::Vertex<pgt::flubble_t> v = {counter, sl};
@@ -1357,7 +1362,9 @@ with_ji(pst::Tree &st, const tree_meta &tm,
         counter++;
       }
 
-      for (auto k : slubbles.ji_adj) {
+      for (auto [st_idx_sl, or_sl] : slubbles.ji_adj) {
+        pt::id_t sl_g_v_id = st.get_vertex(st_idx_sl).g_v_id();
+        pgt::id_or_t k = {sl_g_v_id, or_sl};
         pvst::Vertex v(counter, k, e, pvst::VertexType::slubble);
         // pgt::flubble_t sl{k, e};
         // pvtr::Vertex<pgt::flubble_t> v = {counter, sl};
