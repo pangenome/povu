@@ -60,7 +60,7 @@ void deconstruct_component(bd::VG *g,
 
   //st.print_dot(std::cerr);
 
-  pvtr::Tree<pvst::Vertex> flubble_tree = povu::graph::flubble_tree::st_to_ft(st);
+  pvtr::Tree<pvst::Vertex> flubble_tree = povu::graph::pvst::st_to_ft(st);
 
   if (app_config.find_hubbles()) {
     povu::hubbles::find_hubbles(st, flubble_tree);
@@ -69,7 +69,7 @@ void deconstruct_component(bd::VG *g,
   }
 
   //std::cerr << std::format("{} Constructing fl tree for component {}\n", fn_name, component_id);
-  povu::io::bub::write_bub(flubble_tree, std::to_string(component_id), app_config);
+  povu::io::pvst::write_bub(flubble_tree, std::to_string(component_id), app_config);
 
   return;
 }

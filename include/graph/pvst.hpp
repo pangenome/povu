@@ -1,6 +1,5 @@
-#ifndef FLUBBLE_TREE_HPP
-#define FLUBBLE_TREE_HPP
-
+#ifndef PVST_GRAPH_HPP
+#define PVST_GRAPH_HPP
 
 #include <vector>
 
@@ -8,8 +7,8 @@
 #include "../graph/tree.hpp"
 #include "../common/types.hpp"
 
-// rename this namespace to PVST
-namespace povu::graph::flubble_tree {
+
+namespace povu::graph::pvst {
 
 #define MODULE "povu::graph::flubble_tree"
 

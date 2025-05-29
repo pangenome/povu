@@ -40,20 +40,6 @@ void read_lines_to_vec_str(const std::string &fp, std::vector<std::string> *v);
 
 }; // namespace io::generic
 
-namespace povu::io::bub {
-using povu::graph_types::id_or_t;
-using povu::graph_types::id_n_cls;
-namespace pvtr = povu::tree;
-namespace pgt = povu::graph_types;
-namespace pvst = povu::types::pvst;
-
-void write_bub(const pvtr::Tree<pvst::Vertex>& bt, const std::string& base_name,
-               const core::config& app_config);
-/**
-  * @brief Read a flb file but only return the canonical flubbles
- */
-std::vector<pgt::flubble> read_canonical_fl(const std::string& fp);
-} // namespace povu::io::bub
 
 
 #endif

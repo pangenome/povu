@@ -12,13 +12,13 @@
 #include <algorithm>
 
 
-#include "./flubble_tree.hpp"
+#include "./pvst.hpp"
 #include "../common/types.hpp"
 #include "../common/utils.hpp"
 #include "spanning_tree.hpp"
 
 
-namespace povu::graph::flubble_tree {
+namespace povu::graph::pvst {
 
 using namespace povu::graph_types;
 namespace pc = povu::constants;

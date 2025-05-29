@@ -87,7 +87,7 @@ ADD_LIBRARY(povulib
 
   # graph
   ${INCLUDE_DIR}/graph/bidirected.cpp
-  ${INCLUDE_DIR}/graph/flubble_tree.cpp
+  ${INCLUDE_DIR}/graph/pvst.cpp
   ${INCLUDE_DIR}/graph/bracket_list.cpp
   ${INCLUDE_DIR}/graph/spanning_tree.cpp
 )
@@ -99,7 +99,7 @@ set(SOURCE_FILES
   ${SRC_DIR}/cli/app.cpp
 
   # io
-  ${SRC_DIR}/io/bub.cpp
+  ${SRC_DIR}/io/pvst.cpp
   ${SRC_DIR}/io/from_gfa.cpp
   ${SRC_DIR}/io/common.cpp
   ${SRC_DIR}/io/to_vcf.cpp

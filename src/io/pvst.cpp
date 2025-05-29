@@ -1,10 +1,6 @@
+#include "./pvst.hpp"
 
-#include "./io.hpp"
-
-
-namespace povu::io::bub {
-namespace pc = povu::constants;
-namespace pu = povu::utils;
+namespace povu::io::pvst {
 
 /**
  * @brief Get the size of a file
