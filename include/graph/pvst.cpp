@@ -1,5 +1,6 @@
 #include <cassert>
 #include <cstddef>
+#include <deque>
 #include <iostream>
 #include <limits>
 #include <map>
@@ -15,7 +16,7 @@
 #include "./pvst.hpp"
 #include "../common/types.hpp"
 #include "../common/utils.hpp"
-#include "spanning_tree.hpp"
+#include "./spanning_tree.hpp"
 
 
 namespace povu::graph::pvst {
@@ -48,17 +49,10 @@ inline flubble_t forwardise(std::size_t start_id, pgt::or_e start_or, std::size_
 /**
   * @brief
  */
-pvtr::Tree<pvst::Vertex> construct_flubble_tree(const std::vector<oic_t> &stack_,
-                                                const std::vector<pt::idx_t> &next_seen) {
+void add_flubbles(const std::vector<oic_t> &stack_,
+                  const std::vector<pt::idx_t> &next_seen,
+                  pvtr::Tree<pvst::Vertex> &ft) {
   std::string fn_name = std::format("[povu::algorithms::flubble_tree::{}]", __func__);
-
-  pvtr::Tree<pvst::Vertex> ft;
-  pt::id_t root_idx {};
-  pvst::Vertex root_v(root_idx, pgt::id_or_t{pc::INVALID_IDX, pgt::or_e::forward},
-                                             pgt::id_or_t{pc::INVALID_IDX, pgt::or_e::forward},
-                                             pvst::VertexType::dummy);
-  ft.add_vertex(root_v);
-  ft.set_root_idx(root_idx);
 
   struct ci {
     pt::idx_t cl; // class
@@ -84,7 +78,7 @@ pvtr::Tree<pvst::Vertex> construct_flubble_tree(const std::vector<oic_t> &stack_
     if (in_s.contains(cl_curr)) {
 
       // pop until (and including) the one whose cl equals cl_curr
-      while(!s.empty()){
+      while(!s.empty()) {
         auto [cl, _] = s.top();
         s.pop();
         in_s.erase(cl);
@@ -94,23 +88,24 @@ pvtr::Tree<pvst::Vertex> construct_flubble_tree(const std::vector<oic_t> &stack_
         }
       }
 
-      //if (prt_v != ft.root_idx()) {
-        // prt_v = ft.get_parent_idx(prt_v);
-      //}
+      if (prt_v != ft.root_idx()) {
+        prt_v = ft.get_parent_idx(prt_v);
+      }
     }
 
 
     if ((i + 1) < next_seen[i]) {
       auto [or_nxt, id_nxt, _] = stack_[next_seen[i]];
 
-      if (id_nxt == pc::INVALID_IDX) {
-        continue;
-      }
+
+        if (id_nxt == pc::INVALID_IDX) {
+          continue;
+        }
 
       auto [ i, j] = forwardise(id_curr, or_curr, id_nxt, or_nxt);
-      //pgt::id_or_t i = {id_curr, or_curr}; // start
-      //pgt::id_or_t j = {id_nxt, or_nxt}; // end
 
+      
+      
       pvst::Vertex v(id_curr, i, j, pvst::VertexType::flubble);
 
       pt::idx_t v_idx = ft.add_vertex(v);
@@ -122,7 +117,7 @@ pvtr::Tree<pvst::Vertex> construct_flubble_tree(const std::vector<oic_t> &stack_
     in_s.insert(cl_curr);
   }
 
-  return ft;
+  //return ft;
 }
 
 /**
@@ -156,47 +151,6 @@ std::vector<pt::idx_t> compute_eq_class_metadata(const std::vector<oic_t> &stack
  * @param t The spanning tree
  * @return The equivalence class stack
  */
-std::vector<oic_t> compute_eq_class_stack2(pst::Tree &t) {
-  std::string fn_name = std::format("[povu::algorithms::flubble_tree::{}]", __func__);
-  const pt::idx_t EXPECTED_BLACK_EDGE_COUNT = t.vtx_count() / 2;
-
-  pt::idx_t root_idx = t.get_root_idx();
-
-  std::vector<oic_t> stack;
-  stack.reserve(EXPECTED_BLACK_EDGE_COUNT);
-
-  for (pt::idx_t v_idx{t.vtx_count()}; v_idx-- > 0; ) {
-
-    if (v_idx == root_idx) { continue; }
-
-    const pst::Edge &e = t.get_parent_edge(v_idx);
-    // std::cerr << "i: " << v_idx << "\tid: " << t.get_vertex(v_idx).g_v_id() << "\tclass: " << e.get_class() << "\tclr: " << e.get_color() << "\n";
-
-    if (e.get_color() == color::black) {
-      or_e o = t.get_vertex(v_idx).type() == pgt::v_type_e::r ? pgt::or_e::forward : pgt::or_e::reverse;
-      stack.push_back({o, t.get_vertex(v_idx).g_v_id(), e.get_class()});
-    }
-    else {
-      stack.push_back({pgt::or_e::forward, pc::INVALID_IDX, e.get_class()});
-    }
-  }
-
-  // print stack
-  std::cerr << fn_name << " stack size: " << stack.size() << "\n";
-
-  for (pt::idx_t i = 0; i < stack.size(); ++i) {
-    const auto &oic = stack[i];
-    std::cerr << "i: " << i
-              << " id " << oic.id
-              << " orientation " << oic.orientation
-              << " class " << oic.cls << "\n";
-  }
-
-  stack.shrink_to_fit();
-  std::reverse(stack.begin(), stack.end());
-
-  return stack;
-}
 
 // compute the branching descendants of each vertex
 std::map<pt::idx_t, std::vector<pt::idx_t>> br_desc(pst::Tree &t) {
@@ -282,154 +236,119 @@ std::vector<oic_t> compute_eq_class_stack(pst::Tree &t) {
 
   pt::idx_t root_idx = t.get_root_idx();
 
-  std::vector<oic_t> stack;
-  stack.reserve(EXPECTED_BLACK_EDGE_COUNT);
 
-  // v idx to stack
-  std::map<pt::idx_t, std::vector<oic_t>> stack2; // br_vtx_map
+  // edge idx => stackette
+  typedef std::map<pt::idx_t, std::deque<oic_t>> edge_stack_t ;
 
-  // edge idx to mini stack
-  std::map<pt::idx_t, std::vector<oic_t>> cache; // edge_map
+  // v idx to mini stack
+  std::map<pt::idx_t, edge_stack_t> cache; // edge_map
 
-  // e_idx to next branching vertex
-  //std::map<pt::idx_t, pt::idx_t> e_idx_to_br;
-  pt::idx_t last_br {pc::INVALID_IDX};
-
-  std::vector<oic_t> mini_stack;
+  std::deque<oic_t> mini_stack; // current stackette
 
   for (pt::idx_t v_idx{t.vtx_count()}; v_idx-- > 0; ) {
 
-    if (t.is_leaf(v_idx) || is_branching(v_idx)) {
-      last_br = v_idx;
+    if (v_idx == root_idx || is_branching(v_idx)) {
+
+      //std::cerr << fn_name << v_idx << " is branching\n";
+
+      // merge from cache into stack_map
+      edge_stack_t desc = cache[v_idx];
+
+      pt::idx_t black_e_idx { pc::INVALID_IDX };
+      std::deque<pt::idx_t> c_edges;
+      for (auto [e_idx, _] : desc) {
+        const pst::Edge &e = t.get_tree_edge(e_idx);
+        if (e.get_color() == color::gray) {
+          c_edges.push_back(e_idx);
+        }
+        else if (e.get_color() == color::black) {
+          black_e_idx = e_idx;
+        }
+      }
+
+      // sort in descending
+      std::sort(c_edges.begin(), c_edges.end(),
+                [&](pt::idx_t a, pt::idx_t b) {
+                  return t.get_tree_edge(a).get_child_v_idx() > t.get_tree_edge(b).get_child_v_idx();
+                });
+      if (black_e_idx != pc::INVALID_IDX) {
+        c_edges.push_front(black_e_idx);
+      }
+
+      //std::cerr << "v idx " << v_idx <<  " ids ordered ";
+
+      while (!c_edges.empty()) {
+        pt::idx_t e_idx = c_edges.front();
+        const pst::Edge &e = t.get_tree_edge(e_idx);
+        //std::cerr  << e.id() << ", ";
+        c_edges.pop_front();
+
+        std::deque<oic_t> &stackette =  desc[e_idx];
+        while(!stackette.empty()) {
+          auto &oic = stackette.back();
+          stackette.pop_back();
+          mini_stack.push_front(oic);
+        }
+        
+
+
+      }
+
+      //std::cerr << "\n";
+
+      for (const auto &oic : mini_stack) {
+        //= stack[i];
+        //std::cerr << "   id " << oic.id << " orientation " << oic.orientation << " class " << oic.cls << "\n";
+      }
+      //std::cerr << "\n";
     }
 
     if (v_idx == root_idx) {
-
-      std::vector<pt::idx_t> ce = t.get_child_edge_idxs(v_idx);
-
-      pt::idx_t add_last{pc::INVALID_IDX};
-      for (auto e_idx : ce) {
-        if (t.get_tree_edge(e_idx).get_color() == color::black) {
-          // by definition of the bidirected graph this happens once
-          add_last = e_idx;
-          // remove add_last from ce
-          ce.erase(std::remove(ce.begin(), ce.end(), add_last), ce.end());
-        }
-      }
-
-      std::sort(ce.begin(), ce.end(), [&](pt::idx_t a, pt::idx_t b) {
-        return t.get_tree_edge(a).get_child_v_idx() <
-               t.get_tree_edge(b).get_child_v_idx();
-      });
-
-      if (add_last != pc::INVALID_IDX) {
-        ce.push_back(add_last);
-      }
-
-
-
-      // do in reverse
-      for (auto it = ce.rbegin(); it != ce.rend(); ++it) {
-        pt::idx_t ch_e_idx = *it;
-
-        const auto &stackette = cache[ch_e_idx];
-
-        std::cerr << "c  " << t.get_tree_edge(ch_e_idx).id() << " size ";
-        std::cerr << stackette.size() << " \n";
-
-        for (const auto &oic : stackette) {
-          stack2[v_idx].push_back(oic);
-        }
-        // cache.erase(ch_e_idx);
-      }
-
-      continue; // TODO: is this continue needed?
+      break; // done
     }
 
     const pst::Edge &e = t.get_parent_edge(v_idx);
 
     if (e.get_color() == color::black) {
       or_e o = t.get_vertex(v_idx).type() == pgt::v_type_e::r ? pgt::or_e::forward : pgt::or_e::reverse;
-      mini_stack.push_back({o, t.get_vertex(v_idx).g_v_id(), e.get_class()});
+      //std::cerr << "i: " << v_idx << "\tid: " << t.get_vertex(v_idx).g_v_id() << "\tclass: " << e.get_class()  << "\n";
+      mini_stack.push_front({o, t.get_vertex(v_idx).g_v_id(), e.get_class()});
     }
-    else {
-      mini_stack.push_back({pgt::or_e::forward, pc::INVALID_IDX, e.get_class()});
-    }
+    //else {
+      //std::cerr << "i: " << v_idx << "\tid: " << "." << "\tclass: " << e.get_class() << "\n";
+      //mini_stack.push_front({pgt::or_e::forward, pc::INVALID_IDX, e.get_class()});
+    //}
 
 
     // if the parent is braching
-    if ((!t.is_root(v_idx) && is_branching(t.get_parent(v_idx))) || (t.is_root(t.get_parent(v_idx))) ) {
-      const pst::Edge &e = t.get_parent_edge(v_idx);
+    if (is_branching(t.get_parent(v_idx))) {
+      //std::cerr << fn_name << "parent of " << v_idx << " is branching\n";
       pt::idx_t e_idx = t.get_vertex(v_idx).get_parent_e_idx();
+      pt::idx_t p_v_idx = t.get_parent(v_idx);
 
-      if (!t.is_leaf(last_br)) {
-        cache[e_idx] = stack2[last_br];
-        std::cerr << "e id " << e.id() << " lb " << last_br << "\n";
-        stack2.erase(last_br);
-      }
+      edge_stack_t &es = (cache.contains(p_v_idx)) ? cache[p_v_idx] : cache[p_v_idx] = {};
 
-      for (const auto &oic : mini_stack) {
-        cache[e_idx].push_back(oic);
-      }
-
+      es[e_idx] = mini_stack;
+      cache[p_v_idx] = es;
       mini_stack.clear();
     }
-
-    // merge the needed edges
-    // if the current vertex is branching
-    if (is_branching(v_idx)) {
-
-      std::vector<pt::idx_t> ce = t.get_child_edge_idxs(v_idx);
-
-      pt::idx_t add_last { pc::INVALID_IDX };
-      for (auto e_idx : ce) {
-        if (t.get_tree_edge(e_idx).get_color() == color::black) {
-          // by definition of the bidirected graph this happens once
-          add_last = e_idx;
-          // remove add_last from ce
-          ce.erase(std::remove(ce.begin(), ce.end(), add_last), ce.end());
-        }
-      }
-
-      std::sort(ce.begin(), ce.end(), [&](pt::idx_t a, pt::idx_t b) {
-        return t.get_tree_edge(a).get_child_v_idx() < t.get_tree_edge(b).get_child_v_idx();
-      });
-
-      if (add_last != pc::INVALID_IDX) {
-        ce.push_back(add_last);
-      }
-
-      // do in reverse
-      for (auto it = ce.rbegin(); it != ce.rend(); ++it) {
-        pt::idx_t ch_e_idx = *it;
-        const auto &stackette = cache[ch_e_idx];
-
-        for (const auto &oic : stackette) {
-          stack2[v_idx].push_back(oic);
-        }
-        cache.erase(ch_e_idx);
-      }
-      //cache.clear();
-    }
-
   }
 
-  stack = stack2[root_idx];
+  // print mini stack
 
+  
 
-  stack.shrink_to_fit();
-  std::reverse(stack.begin(), stack.end());
+  
+  std::vector<oic_t> stack;
 
-  // print stack
-  std::cerr << fn_name << " stack size: " << stack.size() << "\n";
-  for (pt::idx_t i = 0; i < stack.size(); ++i) {
-    const auto &oic = stack[i];
-    std::cerr << "i: " << i
-              << " id " << oic.id
-              << " orientation " << oic.orientation
-              << " class " << oic.cls << "\n";
+  // convert dequeue to a vector
+  while(!mini_stack.empty()) {
+    stack.emplace_back(std::move(mini_stack.front()));
+    mini_stack.pop_front();
   }
+  
 
+  
   return stack;
 }
 
@@ -438,8 +357,19 @@ pvtr::Tree<pvst::Vertex> st_to_ft(pst::Tree &t) {
 
   std::vector<oic_t> s { compute_eq_class_stack(t) };
   std::vector<pt::idx_t> next_seen = compute_eq_class_metadata(s);
-  //pvtr::Tree<pvtr::Vertex<pvst::Vertex>> ft construct_flubble_tree(s, next_seen);
-  pvtr::Tree<pvst::Vertex> ft = construct_flubble_tree(s, next_seen);
+
+  pvtr::Tree<pvst::Vertex> ft;
+  // create root vertex
+  {
+    pt::id_t root_idx{};
+    pvst::Vertex root_v(root_idx,
+                        pgt::id_or_t{pc::INVALID_IDX, pgt::or_e::forward},
+                        pgt::id_or_t{pc::INVALID_IDX, pgt::or_e::forward},
+                        pvst::VertexType::dummy);
+    ft.add_vertex(root_v);
+    ft.set_root_idx(root_idx);
+  }
+  add_flubbles(s, next_seen, ft);
 
   return ft;
 }
