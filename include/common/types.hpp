@@ -288,21 +288,36 @@ class Vertex {
   vt_e type_;
 
 private:
+  // constructor for a slubble
   Vertex(pgt::id_or_t start, pgt::id_or_t end, pt::idx_t sl_st_idx)
     : idx_(pc::INVALID_IDX), a_(start), z_(end), sl_st_idx_(sl_st_idx), type_(vt_e::slubble) {}
+
+  // constructor for a flubble
+  Vertex(pgt::id_or_t start, pgt::id_or_t end, pt::idx_t ai_st_idx, pt::idx_t zi_st_idx)
+      : idx_(pc::INVALID_IDX), a_(start), z_(end),
+        ai_st_idx_(ai_st_idx), zi_st_idx_(zi_st_idx), type_(vt_e::flubble) {}
+
+  // constructor for a dummy vertex
+  Vertex() : idx_(pc::INVALID_IDX), a_(pgt::id_or_t{pc::INVALID_ID, pgt::or_e::forward}),
+             z_(pgt::id_or_t{pc::INVALID_ID, pgt::or_e::forward}),
+             ai_st_idx_(pc::INVALID_IDX), zi_st_idx_(pc::INVALID_IDX),
+             sl_st_idx_(pc::INVALID_IDX), type_(vt_e::dummy) {}
 
 public:
   // --------------
   // constructor(s)
   // --------------
   // constructor for a flubble
-  Vertex(pgt::id_or_t start, pgt::id_or_t end,
-         pt::idx_t ai_st_idx, pt::idx_t zi_st_idx, vt_e type)
-    : idx_(pc::INVALID_IDX), a_(start), z_(end), ai_st_idx_(ai_st_idx),
-        zi_st_idx_(zi_st_idx), type_(type) {}
+  static Vertex make_flubble(pgt::id_or_t start, pgt::id_or_t end, pt::idx_t ai, pt::idx_t zi) {
+    return Vertex(start, end, ai, zi);
+  }
 
-  static Vertex make_slubble(pgt::id_or_t start, pgt::id_or_t end, pt::idx_t sl_st_idx = pc::INVALID_IDX) {
+  static Vertex make_slubble(pgt::id_or_t start, pgt::id_or_t end, pt::idx_t sl_st_idx) {
     return Vertex(start, end, sl_st_idx);
+  }
+
+  static Vertex make_dummy() {
+    return Vertex();
   }
 
   // ---------

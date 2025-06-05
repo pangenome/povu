@@ -221,18 +221,11 @@ void add_slubbles(pst::Tree &st, pvtr::Tree<pvst::Vertex> &vst,
 
   const std::vector<pt::idx_t> &depth = tm.depth;
 
-  // auto is_leaf = [&](pt::idx_t fl_v_idx) {
-  //   return st.get_children(fl_v_idx).empty();
-  // };
-
   const auto &[fl_v_idx, ai_adj, zi_adj] = slubbles;
-  const pvst::Vertex &ft_v = vst.get_vertex(fl_v_idx);
+  //const pvst::Vertex &ft_v = vst.get_vertex(fl_v_idx);
 
-  //pt::idx_t ai_v_idx = ft_v.get_ai_idx();
-  //pt::idx_t zi_v_idx = ft_v.get_zi_idx();
 
   bool is_leaf = st.get_children(fl_v_idx).empty();
-  //bool was_leaf = is_leaf(fl_v_idx);
 
   for (auto &sl : ai_adj) {
     std::cerr << std::format("{} adding ai slubble: {}\n", fn_name, sl.as_str());
@@ -283,7 +276,6 @@ void add_slubbles(pst::Tree &st, pvtr::Tree<pvst::Vertex> &vst,
       }
     }
   }
-
 }
 
 

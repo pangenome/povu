@@ -1,4 +1,5 @@
 #include "./flubbles.hpp"
+#include <cassert>
 #include <utility>
 #include <vector>
 
@@ -24,13 +25,9 @@ struct eq_class_stack_t {
   }
 };
 
-
-inline pvst::Vertex forwardise(pt::id_t start_id, pgt::or_e start_or, pt::idx_t start_st_idx,
-                               pt::id_t end_id, pgt::or_e end_or, pt::idx_t end_st_idx) {
+inline pvst::Vertex gen_fl(pt::id_t start_id, pgt::or_e start_or, pt::id_t end_id,
+                               pgt::or_e end_or, pt::idx_t ai, pt::idx_t zi) {
   std::string fn_name = std::format("[povu::algorithms::flubble_tree::{}]", __func__);
-
-  pt::idx_t ai_idx = std::min(start_st_idx, end_st_idx);
-  pt::idx_t zi_idx = std::max(start_st_idx, end_st_idx);
 
   auto [a_g_id, a_or, z_g_id, z_or] =
       (start_or == pgt::or_e::reverse && end_or == pgt::or_e::reverse)
@@ -40,18 +37,25 @@ inline pvst::Vertex forwardise(pt::id_t start_id, pgt::or_e start_or, pt::idx_t 
   pgt::id_or_t a{a_g_id, a_or};
   pgt::id_or_t z{z_g_id, z_or};
 
-  pvst::Vertex vtx(a, z, ai_idx, zi_idx, pvst::vt_e::flubble);
-
-  return vtx;
+  return pvst::Vertex::make_flubble(a, z, ai, zi);
 }
 
+/**
+  * @brief Compute the ai and zi indices for a flubble
+  *
+  * @param st The spanning tree
+  * @param a_idx The index of the first vertex (a)
+  * @param z_idx The index of the second vertex (z)
+  * @return A pair of indices (ai, zi) where ai is the index of the ancestor
+  *         and zi is the index of the descendant in the spanning tree
+ */
 std::pair<pt::idx_t, pt::idx_t> compute_ai_zi(const pst::Tree &st,
                                               pt::idx_t a_idx,
                                               pt::idx_t z_idx) {
 
   std::string fn_name = std::format("[povu::algorithms::flubble_tree::{}]", __func__);
 
-  std::vector<pt::idx_t> vtxs;
+  std::vector<pt::idx_t> vtxs {a_idx, z_idx};
 
   auto get_vtx_pair = [&](pt::idx_t v_idx) -> void {
     if (!st.is_root(v_idx)) {
@@ -59,9 +63,7 @@ std::pair<pt::idx_t, pt::idx_t> compute_ai_zi(const pst::Tree &st,
       if (e.get_color() == pgt::color_e::black) {
         pt::idx_t v_idx_ = st.get_parent_v_idx(v_idx);
         vtxs.push_back(v_idx_);
-        vtxs.push_back(v_idx);
         return;
-        //return std::make_pair(v_idx_, v_idx);
       }
       else {
         for (auto c_e_idx : st.get_child_edge_idxs(v_idx)) {
@@ -69,24 +71,20 @@ std::pair<pt::idx_t, pt::idx_t> compute_ai_zi(const pst::Tree &st,
           if (ce.get_color() == pgt::color_e::black) {
             pt::idx_t v_idx_ = ce.get_child_v_idx();
             vtxs.push_back(v_idx_);
-            vtxs.push_back(v_idx);
             return;
-            //return std::make_pair(v_idx_, v_idx);
           }
         }
       }
     }
-
-    // this should not happen, but just in case
-    //return std::make_pair(pc::INVALID_IDX, pc::INVALID_IDX);
   };
 
-  
   get_vtx_pair(a_idx);
   get_vtx_pair(z_idx);
-
-  // sort vtxs by their dfs number
   std::sort(vtxs.begin(), vtxs.end(), [&](pt::idx_t a, pt::idx_t b) { return a < b; });
+
+#ifdef DEBUG // vtx should contain exactly 4 elements
+  assert(vtxs.size() == 4);
+#endif
 
   return std::make_pair(vtxs[1], vtxs[2]);
 }
@@ -148,13 +146,7 @@ void add_flubbles(const pst::Tree &st, const eq_class_stack_t &ecs,
 
       auto [ai, zi] = compute_ai_zi(st, st_idx_curr, st_idx_nxt);
 
-      // auto [a_g_id, a_or, ai_idx, z_g_id, z_or, zi_idx] =
-      //   forwardise(id_curr, or_curr, st_idx_curr, id_nxt, or_nxt, st_idx_nxt);
-      // pgt::id_or_t a { a_g_id, a_or };
-      // pgt::id_or_t z { z_g_id, z_or };
-      //  pvst::Vertex vtx(a, z, ai_idx, zi_idx, pvst::vt_e::flubble);
-
-      pvst::Vertex vtx = forwardise(id_curr, or_curr, ai, id_nxt, or_nxt, zi);
+      pvst::Vertex vtx = gen_fl(id_curr, or_curr, id_nxt, or_nxt, ai, zi);
       pt::idx_t pvst_v_idx = vst.add_vertex(vtx);
       vst.add_edge(prt_v, pvst_v_idx);
       prt_v = pvst_v_idx;
@@ -276,11 +268,7 @@ pvtr::Tree<pvst::Vertex> find_flubbles(const pst::Tree &st) {
   // create the pvst and add the root vertex
   pvtr::Tree<pvst::Vertex> vst;
   {
-    //pt::id_t root_idx{};
-    pvst::Vertex root_v(pgt::id_or_t{pc::INVALID_IDX, pgt::or_e::forward},
-                        pgt::id_or_t{pc::INVALID_IDX, pgt::or_e::forward},
-                        pc::INVALID_IDX, pc::INVALID_IDX,
-                        pvst::VertexType::dummy);
+    pvst::Vertex root_v = pvst::Vertex::make_dummy();
     pt::idx_t root_v_idx = vst.add_vertex(root_v);
     vst.set_root_idx(root_v_idx);
   }
