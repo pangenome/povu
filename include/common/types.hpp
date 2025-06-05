@@ -258,53 +258,72 @@ const char NO_VALUE = '.'; // null character
 
 // PVST pangenome variation structure tree
 namespace povu::types::pvst {
+namespace pc = povu::constants;
+namespace pt = povu::types;
+namespace pgt = povu::graph_types;
 
+// short for VertexType
 enum class VertexType {
   dummy,
   flubble,
-  slubble
+  slubble,
+  mubble
 };
 
-typedef VertexType vt_e; // to use in the tree;
+typedef VertexType vt_e; // to use in the tree
 
 class Vertex {
-  // TODO rename to idx
-  povu::types::id_t id_; // id of the vertex in the tree
+  povu::types::id_t idx_; // idx of the vertex in the vst
 
-  povu::graph_types::id_or_t start_;
-  povu::graph_types::id_or_t end_;
+  pgt::id_or_t a_;
+  pgt::id_or_t z_;
 
-  VertexType type_;
+  // indices of ui and vi in the spanning tree
+  pt::idx_t ai_st_idx_; // idx in the spanning tree
+  pt::idx_t zi_st_idx_; // idx in the spanning tree
+
+  // only applies when is slubble
+  pt::idx_t sl_st_idx_; // idx in the spanning tree for slubble
+
+  vt_e type_;
+
+private:
+  Vertex(pgt::id_or_t start, pgt::id_or_t end, pt::idx_t sl_st_idx)
+    : idx_(pc::INVALID_IDX), a_(start), z_(end), sl_st_idx_(sl_st_idx), type_(vt_e::slubble) {}
 
 public:
   // --------------
   // constructor(s)
   // --------------
-  Vertex(povu::types::id_t id, povu::graph_types::id_or_t start,
-         povu::graph_types::id_or_t end, VertexType type)
-    : id_(id), start_(start), end_(end), type_(type) {}
+  // constructor for a flubble
+  Vertex(pgt::id_or_t start, pgt::id_or_t end,
+         pt::idx_t ai_st_idx, pt::idx_t zi_st_idx, vt_e type)
+    : idx_(pc::INVALID_IDX), a_(start), z_(end), ai_st_idx_(ai_st_idx),
+        zi_st_idx_(zi_st_idx), type_(type) {}
+
+  static Vertex make_slubble(pgt::id_or_t start, pgt::id_or_t end, pt::idx_t sl_st_idx = pc::INVALID_IDX) {
+    return Vertex(start, end, sl_st_idx);
+  }
 
   // ---------
   // getter(s)
   // ---------
 
-  povu::types::id_t get_id() const {
-    return this->id_;
-  }
+  povu::types::id_t get_idx() const { return this->idx_; }
+  pgt::id_or_t get_start() const { return this->a_; }
+  pgt::id_or_t get_end() const { return this->z_; }
+  vt_e get_type() const { return this->type_; }
+  pt::idx_t get_sl_st_idx() const { return this->sl_st_idx_; }
 
-  povu::graph_types::id_or_t get_start() const {
-    return this->start_;
-  }
+  // get the idx of ui in the spanning tree
+  pt::idx_t get_ai_idx() const { return this->ai_st_idx_; }
+  pt::idx_t get_zi_idx() const { return this->zi_st_idx_; }
 
+  // ---------
+  // setter(s)
+  // ---------
 
-  povu::graph_types::id_or_t get_end() const {
-    return this->end_;
-  }
-
-  VertexType get_type() const {
-    return this->type_;
-  }
-
+  void set_idx(pt::idx_t v_idx) { this->idx_ = v_idx; }
 
   // ---------
   // other(s)
@@ -316,8 +335,8 @@ public:
     }
 
     std::string s;
-    s += this->start_.as_str();
-    s += this->end_.as_str();
+    s += this->a_.as_str();
+    s += this->z_.as_str();
     return s;
   }
 };

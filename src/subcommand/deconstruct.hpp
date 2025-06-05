@@ -8,16 +8,16 @@
 #include <thread>
 #include <utility>
 
-#include "../../include/algorithms/hubbles.hpp"
+#include "../../include/algorithms/slubbles.hpp"
 #include "../../include/algorithms/algorithms.hpp"
+#include "../../include/algorithms/flubbles.hpp"
 #include "../../include/common/types.hpp"
-#include "../../include/graph/pvst.hpp"
-#include "../../include/graph/spanning_tree.hpp"
 #include "../../include/graph/bidirected.hpp"
-#include "../io/to_vcf.hpp"
-#include "../io/pvst.hpp"
+#include "../../include/graph/spanning_tree.hpp"
 #include "../cli/app.hpp"
 #include "../cli/cli.hpp"
+#include "../io/pvst.hpp"
+#include "../io/to_vcf.hpp"
 #include "./common.hpp"
 
 namespace povu::subcommands::deconstruct {

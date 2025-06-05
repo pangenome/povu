@@ -70,7 +70,9 @@ ADD_LIBRARY(povulib
 
   # algorithms
   ${INCLUDE_DIR}/algorithms/algorithms.cpp
-  ${INCLUDE_DIR}/algorithms/hubbles.cpp
+  ${INCLUDE_DIR}/algorithms/slubbles.cpp
+  ${INCLUDE_DIR}/algorithms/mubbles.cpp
+  ${INCLUDE_DIR}/algorithms/flubbles.cpp
 
   # align
   ${INCLUDE_DIR}/align/align.cpp
@@ -78,6 +80,7 @@ ADD_LIBRARY(povulib
   # common
   ${INCLUDE_DIR}/common/types.cpp
   ${INCLUDE_DIR}/common/utils.cpp
+  ${INCLUDE_DIR}/common/tree_utils.cpp
 
   # genomics
   ${INCLUDE_DIR}/genomics/untangle.cpp
@@ -87,7 +90,6 @@ ADD_LIBRARY(povulib
 
   # graph
   ${INCLUDE_DIR}/graph/bidirected.cpp
-  ${INCLUDE_DIR}/graph/pvst.cpp
   ${INCLUDE_DIR}/graph/bracket_list.cpp
   ${INCLUDE_DIR}/graph/spanning_tree.cpp
 )

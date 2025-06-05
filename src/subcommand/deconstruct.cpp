@@ -60,10 +60,10 @@ void deconstruct_component(bd::VG *g,
 
   //st.print_dot(std::cerr);
 
-  pvtr::Tree<pvst::Vertex> flubble_tree = povu::graph::pvst::st_to_ft(st);
+  pvtr::Tree<pvst::Vertex> flubble_tree = povu::flubbles::find_flubbles(st);
 
   if (app_config.find_hubbles()) {
-    povu::hubbles::find_hubbles(st, flubble_tree);
+    povu::slubbles::find_hubbles(st, flubble_tree);
     //povu::algorithms::find_hubbles(st, flubble_tree, g);
     //delete g;
   }

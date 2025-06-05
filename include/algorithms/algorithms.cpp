@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <iostream>
-
 #include <unistd.h>
 #include <utility>
 #include <vector>
@@ -31,7 +30,7 @@ void eulerian_cycle_equiv(pst::Tree &t) {
 
   std::size_t boundary {pc::UNDEFINED_SIZE_T};
 
-  for (std::size_t v { t.size() - 1 }; v < pc::UNDEFINED_SIZE_T; --v) {
+  for (std::size_t v { t.vtx_count() - 1 }; v < pc::UNDEFINED_SIZE_T; --v) {
 
     if (report_time && v % 10000 == 0) {
       check_time = true;

@@ -127,6 +127,8 @@ public:
     return this->children_v[v_idx];
   }
 
+
+
   // ---------
   // setter(s)
   // ---------
@@ -149,8 +151,19 @@ public:
     * @return Index of the added vertex
    */
   pt::idx_t add_vertex(T v) {
+    pt::idx_t v_idx = this->vertices.size();
+
+    while (v_idx >= this->parent_v.size()) {
+      this->parent_v.push_back(INVALID_ID); // ensure parent_v has enough space
+    }
+
+    while (v_idx >= this->children_v.size()) {
+      this->children_v.push_back(std::vector<pt::idx_t>()); // ensure children_v has enough space
+    }
+
     this->vertices.push_back(v);
-    return this->vertices.size() - 1;
+    v.set_idx(v_idx); // set the index of the vertex
+    return v_idx;
   }
 
   void add_edge(pt::idx_t parent, pt::idx_t child) {
