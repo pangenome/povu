@@ -9,9 +9,10 @@
 #include <utility>
 
 #include "../../include/algorithms/slubbles.hpp"
-#include "../../include/algorithms/algorithms.hpp"
+//#include "../../include/algorithms/algorithms.hpp"
 #include "../../include/algorithms/flubbles.hpp"
 #include "../../include/common/types.hpp"
+#include "../../include/common/tree_utils.hpp"
 #include "../../include/graph/bidirected.hpp"
 #include "../../include/graph/spanning_tree.hpp"
 #include "../cli/app.hpp"
@@ -32,7 +33,8 @@ namespace pgt = povu::graph_types;
 namespace pvtr = povu::tree;
 namespace pvst = povu::types::pvst;
 namespace pic = povu::io::common;
-
+namespace ptu = povu::tree_utils;
+namespace pfl = povu::flubbles;
 
 using namespace povu::subcommands::common;
 

@@ -52,21 +52,19 @@ Vertex::Vertex(pt::idx_t dfs_num, pt::idx_t g_v_id, v_type_e type_)
 pt::idx_t Vertex::g_v_id() const { return this->g_v_id_; }
 v_type_e Vertex::type() const { return this->type_; }
 pt::idx_t  Vertex::hi() const { return this->hi_; }
-pt::idx_t  Vertex::dfs_num() const { return this->dfs_num_; }
-pt::idx_t  Vertex::pre_order() const { return this->pre_order_; }
-pt::idx_t  Vertex::post_order() const { return this->post_order_; }
+bool Vertex::is_root() const { return this->parent_e_idx_ == INVALID_IDX; }
 bool Vertex::is_leaf() const { return this->child_e_idxs_.empty(); }
+pt::idx_t Vertex::dfs_num() const { return this->dfs_num_; }
+pt::idx_t Vertex::pre_order() const { return this->pre_order_; }
+pt::idx_t Vertex::post_order() const { return this->post_order_; }
 
-  //pt::idx_t  Vertex::parent() const { return this->parent_id; }
-  //pt::idx_t const &Vertex::get_parent_idx() const { return this->parent_id; }
 pt::idx_t Vertex::get_parent_e_idx() const { return this->parent_e_idx_; }
 
 std::set<pt::idx_t> const &Vertex::get_ibe() const { return this->ibe; }
 std::set<pt::idx_t> const &Vertex::get_obe() const { return this->obe; }
 
-  //std::set<pt::idx_t> const& Vertex::get_children() const { return this->children; }
 std::set<pt::idx_t> const &Vertex::get_child_edge_idxs() const { return this->child_e_idxs_; }
-bool Vertex::is_root() const { return this->parent_e_idx_ == INVALID_IDX; }
+pt::idx_t Vertex::child_count() const { return static_cast<pt::idx_t>(this->child_e_idxs_.size()); }
 
 // setters
 void Vertex::add_obe(pt::idx_t obe_id) { this->obe.insert(obe_id); }
@@ -185,30 +183,38 @@ Tree::get_children_w_id(std::size_t vertex) {
   return res;
 }
 
-std::vector<Edge> Tree::get_child_edges(std::size_t vertex) {
+std::vector<Edge> Tree::get_child_edges(pt::idx_t v_idx) {
+  return this->get_child_edges_mut(v_idx);
+}
+
+std::vector<Edge> Tree::get_child_edges_mut(pt::idx_t v_idx) {
   std::vector<Edge> v{};
 
-  for (auto e_idx : this->nodes.at(vertex).get_child_edge_idxs()) {
+  for (auto e_idx : this->nodes.at(v_idx).get_child_edge_idxs()) {
     v.push_back(this->tree_edges.at(e_idx));
   }
 
   return v;
 }
 
-std::vector<pt::idx_t> Tree::get_child_edge_idxs(std::size_t vertex) const {
+std::vector<pt::idx_t> Tree::get_child_edge_idxs(pt::idx_t v_idx) const {
   std::vector<pt::idx_t> v {};
-  for (auto e_idx : this->nodes.at(vertex).get_child_edge_idxs()) {
+  for (auto e_idx : this->nodes.at(v_idx).get_child_edge_idxs()) {
     v.push_back(e_idx);
   }
 
   return v;
 }
 
+pt::idx_t Tree::get_child_count(pt::idx_t v_idx) const {
+  return  this->nodes.at(v_idx).child_count();
+}
+
 Edge const& Tree::get_parent_edge(std::size_t vertex) const {
   return this->tree_edges.at(this->nodes.at(vertex).get_parent_e_idx());
 }
 
-std::set<std::size_t> Tree::get_obe_idxs(std::size_t vertex) {
+std::set<std::size_t> Tree::get_obe_idxs(std::size_t vertex) const {
   std::set<std::size_t> v {};
 
   for (auto be_idx : this->nodes.at(vertex).get_obe()) {
@@ -218,7 +224,7 @@ std::set<std::size_t> Tree::get_obe_idxs(std::size_t vertex) {
   return v;
 }
 
-std::set<std::size_t> Tree::get_ibe_idxs(std::size_t vertex) {
+std::set<std::size_t> Tree::get_ibe_idxs(std::size_t vertex) const {
   std::set<std::size_t> v{};
 
   for (auto be_idx : this->nodes.at(vertex).get_ibe()) {
@@ -254,9 +260,9 @@ Tree::get_ibe_w_id(std::size_t vertex) {
   return res;
 }
 
-std::set<std::size_t> Tree::get_children(std::size_t vertex) const {
+std::set<std::size_t> Tree::get_children(pt::idx_t v_idx) const {
   std::set<std::size_t> res {};
-  for (auto e_idx : this->nodes.at(vertex).get_child_edge_idxs()) {
+  for (auto e_idx : this->nodes.at(v_idx).get_child_edge_idxs()) {
     res.insert(this->tree_edges.at(e_idx).get_child_v_idx());
   }
   return res;
@@ -337,11 +343,11 @@ std::size_t Tree::get_graph_edge_id(std::size_t tree_edge_id) const {
     return this->tree_graph_idx_map_.at(tree_edge_id);
 }
 
-  //std::size_t Tree::get_edge_idx(std::size_t edge_id) const {
-  // return this->edge_id_map_.at(edge_id);
-  //}
-
 BackEdge& Tree::get_backedge(std::size_t backedge_idx) {
+  return this->back_edges.at(backedge_idx);
+}
+
+const BackEdge &Tree::get_be(std::size_t backedge_idx) const {
   return this->back_edges.at(backedge_idx);
 }
 

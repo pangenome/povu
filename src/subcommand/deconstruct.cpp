@@ -17,38 +17,12 @@ void deconstruct_component(bd::VG *g,
   }
 #endif
 
-  //g->untip();
-  //std::cerr <<std::format("{} Computing Spanning Tree for component {} with {} vertices and {} edges\n", fn_name, component_id, g->vtx_count(), g->edge_count());
-
 
 
   pst::Tree st { bd::compute_spanning_tree(*g) };
-
-
-
-#ifdef DEBUG
-  if (app_config.verbosity() > 1) {
-    std::cerr << "\n";
-    st.print_dot(std::cerr);
-    std::cerr << "\n";
-  }
-#endif
-
-
   delete g;
 
-
-  //if (!app_config.find_hubbles()) {
-  //  delete g;
-  //}
-
-  //return;
-
-
-
-  //povu::algorithms::eulerian_cycle_equiv(st);
-  //std::cerr << std::format("{} Find equiv classes for component {}\n", fn_name, component_id);
-  povu::algorithms::simple_cycle_equiv(st, app_config); // find equivalence classes
+  ptu::tree_meta tm = ptu::gen_tree_meta(st);
 
 #ifdef DEBUG
   if (app_config.verbosity() > 1) {
@@ -58,17 +32,12 @@ void deconstruct_component(bd::VG *g,
   }
 #endif
 
-  //st.print_dot(std::cerr);
-
-  pvtr::Tree<pvst::Vertex> flubble_tree = povu::flubbles::find_flubbles(st);
+  pvtr::Tree<pvst::Vertex> flubble_tree = pfl::find_flubbles(st, app_config);
 
   if (app_config.find_hubbles()) {
-    povu::slubbles::find_hubbles(st, flubble_tree);
-    //povu::algorithms::find_hubbles(st, flubble_tree, g);
-    //delete g;
+    povu::slubbles::find_slubbles(st, flubble_tree, tm);
   }
 
-  //std::cerr << std::format("{} Constructing fl tree for component {}\n", fn_name, component_id);
   povu::io::pvst::write_bub(flubble_tree, std::to_string(component_id), app_config);
 
   return;

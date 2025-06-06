@@ -21,7 +21,7 @@
 #include "../graph/tree.hpp"
 #include "../common/types.hpp"
 #include "../common/utils.hpp"
-
+#include "../common/tree_utils.hpp"
 
 namespace povu::slubbles {
 
@@ -38,8 +38,8 @@ namespace pvst= povu::types::pvst;
 namespace pc = povu::constants;
 namespace pt = povu::types;
 namespace pvtr = povu::tree;
+namespace ptu = povu::tree_utils;
 
-void find_hubbles(pst::Tree &st, pvtr::Tree<pvst::Vertex> &ft);
-
+void find_slubbles(pst::Tree &st, pvtr::Tree<pvst::Vertex> &ft, const ptu::tree_meta &tm);
 } // namespace povu::slubbles
 #endif // PV_SLUBBLES_HPP

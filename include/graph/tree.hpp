@@ -162,7 +162,7 @@ public:
     }
 
     this->vertices.push_back(v);
-    v.set_idx(v_idx); // set the index of the vertex
+    v.set_v_idx(v_idx); // set the index of the vertex
     return v_idx;
   }
 

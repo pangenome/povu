@@ -130,14 +130,10 @@ public:
   std::set<pt::idx_t> const& get_ibe() const;
 
   // get the index of the edge that points to the parent in the tree
-
-  //[[deprecated("use get_parent_e_idx()")]]
-  //pt::idx_t const& get_parent_idx() const; // TODO: remove, superceded by get_parent_edge_idx
   pt::idx_t get_parent_e_idx() const;
 
-  //[[deprecated("use get_child_edge_idxs()")]]
-  //std::set<pt::idx_t> const& get_children() const;
   std::set<pt::idx_t> const &get_child_edge_idxs() const;
+  pt::idx_t child_count() const;
 
   // ---------
   // setter(s)
@@ -145,7 +141,6 @@ public:
   void add_obe(pt::idx_t obe_id);
   void add_ibe(pt::idx_t ibe_id);
   void add_child_e_idx(pt::idx_t e_id);
-  //void unset_null(); // sets null_ to false;
 
   // the index of the parent node in the tree vertex
   void set_parent_e_idx(pt::idx_t e_idx);
@@ -259,14 +254,17 @@ public:
 
 
   // return edges that point to children of the vertex
-  std::vector<Edge> get_child_edges(std::size_t vertex); // TODO: rename to add _mut
-  std::vector<pt::idx_t> get_child_edge_idxs(std::size_t vertex) const;
+  [[deprecated("use get_child_edges_mut()")]]
+  std::vector<Edge> get_child_edges(pt::idx_t v_idx);
+  std::vector<Edge> get_child_edges_mut(pt::idx_t v_idx);
+  std::vector<pt::idx_t> get_child_edge_idxs(pt::idx_t v_idx) const;
   // returns v_idxs of the children of the vertex
-  std::set<std::size_t> get_children(std::size_t vertex) const;
+  std::set<std::size_t> get_children(pt::idx_t v_idx) const;
+  pt::idx_t get_child_count(pt::idx_t v_idx) const;
 
   // get index of the  be in back_edges vector
-  std::set<std::size_t> get_obe_idxs(std::size_t vertex);
-  std::set<std::size_t> get_ibe_idxs(std::size_t vertex);
+  std::set<std::size_t> get_obe_idxs(std::size_t vertex) const;
+  std::set<std::size_t> get_ibe_idxs(std::size_t vertex) const;
 
   size_t list_size(std::size_t vertex);
   size_t get_hi(std::size_t vertex);
@@ -309,6 +307,7 @@ public:
   // return reference to a back edge given the
   // index of the back edge in the back_edges vector
   BackEdge& get_backedge(std::size_t backedge_idx);
+  const BackEdge& get_be(std::size_t backedge_idx) const;
   BackEdge& get_backedge_ref_given_id(std::size_t backedge_id);
   // given the back edge's unique back edge id return a reference to the backedge
   BackEdge get_backedge_given_id(std::size_t backedge_id);

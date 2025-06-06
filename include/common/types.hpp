@@ -272,48 +272,59 @@ enum class VertexType {
 
 typedef VertexType vt_e; // to use in the tree
 
-class Vertex {
-  povu::types::id_t idx_; // idx of the vertex in the vst
+enum class fl_vtx_type_e {
+  ai,
+  zi,
+};
 
+
+class Vertex {
+  // base
+  povu::types::id_t idx_; // idx of the vertex in the vst
+  vt_e type_;
+
+  // flubble
   pgt::id_or_t a_;
   pgt::id_or_t z_;
-
-  // indices of ui and vi in the spanning tree
-  pt::idx_t ai_st_idx_; // idx in the spanning tree
-  pt::idx_t zi_st_idx_; // idx in the spanning tree
+  pt::idx_t ai_;
+  pt::idx_t zi_;
 
   // only applies when is slubble
+  fl_vtx_type_e fl_vtx_type_; // type of the flubble vertex (ai or zi)
+  pt::idx_t fl_st_idx_; // idx in the spanning tree for flubble
   pt::idx_t sl_st_idx_; // idx in the spanning tree for slubble
-
-  vt_e type_;
 
 private:
   // constructor for a slubble
-  Vertex(pgt::id_or_t start, pgt::id_or_t end, pt::idx_t sl_st_idx)
-    : idx_(pc::INVALID_IDX), a_(start), z_(end), sl_st_idx_(sl_st_idx), type_(vt_e::slubble) {}
+  Vertex(pgt::id_or_t start, pgt::id_or_t end, pt::idx_t fl_st_idx,
+         pt::idx_t sl_st_idx, fl_vtx_type_e fl_vtx_type)
+    : idx_(pc::INVALID_IDX), type_(vt_e::slubble), a_(start), z_(end),
+        fl_vtx_type_(fl_vtx_type), fl_st_idx_(fl_st_idx),
+        sl_st_idx_(sl_st_idx) {}
 
   // constructor for a flubble
-  Vertex(pgt::id_or_t start, pgt::id_or_t end, pt::idx_t ai_st_idx, pt::idx_t zi_st_idx)
-      : idx_(pc::INVALID_IDX), a_(start), z_(end),
-        ai_st_idx_(ai_st_idx), zi_st_idx_(zi_st_idx), type_(vt_e::flubble) {}
+  Vertex(pgt::id_or_t a, pgt::id_or_t z, pt::idx_t ai, pt::idx_t zi)
+    : idx_(pc::INVALID_IDX), type_(vt_e::flubble), a_(a), z_(z), ai_(ai), zi_(zi) {}
 
   // constructor for a dummy vertex
-  Vertex() : idx_(pc::INVALID_IDX), a_(pgt::id_or_t{pc::INVALID_ID, pgt::or_e::forward}),
-             z_(pgt::id_or_t{pc::INVALID_ID, pgt::or_e::forward}),
-             ai_st_idx_(pc::INVALID_IDX), zi_st_idx_(pc::INVALID_IDX),
-             sl_st_idx_(pc::INVALID_IDX), type_(vt_e::dummy) {}
+  Vertex()
+      : idx_(pc::INVALID_IDX), type_(vt_e::dummy), a_(pgt::id_or_t{pc::INVALID_ID, pgt::or_e::forward}),
+        z_(pgt::id_or_t{pc::INVALID_ID, pgt::or_e::forward}),
+        ai_(pc::INVALID_IDX), zi_(pc::INVALID_IDX),
+        sl_st_idx_(pc::INVALID_IDX) {}
 
 public:
   // --------------
   // constructor(s)
   // --------------
-  // constructor for a flubble
-  static Vertex make_flubble(pgt::id_or_t start, pgt::id_or_t end, pt::idx_t ai, pt::idx_t zi) {
-    return Vertex(start, end, ai, zi);
+  static Vertex make_flubble(pgt::id_or_t a, pgt::id_or_t z, pt::idx_t ai, pt::idx_t zi) {
+    return Vertex(a, z, ai, zi);
   }
 
-  static Vertex make_slubble(pgt::id_or_t start, pgt::id_or_t end, pt::idx_t sl_st_idx) {
-    return Vertex(start, end, sl_st_idx);
+  static Vertex make_slubble(pgt::id_or_t start, pgt::id_or_t end,
+                             pt::idx_t fl_st_idx, pt::idx_t sl_st_idx,
+                             fl_vtx_type_e fl_vtx_type) {
+    return Vertex(start, end, fl_st_idx, sl_st_idx, fl_vtx_type);
   }
 
   static Vertex make_dummy() {
@@ -331,14 +342,14 @@ public:
   pt::idx_t get_sl_st_idx() const { return this->sl_st_idx_; }
 
   // get the idx of ui in the spanning tree
-  pt::idx_t get_ai_idx() const { return this->ai_st_idx_; }
-  pt::idx_t get_zi_idx() const { return this->zi_st_idx_; }
+  pt::idx_t get_ai() const { return this->ai_; }
+  pt::idx_t get_zi() const { return this->zi_; }
 
   // ---------
   // setter(s)
   // ---------
 
-  void set_idx(pt::idx_t v_idx) { this->idx_ = v_idx; }
+  void set_v_idx(pt::idx_t v_idx) { this->idx_ = v_idx; }
 
   // ---------
   // other(s)
