@@ -273,14 +273,16 @@ std::set<std::size_t> Tree::get_ibe(std::size_t vertex) {
   for (auto e_idx : this->nodes.at(vertex).get_ibe()) {
     res.insert(this->back_edges.at(e_idx).get_src());
   }
+
   return res;
 }
 
-std::set<std::size_t> Tree::get_ibe_src_v_idxs(std::size_t v_idx) {
-  std::set<std::size_t> res{};
+std::set<pt::idx_t> Tree::get_ibe_src_v_idxs(std::size_t v_idx) const {
+  std::set<pt::idx_t> res{};
   for (auto e_idx : this->nodes.at(v_idx).get_ibe()) {
     res.insert(this->back_edges.at(e_idx).get_src());
   }
+
   return res;
 }
 
@@ -292,8 +294,8 @@ std::set<std::size_t> Tree::get_obe(std::size_t vertex) {
   return res;
 }
 
-std::set<std::size_t> Tree::get_obe_tgt_v_idxs(std::size_t v_idx) {
-  std::set<std::size_t> res{};
+std::set<pt::idx_t> Tree::get_obe_tgt_v_idxs(std::size_t v_idx) const {
+  std::set<pt::idx_t> res{};
   for (auto e_idx : this->nodes.at(v_idx).get_obe()) {
     res.insert(this->back_edges.at(e_idx).get_tgt());
   }

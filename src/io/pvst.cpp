@@ -107,13 +107,22 @@ void write_bub(const pvtr::Tree<pvst::Vertex> &bt, const std::string &base_name,
     {
     switch (v.get_type()) {
       case pvst::vt_e::slubble:
-        bub_file << pc::PVST_SLUBBLE_SYMBOL << pc::COL_SEP;
+        bub_file << pc::PVST_CONCEALED_SYMBOL << pc::COL_SEP;
         break;
       case pvst::vt_e::flubble:
         bub_file << pc::PVST_FLUBBLE_SYMBOL << pc::COL_SEP;
         break;
       case pvst::vt_e::dummy:
         bub_file << pc::PVST_DUMMY_SYMBOL << pc::COL_SEP;
+        break;
+      case pvst::vt_e::tiny:
+        bub_file << pc::PVST_TINY_SYMBOL << pc::COL_SEP;
+        break;
+      case pvst::vt_e::parallel:
+        bub_file << pc::PVST_PARALLEL_SYMBOL << pc::COL_SEP;
+        break;
+      case pvst::vt_e::mubble:
+        bub_file << pc::PVST_SMOTHERED_SYMBOL << pc::COL_SEP;
         break;
       default:
         std::cerr << "ERROR: unknown vertex type in write_bub: " << v.as_str() << "\n";

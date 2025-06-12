@@ -246,8 +246,11 @@ const std::size_t UNDEFINED_PATH_POS{INVALID_ID};
 
 const char PVST_HEADER_SYMBOL = 'H';
 const char PVST_FLUBBLE_SYMBOL = 'F';
-const char PVST_SLUBBLE_SYMBOL = 'S';
+const char PVST_CONCEALED_SYMBOL = 'C';
+const char PVST_SMOTHERED_SYMBOL = 'S';
 const char PVST_DUMMY_SYMBOL = 'D';
+const char PVST_TINY_SYMBOL = 'T';
+const char PVST_PARALLEL_SYMBOL = 'P';
 
 const std::string PVST_VERSION = "0.2";
 
@@ -263,18 +266,21 @@ namespace pt = povu::types;
 namespace pgt = povu::graph_types;
 
 // short for VertexType
-enum class VertexType {
+enum class vt_e  {
   dummy,
   flubble,
-  slubble,
-  mubble
+  slubble, // rename to concealed
+  mubble, // rename to smothered
+  tiny, // for SNPs
+  parallel // 
 };
 
-typedef VertexType vt_e; // to use in the tree
 
-enum class fl_vtx_type_e {
-  ai,
-  zi,
+enum class sl_type_e {
+  ai_trunk,
+  ai_branch,
+  zi_trunk,
+  zi_branch
 };
 
 
@@ -290,17 +296,17 @@ class Vertex {
   pt::idx_t zi_;
 
   // only applies when is slubble
-  fl_vtx_type_e fl_vtx_type_; // type of the flubble vertex (ai or zi)
-  pt::idx_t fl_st_idx_; // idx in the spanning tree for flubble
+  //fl_vtx_type_e fl_vtx_type_; // type of the flubble vertex (ai or zi)
+  sl_type_e fl_type_; // type of the flubble (trunk or branch)
+  //pt::idx_t fl_st_idx_; // idx in the spanning tree for flubble
   pt::idx_t sl_st_idx_; // idx in the spanning tree for slubble
 
 private:
   // constructor for a slubble
-  Vertex(pgt::id_or_t start, pgt::id_or_t end, pt::idx_t fl_st_idx,
-         pt::idx_t sl_st_idx, fl_vtx_type_e fl_vtx_type)
-    : idx_(pc::INVALID_IDX), type_(vt_e::slubble), a_(start), z_(end),
-        fl_vtx_type_(fl_vtx_type), fl_st_idx_(fl_st_idx),
-        sl_st_idx_(sl_st_idx) {}
+  Vertex(pgt::id_or_t start, pgt::id_or_t end, pt::idx_t sl_st_idx, sl_type_e t,
+         Vertex fl)
+      : idx_(pc::INVALID_IDX), type_(vt_e::slubble), a_(start), z_(end),
+        ai_(fl.get_ai()), zi_(fl.get_zi()), fl_type_(t), sl_st_idx_(sl_st_idx) {}
 
   // constructor for a flubble
   Vertex(pgt::id_or_t a, pgt::id_or_t z, pt::idx_t ai, pt::idx_t zi)
@@ -322,9 +328,8 @@ public:
   }
 
   static Vertex make_slubble(pgt::id_or_t start, pgt::id_or_t end,
-                             pt::idx_t fl_st_idx, pt::idx_t sl_st_idx,
-                             fl_vtx_type_e fl_vtx_type) {
-    return Vertex(start, end, fl_st_idx, sl_st_idx, fl_vtx_type);
+                             pt::idx_t sl_st_idx, sl_type_e sl_t, Vertex fl) {
+    return Vertex(start, end, sl_st_idx, sl_t, fl);
   }
 
   static Vertex make_dummy() {
@@ -334,12 +339,13 @@ public:
   // ---------
   // getter(s)
   // ---------
-
   povu::types::id_t get_idx() const { return this->idx_; }
   pgt::id_or_t get_start() const { return this->a_; }
   pgt::id_or_t get_end() const { return this->z_; }
   vt_e get_type() const { return this->type_; }
   pt::idx_t get_sl_st_idx() const { return this->sl_st_idx_; }
+
+  sl_type_e get_sl_type() const { return this->fl_type_; }
 
   // get the idx of ui in the spanning tree
   pt::idx_t get_ai() const { return this->ai_; }
@@ -348,7 +354,7 @@ public:
   // ---------
   // setter(s)
   // ---------
-
+  void set_type(vt_e t) { this->type_ = t; }
   void set_v_idx(pt::idx_t v_idx) { this->idx_ = v_idx; }
 
   // ---------
@@ -356,7 +362,7 @@ public:
   // ---------
   std::string as_str() const {
 
-    if (this->type_ == VertexType::dummy) {
+    if (this->type_ == vt_e::dummy) {
       return ".";
     }
 

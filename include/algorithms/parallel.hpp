@@ -1,5 +1,5 @@
-#ifndef PV_MUBBLES_HPP
-#define PV_MUBBLES_HPP
+#ifndef PV_PARALLEL_HPP
+#define PV_PARALLEL_HPP
 
 #include <any>
 #include <cassert>
@@ -23,8 +23,9 @@
 #include "../graph/spanning_tree.hpp"
 #include "../graph/tree.hpp"
 
-namespace povu::mubbles {
-#define MODULE "povu::mubbles"
+
+namespace povu::parallel {
+#define MODULE "povu::parallel"
 
 using namespace povu::graph_types;
 namespace pgt = povu::graph_types;
@@ -39,7 +40,7 @@ namespace pt = povu::types;
 namespace pvtr = povu::tree;
 namespace ptu = povu::tree_utils;
 
-void find_mubbles(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &ft, const ptu::tree_meta &tm);
-} // namespace povu::mubbles
+void find_parallel(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &ft, const ptu::tree_meta &tm);
 
-#endif
+} // namespace povu::parallel
+#endif // PV_PARALLEL_HPP

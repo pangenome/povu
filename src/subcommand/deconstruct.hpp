@@ -8,11 +8,13 @@
 #include <thread>
 #include <utility>
 
-#include "../../include/algorithms/slubbles.hpp"
-//#include "../../include/algorithms/algorithms.hpp"
 #include "../../include/algorithms/flubbles.hpp"
-#include "../../include/common/types.hpp"
+#include "../../include/algorithms/mubbles.hpp"
+#include "../../include/algorithms/tiny.hpp"
+#include "../../include/algorithms/slubbles.hpp"
+#include "../../include/algorithms/parallel.hpp"
 #include "../../include/common/tree_utils.hpp"
+#include "../../include/common/types.hpp"
 #include "../../include/graph/bidirected.hpp"
 #include "../../include/graph/spanning_tree.hpp"
 #include "../cli/app.hpp"

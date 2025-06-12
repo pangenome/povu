@@ -3,8 +3,7 @@
 
 namespace povu::subcommands::deconstruct {
 
-void deconstruct_component(bd::VG *g,
-                           std::size_t component_id,
+void deconstruct_component(bd::VG *g, std::size_t component_id,
                            const core::config &app_config) {
   std::string fn_name = std::format("[povu::deconstruct::{}]", __func__);
 
@@ -16,8 +15,6 @@ void deconstruct_component(bd::VG *g,
     std::cerr << "\n";
   }
 #endif
-
-
 
   pst::Tree st { bd::compute_spanning_tree(*g) };
   delete g;
@@ -33,9 +30,12 @@ void deconstruct_component(bd::VG *g,
 #endif
 
   pvtr::Tree<pvst::Vertex> flubble_tree = pfl::find_flubbles(st, app_config);
+  povu::tiny::find_tiny(st, flubble_tree, tm);
+  povu::parallel::find_parallel(st, flubble_tree, tm);
 
   if (app_config.find_hubbles()) {
     povu::slubbles::find_slubbles(st, flubble_tree, tm);
+    povu::mubbles::find_mubbles(st, flubble_tree, tm);
   }
 
   povu::io::pvst::write_bub(flubble_tree, std::to_string(component_id), app_config);

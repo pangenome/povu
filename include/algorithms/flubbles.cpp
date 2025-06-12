@@ -29,42 +29,44 @@ inline pvst::Vertex gen_fl(pt::id_t start_id, pgt::or_e start_or, pt::id_t end_i
   * @return A pair of indices (ai, zi) where ai is the index of the ancestor
   *         and zi is the index of the descendant in the spanning tree
  */
-std::pair<pt::idx_t, pt::idx_t> compute_ai_zi(const pst::Tree &st,
-                                              pt::idx_t a_idx,
-                                              pt::idx_t z_idx) {
+std::pair<pt::idx_t, pt::idx_t> compute_ai_zi(const pst::Tree &st, pt::idx_t a_e_idx, pt::idx_t z_e_idx) {
 
   std::string fn_name = std::format("[povu::algorithms::flubble_tree::{}]", __func__);
 
-  std::vector<pt::idx_t> vtxs {a_idx, z_idx};
-
-  auto get_vtx_pair = [&](pt::idx_t v_idx) -> void {
-    if (!st.is_root(v_idx)) {
-      const pst::Edge &e = st.get_parent_edge(v_idx);
-      if (e.get_color() == pgt::color_e::black) {
-        pt::idx_t v_idx_ = st.get_parent_v_idx(v_idx);
-        vtxs.push_back(v_idx_);
-        return;
-      }
-      else {
-        for (auto c_e_idx : st.get_child_edge_idxs(v_idx)) {
-          const pst::Edge &ce = st.get_tree_edge(c_e_idx);
-          if (ce.get_color() == pgt::color_e::black) {
-            pt::idx_t v_idx_ = ce.get_child_v_idx();
-            vtxs.push_back(v_idx_);
-            return;
-          }
-        }
-      }
-    }
+  std::vector<pt::idx_t> vtxs {};
+  auto get_vtx_pair = [&](pt::idx_t e_idx) -> void {
+    const pst::Edge &e = st.get_tree_edge(e_idx);
+    vtxs.push_back(e.get_child_v_idx());
+    vtxs.push_back(e.get_parent_v_idx());
   };
 
-  get_vtx_pair(a_idx);
-  get_vtx_pair(z_idx);
+  get_vtx_pair(a_e_idx);
+  get_vtx_pair(z_e_idx);
+
+  // sort the vertices by their index in the spanning tree
   std::sort(vtxs.begin(), vtxs.end(), [&](pt::idx_t a, pt::idx_t b) { return a < b; });
 
 #ifdef DEBUG // vtx should contain exactly 4 elements
   assert(vtxs.size() == 4);
 #endif
+
+  if (vtxs[1] == 1096 && vtxs[2] == 1099) {
+    std::cerr << fn_name << "..." << "\n";
+
+    for (auto v : vtxs) {
+      std::cerr << v << "(" << st.get_vertex(v).g_v_id() << "). Children: ";
+      // print the children
+      for (auto c : st.get_children(v)) {
+        std::cerr << c << "(" << st.get_vertex(c).g_v_id() << "), ";
+      }
+      std::cerr << "\n";
+    }
+
+    
+
+    std::cerr << "\n";
+  }
+
 
   return std::make_pair(vtxs[1], vtxs[2]);
 }
@@ -210,10 +212,11 @@ void compute_eq_class_stack(const pst::Tree &st, std::vector<oic_t> &stack) {
     }
 
     const pst::Edge &e = st.get_parent_edge(v_idx);
+    pt::idx_t pe = st.get_vertex(v_idx).get_parent_e_idx();
 
     if (e.get_color() == color::black) {
       or_e o = st.get_vertex(v_idx).type() == pgt::v_type_e::r ? pgt::or_e::forward : pgt::or_e::reverse;
-      mini_stack.push_front({o, st.get_vertex(v_idx).g_v_id(), v_idx, e.get_class()});
+      mini_stack.push_front({o, st.get_vertex(v_idx).g_v_id(), pe, e.get_class()});
     }
 
     // if the parent is braching

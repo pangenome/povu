@@ -200,11 +200,12 @@ std::vector<pt::idx_t> collect_backedges_by_vertex(const pst::Tree &st,
 /**
    *
    *
-   *the max depth of a vertex reached by a backedge that starts below a
+   * the max depth of a vertex reached by a backedge that starts below a
    * given backedge and ends at a vertex above this vertex
    * does not include the OBE of the vertex itself
    */
-void compute_lo(const pst::Tree &st, tree_meta &tm) {
+
+void compute_LoA(const pst::Tree &st, tree_meta &tm) {
   const std::string fn_name = std::format("[povu::hubbles::{}]", __func__);
 
   const std::vector<pt::idx_t> &depth = tm.depth;
@@ -215,24 +216,23 @@ void compute_lo(const pst::Tree &st, tree_meta &tm) {
     loa.push_back(pc::INVALID_IDX);
   }
 
-  // priority is set by value with max depth
-  //std::priority_queue<pt::idx_t> pq;
-
   // 1) write a lambda whose bool(a,b) returns true when a is “lower priority”
   auto cmp = [&](pt::idx_t a, pt::idx_t b) {
     // e.g. highest priority = largest number
     return depth[a] < depth[b];
   };
 
+
+  // lower depth is higher priority
+  // priority is set by value with max depth
   // 2) declare the pq using decltype(cmp):
   std::priority_queue<pt::idx_t, std::vector<pt::idx_t>, decltype(cmp)> pq(cmp); // pass the lambda in the vector
 
-  for (pt::idx_t v_idx {st.vtx_count()} ; v_idx-- > 0 ; ) {
 
+  for (pt::idx_t v_idx {st.vtx_count()} ; v_idx-- > 0 ; ) {
     while (!pq.empty() && pq.top() == v_idx) {
       pq.pop();
     }
-
 
     if (!pq.empty()) {
       loa[v_idx] = pq.top();
@@ -251,6 +251,57 @@ void compute_lo(const pst::Tree &st, tree_meta &tm) {
       pq.push(tgt_v_idx);
     }
   }
+}
+
+
+void compute_HiD(const pst::Tree &st, tree_meta &tm) {
+  const std::string fn_name = std::format("[povu::hubbles::{}]", __func__);
+
+  const std::vector<pt::idx_t> &depth = tm.depth;
+
+
+  std::vector<pt::idx_t> &HiD = tm.HiD;
+  HiD.reserve(st.vtx_count());
+
+  for (pt::idx_t i = 0; i < st.vtx_count(); ++i) {
+    HiD.push_back(pc::INVALID_IDX);
+  }
+
+  // 1) write a lambda whose bool(a,b) returns true when a is “higher priority”
+  // compare greater
+  auto cmp = [&](pt::idx_t a, pt::idx_t b) {
+    // e.g. highest priority = lower number
+    const pst::BackEdge &be_a = st.get_be(a);
+    const pst::BackEdge &be_b = st.get_be(b);
+
+    return depth[be_a.get_src()] > depth[be_b.get_src()];
+  };
+
+  // lower depth is higher priority
+  // priority is set by value with max depth
+  // 2) declare the pq using decltype(cmp):
+  std::priority_queue<pt::idx_t, std::vector<pt::idx_t>, decltype(cmp)> pq(cmp); // pass the lambda in the vector
+
+  for (pt::idx_t v_idx {st.vtx_count()} ; v_idx-- > 0 ; ) {
+    while (!pq.empty() && st.get_be(pq.top()).get_tgt() == v_idx) {
+      pq.pop();
+    }
+
+    if (!pq.empty() && !st.is_leaf(v_idx) && !st.is_root(v_idx)) {
+      HiD[v_idx] = st.get_be(pq.top()).get_src();
+    }
+
+    for (pt::idx_t be_idx : st.get_obe_idxs(v_idx)){
+      pq.push(be_idx);
+    }
+  }
+}
+
+void compute_bracket_vals(const pst::Tree &st, tree_meta &tm) {
+  const std::string fn_name = std::format("[povu::hubbles::{}]", __func__);
+
+  compute_LoA(st, tm);
+  compute_HiD(st, tm);
 }
 
 
@@ -336,9 +387,6 @@ void euler_tour(const pst::Tree &st, tree_meta &tm) {
 
 
 pt::idx_t find_lca(const tree_meta &tm, std::vector<pt::idx_t> &vtxs) {
-
-
-  //const std::vector<pt::idx_t> &first = tm.first;
 
   // TODO: [B] replace with O(1) op
   auto rmq = [&](pt::idx_t L, pt::idx_t R) {
@@ -589,13 +637,16 @@ void pre_process(const pst::Tree &st, tree_meta &tm) {
 }
 
 tree_meta gen_tree_meta(const pst::Tree &st ) {
+  const std::string fn_name = std::format("[povu::tree_utils::{}]", __func__);
 
   tree_meta tm;
   euler_tour(st, tm);
   compute_depth(st, tm);
-  compute_lo(st, tm);
+  compute_bracket_vals(st, tm);
   compute_pre_post(st, tm);
   pre_process(st, tm);
+
+  //tm.print();
 
   return tm;
 }

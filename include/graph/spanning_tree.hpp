@@ -275,14 +275,14 @@ public:
     */
   [[deprecated("use get_obe_tgt_v_idxs()")]]
   std::set<size_t> get_obe(std::size_t vertex); // get backedge target indexes
-  std::set<size_t> get_obe_tgt_v_idxs(std::size_t v_idx);
+  std::set<pt::idx_t> get_obe_tgt_v_idxs(std::size_t v_idx) const;
 
   /**
     * @brief get sources of the vertices the ibes from this vertex points from (srcs)
    */
   [[deprecated("use get_ibe_src_v_idxs()")]]
   std::set<size_t> get_ibe(std::size_t vertex);
-  std::set<size_t> get_ibe_src_v_idxs(std::size_t v_idx);
+  std::set<pt::idx_t> get_ibe_src_v_idxs(std::size_t v_idx) const;
 
   /**
    * @brief a reference to the tree edge given the index in the tree_edges vector

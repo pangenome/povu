@@ -46,9 +46,10 @@ using BranchDesc = std::map<pt::idx_t, BranchingMeta>;
 struct tree_meta {
   std::vector<pt::idx_t> E;
   std::vector<pt::idx_t> D;
-  //std::map<pt::idx_t, std::vector<std::pair<pt::idx_t, pt::idx_t>>> branch_map;
+
   std::vector<pt::idx_t> first; // idx is v_idx value is the first time it is seen in E
   std::vector<pt::idx_t> lo; // LoA
+  std::vector<pt::idx_t> HiD; // HiD
 
   std::map<pt::idx_t, pt::idx_t> pre; // idx is the pre-order the value is the v_idx
   std::map<pt::idx_t, pt::idx_t> post; // idx is the post-order the value is the v_idx
@@ -85,6 +86,12 @@ struct tree_meta {
       std::cerr << std::format("({}, {}), ", v_idx, this->lo[v_idx]);
     }
     std::cerr << "\n\n";
+
+    // print HiD
+    std::cerr << "HiD: \n";
+    for (std::size_t v_idx = 0; v_idx < this->HiD.size(); ++v_idx) {
+      std::cerr << std::format("({}, {}), ", v_idx, this->HiD[v_idx]);
+    }
 
     // print E
     std::cerr << "E: \n";
