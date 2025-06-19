@@ -121,7 +121,7 @@ void write_bub(const pvtr::Tree<pvst::Vertex> &bt, const std::string &base_name,
       case pvst::vt_e::parallel:
         bub_file << pc::PVST_PARALLEL_SYMBOL << pc::COL_SEP;
         break;
-      case pvst::vt_e::mubble:
+      case pvst::vt_e::smothered:
         bub_file << pc::PVST_SMOTHERED_SYMBOL << pc::COL_SEP;
         break;
       default:

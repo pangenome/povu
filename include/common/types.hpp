@@ -270,7 +270,7 @@ enum class vt_e  {
   dummy,
   flubble,
   slubble, // rename to concealed
-  mubble, // rename to smothered
+  smothered, // rename to smothered
   tiny, // for SNPs
   parallel // 
 };
@@ -301,12 +301,18 @@ class Vertex {
   //pt::idx_t fl_st_idx_; // idx in the spanning tree for flubble
   pt::idx_t sl_st_idx_; // idx in the spanning tree for slubble
 
+  pt::idx_t sm_st_idx_; // idx in the spanning tree for smothered vertex
+
 private:
   // constructor for a slubble
-  Vertex(pgt::id_or_t start, pgt::id_or_t end, pt::idx_t sl_st_idx, sl_type_e t,
-         Vertex fl)
+  Vertex(pgt::id_or_t start, pgt::id_or_t end, pt::idx_t sl_st_idx, sl_type_e t, Vertex fl)
       : idx_(pc::INVALID_IDX), type_(vt_e::slubble), a_(start), z_(end),
         ai_(fl.get_ai()), zi_(fl.get_zi()), fl_type_(t), sl_st_idx_(sl_st_idx) {}
+
+  // constructor for a smothered vertex
+  Vertex(pgt::id_or_t start, pgt::id_or_t end, pt::idx_t sm_st_idx, Vertex fl)
+    : type_(vt_e::smothered), a_(start), z_(end), sl_st_idx_(fl.get_sl_st_idx()),
+      sm_st_idx_(sm_st_idx)  {}
 
   // constructor for a flubble
   Vertex(pgt::id_or_t a, pgt::id_or_t z, pt::idx_t ai, pt::idx_t zi)
@@ -330,6 +336,11 @@ public:
   static Vertex make_slubble(pgt::id_or_t start, pgt::id_or_t end,
                              pt::idx_t sl_st_idx, sl_type_e sl_t, Vertex fl) {
     return Vertex(start, end, sl_st_idx, sl_t, fl);
+  }
+
+  static Vertex make_smothered(pgt::id_or_t start, pgt::id_or_t end,
+                               pt::idx_t sm_st_idx, Vertex fl) {
+    return Vertex(start, end, sm_st_idx, fl);
   }
 
   static Vertex make_dummy() {

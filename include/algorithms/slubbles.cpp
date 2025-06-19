@@ -1,4 +1,5 @@
 #include "./slubbles.hpp"
+#include <string>
 
 
 namespace povu::slubbles {
@@ -13,6 +14,8 @@ struct fl_sls {
   pt::idx_t fl_v_idx;
   std::vector<pvst::Vertex> ii_adj;
   std::vector<pvst::Vertex> ji_adj;
+  pt::idx_t m;
+  pt::idx_t n;
 
   pt::idx_t size() const {
     return ii_adj.size() + ji_adj.size();
@@ -121,74 +124,263 @@ pvst::Vertex gen_zi_slubble(const pst::Tree &st, pt::idx_t zi_st_v_idx,
   return pvst::Vertex::make_slubble(s, z, sl_st_idx, t, ft_v);
 }
 
-void add_slubbles(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &vst,
-                  const ptu::tree_meta &tm, fl_sls slubbles) {
-  const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+/**
+ * @brief check if a is a descendant of d
+ * @param st the pst tree
+ * @param a the potential ancestor vertex index
+ * @param d the potential descendant vertex index
+ * @return true if a is an ancestor of d, false otherwise
+ */
+bool is_desc(const pst::Tree &st, pt::idx_t a, pt::idx_t d) {
+  return st.get_vertex(a).pre_order() < st.get_vertex(d).pre_order() &&
+         st.get_vertex(a).post_order() > st.get_vertex(d).post_order();
+}
 
+namespace update_pvst {
+/*
+  =================
+  in relation to a
+  =================
+ */
+void nest_trunk_ai(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &vst,
+                   const ptu::tree_meta &tm, pt::idx_t sl_st_idx,
+                   pt::idx_t fl_v_idx, pt::idx_t sl_v_idx,
+                   std::vector<pt::idx_t> &ch) {
   const std::vector<pt::idx_t> &depth = tm.depth;
 
-  const auto &[fl_v_idx, ai_adj, zi_adj] = slubbles;
-  //const pvst::Vertex &ft_v = vst.get_vertex(fl_v_idx);
+  for (pt::idx_t c_v_idx : ch) {
+    const pvst::Vertex &c_v = vst.get_vertex(c_v_idx);
 
-
-  bool is_leaf = st.get_children(fl_v_idx).empty();
-
-  for (auto &sl : ai_adj) {
-    std::cerr << std::format("{} adding ai slubble: {}\n", fn_name, sl.as_str());
-    pt::idx_t sl_v_idx = vst.add_vertex(sl);
-    pt::idx_t sl_st_idx = sl.get_sl_st_idx();
-    vst.add_edge(fl_v_idx, sl_v_idx);
-
-    if (!is_leaf) {
-      const std::vector<pt::idx_t> &ch = vst.get_children(fl_v_idx);
-
-      for (pt::idx_t c_v_idx : ch) {
-        const pvst::Vertex &c_v = vst.get_vertex(c_v_idx);
-
-        if (c_v.get_type() != pvst::vt_e::flubble) {
-          continue;
-        }
-
-        pt::idx_t c_zi_idx = c_v.get_zi();
-        if (depth[sl_st_idx] > depth[c_zi_idx]) {
-          vst.del_edge(fl_v_idx, c_v_idx);
-          vst.add_edge(c_v_idx, sl_v_idx);
-        }
-      }
+    if (!(c_v.get_type() == pvst::vt_e::flubble || c_v.get_type() == pvst::vt_e::tiny)) {
+      continue;
     }
-  }
 
-  for (auto &sl : zi_adj) {
-    std::cerr << std::format("{} adding zi slubble: {}\n", fn_name, sl.as_str());
-    pt::idx_t sl_v_idx = vst.add_vertex(sl);
-    pt::idx_t sl_st_idx = sl.get_sl_st_idx();
-    vst.add_edge(fl_v_idx, sl_v_idx);
+    pt::idx_t c_ai_idx = c_v.get_ai();
+    pt::idx_t c_zi_idx = c_v.get_zi();
 
-    if (!is_leaf) {
-      const std::vector<pt::idx_t> &ch = vst.get_children(fl_v_idx);
+    bool above_g = depth[sl_st_idx] > depth[c_zi_idx];
+    // bool from_g_branch =
+    //     st.get_vertex(zi).post_order() < st.get_vertex(c_zi_idx).pre_order() &&
+    //     st.get_vertex(sl_st_idx).pre_order() < st.get_vertex(c_ai_idx).pre_order() &&
+    //     st.get_vertex(sl_st_idx).post_order() > st.get_vertex(c_zi_idx).post_order();
+    bool from_g_branch = is_desc(st, sl_st_idx, c_ai_idx);
 
-      for (pt::idx_t c_v_idx : ch) {
-        const pvst::Vertex &c_v = vst.get_vertex(c_v_idx);
-
-        if (c_v.get_type() != pvst::vt_e::flubble) {
-          continue;
-        }
-
-        pt::idx_t c_ai_idx = c_v.get_ai();
-        if (depth[sl_st_idx] < depth[c_ai_idx]) {
-          vst.del_edge(fl_v_idx, c_v_idx);
-          vst.add_edge(c_v_idx, sl_v_idx);
-        }
-      }
+    if (above_g || from_g_branch) {
+      vst.del_edge(fl_v_idx, c_v_idx);
+      vst.add_edge(sl_v_idx, c_v_idx);
     }
   }
 }
 
+/**
+ * @brief the fl lies between ℓ and a bracket of it goes into a_i
+ */
+void nest_branch_ai(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &vst,
+                   const ptu::tree_meta &tm, pt::idx_t sl_st_idx,
+                   pt::idx_t fl_v_idx, pt::idx_t sl_v_idx, pt::idx_t ai,
+                   std::vector<pt::idx_t> &ch) {
+  const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
+  // is a descendant of...
+  // a for ancestor, d for descendant
+  // auto is_desc = [&](pt::idx_t a, pt::idx_t d) -> bool {
+  //   return st.get_vertex(a).pre_order() < st.get_vertex(d).pre_order() &&
+  //          st.get_vertex(a).post_order() > st.get_vertex(d).post_order();
+  // };
+
+  // could replace with v_idx.hi = a_i
+  // does the vertex have a bracket into a_i
+  auto has_ai_br = [&](pt::idx_t v_idx) -> bool {
+    const std::vector<pt::idx_t> &br = tm.get_brackets(v_idx);
+    for (pt::idx_t br_idx : br) {
+      if (st.get_be(br_idx).get_src() == ai) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  for (pt::idx_t c_v_idx : ch) {
+    const pvst::Vertex &c_v = vst.get_vertex(c_v_idx);
+
+    if (!(c_v.get_type() == pvst::vt_e::flubble || c_v.get_type() == pvst::vt_e::tiny)) {
+      continue;
+    }
+
+    pt::idx_t c_ai_idx = c_v.get_ai();
+    pt::idx_t c_zi_idx = c_v.get_zi();
+
+    bool desc = is_desc(st, sl_st_idx, c_ai_idx);
+    bool has_br = has_ai_br(c_zi_idx);
+
+    if (desc && has_br) {
+      vst.del_edge(fl_v_idx, c_v_idx);
+      vst.add_edge(sl_v_idx, c_v_idx);
+    }
+  }
+}
+
+void add_conc_ai(const pst::Tree &st,
+                 pvtr::Tree<pvst::Vertex> &vst, const ptu::tree_meta &tm,
+                 pt::idx_t fl_v_idx, const pvst::Vertex &v,
+                 const std::vector<pvst::Vertex> &ai_adj, bool is_leaf) {
+
+  const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+
+  //const std::vector<pt::idx_t> &depth = tm.depth;
+
+  for (auto &sl : ai_adj) {
+    //std::cerr << std::format("{} adding ai slubble: {}\n", fn_name, sl.as_str());
+    pt::idx_t sl_v_idx = vst.add_vertex(sl);
+    pt::idx_t sl_st_idx = sl.get_sl_st_idx();
+    vst.add_edge(fl_v_idx, sl_v_idx);
+
+    pt::idx_t ai = v.get_ai();
+    pt::idx_t zi = v.get_zi();
+
+    if (!is_leaf) {
+      // TODO: why not const vector ref?
+      std::vector<pt::idx_t> ch = vst.get_children(fl_v_idx);
+      if (sl.get_sl_type() == pvst::sl_type_e::ai_trunk) {
+        nest_trunk_ai(st, vst, tm, sl_st_idx, fl_v_idx, sl_v_idx, ch);
+      }
+      else if (sl.get_sl_type() == pvst::sl_type_e::ai_branch) {
+        nest_branch_ai(st, vst, tm, sl_st_idx, fl_v_idx, sl_v_idx, ai, ch);
+        //std::cerr << "sl type: ai branch\n";
+      }
+      else {
+        std::cerr << "sl type: unknown\n";
+      }
+
+    }
+  }
+}
+
+/*
+  =================
+  in relation to z
+  =================
+ */
+
+/**
+ * @brief if the flubble lies between n and z_i
+ */
+void nest_trunk_zi(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &vst,
+                   const fl_sls &slubbles, pt::idx_t fl_v_idx,
+                   pt::idx_t sl_v_idx, pt::idx_t zi,
+                   std::vector<pt::idx_t> &ch) {
+  const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+
+  for (pt::idx_t c_v_idx : ch) {
+    const pvst::Vertex &c_v = vst.get_vertex(c_v_idx);
+
+    if (c_v.get_type() != pvst::vt_e::flubble) {
+      continue;
+    }
+
+    pt::idx_t c_ai_idx = c_v.get_ai();
+    pt::idx_t c_zi_idx = c_v.get_zi();
+
+    // a flubble is in the trunk if it a descendant of n but not a descendant of z_i
+    bool desc_a = is_desc(st, slubbles.n, c_ai_idx);
+    bool desc_b = !is_desc(st, zi, c_zi_idx);
+
+    if (desc_a && desc_b) {
+      vst.del_edge(fl_v_idx, c_v_idx);
+      vst.add_edge(c_v_idx, sl_v_idx);
+    }
+  }
+}
+
+void nest_branch_zi(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &vst,
+                   pt::idx_t sl_st_idx, pt::idx_t fl_v_idx, pt::idx_t sl_v_idx,
+                   std::vector<pt::idx_t> &ch) {
+  const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+
+  for (pt::idx_t c_v_idx : ch) {
+    const pvst::Vertex &c_v = vst.get_vertex(c_v_idx);
+
+    if (c_v.get_type() != pvst::vt_e::flubble) {
+      continue;
+    }
+
+    // the fl is an ancestor of the slubble boundary
+    bool ansc = is_desc(st, c_v.get_ai(), sl_st_idx);
+    if (ansc) {
+      vst.del_edge(fl_v_idx, c_v_idx);
+      vst.add_edge(c_v_idx, sl_v_idx);
+    }
+  }
+}
+
+void add_conc_zi(const pst::Tree &st, const fl_sls &slubbles,
+                 pvtr::Tree<pvst::Vertex> &vst, const ptu::tree_meta &tm,
+                 pt::idx_t fl_v_idx, const pvst::Vertex &v,
+                 const std::vector<pvst::Vertex> &zi_adj, bool is_leaf) {
+  const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+
+  for (auto &sl : zi_adj) {
+    pt::idx_t sl_v_idx = vst.add_vertex(sl);
+    pt::idx_t sl_st_idx = sl.get_sl_st_idx();
+    vst.add_edge(fl_v_idx, sl_v_idx);
+
+    pt::idx_t ai = v.get_ai();
+    pt::idx_t zi = v.get_zi();
+
+    if (!is_leaf) {
+      // TODO: why not const vector ref?
+      std::vector<pt::idx_t> ch = vst.get_children(fl_v_idx);
+
+      if (sl.get_sl_type() == pvst::sl_type_e::zi_trunk) {
+        nest_trunk_zi(st, vst, slubbles, fl_v_idx, sl_v_idx, zi, ch);
+      }
+      else if (sl.get_sl_type() == pvst::sl_type_e::ai_branch) {
+        nest_branch_zi(st, vst, sl_st_idx, fl_v_idx, sl_v_idx, ch);
+      }
+      else {
+        std::cerr << "sl type: unknown\n";
+      }
+
+    }
+  }
+}
+
+/**
+ * @brief update the PVST to add concealed bubbles
+*/
+void add_concealed(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &vst,
+                   const ptu::tree_meta &tm, fl_sls slubbles) {
+  const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+
+  const std::vector<pt::idx_t> &depth = tm.depth;
+
+  const auto &[fl_v_idx, ai_adj, zi_adj, _, __] = slubbles;
+
+  const pvst::Vertex &v = vst.get_vertex(fl_v_idx);
+  pt::id_t a = vst.get_vertex(fl_v_idx).get_start().v_id;
+  pt::id_t z = vst.get_vertex(fl_v_idx).get_end().v_id;
+
+  bool dbg {false};
+  if (a == 2812 && z == 2829) {
+    dbg = true;
+  }
+
+  if (dbg) {
+    std::cerr << " a cnt " << ai_adj.size() << " z cnt " << zi_adj.size() << "\n";
+    std::cerr << "prt " << v.as_str() << "\n";
+
+  }
+
+  bool is_leaf = st.get_children(fl_v_idx).empty();
+
+  add_conc_ai(st, vst, tm, fl_v_idx, v, ai_adj, is_leaf);
+  add_conc_zi(st, slubbles, vst, tm, fl_v_idx, v, zi_adj, is_leaf);
+}
+} // namespace update_pvst
 
 pt::idx_t compute_m(const pst::Tree &st, const ptu::tree_meta &tm,
                     pt::idx_t ii_v_idx, pt::idx_t ji_v_idx) {
-  const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
   if (st.get_ibe_src_v_idxs(ii_v_idx).size() == 0) {
     return ii_v_idx;
   }
@@ -293,8 +485,8 @@ mn_t get_mn(const pst::Tree &st, const ptu::tree_meta &tm, pt::idx_t ii_v_idx,
  * @param ji_v_idx
  * @return true if the flubble can not contain the slubble, false otherwise
  */
-bool can_contain(const pst::Tree &st,  const ptu::tree_meta &tm, pt::idx_t ii_v_idx,
-                  pt::idx_t ji_v_idx, const mn_t &mn) {
+bool can_contain(const pst::Tree &st,  const ptu::tree_meta &tm,
+                 pt::idx_t ii_v_idx, pt::idx_t ji_v_idx, const mn_t &mn) {
   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
   const std::vector<pt::idx_t> &depth = tm.depth;
@@ -344,8 +536,8 @@ bool can_contain(const pst::Tree &st,  const ptu::tree_meta &tm, pt::idx_t ii_v_
 /**
 get Ii trunk back edges
  */
-pt::idx_t ii_trunk(const pst::Tree &st, const ptu::tree_meta &tm, const mn_t &mn,
-                   pt::idx_t ii_v_idx, pt::idx_t ji_v_idx) {
+pt::idx_t ii_trunk(const pst::Tree &st, const ptu::tree_meta &tm,
+                   const mn_t &mn, pt::idx_t ii_v_idx, pt::idx_t ji_v_idx) {
   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
   auto [m, n] = mn;
@@ -570,8 +762,9 @@ std::vector<pvst::Vertex> with_ii(const pst::Tree &st, const ptu::tree_meta &tm,
   -----------------
 */
 
-pt::idx_t override_ji_trunk(const pst::Tree &st, const ptu::tree_meta &tm, const mn_t &mn,
-                            pt::idx_t ii_v_idx, pt::idx_t ji_v_idx) {
+pt::idx_t override_ji_trunk(const pst::Tree &st, const ptu::tree_meta &tm,
+                            const mn_t &mn, pt::idx_t ii_v_idx,
+                            pt::idx_t ji_v_idx) {
 
   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
@@ -652,8 +845,8 @@ pt::idx_t override_ji_trunk(const pst::Tree &st, const ptu::tree_meta &tm, const
   }
 
 
-pt::idx_t ji_trunk(const pst::Tree &st, const ptu::tree_meta &tm, const mn_t &mn,
-                   pt::idx_t ii_v_idx, pt::idx_t ji_v_idx) {
+pt::idx_t ji_trunk(const pst::Tree &st, const ptu::tree_meta &tm,
+                   const mn_t &mn, pt::idx_t ii_v_idx, pt::idx_t ji_v_idx) {
 
   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
@@ -729,8 +922,9 @@ pt::idx_t ji_trunk(const pst::Tree &st, const ptu::tree_meta &tm, const mn_t &mn
 }
 
 
-void ji_branches(const pst::Tree &st, const ptu::tree_meta &tm, pt::idx_t ii_v_idx,
-                 pt::idx_t ji_v_idx, std::vector<pt::idx_t> &bb, const mn_t &mn) {
+void ji_branches(const pst::Tree &st, const ptu::tree_meta &tm,
+                 pt::idx_t ii_v_idx, pt::idx_t ji_v_idx,
+                 std::vector<pt::idx_t> &bb, const mn_t &mn) {
 
   // condition (i & ii)
   if (st.get_children(ji_v_idx).size() < 2 || ji_v_idx == mn.n) {
@@ -910,6 +1104,7 @@ void find_slubbles(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &ft,
     pt::idx_t si = ft_v.get_ai();
     pt::idx_t ei = ft_v.get_zi();
 
+
     mn_t mn = get_mn(st, tm, si, ei);
 
     // std::cerr << std::format("{}: processing flubble: {} \n", fn_name, ft_v.as_str());
@@ -923,6 +1118,8 @@ void find_slubbles(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &ft,
 
     // pass these as arguments to the slubble functions
     fl_sls slubbles;
+    slubbles.m = mn.m;
+    slubbles.n = mn.n;
     slubbles.fl_v_idx = ft_v_idx;
     slubbles.ii_adj = with_ii(st, tm, mn, si, ei, ft_v);
     slubbles.ji_adj = with_ji(st, tm, mn, si, ei, ft_v);
@@ -951,7 +1148,7 @@ void find_slubbles(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &ft,
   }
 
   for (auto &sl : all_slubbles) {
-    add_slubbles(st, ft, tm, sl);
+    update_pvst::add_concealed(st, ft, tm, sl);
   }
 }
 
