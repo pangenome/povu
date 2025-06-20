@@ -46,6 +46,11 @@ void find_tiny(const pst::Tree &st, pvtr::Tree &ft, const ptu::tree_meta &tm) {
   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
   for (pt::idx_t ft_v_idx{}; ft_v_idx < ft.vtx_count(); ft_v_idx++) {
+
+    if (!ft.is_leaf(ft_v_idx)) {
+      continue;
+    }
+
     pvst::VertexBase &pvst_v = ft.get_vertex_mut(ft_v_idx);
 
     if (pvst_v.get_type() != pvst::vt_e::flubble) {
@@ -76,17 +81,16 @@ void find_tiny(const pst::Tree &st, pvtr::Tree &ft, const ptu::tree_meta &tm) {
       assert(st.get_obe_tgt_v_idxs(zi).size() == 1);
       assert(*(st.get_obe_tgt_v_idxs(zi).begin()) == ai);
 #endif
+
       ft_v.set_type(pvst::vt_e::tiny);
-      //std::cerr << fn_name << ": Found tiny flubble at " << ft_v.as_str() << "\n";
       continue;
     }
 
     if (handle_branches(st, tm, ft_v, Y)) {
       ft_v.set_type(pvst::vt_e::tiny);
-      //std::cerr << fn_name << ": Found tiny flubble at " << ft_v.as_str() << "\n";
     }
   }
 }
 
-  } // namespace povu::parallel
- 
+} // namespace povu::tiny
+

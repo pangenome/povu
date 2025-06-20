@@ -285,7 +285,7 @@ enum class sl_type_e {
   zi_branch
 };
 
-
+/* an abstract class for vertices  */
 class VertexBase {
   povu::types::id_t idx_; // idx of the vertex in the vst
   vt_e type_;
@@ -302,35 +302,57 @@ public:
   virtual std::string as_str() const = 0;
 };
 
+
 class Dummy : public VertexBase {
 public:
   Dummy() : VertexBase(pc::INVALID_IDX, vt_e::dummy) {}
 
-  
-
   std::string as_str() const override { return "."; }
 };
+
 
 class Flubble : public VertexBase {
   pgt::id_or_t a_; // start
   pgt::id_or_t z_; // end
-  pt::idx_t ai_; // idx of a in the spanning tree
-  pt::idx_t zi_; // idx of z in the spanning tree
+
+  pt::idx_t ai_; // a_i
+  pt::idx_t zi_; // z_i
+
+  pt::idx_t m_; // m
+  pt::idx_t n_; // n
 
 public:
+  /*
+   == constructor ==
+   */
 
   Flubble(pgt::id_or_t a, pgt::id_or_t z, pt::idx_t ai, pt::idx_t zi)
     : VertexBase(pc::INVALID_IDX, vt_e::flubble), a_(a), z_(z), ai_(ai), zi_(zi) {}
 
+  /*
+   == getters ==
+   */
   pgt::id_or_t get_a() const { return this->a_; }
   pgt::id_or_t get_z() const { return this->z_; }
   pt::idx_t get_ai() const { return this->ai_; }
   pt::idx_t get_zi() const { return this->zi_; }
+  pt::idx_t get_m() const { return this->m_; }
+  pt::idx_t get_n() const { return this->n_; }
 
+  /*
+   == setters ==
+   */
+  void set_m(pt::idx_t m) { this->m_ = m; }
+  void set_n(pt::idx_t n) { this->n_ = n; }
+
+  /*
+   == other(s) ==
+   */
   std::string as_str() const override {
     return std::format("{}{}", this->a_.as_str(), this->z_.as_str());
   }
 };
+
 
 class Concealed : public VertexBase {
   pt::idx_t fl_idx;
@@ -341,27 +363,44 @@ class Concealed : public VertexBase {
   pgt::id_or_t fl_b_; // a or z
   pgt::id_or_t cn_b_; // g or s
 
+private:
+  bool with_ai() const {
+    return this->sl_type_ == sl_type_e::ai_trunk || this->sl_type_ == sl_type_e::ai_branch;
+  }
+
+  bool with_zi() const {
+    return (this->sl_type_ == sl_type_e::zi_trunk || this->sl_type_ == sl_type_e::zi_branch);
+  }
+
 public:
+  /*
+   == constructor ==
+   */
   Concealed(pgt::id_or_t fl_b, pgt::id_or_t cn_b, pt::idx_t fl_idx,
             sl_type_e sl_type, pt::idx_t sl_st_idx)
     : VertexBase(pc::INVALID_IDX, vt_e::slubble), fl_idx(fl_idx),
       sl_type_(sl_type), sl_st_idx_(sl_st_idx), fl_b_(fl_b), cn_b_(cn_b) {}
 
+  /*
+   == getters ==
+   */
   pt::idx_t get_fl_idx() const { return this->fl_idx; }
   sl_type_e get_sl_type() const { return this->sl_type_; }
   pt::idx_t get_sl_st_idx() const { return this->sl_st_idx_; }
 
+  /*
+   == others ==
+   */
   std::string as_str() const override {
-    if (this->sl_type_ == sl_type_e::ai_trunk || this->sl_type_ == sl_type_e::ai_branch) {
+    if (with_ai()) { // formed with a
       return std::format("{}{}", this->fl_b_.as_str(), this->cn_b_.as_str());
     }
-    else if (this->sl_type_ == sl_type_e::zi_trunk || this->sl_type_ == sl_type_e::zi_branch) {
+    else  { // formed with z
       return std::format("{}{}", this->cn_b_.as_str(), this->fl_b_.as_str());
     }
-    
-    return std::format("Concealed({})", this->fl_idx);
   }
 };
+
 
 class Smothered : public VertexBase {
   pt::idx_t cn_idx; // idx of the concealed vertex
@@ -380,6 +419,7 @@ public:
   }
 
 };
+
 
 class Vertex {
   // base

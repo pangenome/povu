@@ -185,6 +185,10 @@ void find_parallel(const pst::Tree &st, pvtr::Tree &ft, const ptu::tree_meta &tm
   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
   for (pt::idx_t ft_v_idx{}; ft_v_idx < ft.vtx_count(); ft_v_idx++) {
+    if (!ft.is_leaf(ft_v_idx)) {
+      continue;
+    }
+
     pvst::VertexBase &pvst_v = ft.get_vertex_mut(ft_v_idx);
 
     if (pvst_v.get_type() != pvst::vt_e::flubble) {
@@ -192,11 +196,6 @@ void find_parallel(const pst::Tree &st, pvtr::Tree &ft, const ptu::tree_meta &tm
     }
 
     pvst::Flubble &ft_v = static_cast<pvst::Flubble &>(pvst_v);
-
-    // std::cerr << fn_name << ": Checking " << ft_v.as_str() << " "
-    //           << "in branch " << in_branch(st, ft, tm, ft_v)
-    //           << " in trunk " << in_trunk(st, ft, tm, ft_v) << "\n";
-
 
     if (in_branch(st, tm, ft_v) || in_trunk(st, ft_v)) {
       ft_v.set_type(pvst::vt_e::parallel);
