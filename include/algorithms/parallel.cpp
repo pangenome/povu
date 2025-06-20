@@ -4,8 +4,7 @@ namespace povu::parallel {
 
 
 
-bool in_trunk(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &ft,
-              const ptu::tree_meta &tm, const pvst::Vertex &ft_v) {
+bool in_trunk(const pst::Tree &st, const pvst::Flubble &ft_v) {
   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
   pt::idx_t ai = ft_v.get_ai();
@@ -15,23 +14,28 @@ bool in_trunk(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &ft,
     return false;
   }
 
-  pt::idx_t a = ft_v.get_start().v_id;
-  pt::idx_t z = ft_v.get_end().v_id;
-  bool dbg = (a == 508 && z == 514);
 
-  if (dbg) {
-    std::cerr << fn_name << " " << ft_v.as_str() << std::format(" ai: {}, zi: {}\n", ai, zi);
-  }
-  
-  if (st.get_child_count(zi) != 1) {
-    return false;
-  }
-
+  // condition i
   if (zi - ai <= 3 && st.get_ibe_idxs(ai).size() == 1 ) {
     return false;
   }
 
-  
+  // condition ii
+  if (st.get_child_count(zi) != 1) {
+    return false;
+  }
+
+  // go up from zi to ai and ensure no branching vertices
+  pt::idx_t v_idx = zi;
+  while (v_idx != ai) {
+    if (st.get_child_count(v_idx) > 1) {
+      return false;
+    }
+    v_idx = st.get_parent_v_idx(v_idx);
+  }
+
+  //  std::cerr << "\n" << fn_name << "ai " << ai << " zi " << zi <<  " " << st.get_child_count(zi) << "\n";
+
   // with ai
   {
     pt::idx_t be_count {};
@@ -60,18 +64,13 @@ bool in_trunk(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &ft,
       be_count++;
     }
 
-    if (dbg) {
-      std::cerr << "be_count: " << be_count << "\n";
-    }
 
     if (2 * be_count >= ((zi - ai) - 3)) {
       return true;
     }
   }
 
-  if (dbg) {
-    std::cerr << "b\n";
-  }
+  
 
   // with zi
   {
@@ -109,20 +108,15 @@ bool in_trunk(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &ft,
   return false;
 }
 
-bool in_branch(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &ft,
-               const ptu::tree_meta &tm, const pvst::Vertex &ft_v) {
+bool in_branch(const pst::Tree &st, const ptu::tree_meta &tm,
+               const pvst::Flubble &ft_v) {
   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
   pt::idx_t ai = ft_v.get_ai();
   pt::idx_t zi = ft_v.get_zi();
 
-  pt::idx_t a = ft_v.get_start().v_id;
-  pt::idx_t z = ft_v.get_end().v_id;
-  bool dbg = (a == 508 && z == 514);
+  
 
-  if (dbg) {
-    std::cerr << fn_name << " " << ft_v.as_str() << std::format(" ai: {}, zi: {}\n", ai, zi);
-  }
 
   if (zi < 3) {
     return false;
@@ -187,18 +181,24 @@ bool in_branch(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &ft,
 }
 
 
-void find_parallel(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &ft,
-                       const ptu::tree_meta &tm) {
+void find_parallel(const pst::Tree &st, pvtr::Tree &ft, const ptu::tree_meta &tm) {
   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
   for (pt::idx_t ft_v_idx{}; ft_v_idx < ft.vtx_count(); ft_v_idx++) {
-    pvst::Vertex &ft_v = ft.get_vertex_mut(ft_v_idx);
+    pvst::VertexBase &pvst_v = ft.get_vertex_mut(ft_v_idx);
 
-    if (ft_v.get_type() != pvst::vt_e::flubble) {
+    if (pvst_v.get_type() != pvst::vt_e::flubble) {
       continue;
     }
 
-    if (in_branch(st, ft, tm, ft_v) || in_trunk(st, ft, tm, ft_v)) {
+    pvst::Flubble &ft_v = static_cast<pvst::Flubble &>(pvst_v);
+
+    // std::cerr << fn_name << ": Checking " << ft_v.as_str() << " "
+    //           << "in branch " << in_branch(st, ft, tm, ft_v)
+    //           << " in trunk " << in_trunk(st, ft, tm, ft_v) << "\n";
+
+
+    if (in_branch(st, tm, ft_v) || in_trunk(st, ft_v)) {
       ft_v.set_type(pvst::vt_e::parallel);
       std::cerr << fn_name << ": Found parallel flubble at " << ft_v.as_str() << "\n";
     }

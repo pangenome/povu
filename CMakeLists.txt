@@ -69,8 +69,8 @@ include_directories(
 ADD_LIBRARY(povulib
 
   # algorithms
-  ${INCLUDE_DIR}/algorithms/slubbles.cpp
-  ${INCLUDE_DIR}/algorithms/mubbles.cpp
+  ${INCLUDE_DIR}/algorithms/concealed.cpp
+  #${INCLUDE_DIR}/algorithms/smothered.cpp
   ${INCLUDE_DIR}/algorithms/parallel.cpp
   ${INCLUDE_DIR}/algorithms/tiny.cpp
   ${INCLUDE_DIR}/algorithms/flubbles.cpp

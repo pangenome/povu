@@ -68,6 +68,6 @@ struct eq_class_stack_t {
  * @brief Generate flubble tree from spanning tree
  *
  */
-pvtr::Tree<pvst::Vertex> find_flubbles(pst::Tree &t, const core::config &app_config);
+pvtr::Tree find_flubbles(pst::Tree &t, const core::config &app_config);
 } // namespace povu::flubbles
 #endif

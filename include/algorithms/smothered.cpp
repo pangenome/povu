@@ -1,8 +1,7 @@
-#include "./mubbles.hpp"
-#include <vector>
+#include "./smothered.hpp"
 
 
-namespace povu::mubbles {
+namespace povu::smothered {
 
 struct fl_sls {
   pt::idx_t fl_v_idx;
@@ -70,7 +69,7 @@ void trunk(const pst::Tree &st, const pvst::Vertex &ft_v,
         pgt::id_or_t g = ft_v.get_end();
         res.push_back(pvst::Vertex::make_smothered(e, g, src,ft_v));
       }
-      
+
     }
   }
 
@@ -300,16 +299,44 @@ void branch(const pst::Tree &st, const pvst::Vertex &ft_v,
 } // namespace s
 
 void add_smothered(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &vst,
-                   const ptu::tree_meta &tm, const std::vector<fl_sls> &al_smo) {}
+                   const ptu::tree_meta &tm, const std::vector<fl_sls> &al_smo) {
+  const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
-void find_mubbles(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &ft, const ptu::tree_meta &tm) {
+  for (const fl_sls &smo : al_smo) {
 
+    const pvst::Vertex &ft_v = vst.get_vertex(smo.fl_v_idx);
+
+    if (ft_v.get_type() != pvst::vt_e::slubble) {
+      std::cerr << fn_name << " found smothered for non-flubble vertex: " << smo.fl_v_idx << "\n";
+      std::cerr << "flubble vertex: " << ft_v.as_str() << "\n";
+      continue; // skip non-flubble vertices
+    }
+
+    for (pvst::Vertex g_adj_v : smo.g_adj) {
+      std::cerr << fn_name << " adding smothered vertex: " << g_adj_v.as_str() << "\n";
+      // use a ref and move?
+      pt::idx_t g_adj_v_idx = vst.add_vertex(g_adj_v);
+      vst.add_edge(smo.fl_v_idx, g_adj_v_idx);
+      //vst.get_vertex(g_adj_v_idx).set_type(pvst::vt_e::smothered);
+    }
+
+    for (pvst::Vertex s_adj_v : smo.s_adj) {
+      std::cerr << fn_name << " adding smothered vertex: " << s_adj_v.as_str()
+                << "\n";
+      // use a ref and move?
+      pt::idx_t s_adj_v_idx = vst.add_vertex(s_adj_v);
+      vst.add_edge(smo.fl_v_idx, s_adj_v_idx);
+      // vst.get_vertex(g_adj_v_idx).set_type(pvst::vt_e::smothered);
+    }
+  }
+}
+
+void find_smothered(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &ft, const ptu::tree_meta &tm) {
   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
   std::vector<fl_sls> all_smo;
 
   for (pt::idx_t ft_v_idx{}; ft_v_idx < ft.vtx_count(); ft_v_idx++) {
-
      const pvst::Vertex &ft_v = ft.get_vertex(ft_v_idx);
 
      if (ft_v.get_type() == pvst::vt_e::flubble) {
@@ -322,21 +349,23 @@ void find_mubbles(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &ft, const ptu::
      }
 
      fl_sls smo {ft_v_idx};
-     if (ft_v.get_sl_type() == pvst::sl_type_e::ai_trunk) {
+     switch (ft_v.get_sl_type()) {
+     case pvst::sl_type_e::ai_trunk:
        g::trunk(st, ft_v, tm, smo.g_adj);
+       break;
+     case pvst::sl_type_e::ai_branch:
+       g::branch(st, ft_v, tm, smo.g_adj);
+       break;
+     case pvst::sl_type_e::zi_trunk:
+       s::trunk(st, ft_v, tm, smo.s_adj);
+       break;
+     case pvst::sl_type_e::zi_branch:
+       s::branch(st, ft_v, tm, smo.s_adj);
+       break;
+     default:
+       std::cerr << fn_name << " unknown slubble type: " << ft_v_idx << "\n";
+       continue; // skip this vertex
      }
-
-    if (ft_v.get_sl_type() == pvst::sl_type_e::ai_branch) {
-      g::branch(st, ft_v, tm, smo.g_adj);
-    }
-
-    if (ft_v.get_sl_type() == pvst::sl_type_e::zi_trunk) {
-      s::trunk(st, ft_v, tm, smo.s_adj);
-    }
-
-    if (ft_v.get_sl_type() == pvst::sl_type_e::zi_branch) {
-      s::branch(st, ft_v, tm, smo.s_adj);
-    }
 
     if (smo.size() > 0) {
       all_smo.push_back(smo);
@@ -347,4 +376,4 @@ void find_mubbles(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &ft, const ptu::
 
 }
 
-} // namespace povu::mubbles
+} // namespace povu::smothered

@@ -266,15 +266,17 @@ namespace pt = povu::types;
 namespace pgt = povu::graph_types;
 
 // short for VertexType
-enum class vt_e  {
+enum class vt_e {
   dummy,
-  flubble,
+  /* types of flubbles */
+  flubble, // TODO: aka generic flubble, rename to generic_flubble
+  tiny,        // for SNPs
+  parallel,     //
+  /* types of bubbles */
   slubble, // rename to concealed
-  smothered, // rename to smothered
-  tiny, // for SNPs
-  parallel // 
-};
+  smothered,   // rename to smothered
 
+};
 
 enum class sl_type_e {
   ai_trunk,
@@ -283,6 +285,101 @@ enum class sl_type_e {
   zi_branch
 };
 
+
+class VertexBase {
+  povu::types::id_t idx_; // idx of the vertex in the vst
+  vt_e type_;
+
+public:
+  VertexBase(povu::types::id_t idx, vt_e type)
+      : idx_(idx), type_(type) {}
+
+  povu::types::id_t get_idx() const { return this->idx_; }
+  vt_e get_type() const { return this->type_; }
+
+  void set_idx(povu::types::id_t idx) { this->idx_ = idx; }
+  void set_type(vt_e type) { this->type_ = type; }
+  virtual std::string as_str() const = 0;
+};
+
+class Dummy : public VertexBase {
+public:
+  Dummy() : VertexBase(pc::INVALID_IDX, vt_e::dummy) {}
+
+  
+
+  std::string as_str() const override { return "."; }
+};
+
+class Flubble : public VertexBase {
+  pgt::id_or_t a_; // start
+  pgt::id_or_t z_; // end
+  pt::idx_t ai_; // idx of a in the spanning tree
+  pt::idx_t zi_; // idx of z in the spanning tree
+
+public:
+
+  Flubble(pgt::id_or_t a, pgt::id_or_t z, pt::idx_t ai, pt::idx_t zi)
+    : VertexBase(pc::INVALID_IDX, vt_e::flubble), a_(a), z_(z), ai_(ai), zi_(zi) {}
+
+  pgt::id_or_t get_a() const { return this->a_; }
+  pgt::id_or_t get_z() const { return this->z_; }
+  pt::idx_t get_ai() const { return this->ai_; }
+  pt::idx_t get_zi() const { return this->zi_; }
+
+  std::string as_str() const override {
+    return std::format("{}{}", this->a_.as_str(), this->z_.as_str());
+  }
+};
+
+class Concealed : public VertexBase {
+  pt::idx_t fl_idx;
+  sl_type_e sl_type_; // type of the slubble (trunk or branch)
+  pt::idx_t sl_st_idx_; // idx in the spanning tree for slubble
+
+  // b for boundary
+  pgt::id_or_t fl_b_; // a or z
+  pgt::id_or_t cn_b_; // g or s
+
+public:
+  Concealed(pgt::id_or_t fl_b, pgt::id_or_t cn_b, pt::idx_t fl_idx,
+            sl_type_e sl_type, pt::idx_t sl_st_idx)
+    : VertexBase(pc::INVALID_IDX, vt_e::slubble), fl_idx(fl_idx),
+      sl_type_(sl_type), sl_st_idx_(sl_st_idx), fl_b_(fl_b), cn_b_(cn_b) {}
+
+  pt::idx_t get_fl_idx() const { return this->fl_idx; }
+  sl_type_e get_sl_type() const { return this->sl_type_; }
+  pt::idx_t get_sl_st_idx() const { return this->sl_st_idx_; }
+
+  std::string as_str() const override {
+    if (this->sl_type_ == sl_type_e::ai_trunk || this->sl_type_ == sl_type_e::ai_branch) {
+      return std::format("{}{}", this->fl_b_.as_str(), this->cn_b_.as_str());
+    }
+    else if (this->sl_type_ == sl_type_e::zi_trunk || this->sl_type_ == sl_type_e::zi_branch) {
+      return std::format("{}{}", this->cn_b_.as_str(), this->fl_b_.as_str());
+    }
+    
+    return std::format("Concealed({})", this->fl_idx);
+  }
+};
+
+class Smothered : public VertexBase {
+  pt::idx_t cn_idx; // idx of the concealed vertex
+  pt::idx_t sm_st_idx; // idx in the spanning tree for smothered vertex
+
+public:
+  Smothered(pt::idx_t cn_idx, pt::idx_t sm_st_idx)
+      : VertexBase(pc::INVALID_IDX, vt_e::smothered), cn_idx(cn_idx),
+        sm_st_idx(sm_st_idx) {}
+
+  pt::idx_t get_cn_idx() const { return this->cn_idx; }
+  pt::idx_t get_sm_st_idx() const { return this->sm_st_idx; }
+
+  std::string as_str() const override {
+    return std::format("Smothered({})", this->cn_idx);
+  }
+
+};
 
 class Vertex {
   // base
@@ -304,7 +401,7 @@ class Vertex {
   pt::idx_t sm_st_idx_; // idx in the spanning tree for smothered vertex
 
 private:
-  // constructor for a slubble
+  // constructor for a concealed
   Vertex(pgt::id_or_t start, pgt::id_or_t end, pt::idx_t sl_st_idx, sl_type_e t, Vertex fl)
       : idx_(pc::INVALID_IDX), type_(vt_e::slubble), a_(start), z_(end),
         ai_(fl.get_ai()), zi_(fl.get_zi()), fl_type_(t), sl_st_idx_(sl_st_idx) {}
@@ -385,5 +482,4 @@ public:
 };
 
 } // namespace povu::types::pvst
-
 #endif

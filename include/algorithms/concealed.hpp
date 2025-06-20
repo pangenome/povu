@@ -1,5 +1,5 @@
-#ifndef PV_SLUBBLES_HPP
-#define PV_SLUBBLES_HPP
+#ifndef PV_CONCEALED_HPP
+#define PV_CONCEALED_HPP
 
 #include <any>
 #include <cassert>
@@ -23,9 +23,9 @@
 #include "../common/utils.hpp"
 #include "../common/tree_utils.hpp"
 
-namespace povu::slubbles {
+namespace povu::concealed {
 
-#define MODULE "povu::slubbles"
+#define MODULE "povu::concealed"
 
 using namespace povu::graph_types;
 namespace pgt = povu::graph_types;
@@ -40,6 +40,6 @@ namespace pt = povu::types;
 namespace pvtr = povu::tree;
 namespace ptu = povu::tree_utils;
 
-void find_slubbles(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &ft, const ptu::tree_meta &tm);
-} // namespace povu::slubbles
-#endif // PV_SLUBBLES_HPP
+void find_concealed(const pst::Tree &st, pvtr::Tree &ft, const ptu::tree_meta &tm);
+} // namespace povu::concealed
+#endif // PV_CONCEALED_HPP

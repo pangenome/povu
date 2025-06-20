@@ -5,7 +5,7 @@
 
 namespace povu::flubbles {
 
-inline pvst::Vertex gen_fl(pt::id_t start_id, pgt::or_e start_or, pt::id_t end_id,
+pvst::Flubble gen_fl(pt::id_t start_id, pgt::or_e start_or, pt::id_t end_id,
                                pgt::or_e end_or, pt::idx_t ai, pt::idx_t zi) {
   std::string fn_name = std::format("[povu::algorithms::flubble_tree::{}]", __func__);
 
@@ -17,7 +17,8 @@ inline pvst::Vertex gen_fl(pt::id_t start_id, pgt::or_e start_or, pt::id_t end_i
   pgt::id_or_t a{a_g_id, a_or};
   pgt::id_or_t z{z_g_id, z_or};
 
-  return pvst::Vertex::make_flubble(a, z, ai, zi);
+  return pvst::Flubble(a, z, ai, zi);
+  //return pvst::Vertex::make_flubble(a, z, ai, zi);
 }
 
 /**
@@ -74,8 +75,7 @@ std::pair<pt::idx_t, pt::idx_t> compute_ai_zi(const pst::Tree &st, pt::idx_t a_e
 /**
   * @brief
  */
-void add_flubbles(const pst::Tree &st, const eq_class_stack_t &ecs,
-                  pvtr::Tree<pvst::Vertex> &vst) {
+void add_flubbles(const pst::Tree &st, const eq_class_stack_t &ecs, pvtr::Tree &vst) {
   std::string fn_name = std::format("[povu::algorithms::flubble_tree::{}]", __func__);
 
   const auto &[stack_, next_seen] = ecs;
@@ -128,7 +128,7 @@ void add_flubbles(const pst::Tree &st, const eq_class_stack_t &ecs,
 
       auto [ai, zi] = compute_ai_zi(st, st_idx_curr, st_idx_nxt);
 
-      pvst::Vertex vtx = gen_fl(id_curr, or_curr, id_nxt, or_nxt, ai, zi);
+      pvst::Flubble vtx = gen_fl(id_curr, or_curr, id_nxt, or_nxt, ai, zi);
       pt::idx_t pvst_v_idx = vst.add_vertex(vtx);
       vst.add_edge(prt_v, pvst_v_idx);
       prt_v = pvst_v_idx;
@@ -445,8 +445,7 @@ void simple_cycle_equiv(pst::Tree &t, const core::config &app_config) {
 
 }
 
-pvtr::Tree<pvst::Vertex> find_flubbles(pst::Tree &st,
-                                       const core::config &app_config) {
+pvtr::Tree find_flubbles(pst::Tree &st, const core::config &app_config) {
   std::string fn_name = std::format("[povu::algorithms::{}]", __func__);
 
   simple_cycle_equiv(st, app_config);
@@ -458,9 +457,9 @@ pvtr::Tree<pvst::Vertex> find_flubbles(pst::Tree &st,
   }
 
   // create the pvst and add the root vertex
-  pvtr::Tree<pvst::Vertex> vst;
+  pvtr::Tree vst;
   {
-    pvst::Vertex root_v = pvst::Vertex::make_dummy();
+    pvst::Dummy root_v;
     pt::idx_t root_v_idx = vst.add_vertex(root_v);
     vst.set_root_idx(root_v_idx);
   }

@@ -25,8 +25,7 @@ namespace pvst = povu::types::pvst;
 namespace pc = povu::constants;
 namespace pu = povu::utils;
 
-void write_bub(const pvtr::Tree<pvst::Vertex> &bt, const std::string &base_name,
-               const core::config &app_config);
+void write_bub(const pvtr::Tree &bt, const std::string &base_name, const core::config &app_config);
 /**
  * @brief Read a flb file but only return the canonical flubbles
  */

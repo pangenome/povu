@@ -40,7 +40,7 @@ namespace pt = povu::types;
 namespace pvtr = povu::tree;
 namespace ptu = povu::tree_utils;
 
-void find_tiny(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &ft, const ptu::tree_meta &tm);
+void find_tiny(const pst::Tree &st, pvtr::Tree &pvst, const ptu::tree_meta &tm);
 
 } // namespace povu::parallel
 #endif // PV_TINY_HPP

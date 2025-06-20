@@ -84,8 +84,7 @@ std::vector<pgt::flubble> read_canonical_fl(const std::string& fp) {
   return canonical_fl;
 }
 
-void write_bub(const pvtr::Tree<pvst::Vertex> &bt, const std::string &base_name,
-               const core::config &app_config) {
+void write_bub(const pvtr::Tree &bt, const std::string &base_name, const core::config &app_config) {
   // TODO: combine and pass as single arg
   std::string bub_file_name = std::format("{}/{}.flb", std::string{app_config.get_output_dir()}, base_name); // file path and name
   std::ofstream bub_file(bub_file_name);
@@ -101,7 +100,7 @@ void write_bub(const pvtr::Tree<pvst::Vertex> &bt, const std::string &base_name,
 
   for (std::size_t i {}; i < bt.vtx_count(); ++i) {
 
-    pvst::Vertex v = bt.get_vertex(i);
+    const pvst::VertexBase &v = bt.get_vertex(i);
 
     // line identifier
     {
@@ -149,4 +148,4 @@ void write_bub(const pvtr::Tree<pvst::Vertex> &bt, const std::string &base_name,
 
   bub_file.close();
 }
-} // namespace bub
+} // namespace povu::io::pvst

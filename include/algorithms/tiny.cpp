@@ -2,9 +2,8 @@
 
 namespace povu::tiny {
 
-bool handle_branches(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &ft,
-                     const ptu::tree_meta &tm, const pvst::Vertex &ft_v,
-                     std::vector<pt::idx_t> Y) {
+bool handle_branches(const pst::Tree &st, const ptu::tree_meta &tm,
+                     const pvst::Flubble &ft_v, std::vector<pt::idx_t> Y) {
   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
   pt::idx_t ai = ft_v.get_ai();
@@ -43,16 +42,17 @@ bool handle_branches(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &ft,
 }
 
 
-void find_tiny(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &ft,
-                       const ptu::tree_meta &tm) {
+void find_tiny(const pst::Tree &st, pvtr::Tree &ft, const ptu::tree_meta &tm) {
   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
   for (pt::idx_t ft_v_idx{}; ft_v_idx < ft.vtx_count(); ft_v_idx++) {
-    pvst::Vertex &ft_v = ft.get_vertex_mut(ft_v_idx);
+    pvst::VertexBase &pvst_v = ft.get_vertex_mut(ft_v_idx);
 
-    if (ft_v.get_type() != pvst::vt_e::flubble) {
+    if (pvst_v.get_type() != pvst::vt_e::flubble) {
       continue;
     }
+
+    pvst::Flubble &ft_v = static_cast<pvst::Flubble&>(pvst_v);
 
     pt::idx_t ai = ft_v.get_ai();
     pt::idx_t zi = ft_v.get_zi();
@@ -81,7 +81,7 @@ void find_tiny(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &ft,
       continue;
     }
 
-    if (handle_branches(st, ft, tm, ft_v, Y)) {
+    if (handle_branches(st, tm, ft_v, Y)) {
       ft_v.set_type(pvst::vt_e::tiny);
       //std::cerr << fn_name << ": Found tiny flubble at " << ft_v.as_str() << "\n";
     }
