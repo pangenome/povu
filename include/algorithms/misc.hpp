@@ -1,5 +1,5 @@
-#ifndef PV_SMOTHERED_HPP
-#define PV_SMOTHERED_HPP
+#ifndef PV_MISC_HPP
+#define PV_MISC_HPP
 
 #include <any>
 #include <cassert>
@@ -23,8 +23,8 @@
 #include "../graph/spanning_tree.hpp"
 #include "../graph/tree.hpp"
 
-namespace povu::smothered {
-#define MODULE "povu::smothered"
+namespace povu::misc {
+#define MODULE "povu::misc"
 
 using namespace povu::graph_types;
 namespace pgt = povu::graph_types;
@@ -39,7 +39,7 @@ namespace pt = povu::types;
 namespace pvtr = povu::tree;
 namespace ptu = povu::tree_utils;
 
-void find_smothered(const pst::Tree &st, pvtr::Tree &ft, const ptu::tree_meta &tm);
-} // namespace povu::smothered
+void find_misc(const pst::Tree &st, pvtr::Tree &pvst, const ptu::tree_meta &tm);
+} // namespace povu::misc
 
-#endif // PV_SMOTHERED_HPP
+#endif // PV_MISC_HPP

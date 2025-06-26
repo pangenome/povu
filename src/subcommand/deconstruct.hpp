@@ -9,7 +9,8 @@
 #include <utility>
 
 #include "../../include/algorithms/flubbles.hpp"
-//#include "../../include/algorithms/smothered.hpp"
+#include "../../include/algorithms/smothered.hpp"
+#include "../../include/algorithms/misc.hpp"
 #include "../../include/algorithms/tiny.hpp"
 #include "../../include/algorithms/concealed.hpp"
 #include "../../include/algorithms/parallel.hpp"

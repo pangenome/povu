@@ -35,7 +35,8 @@ void deconstruct_component(bd::VG *g, std::size_t component_id,
 
   if (app_config.find_hubbles()) {
     povu::concealed::find_concealed(st, flubble_tree, tm);
-    // povu::smothered::find_smothered(st, flubble_tree, tm);
+    povu::misc::find_misc(st, flubble_tree, tm);
+    povu::smothered::find_smothered(st, flubble_tree, tm);
   }
 
   povu::io::pvst::write_bub(flubble_tree, std::to_string(component_id), app_config);

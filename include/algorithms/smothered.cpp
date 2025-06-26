@@ -4,30 +4,33 @@
 namespace povu::smothered {
 
 struct fl_sls {
-  pt::idx_t fl_v_idx;
-  std::vector<pvst::Vertex> g_adj;
-  std::vector<pvst::Vertex> s_adj;
+  pt::idx_t cn_v_idx;
+  std::vector<pvst::Smothered> g_adj;
+  std::vector<pvst::Smothered> s_adj;
 
   pt::idx_t size() const { return g_adj.size() + s_adj.size(); }
 
-  fl_sls(pt::idx_t fl_v_idx)
-    : g_adj(std::vector<pvst::Vertex>{}),
-      s_adj(std::vector<pvst::Vertex>{}) {}
-  };
+  // Constructor for fl_sls
+  fl_sls(pt::idx_t cn_v_idx_)
+    : cn_v_idx(cn_v_idx_),
+      g_adj(std::vector<pvst::Smothered>{}),
+      s_adj(std::vector<pvst::Smothered>{}) {}
+};
 
 namespace g {
 
-void trunk(const pst::Tree &st, const pvst::Vertex &ft_v,
-           const ptu::tree_meta &tm, std::vector<pvst::Vertex> &res) {
-  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
-  //std::vector<pvst::Vertex> res;
-  //std::vector<pt::idx_t> x;
+void trunk(const pst::Tree &st, const pvtr::Tree &pvst, const pvst::Concealed &ft_v,
+           pt::idx_t cn_v_idx, const ptu::tree_meta &tm, std::vector<pvst::Smothered> &res) {
+  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
   const std::vector<pt::idx_t> &depth = tm.depth;
 
-  pt::idx_t ai_st_idx = ft_v.get_ai();
-  //pt::idx_t zi = ft_v.get_zi();
+  const pvst::Concealed &cn_v = ft_v;
+  pt::idx_t fl_v_idx = cn_v.get_fl_idx();
+  const pvst::Flubble fl_v = static_cast<const pvst::Flubble &>(pvst.get_vertex(fl_v_idx));
+  pt::idx_t ai_st_idx = fl_v.get_ai();
+
   pt::idx_t sl_st_idx = ft_v.get_sl_st_idx();
 
   std::vector<pt::idx_t> mb;
@@ -48,55 +51,43 @@ void trunk(const pst::Tree &st, const pvst::Vertex &ft_v,
     pt::idx_t tgt = st.get_be(be_idx_).get_tgt();
     pt::idx_t src = st.get_be(be_idx_).get_src();
 
-    // std::cerr << "ai: " << ai_st_idx << " tgt " << tgt << "\n";
-
     if (be_idx_ != pc::INVALID_IDX && c_br_srcs.size() == 1 && depth[tgt] > depth[ai_st_idx]) {
-
-      //pgt::id_or_t e;
+      pgt::id_or_t g = ft_v.get_cn_b();
       if (tm.get_brackets(src).empty()) {
         pgt::id_or_t e =
             (st.get_vertex(tgt).type() == pst::v_type_e::l)
                 ? pgt::id_or_t{st.get_vertex(tgt).g_v_id(), pgt::or_e::reverse}
                 : pgt::id_or_t{st.get_vertex(tgt).g_v_id(), pgt::or_e::forward};
-        pgt::id_or_t g = ft_v.get_end();
-        res.push_back(pvst::Vertex::make_smothered(e, g, tgt, ft_v));
+        // pgt::id_or_t g = ft_v.get_cn_b();
+        res.push_back(pvst::Smothered(g, e, cn_v_idx, false, tgt, pvst::sm_type_e::g));
       }
       else {
         pgt::id_or_t e =
             (st.get_vertex(src).type() == pst::v_type_e::l)
                 ? pgt::id_or_t{st.get_vertex(src).g_v_id(), pgt::or_e::reverse}
                 : pgt::id_or_t{st.get_vertex(src).g_v_id(), pgt::or_e::forward};
-        pgt::id_or_t g = ft_v.get_end();
-        res.push_back(pvst::Vertex::make_smothered(e, g, src,ft_v));
+        // pgt::id_or_t g = ft_v.get_cn_b();
+        res.push_back(pvst::Smothered(g, e, cn_v_idx, true, src, pvst::sm_type_e::g));
       }
 
     }
   }
-
-  // for (const pvst::Vertex &v : res) {
-  //   std::cerr << fn_name << " found [1] (a): " << v.as_str() << "\n";
-
-  //   for (auto be_idx : tm.get_brackets(sl_st_idx)) {
-  //     const pst::BackEdge &be = st.get_be(be_idx);
-
-  //     if (be.get_tgt() != ai_st_idx) {
-  //       continue; // not a back edge to the ai_st_idx
-  //     }
-  //     //pt::idx_t src = be.get_src();
-  //   }
-  //}
+  return;
 }
 
-void branch(const pst::Tree &st, const pvst::Vertex &ft_v,
-            const ptu::tree_meta &tm, std::vector<pvst::Vertex> &res) {
+void branch(const pst::Tree &st, const pvtr::Tree &pvst,
+            const pvst::Concealed &ft_v, pt::idx_t cn_v_idx,
+            const ptu::tree_meta &tm,
+            std::vector<pvst::Smothered> &res) {
   std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
-  //std::vector<pt::idx_t> e;
-  //g_branches(st, ft_v, tm, e);
+  //const std::vector<pt::idx_t> &depth = tm.depth;
 
-  const std::vector<pt::idx_t> &depth = tm.depth;
-
-  pt::idx_t ai_st_idx = ft_v.get_ai();
+  const pvst::Concealed &cn_v = ft_v;
+  pt::idx_t fl_v_idx = cn_v.get_fl_idx();
+  const pvst::Flubble fl_v = static_cast<const pvst::Flubble &>(pvst.get_vertex(fl_v_idx));
+  pt::idx_t ai_st_idx = fl_v.get_ai();
+  //pt::idx_t ai_st_idx = ft_v.get_ai();
   pt::idx_t sl_st_idx = ft_v.get_sl_st_idx();
   std::set<pt::idx_t> tgts = st.get_obe_tgt_v_idxs(sl_st_idx);
 
@@ -123,8 +114,10 @@ void branch(const pst::Tree &st, const pvst::Vertex &ft_v,
           pgt::id_or_t e = (st.get_vertex(src).type() == pst::v_type_e::l)
                                ? pgt::id_or_t{st.get_vertex(src).g_v_id(), pgt::or_e::reverse}
                                : pgt::id_or_t{st.get_vertex(src).g_v_id(), pgt::or_e::forward};
-          pgt::id_or_t g = ft_v.get_end();
-          res.push_back(pvst::Vertex::make_smothered(e, g, src, ft_v));
+          //pgt::id_or_t g = ft_v.get_end();
+          pgt::id_or_t g = ft_v.get_cn_b();
+          res.push_back(pvst::Smothered(g, e, cn_v_idx, true, src, pvst::sm_type_e::g));
+          //res.push_back(pvst::Vertex::make_smothered(e, g, src, ft_v));
           //e.push_back(be.get_src());
           continue;
         }
@@ -133,84 +126,25 @@ void branch(const pst::Tree &st, const pvst::Vertex &ft_v,
     }
   }
 
-  // for (auto &v_idx : e) {
-  //   std::cerr << fn_name << " found [1(b)]: " << st.get_vertex(sl_st_idx).g_v_id()
-  //             << "~>" << st.get_vertex(v_idx).g_v_id() << "\n";
-  // }
 }
 
 } // namespace g
 
-namespace misc {
-void trunk_misc_zi(const pst::Tree &st, const pvst::Vertex &ft_v, const ptu::tree_meta &tm) {
-  const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
-
-  const std::vector<pt::idx_t> &depth = tm.depth;
-  std::vector<pt::idx_t> e;
-
-  pt::idx_t ai = ft_v.get_ai();
-  pt::idx_t zi = ft_v.get_zi();
-
-  pt::idx_t hi_trunk = zi;
-  for (auto tgt : st.get_obe_tgt_v_idxs(zi)) {
-
-    if (tgt == ai) {
-      continue;
-    }
-
-    if (depth[tgt] < depth[hi_trunk]) {
-      hi_trunk = tgt;
-    }
-  }
-
-  if (hi_trunk == zi) {
-    return;
-  }
-
-  for (auto src_v_idx : st.get_ibe_src_v_idxs(hi_trunk)) {
-
-  if (depth[src_v_idx] < depth[zi]) {
-    std::vector v {zi, src_v_idx};
-    pt::idx_t lca = ptu::find_lca(tm, v);
-
-    std::cerr << fn_name << " 2(a) (i): " << st.get_vertex(lca).g_v_id() << "\n";
-    }
-
-  }
-
-}
-
-void trunk_misc_ai(const pst::Tree &st, const pvst::Vertex &ft_v, const ptu::tree_meta &tm) {
-  const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
-
-  const std::vector<pt::idx_t> &depth = tm.depth;
-  std::vector<pt::idx_t> e;
-
-  pt::idx_t ai = ft_v.get_ai();
-  pt::idx_t zi = ft_v.get_zi();
-
-  if(!(ai == 764 && zi == 765)) {
-    return;
-  }
-
-  std::cerr << ft_v.as_str() << "\t" << " ai: " << ai << " zi: " << zi << "\n";
-
-  for (auto src : st.get_ibe_src_v_idxs(ai)) {
-    std::cerr << fn_name << " src: " << st.get_vertex(src).g_v_id() << "\n";
-  }
-}
-} // namespace misc
 
 namespace s {
 
-void trunk(const pst::Tree &st, const pvst::Vertex &ft_v,
-           const ptu::tree_meta &tm, std::vector<pvst::Vertex> &res) {
+void trunk(const pst::Tree &st, const pvtr::Tree &pvst,
+           const pvst::Concealed &ft_v, pt::idx_t cn_v_idx,
+           const ptu::tree_meta &tm,
+           std::vector<pvst::Smothered> &res) {
   std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
-    const std::vector<pt::idx_t> &depth = tm.depth;
-    //std::vector<pt::idx_t> e;
+  const std::vector<pt::idx_t> &depth = tm.depth;
 
-  pt::idx_t zi_st_idx = ft_v.get_zi();
+  const pvst::Concealed &cn_v = ft_v;
+  pt::idx_t fl_v_idx = cn_v.get_fl_idx();
+  const pvst::Flubble fl_v = static_cast<const pvst::Flubble &>(pvst.get_vertex(fl_v_idx));
+  pt::idx_t zi_st_idx = fl_v.get_zi();
   pt::idx_t sl_st_idx = ft_v.get_sl_st_idx();
 
   // key is LCA value is all the srcs
@@ -238,26 +172,24 @@ void trunk(const pst::Tree &st, const pvst::Vertex &ft_v,
           (st.get_vertex(src).type() == pst::v_type_e::l)
               ? pgt::id_or_t{st.get_vertex(src).g_v_id(), pgt::or_e::reverse}
               : pgt::id_or_t{st.get_vertex(src).g_v_id(), pgt::or_e::forward};
-      pgt::id_or_t s = ft_v.get_start();
-      res.push_back(pvst::Vertex::make_smothered(s, w, src, ft_v));
-      //e.push_back(src);
+      pgt::id_or_t s = ft_v.get_cn_b();
+      res.push_back(pvst::Smothered(s, w, cn_v_idx, false, src, pvst::sm_type_e::s));
     }
   }
-
-
-  // for (auto &v_idx : e) {
-  //   std::cerr << fn_name << " found [2]: " << st.get_vertex(sl_st_idx).g_v_id()
-  //             << "~>" << st.get_vertex(v_idx).g_v_id() << "\n";
-  // }
 }
 
-void branch(const pst::Tree &st, const pvst::Vertex &ft_v,
-            const ptu::tree_meta &tm, std::vector<pvst::Vertex> &res) {
+void branch(const pst::Tree &st, const pvtr::Tree &pvst,
+            const pvst::Concealed &ft_v, pt::idx_t cn_v_idx,
+            const ptu::tree_meta &tm,
+            std::vector<pvst::Smothered> &res) {
   std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
   //std::vector<pt::idx_t> e;
-
-  pt::idx_t zi_st_idx = ft_v.get_zi();
+  const pvst::Concealed &cn_v = ft_v;
+  pt::idx_t fl_v_idx = cn_v.get_fl_idx();
+  const pvst::Flubble fl_v = static_cast<const pvst::Flubble &>(pvst.get_vertex(fl_v_idx));
+  pt::idx_t zi_st_idx = fl_v.get_zi();
+  //pt::idx_t zi_st_idx = ft_v.get_zi();
   pt::idx_t sl_st_idx = ft_v.get_sl_st_idx();
 
   std::set<pt::idx_t> srcs = st.get_ibe_src_v_idxs(sl_st_idx);
@@ -272,8 +204,10 @@ void branch(const pst::Tree &st, const pvst::Vertex &ft_v,
           (st.get_vertex(src_).type() == pst::v_type_e::l)
               ? pgt::id_or_t{st.get_vertex(src_).g_v_id(), pgt::or_e::reverse}
               : pgt::id_or_t{st.get_vertex(src_).g_v_id(), pgt::or_e::forward};
-      pgt::id_or_t s = ft_v.get_start();
-      res.push_back(pvst::Vertex::make_smothered(s, w, src_, ft_v));
+      //pgt::id_or_t s = ft_v.get_start();
+      pgt::id_or_t s = ft_v.get_cn_b();
+      //res.push_back(pvst::Vertex::make_smothered(s, w, src_, ft_v));
+      res.push_back(pvst::Smothered(s, w, cn_v_idx, true, src_, pvst::sm_type_e::s));
       //e.push_back(src_);
     }
 
@@ -285,82 +219,71 @@ void branch(const pst::Tree &st, const pvst::Vertex &ft_v,
           (st.get_vertex(tgt_).type() == pst::v_type_e::l)
               ? pgt::id_or_t{st.get_vertex(tgt_).g_v_id(), pgt::or_e::reverse}
               : pgt::id_or_t{st.get_vertex(tgt_).g_v_id(), pgt::or_e::forward};
-      pgt::id_or_t s = ft_v.get_start();
-      res.push_back(pvst::Vertex::make_smothered(s, w, tgt_, ft_v));
-      //e.push_back(tgt_);
+      //pgt::id_or_t s = ft_v.get_start();
+      pgt::id_or_t s = ft_v.get_cn_b();
+      //res.push_back(pvst::Vertex::make_smothered(s, w, tgt_, ft_v));
+      res.push_back(pvst::Smothered(s, w, cn_v_idx, false, tgt_, pvst::sm_type_e::s));
     }
   }
-
-  // for (auto &v_idx : e) {
-  //   std::cerr << fn_name << " found [2(b)]: " << st.get_vertex(sl_st_idx).g_v_id() << "~>" << st.get_vertex(v_idx).g_v_id() << "\n";
-  // }
 }
 
 } // namespace s
 
-void add_smothered(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &vst,
+void add_smothered(const pst::Tree &st, pvtr::Tree &pvst,
                    const ptu::tree_meta &tm, const std::vector<fl_sls> &al_smo) {
   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
   for (const fl_sls &smo : al_smo) {
 
-    const pvst::Vertex &ft_v = vst.get_vertex(smo.fl_v_idx);
+    //const pvst::Concealed &cn_v = static_cast<const pvst::Concealed &>(pvst.get_vertex(smo.cn_v_idx));
 
-    if (ft_v.get_type() != pvst::vt_e::slubble) {
-      std::cerr << fn_name << " found smothered for non-flubble vertex: " << smo.fl_v_idx << "\n";
-      std::cerr << "flubble vertex: " << ft_v.as_str() << "\n";
-      continue; // skip non-flubble vertices
+    for (const pvst::Smothered &g_adj_v : smo.g_adj) {
+      std::cerr << fn_name << " adding smothered [e,g] vertex: " << g_adj_v.as_str() << "\n";
+      // use a ref and move?
+      pt::idx_t g_adj_v_idx = pvst.add_vertex(g_adj_v);
+      pvst.add_edge(smo.cn_v_idx, g_adj_v_idx);
     }
 
-    for (pvst::Vertex g_adj_v : smo.g_adj) {
-      std::cerr << fn_name << " adding smothered vertex: " << g_adj_v.as_str() << "\n";
+    for (const pvst::Smothered &s_adj_v : smo.s_adj) {
+      std::cerr << fn_name << " adding smothered [s,w] vertex: " << s_adj_v.as_str() << "\n";
       // use a ref and move?
-      pt::idx_t g_adj_v_idx = vst.add_vertex(g_adj_v);
-      vst.add_edge(smo.fl_v_idx, g_adj_v_idx);
-      //vst.get_vertex(g_adj_v_idx).set_type(pvst::vt_e::smothered);
-    }
-
-    for (pvst::Vertex s_adj_v : smo.s_adj) {
-      std::cerr << fn_name << " adding smothered vertex: " << s_adj_v.as_str()
-                << "\n";
-      // use a ref and move?
-      pt::idx_t s_adj_v_idx = vst.add_vertex(s_adj_v);
-      vst.add_edge(smo.fl_v_idx, s_adj_v_idx);
-      // vst.get_vertex(g_adj_v_idx).set_type(pvst::vt_e::smothered);
+      pt::idx_t s_adj_v_idx = pvst.add_vertex(s_adj_v);
+      pvst.add_edge(smo.cn_v_idx, s_adj_v_idx);
     }
   }
+
+  return;
 }
 
-void find_smothered(const pst::Tree &st, pvtr::Tree<pvst::Vertex> &ft, const ptu::tree_meta &tm) {
+void find_smothered(const pst::Tree &st, pvtr::Tree &ft, const ptu::tree_meta &tm) {
   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+
+  pvtr::Tree &pvst = ft;
 
   std::vector<fl_sls> all_smo;
 
   for (pt::idx_t ft_v_idx{}; ft_v_idx < ft.vtx_count(); ft_v_idx++) {
-     const pvst::Vertex &ft_v = ft.get_vertex(ft_v_idx);
+     const pvst::VertexBase &pvst_v = ft.get_vertex(ft_v_idx);
 
-     if (ft_v.get_type() == pvst::vt_e::flubble) {
-       misc::trunk_misc_ai(st, ft_v, tm);
-       misc::trunk_misc_zi(st, ft_v, tm);
-     }
-
-     if (ft_v.get_type() != pvst::vt_e::slubble) {
+     if (pvst_v.get_type() != pvst::vt_e::slubble) {
        continue;
      }
 
+     const pvst::Concealed &cn_v = static_cast<const pvst::Concealed &>(pvst_v);
+
      fl_sls smo {ft_v_idx};
-     switch (ft_v.get_sl_type()) {
+     switch (cn_v.get_sl_type()) {
      case pvst::sl_type_e::ai_trunk:
-       g::trunk(st, ft_v, tm, smo.g_adj);
+       g::trunk(st, pvst, cn_v, ft_v_idx, tm, smo.g_adj);
        break;
      case pvst::sl_type_e::ai_branch:
-       g::branch(st, ft_v, tm, smo.g_adj);
+       g::branch(st, pvst, cn_v, ft_v_idx, tm, smo.g_adj);
        break;
      case pvst::sl_type_e::zi_trunk:
-       s::trunk(st, ft_v, tm, smo.s_adj);
+       s::trunk(st, pvst, cn_v, ft_v_idx, tm, smo.s_adj);
        break;
      case pvst::sl_type_e::zi_branch:
-       s::branch(st, ft_v, tm, smo.s_adj);
+       s::branch(st, pvst, cn_v, ft_v_idx, tm, smo.s_adj);
        break;
      default:
        std::cerr << fn_name << " unknown slubble type: " << ft_v_idx << "\n";

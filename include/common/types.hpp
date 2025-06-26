@@ -285,6 +285,11 @@ enum class sl_type_e {
   zi_branch
 };
 
+enum class sm_type_e {
+  g, // with g
+  s // with s
+};
+
 /* an abstract class for vertices  */
 class VertexBase {
   povu::types::id_t idx_; // idx of the vertex in the vst
@@ -387,6 +392,8 @@ public:
   pt::idx_t get_fl_idx() const { return this->fl_idx; }
   sl_type_e get_sl_type() const { return this->sl_type_; }
   pt::idx_t get_sl_st_idx() const { return this->sl_st_idx_; }
+  pgt::id_or_t get_fl_b() const { return this->fl_b_; }
+  pgt::id_or_t get_cn_b() const { return this->cn_b_; }
 
   /*
    == others ==
@@ -406,16 +413,37 @@ class Smothered : public VertexBase {
   pt::idx_t cn_idx; // idx of the concealed vertex
   pt::idx_t sm_st_idx; // idx in the spanning tree for smothered vertex
 
+  // b for boundary
+  pgt::id_or_t cn_b_; // g or s
+  pgt::id_or_t sm_b_; // e or w
+
+  // is true when cn_b_ is an ancestor of sm_b_
+  bool cn_b_is_ans_;
+
+  sm_type_e cn_type_; // type of the concealed vertex (g or s)
+
 public:
-  Smothered(pt::idx_t cn_idx, pt::idx_t sm_st_idx)
-      : VertexBase(pc::INVALID_IDX, vt_e::smothered), cn_idx(cn_idx),
-        sm_st_idx(sm_st_idx) {}
+  Smothered(pgt::id_or_t cn_b, pgt::id_or_t sm_b, pt::idx_t cn_idx, bool cn_b_is_ans,
+            pt::idx_t sm_st_idx, sm_type_e sm_type)
+      : VertexBase(pc::INVALID_IDX, vt_e::smothered),
+        cn_b_(cn_b), sm_b_(sm_b), cn_idx(cn_idx), sm_st_idx(sm_st_idx), cn_b_is_ans_(cn_b_is_ans), cn_type_(sm_type) {}
 
   pt::idx_t get_cn_idx() const { return this->cn_idx; }
   pt::idx_t get_sm_st_idx() const { return this->sm_st_idx; }
 
   std::string as_str() const override {
-    return std::format("Smothered({})", this->cn_idx);
+    if (this->cn_type_ == sm_type_e::g) { // g
+      if (this->cn_b_is_ans_) { // cn_b is ancestor of sm_b
+        return std::format("{}{}", this->cn_b_.as_str(), this->sm_b_.as_str());
+      }
+      else { // sm_b is ancestor of cn_b
+        return std::format("{}{}", this->sm_b_.as_str(), this->cn_b_.as_str());
+      }
+      //return std::format("{}{}", this->cn_b_.as_str(), this->sm_b_.as_str());
+    }
+    else { // s
+      return std::format("{}{}", this->sm_b_.as_str(), this->cn_b_.as_str());
+    }
   }
 
 };
@@ -520,6 +548,5 @@ public:
     return s;
   }
 };
-
 } // namespace povu::types::pvst
 #endif
