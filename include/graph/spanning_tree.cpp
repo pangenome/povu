@@ -170,6 +170,11 @@ std::size_t Tree::get_hi(std::size_t vertex) {
   return this->nodes.at(vertex).hi();
 }
 
+bool Tree::is_desc(pt::idx_t a, pt::idx_t d) const {
+  return this->get_vertex(a).pre_order() < this->get_vertex(d).pre_order() &&
+         this->get_vertex(a).post_order() > this->get_vertex(d).post_order();
+}
+
 std::set<std::pair<std::size_t, std::size_t>>
 Tree::get_children_w_id(std::size_t vertex) {
   std::set<std::pair<std::size_t, std::size_t>> res{};

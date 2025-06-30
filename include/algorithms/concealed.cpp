@@ -32,6 +32,17 @@ struct mn_t {
   Utils
   -----------------
 */
+/**
+ * @brief check if a is a descendant of d
+ * @param st the pst tree
+ * @param a the potential ancestor vertex index
+ * @param d the potential descendant vertex index
+ * @return true if a is an ancestor of d, false otherwise
+ */
+bool is_desc(const pst::Tree &st, pt::idx_t a, pt::idx_t d) {
+  return st.get_vertex(a).pre_order() < st.get_vertex(d).pre_order() &&
+         st.get_vertex(a).post_order() > st.get_vertex(d).post_order();
+}
 
 pvst::Concealed gen_ai_slubble(const pst::Tree &st, pt::idx_t ai_st_v_idx,
                             pt::idx_t sl_st_idx, pvst::sl_type_e t,
@@ -81,9 +92,11 @@ pvst::Concealed gen_ai_slubble(const pst::Tree &st, pt::idx_t ai_st_v_idx,
     g = sl_boundary;
   }
 
-  return pvst::Concealed(a, g, fl_v_idx, t, sl_st_idx);
+  pvst::bounds_t bounds = is_desc(st, ai_st_v_idx, sl_st_idx)
+    ? pvst::bounds_t{ai_st_v_idx, sl_st_idx}
+    : pvst::bounds_t{sl_st_idx, ai_st_v_idx};
 
-  //return pvst::Vertex::make_slubble(a, g, sl_st_idx, t, ft_v);
+  return pvst::Concealed(a, g, bounds, fl_v_idx, t, sl_st_idx);
 }
 
 pvst::Concealed gen_zi_slubble(const pst::Tree &st, pt::idx_t zi_st_v_idx,
@@ -120,21 +133,13 @@ pvst::Concealed gen_zi_slubble(const pst::Tree &st, pt::idx_t zi_st_v_idx,
     z = fl_boundary;
   }
 
-  return pvst::Concealed(s, z, fl_v_idx, t, sl_st_idx);
-  //return pvst::Vertex::make_slubble(s, z, sl_st_idx, t, ft_v);
+  pvst::bounds_t bounds = is_desc(st, zi_st_v_idx, sl_st_idx)
+    ? pvst::bounds_t{zi_st_v_idx, sl_st_idx}
+    : pvst::bounds_t{sl_st_idx, zi_st_v_idx};
+
+  return pvst::Concealed(s, z, bounds, fl_v_idx, t, sl_st_idx);
 }
 
-/**
- * @brief check if a is a descendant of d
- * @param st the pst tree
- * @param a the potential ancestor vertex index
- * @param d the potential descendant vertex index
- * @return true if a is an ancestor of d, false otherwise
- */
-bool is_desc(const pst::Tree &st, pt::idx_t a, pt::idx_t d) {
-  return st.get_vertex(a).pre_order() < st.get_vertex(d).pre_order() &&
-         st.get_vertex(a).post_order() > st.get_vertex(d).post_order();
-}
 
 // not inclusive
 bool is_btwn(const pst::Tree &st, pt::idx_t v_idx, pt::idx_t upper,
@@ -900,16 +905,12 @@ void add_conc_ai(const pst::Tree &st, pvtr::Tree &vst, const ptu::tree_meta &tm,
 
   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
-  //const std::vector<pt::idx_t> &depth = tm.depth;
-
   for (auto &sl : ai_adj) {
-    //std::cerr << std::format("{} adding ai slubble: {}\n", fn_name, sl.as_str());
     pt::idx_t sl_v_idx = vst.add_vertex(sl);
     pt::idx_t sl_st_idx = sl.get_sl_st_idx();
     vst.add_edge(fl_v_idx, sl_v_idx);
 
     pt::idx_t ai = v.get_ai();
-    //pt::idx_t zi = v.get_zi();
 
     if (!is_leaf) {
       // TODO: why not const vector ref?
@@ -919,12 +920,10 @@ void add_conc_ai(const pst::Tree &st, pvtr::Tree &vst, const ptu::tree_meta &tm,
       }
       else if (sl.get_sl_type() == pvst::sl_type_e::ai_branch) {
         nest_branch_ai(st, vst, tm, sl_st_idx, fl_v_idx, sl_v_idx, ai, ch);
-        //std::cerr << "sl type: ai branch\n";
       }
       else {
         std::cerr << "sl type: unknown\n";
       }
-
     }
   }
 }

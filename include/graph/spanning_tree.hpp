@@ -269,6 +269,7 @@ public:
   size_t list_size(std::size_t vertex);
   size_t get_hi(std::size_t vertex);
 
+  bool is_desc(pt::idx_t a, pt::idx_t d) const;
 
   /**
     * @brief get indexes of the vertices the obes from this vertex points to (tgt/targets)

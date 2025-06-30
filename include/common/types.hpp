@@ -285,9 +285,15 @@ enum class sl_type_e {
   zi_branch
 };
 
-enum class sm_type_e {
-  g, // with g
-  s // with s
+// type of the concealed vertex
+enum class cn_type_e {
+  g,
+  s
+};
+
+struct bounds_t {
+  pt::idx_t upper;
+  pt::idx_t lower;
 };
 
 /* an abstract class for vertices  */
@@ -343,6 +349,7 @@ public:
   pt::idx_t get_zi() const { return this->zi_; }
   pt::idx_t get_m() const { return this->m_; }
   pt::idx_t get_n() const { return this->n_; }
+  bounds_t get_bounds() const { return {this->get_ai(), this->get_zi()}; }
 
   /*
    == setters ==
@@ -368,6 +375,8 @@ class Concealed : public VertexBase {
   pgt::id_or_t fl_b_; // a or z
   pgt::id_or_t cn_b_; // g or s
 
+  bounds_t bounds_;
+
 private:
   bool with_ai() const {
     return this->sl_type_ == sl_type_e::ai_trunk || this->sl_type_ == sl_type_e::ai_branch;
@@ -381,10 +390,10 @@ public:
   /*
    == constructor ==
    */
-  Concealed(pgt::id_or_t fl_b, pgt::id_or_t cn_b, pt::idx_t fl_idx,
+  Concealed(pgt::id_or_t fl_b, pgt::id_or_t cn_b, bounds_t bounds, pt::idx_t fl_idx,
             sl_type_e sl_type, pt::idx_t sl_st_idx)
     : VertexBase(pc::INVALID_IDX, vt_e::slubble), fl_idx(fl_idx),
-      sl_type_(sl_type), sl_st_idx_(sl_st_idx), fl_b_(fl_b), cn_b_(cn_b) {}
+      sl_type_(sl_type), sl_st_idx_(sl_st_idx), fl_b_(fl_b), cn_b_(cn_b), bounds_(bounds) {}
 
   /*
    == getters ==
@@ -394,6 +403,7 @@ public:
   pt::idx_t get_sl_st_idx() const { return this->sl_st_idx_; }
   pgt::id_or_t get_fl_b() const { return this->fl_b_; }
   pgt::id_or_t get_cn_b() const { return this->cn_b_; }
+  bounds_t get_bounds() const { return this->bounds_; }
 
   /*
    == others ==
@@ -420,19 +430,25 @@ class Smothered : public VertexBase {
   // is true when cn_b_ is an ancestor of sm_b_
   bool cn_b_is_ans_;
 
-  sm_type_e cn_type_; // type of the concealed vertex (g or s)
+  cn_type_e cn_type_; // type of the concealed vertex (g or s)
+
+  bounds_t bounds_;
 
 public:
-  Smothered(pgt::id_or_t cn_b, pgt::id_or_t sm_b, pt::idx_t cn_idx, bool cn_b_is_ans,
-            pt::idx_t sm_st_idx, sm_type_e sm_type)
+  Smothered(pgt::id_or_t cn_b, pgt::id_or_t sm_b, pt::idx_t cn_idx,
+            bool cn_b_is_ans, pt::idx_t sm_st_idx, cn_type_e sm_type, bounds_t bounds)
       : VertexBase(pc::INVALID_IDX, vt_e::smothered),
-        cn_b_(cn_b), sm_b_(sm_b), cn_idx(cn_idx), sm_st_idx(sm_st_idx), cn_b_is_ans_(cn_b_is_ans), cn_type_(sm_type) {}
+        cn_idx(cn_idx), sm_st_idx(sm_st_idx), cn_b_(cn_b), sm_b_(sm_b),
+        cn_b_is_ans_(cn_b_is_ans), cn_type_(sm_type), bounds_(bounds) {}
 
   pt::idx_t get_cn_idx() const { return this->cn_idx; }
   pt::idx_t get_sm_st_idx() const { return this->sm_st_idx; }
+  bounds_t get_bounds() const { return this->bounds_; }
+  cn_type_e get_cn_type() const { return this->cn_type_; }
+  bool is_cn_b_ancestor() const { return this->cn_b_is_ans_; }
 
   std::string as_str() const override {
-    if (this->cn_type_ == sm_type_e::g) { // g
+    if (this->cn_type_ == cn_type_e::g) { // g
       if (this->cn_b_is_ans_) { // cn_b is ancestor of sm_b
         return std::format("{}{}", this->cn_b_.as_str(), this->sm_b_.as_str());
       }
@@ -445,7 +461,6 @@ public:
       return std::format("{}{}", this->sm_b_.as_str(), this->cn_b_.as_str());
     }
   }
-
 };
 
 
