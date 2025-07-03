@@ -304,9 +304,6 @@ pt::idx_t ai_trunk(const pst::Tree &st, const ptu::tree_meta &tm, pt::idx_t m,
                    pt::idx_t n, pt::idx_t ai, pt::idx_t zi) {
   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
-
-
-  //const std::vector<pt::idx_t> &height = tm.depth; // use to depth
   const std::vector<pt::idx_t> &depth = tm.depth;
 
   if (n == pc::INVALID_IDX || m == pc::INVALID_IDX || depth[m] > depth[n]) {
@@ -340,27 +337,20 @@ pt::idx_t ai_trunk(const pst::Tree &st, const ptu::tree_meta &tm, pt::idx_t m,
     return !ell_brackets(ell) && cond_iii(ell);
   };
 
-  // bool dbg = (ai == 1176 && zi == 1181) ? true : false;
-  // dbg = false;
+  bool dbg = (ai == 1338 && zi == 1343) ? true : false;
 
-  // // if dbg is true traverse from zi to ai and print the path
-  // if (dbg) {
-  //   std::cerr << fn_name << " dbg: " << ai << " " << zi << "\n";
-  //   pt::idx_t v_idx = zi;
-  //   while (v_idx >= ai) {
-  //     std::cerr << st.get_vertex(v_idx).g_v_id() << " (" << st.get_child_count(v_idx) << "), ";
-
-  //     if (st.get_child_count(v_idx) > 1) {
-  //       std::cerr << "[ ";
-  //       for (auto c_v_idx : st.get_children(v_idx)) {
-  //         std::cerr << st.get_vertex(c_v_idx).g_v_id()  << ", ";
-  //       }
-  //       std::cerr << "], ";
-  //     }
-  //     v_idx = st.get_parent_v_idx(v_idx);
-  //   }
-  //   std::cerr << "\n";
-  // }
+  pt::idx_t v = zi;
+  std::cerr << fn_name << " trunk\n";
+  while(dbg && v >= ai) {
+    std::cerr << "\t " << st.get_vertex(v).g_v_id() << ", ";
+    // print children
+    std::cerr << "[ ";
+    for (pt::idx_t c_v_idx : st.get_children(v)) {
+      std::cerr << st.get_vertex(c_v_idx).g_v_id() << ", ";
+    }
+    std::cerr << "]\n";
+    v = st.get_parent_v_idx(v);
+  }
 
   // cond i
   // ------
@@ -381,8 +371,6 @@ pt::idx_t ai_trunk(const pst::Tree &st, const ptu::tree_meta &tm, pt::idx_t m,
       x.push_back(l);
     }
   }
-
-
 
   // erase_if is C++20
   // remove elements that do not meet condition iv and v
@@ -1077,6 +1065,15 @@ void find_concealed(const pst::Tree &st, pvtr::Tree &ft, const ptu::tree_meta &t
     zi::with_ji(st, tm, slubbles.ji_adj, m, n, ai, zi, ft_v_idx);
 
     if (slubbles.size() > 0) {
+      std::cerr << "fl: " << ft_v.as_str() << "\n";
+      if (ft_v.as_str() == ">933>937") {
+        std::cerr << "slubbles: " << ft_v.as_str() << "\n";
+        std::cerr << "ai: " << ai << " zi: " << zi << "\n";
+        std::cerr << "a adj" << slubbles.ii_adj.size() << "\n";
+        std::cerr << "z adj" << slubbles.ji_adj.size() << "\n";
+
+        exit(1);
+      }
       all_slubbles.push_back(slubbles);
     }
   }
@@ -1084,5 +1081,7 @@ void find_concealed(const pst::Tree &st, pvtr::Tree &ft, const ptu::tree_meta &t
   for (auto &sl : all_slubbles) {
     update_pvst::add_concealed(st, ft, tm, sl);
   }
+
+  //exit(1);
 }
 } // namespace povu::concealed

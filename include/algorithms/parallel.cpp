@@ -2,7 +2,79 @@
 
 namespace povu::parallel {
 
+bool inspect_trunk(const pst::Tree &st, pt::idx_t ai, pt::idx_t zi) {
 
+  bool dbg = (ai == 1338 && zi == 1343) ? true : false;
+
+  // go up from zi to ai and ensure no branching vertices
+  auto cond_a = [&]() -> bool {
+    pt::idx_t v_idx = zi;
+    while (v_idx != ai) {
+      if (st.get_child_count(v_idx) > 1) {
+        return false;
+      }
+      v_idx = st.get_parent_v_idx(v_idx);
+    }
+
+    return true;
+  };
+
+  auto cond_b = [&]() -> bool {
+    pt::idx_t branching_vtx {pc::INVALID_IDX};
+    pt::idx_t v_idx = zi;
+
+    while (v_idx != ai) {
+      if (st.get_child_count(v_idx) > 1) {
+        if (branching_vtx == pc::INVALID_IDX){
+          branching_vtx = v_idx;
+        } else {
+          // more than one branching vertex
+          return false;
+        }
+
+      }
+      v_idx = st.get_parent_v_idx(v_idx);
+    }
+
+    if (branching_vtx == pc::INVALID_IDX) { // no branching vertex found
+      if (dbg) {
+        std::cerr << "No branching vertex found from " << st.get_vertex(zi).g_v_id() << " to " << st.get_vertex(ai).g_v_id() << "\n";
+      }
+      return false;
+    }
+    else {
+      if (dbg) {
+        std::cerr << "Branching vertex found: " << st.get_vertex(branching_vtx).g_v_id() << "\n";
+      }
+    }
+
+    for (pt::idx_t c_v_idx : st.get_children(branching_vtx)) {
+      if(dbg ) {
+        std::cerr << "c " << c_v_idx << " id "
+                  << st.get_vertex(c_v_idx).g_v_id() << " post order"
+                  << st.get_vertex(c_v_idx).post_order() << " pre order "<<
+                         st.get_vertex(c_v_idx).pre_order()
+                  << "\n";
+      }
+      if (c_v_idx > zi && (st.get_vertex(c_v_idx).post_order() -  st.get_vertex(c_v_idx).pre_order() == 3)) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
+
+  if (dbg) {
+    std::cerr << "[DEBUG] Inspecting trunk from " << st.get_vertex(zi).g_v_id() << " to " << st.get_vertex(ai).g_v_id() << "\n";
+    std::cerr << "b " << cond_b() << "\n";
+
+    //exit(1);
+  }
+
+
+   return cond_a() ||  cond_b();
+ }
 
 bool in_trunk(const pst::Tree &st, const pvst::Flubble &ft_v) {
   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
@@ -14,7 +86,6 @@ bool in_trunk(const pst::Tree &st, const pvst::Flubble &ft_v) {
     return false;
   }
 
-
   // condition i
   if (zi - ai <= 3 && st.get_ibe_idxs(ai).size() == 1 ) {
     return false;
@@ -25,16 +96,12 @@ bool in_trunk(const pst::Tree &st, const pvst::Flubble &ft_v) {
     return false;
   }
 
-  // go up from zi to ai and ensure no branching vertices
-  pt::idx_t v_idx = zi;
-  while (v_idx != ai) {
-    if (st.get_child_count(v_idx) > 1) {
-      return false;
-    }
-    v_idx = st.get_parent_v_idx(v_idx);
+  // condition iii
+  if (!inspect_trunk(st, ai, zi)) {
+    return false;
   }
 
-  //  std::cerr << "\n" << fn_name << "ai " << ai << " zi " << zi <<  " " << st.get_child_count(zi) << "\n";
+
 
   // with ai
   {
@@ -70,7 +137,7 @@ bool in_trunk(const pst::Tree &st, const pvst::Flubble &ft_v) {
     }
   }
 
-  
+
 
   // with zi
   {
@@ -108,14 +175,13 @@ bool in_trunk(const pst::Tree &st, const pvst::Flubble &ft_v) {
   return false;
 }
 
-bool in_branch(const pst::Tree &st, const ptu::tree_meta &tm,
-               const pvst::Flubble &ft_v) {
+bool in_branch(const pst::Tree &st, const ptu::tree_meta &tm, const pvst::Flubble &ft_v) {
   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
   pt::idx_t ai = ft_v.get_ai();
   pt::idx_t zi = ft_v.get_zi();
 
-  
+
 
 
   if (zi < 3) {

@@ -18,8 +18,7 @@ struct fl_sls {
       s_adj(std::vector<pvst::Smothered>{}) {}
 };
 
-pvst::bounds_t compute_bounds(const pst::Tree &st, pt::idx_t cn_st_idx,
-                              pt::idx_t sm_st_idx) {
+pvst::bounds_t compute_bounds(const pst::Tree &st, pt::idx_t cn_st_idx, pt::idx_t sm_st_idx) {
   std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
   if (st.is_desc(cn_st_idx, sm_st_idx)) {
@@ -77,7 +76,6 @@ void trunk(const pst::Tree &st, const pvtr::Tree &pvst, const pvst::Concealed &f
       continue; // no brackets for this child
     }
 
-
     pt::idx_t tgt = st.get_be(be_idx_).get_tgt();
     pt::idx_t src = st.get_be(be_idx_).get_src();
 
@@ -90,22 +88,12 @@ void trunk(const pst::Tree &st, const pvtr::Tree &pvst, const pvst::Concealed &f
       pgt::id_or_t g = ft_v.get_cn_b();
       if (tm.get_brackets(src).empty()) {
         pgt::id_or_t e = comp_e(tgt);
-            // (st.get_vertex(tgt).type() == pst::v_type_e::l)
-            //     ? pgt::id_or_t{st.get_vertex(tgt).g_v_id(), pgt::or_e::reverse}
-            //     : pgt::id_or_t{st.get_vertex(tgt).g_v_id(), pgt::or_e::forward};
-
         res.push_back(pvst::Smothered(g, e, cn_pvst_v_idx, false, tgt, pvst::cn_type_e::g, bounds));
       }
       else {
         pgt::id_or_t e = comp_e(src);
-            // (st.get_vertex(src).type() == pst::v_type_e::l)
-            //     ? pgt::id_or_t{st.get_vertex(src).g_v_id(), pgt::or_e::reverse}
-            //     : pgt::id_or_t{st.get_vertex(src).g_v_id(), pgt::or_e::forward};
-        //pvst::bounds_t bounds =  compute_bounds(st, src, tgt);
-
         res.push_back(pvst::Smothered(g, e, cn_pvst_v_idx, true, src, pvst::cn_type_e::g, bounds));
       }
-
     }
   }
   return;
@@ -161,11 +149,18 @@ void branch(const pst::Tree &st, const pvtr::Tree &pvst,
   }
 
 }
-
 } // namespace g
 
 
 namespace s {
+
+pgt::id_or_t comp_w(const pst::Tree &st, pt::idx_t st_v_idx) {
+  if (st.get_vertex(st_v_idx).type() == pst::v_type_e::l) {
+    return {st.get_vertex(st_v_idx).g_v_id(), pgt::or_e::reverse};
+  } else {
+    return {st.get_vertex(st_v_idx).g_v_id(), pgt::or_e::forward};
+  }
+};
 
 void trunk(const pst::Tree &st, const pvtr::Tree &pvst,
            const pvst::Concealed &ft_v, pt::idx_t cn_pvst_v_idx,
@@ -180,6 +175,15 @@ void trunk(const pst::Tree &st, const pvtr::Tree &pvst,
   const pvst::Flubble fl_v = static_cast<const pvst::Flubble &>(pvst.get_vertex(fl_v_idx));
   pt::idx_t zi_st_idx = fl_v.get_zi();
   pt::idx_t sl_st_idx = ft_v.get_sl_st_idx();
+
+  auto comp_w = [&](pt::idx_t st_v_idx) -> pgt::id_or_t {
+    if (st.get_vertex(st_v_idx).type() == pst::v_type_e::l) {
+      return { st.get_vertex(st_v_idx).g_v_id(), pgt::or_e::reverse };
+    }
+    else {
+      return {st.get_vertex(st_v_idx).g_v_id(), pgt::or_e::forward};
+    }
+  };
 
   // key is LCA value is all the srcs
   std::map<pt::idx_t, std::vector<pt::idx_t>> lca_map;
@@ -202,14 +206,9 @@ void trunk(const pst::Tree &st, const pvtr::Tree &pvst,
   for (auto [lca, srcs] : lca_map) {
     if (srcs.size() == 1) {
       pt::idx_t src = srcs[0];
-      pgt::id_or_t w =
-          (st.get_vertex(src).type() == pst::v_type_e::l)
-              ? pgt::id_or_t{st.get_vertex(src).g_v_id(), pgt::or_e::reverse}
-              : pgt::id_or_t{st.get_vertex(src).g_v_id(), pgt::or_e::forward};
-
+      pgt::id_or_t w = comp_w(src);
       pgt::id_or_t s = ft_v.get_cn_b();
-
-      pvst::bounds_t bounds = compute_bounds(st, src, sl_st_idx);
+      pvst::bounds_t bounds = {lca, src};
 
       res.push_back(pvst::Smothered(s, w, cn_pvst_v_idx, false, src, pvst::cn_type_e::s, bounds));
     }
@@ -222,12 +221,10 @@ void branch(const pst::Tree &st, const pvtr::Tree &pvst,
             std::vector<pvst::Smothered> &res) {
   std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
-  //std::vector<pt::idx_t> e;
   const pvst::Concealed &cn_v = ft_v;
   pt::idx_t fl_v_idx = cn_v.get_fl_idx();
   const pvst::Flubble fl_v = static_cast<const pvst::Flubble &>(pvst.get_vertex(fl_v_idx));
   pt::idx_t zi_st_idx = fl_v.get_zi();
-  //pt::idx_t zi_st_idx = ft_v.get_zi();
   pt::idx_t sl_st_idx = ft_v.get_sl_st_idx();
 
   std::set<pt::idx_t> srcs = st.get_ibe_src_v_idxs(sl_st_idx);
@@ -237,31 +234,23 @@ void branch(const pst::Tree &st, const pvtr::Tree &pvst,
   }
 
   for (pt::idx_t src_v_idx : srcs) {
-    for (auto src_ : st.get_ibe_src_v_idxs(src_v_idx)){
-      pgt::id_or_t w =
-          (st.get_vertex(src_).type() == pst::v_type_e::l)
-              ? pgt::id_or_t{st.get_vertex(src_).g_v_id(), pgt::or_e::reverse}
-              : pgt::id_or_t{st.get_vertex(src_).g_v_id(), pgt::or_e::forward};
-      //pgt::id_or_t s = ft_v.get_start();
+    for (auto src_ : st.get_ibe_src_v_idxs(src_v_idx)) {
+      pgt::id_or_t w = comp_w(st, src_);
       pgt::id_or_t s = ft_v.get_cn_b();
-      //res.push_back(pvst::Vertex::make_smothered(s, w, src_, ft_v));
       pvst::bounds_t bounds = compute_bounds(st, src_, sl_st_idx);
+
       res.push_back(pvst::Smothered(s, w, cn_pvst_v_idx, true, src_, pvst::cn_type_e::s, bounds));
-      //e.push_back(src_);
     }
 
-    for (auto tgt_ : st.get_obe_tgt_v_idxs(src_v_idx)){
+    for (auto tgt_ : st.get_obe_tgt_v_idxs(src_v_idx)) {
       if (tgt_ == zi_st_idx) {
         continue; // skip the trunk
       }
-      pgt::id_or_t w =
-          (st.get_vertex(tgt_).type() == pst::v_type_e::l)
-              ? pgt::id_or_t{st.get_vertex(tgt_).g_v_id(), pgt::or_e::reverse}
-              : pgt::id_or_t{st.get_vertex(tgt_).g_v_id(), pgt::or_e::forward};
-      //pgt::id_or_t s = ft_v.get_start();
+
+      pgt::id_or_t w = comp_w(st, tgt_);
       pgt::id_or_t s = ft_v.get_cn_b();
       pvst::bounds_t bounds = compute_bounds(st, tgt_, sl_st_idx);
-      //res.push_back(pvst::Vertex::make_smothered(s, w, tgt_, ft_v));
+
       res.push_back(pvst::Smothered(s, w, cn_pvst_v_idx, false, tgt_, pvst::cn_type_e::s, bounds));
     }
   }
