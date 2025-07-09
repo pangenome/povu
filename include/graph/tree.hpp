@@ -14,7 +14,7 @@
 #include <variant>
 #include <vector>
 
-#include "../common/types.hpp"
+#include "../common/types/types.hpp"
 
 // generic tree implementation
 namespace povu::tree {

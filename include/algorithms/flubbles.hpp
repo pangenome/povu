@@ -17,23 +17,21 @@
 
 #include "../../src/cli/app.hpp"
 #include "../common/tree_utils.hpp"
-#include "../common/types.hpp"
+#include "../common/types/types.hpp"
 #include "../graph/spanning_tree.hpp"
 #include "../graph/tree.hpp"
 
 namespace povu::flubbles {
-
-#define MODULE "povu::graph::flubble_tree"
-
-namespace pgt = povu::graph_types;
-using namespace povu::graph_types;
+inline constexpr std::string_view MODULE = "povu::graph::flubble_tree";
 
 namespace pt = povu::types;
 namespace pvtr = povu::tree;
 namespace pc = povu::constants;
-namespace pvst = povu::types::pvst;
-namespace pst = povu::spanning_tree;
 namespace ptu = povu::tree_utils;
+namespace pvst = povu::types::pvst;
+namespace pgt = povu::types::graph;
+namespace pst = povu::spanning_tree;
+
 
 // a hairpin boundary
 struct boundary {

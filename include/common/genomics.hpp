@@ -7,11 +7,11 @@
 #include <utility>
 #include <vector>
 
-#include "./types.hpp"
+#include "./types/types.hpp"
 
 
 namespace povu::types::genomics {
-namespace pgt = povu::graph_types;
+namespace pgt = povu::types::graph;
 namespace pt = povu::types;
 namespace pc = povu::constants;
 

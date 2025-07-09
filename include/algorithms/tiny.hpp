@@ -18,27 +18,23 @@
 #include <vector>
 
 #include "../common/tree_utils.hpp"
-#include "../common/types.hpp"
+#include "../common/types/types.hpp"
 #include "../common/utils.hpp"
 #include "../graph/spanning_tree.hpp"
 #include "../graph/tree.hpp"
 
 
 namespace povu::tiny {
-#define MODULE "povu::parallel"
+inline constexpr std::string_view MODULE = "povu::tiny";
 
-using namespace povu::graph_types;
-namespace pgt = povu::graph_types;
-
-namespace pc = povu::constants;
-namespace pvtr = povu::tree;
 namespace pt = povu::types;
+namespace pvtr = povu::tree;
+namespace pc = povu::constants;
+namespace ptu = povu::tree_utils;
 namespace pst = povu::spanning_tree;
 namespace pvst = povu::types::pvst;
-namespace pc = povu::constants;
-namespace pt = povu::types;
-namespace pvtr = povu::tree;
-namespace ptu = povu::tree_utils;
+namespace pgt = povu::types::graph;
+
 
 void find_tiny(const pst::Tree &st, pvtr::Tree &pvst, const ptu::tree_meta &tm);
 

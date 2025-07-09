@@ -20,9 +20,9 @@ namespace pvt = povu::types::genomics;
 namespace pg = povu::genomics;
 namespace pt = povu::types;
 namespace bd = povu::bidirected;
-namespace pgt = povu::graph_types;
+namespace pgt = povu::types::graph;
 namespace pst = povu::spanning_tree;
-namespace pgt = povu::graph_types;
+
 namespace pvtr = povu::tree;
 
 

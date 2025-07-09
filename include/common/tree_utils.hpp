@@ -1,6 +1,7 @@
 #ifndef PV_TREE_UTILS_HPP
 #define PV_TREE_UTILS_HPP
 
+#include <iostream>
 #include <algorithm>
 #include <cassert>
 #include <list>
@@ -13,14 +14,18 @@
 #include <vector>
 
 #include "../graph/spanning_tree.hpp"
-//#include "../graph/tree.hpp"
-#include "./types.hpp"
+#include "./types/types.hpp"
+
 namespace povu::tree_utils {
 
-#define MODULE "povu::tree_utils"
+  //#define MODULE "povu::tree_utils"
+inline constexpr std::string_view MODULE = "povu::tree_utils";
 
-namespace pgt = povu::graph_types;
-using namespace povu::graph_types;
+// namespace pgt = povu::graph_types;
+// using namespace povu::graph_types;
+using namespace povu::types::graph;
+namespace pgt = povu::types::graph;
+
 namespace pt = povu::types;
 namespace pc = povu::constants;
 namespace pst = povu::spanning_tree;

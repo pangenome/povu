@@ -20,7 +20,7 @@
 
 
 namespace povu::io::common {
-namespace pgt = povu::graph_types;
+namespace pgt = povu::types::graph;
 namespace fs = std::filesystem;
 
 #define FILE_ERROR(name)                                                       \

@@ -80,7 +80,7 @@ ADD_LIBRARY(povulib
   ${INCLUDE_DIR}/align/align.cpp
 
   # common
-  ${INCLUDE_DIR}/common/types.cpp
+  ${INCLUDE_DIR}/common/types/graph.cpp
   ${INCLUDE_DIR}/common/utils.cpp
   ${INCLUDE_DIR}/common/tree_utils.cpp
 

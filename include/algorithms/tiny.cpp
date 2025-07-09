@@ -2,12 +2,27 @@
 
 namespace povu::tiny {
 
-bool handle_branches(const pst::Tree &st, const ptu::tree_meta &tm,
-                     const pvst::Flubble &ft_v, std::vector<pt::idx_t> Y) {
+/**
+ * Y = { C(zi) \ zx }
+ */
+std::vector<pt::idx_t> find_Y(const pst::Tree &st, pt::idx_t zi) {
+  std::vector<pt::idx_t> Y;
+  for (auto c_e : st.get_child_edge_idxs(zi)) {
+    const pst::Edge &c_e_ref = st.get_tree_edge(c_e);
+    if (c_e_ref.get_color() == pgt::color_e::black) {
+      continue;
+    }
+
+    Y.push_back(c_e_ref.get_child_v_idx());
+  }
+
+  return Y;
+}
+
+bool branches(const pst::Tree &st, const ptu::tree_meta &tm, pt::idx_t ai, pt::idx_t zi) {
   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
-  pt::idx_t ai = ft_v.get_ai();
-
+  // all brackets are to ai
   auto has_be_to_ai = [&](pt::idx_t c) -> bool {
     for (pt::idx_t be_idx : tm.get_brackets(c)) {
       if (ai == st.get_be(be_idx).get_tgt()) {
@@ -24,16 +39,15 @@ bool handle_branches(const pst::Tree &st, const ptu::tree_meta &tm,
     return false;
   };
 
-  for (pt::idx_t c : Y) {
-    pt::idx_t x = st.get_vertex(c).post_order() - st.get_vertex(c).pre_order();
+  // the vertex c has exactly one descendant
+  auto has_one_descendants = [&](pt::idx_t v_idx) -> bool {
+    pt::idx_t x = st.get_vertex(v_idx).post_order() - st.get_vertex(v_idx).pre_order();
+    return x == 3;
+  };
 
-    // std::cerr << fn_name << " " << st.get_vertex(c).g_v_id() << " x: " << x << "\n";
-
-    if (x != 3)  {
-      return false;
-    }
-
-    if (!has_be_to_ai(c)) {
+  std::vector<pt::idx_t> Y = find_Y(st, zi);
+  for (pt::idx_t c_v_idx : Y) {
+    if (!has_one_descendants(c_v_idx) || !has_be_to_ai(c_v_idx)) {
       return false;
     }
   }
@@ -41,6 +55,25 @@ bool handle_branches(const pst::Tree &st, const ptu::tree_meta &tm,
   return true;
 }
 
+bool trunk(const pst::Tree &st, pt::idx_t ai, pt::idx_t zi) {
+  const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+
+  for (auto c_e_idx : st.get_child_edge_idxs(zi)) {
+    const pst::Edge &e = st.get_tree_edge(c_e_idx);
+    if (e.get_color() == pgt::color_e::black) {
+      continue;
+    }
+
+    return false;
+  }
+
+#ifdef DEBUG
+    assert(st.get_obe_tgt_v_idxs(zi).size() == 1);
+    assert(*(st.get_obe_tgt_v_idxs(zi).begin()) == ai);
+#endif
+
+  return false;
+}
 
 void find_tiny(const pst::Tree &st, pvtr::Tree &ft, const ptu::tree_meta &tm) {
   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
@@ -62,35 +95,14 @@ void find_tiny(const pst::Tree &st, pvtr::Tree &ft, const ptu::tree_meta &tm) {
     pt::idx_t ai = ft_v.get_ai();
     pt::idx_t zi = ft_v.get_zi();
 
-    if (!(zi - ai == 1 || zi-ai == 3)) {
+     if (!(zi - ai == 1 || zi - ai == 3)) {
       continue;
     }
 
-    std::vector<pt::idx_t> Y;
-    for (auto c_e : st.get_child_edge_idxs(zi)){
-      const pst::Edge &c_e_ref = st.get_tree_edge(c_e);
-      if (c_e_ref.get_color() == pgt::color_e::black) {
-        continue;
-      }
-
-      Y.push_back(c_e_ref.get_child_v_idx());
-    }
-
-    if (Y.empty()) {
-#ifdef DEBUG
-      assert(st.get_obe_tgt_v_idxs(zi).size() == 1);
-      assert(*(st.get_obe_tgt_v_idxs(zi).begin()) == ai);
-#endif
-
-      ft_v.set_type(pvst::vt_e::tiny);
-      continue;
-    }
-
-    if (handle_branches(st, tm, ft_v, Y)) {
+     if (trunk(st, ai, zi) || branches(st, tm, ai, zi)) {
       ft_v.set_type(pvst::vt_e::tiny);
     }
   }
 }
 
 } // namespace povu::tiny
-

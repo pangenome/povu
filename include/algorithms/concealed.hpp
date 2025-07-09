@@ -19,16 +19,16 @@
 
 #include "../graph/spanning_tree.hpp"
 #include "../graph/tree.hpp"
-#include "../common/types.hpp"
+#include "../common/types/types.hpp"
 #include "../common/utils.hpp"
 #include "../common/tree_utils.hpp"
 
 namespace povu::concealed {
 
-#define MODULE "povu::concealed"
+  //#define MODULE "povu::concealed"
+inline constexpr std::string_view MODULE = "povu::concealed";
 
-using namespace povu::graph_types;
-namespace pgt = povu::graph_types;
+namespace pgt = povu::types::graph;
 
 namespace pc = povu::constants;
 namespace pvtr = povu::tree;

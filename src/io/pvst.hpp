@@ -17,13 +17,15 @@
 #include "./common.hpp"
 
 namespace povu::io::pvst {
-using povu::graph_types::id_n_cls;
-using povu::graph_types::id_or_t;
+using povu::types::graph::id_n_cls;
+using povu::types::graph::id_or_t;
 namespace pvtr = povu::tree;
-namespace pgt = povu::graph_types;
+namespace pgt = povu::types::graph;
 namespace pvst = povu::types::pvst;
 namespace pc = povu::constants;
 namespace pu = povu::utils;
+
+
 
 void write_bub(const pvtr::Tree &bt, const std::string &base_name, const core::config &app_config);
 /**

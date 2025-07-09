@@ -1,8 +1,6 @@
-#include <iostream>
+#include "./graph.hpp"
 
-#include "./types.hpp"
-
-namespace povu::graph_types {
+namespace povu::types::graph {
 
 std::ostream& operator<<(std::ostream& os, const v_type_e& vt) {
   switch (vt) {
@@ -75,7 +73,7 @@ std::ostream& operator<<(std::ostream& os, const side_n_id_t& x) {
 }
 
 side_n_id_t side_n_id_t::complement() const {
-  return {graph_types::complement(this->v_end), this->v_idx};
+  return {types::graph::complement(this->v_end), this->v_idx};
 }
 
 /*

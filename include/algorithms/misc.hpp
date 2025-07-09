@@ -18,17 +18,15 @@
 #include <vector>
 
 #include "../common/tree_utils.hpp"
-#include "../common/types.hpp"
+#include "../common/types/types.hpp"
 #include "../common/utils.hpp"
 #include "../graph/spanning_tree.hpp"
 #include "../graph/tree.hpp"
 
 namespace povu::misc {
-#define MODULE "povu::misc"
+inline constexpr std::string_view MODULE = "povu::misc";
 
-using namespace povu::graph_types;
-namespace pgt = povu::graph_types;
-
+namespace pgt = povu::types::graph;
 namespace pc = povu::constants;
 namespace pvtr = povu::tree;
 namespace pt = povu::types;

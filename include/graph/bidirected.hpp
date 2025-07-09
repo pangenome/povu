@@ -25,7 +25,7 @@
 #include <vector>
 
 #include "../../src/cli/app.hpp" // for core::config TODO: find a proper place for the app config
-#include "../common/types.hpp"
+#include "../common/types/types.hpp"
 #include "../common/utils.hpp"
 #include "../common/genomics.hpp"
 #include "./spanning_tree.hpp"
@@ -35,8 +35,8 @@ namespace pu = povu::utils;
 namespace pst = povu::spanning_tree;
 namespace pt = povu::types;
 namespace pc = povu::constants;
-using namespace povu::graph_types;
-namespace pgt = povu::graph_types;
+using namespace povu::types::graph;
+namespace pgt = povu::types::graph;
 namespace pvt = povu::types::genomics;
 
 /**

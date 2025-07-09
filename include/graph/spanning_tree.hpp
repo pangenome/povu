@@ -10,16 +10,15 @@
 #include <map>
 #include <unordered_map>
 
-#include "../common/types.hpp"
+#include "../common/types/types.hpp"
 #include "./bracket_list.hpp"
 
 namespace povu::spanning_tree {
 
-namespace pgt = povu::graph_types;
+using namespace povu::types::graph;
+namespace pgt = povu::types::graph;
 namespace pt = povu::types;
 namespace pc = povu::constants;
-
-using namespace povu::graph_types;
 using namespace povu::bracket_list;
 using namespace povu::constants;
 
