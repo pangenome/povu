@@ -35,7 +35,7 @@ def write_gml(output_path, node_info, edges):
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        print("Usage: python gfa_to_gml.py /path/to/input.txt /path/to/output.gml")
+        print("Usage: python pvst_to_gml.py /path/to/input.pvst /path/to/output.gml")
         sys.exit(1)
 
     input_file = sys.argv[1]
