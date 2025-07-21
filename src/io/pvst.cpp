@@ -1,4 +1,5 @@
 #include "./pvst.hpp"
+#include <format>
 
 namespace povu::io::pvst {
 
@@ -95,9 +96,12 @@ void write_bub(const pvtr::Tree &bt, const std::string &base_name, const core::c
   }
 
   // writer header line
+  // ------------------
   bub_file << constants::PVST_HEADER_SYMBOL << pc::COL_SEP << pc::PVST_VERSION
            << pc::COL_SEP << "." << pc::COL_SEP << "." << "\n";
 
+  // write the rest of the PVST
+  // --------------------------
   for (std::size_t i {}; i < bt.vtx_count(); ++i) {
 
     const pvst::VertexBase &v = bt.get_vertex(i);
@@ -137,7 +141,6 @@ void write_bub(const pvtr::Tree &bt, const std::string &base_name, const core::c
 
     // vertex as str
     bub_file << v.as_str() << pc::COL_SEP;
-
 
     // children
     if (bt.is_leaf(i)) {

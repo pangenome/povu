@@ -7,9 +7,9 @@ void deconstruct_component(bd::VG *g, std::size_t component_id,
                            const core::config &app_config) {
   std::string fn_name = std::format("[povu::deconstruct::{}]", __func__);
 
-  //if (component_id !=2) return;
+
 #ifdef DEBUG
-  if (app_config.verbosity() > 1) {
+  if (app_config.verbosity() > 4) {
     std::cerr << "\n";
     g->print_dot(std::cerr);
     std::cerr << "\n";
@@ -22,7 +22,7 @@ void deconstruct_component(bd::VG *g, std::size_t component_id,
   ptu::tree_meta tm = ptu::gen_tree_meta(st);
 
 #ifdef DEBUG
-  if (app_config.verbosity() > 1) {
+  if (app_config.verbosity() > 4) {
     std::cerr << "\n";
     st.print_dot(std::cerr);
     std::cerr << "\n";
