@@ -23,7 +23,7 @@
 #include "../graph/spanning_tree.hpp"
 #include "../graph/tree.hpp"
 
-namespace povu::misc {
+namespace povu::midi {
 inline constexpr std::string_view MODULE = "povu::misc";
 
 namespace pgt = povu::types::graph;
@@ -37,7 +37,7 @@ namespace pt = povu::types;
 namespace pvtr = povu::tree;
 namespace ptu = povu::tree_utils;
 
-void find_misc(const pst::Tree &st, pvtr::Tree &pvst, const ptu::tree_meta &tm);
+void find_midi(const pst::Tree &st, pvtr::Tree &pvst, const ptu::tree_meta &tm);
 } // namespace povu::misc
 
 #endif // PV_MISC_HPP

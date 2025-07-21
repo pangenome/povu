@@ -27,10 +27,12 @@ struct mn_t {
   pt::idx_t n;
 };
 
+
 struct src_lca_t {
   pt::idx_t be_src; // be src vertex index
   pt::idx_t lca; // ℓ
 };
+
 
 const src_lca_t INVALID_SRC_LCA{pc::INVALID_IDX, pc::INVALID_IDX};
 
@@ -52,9 +54,7 @@ bool is_desc(const pst::Tree &st, pt::idx_t a, pt::idx_t d) {
 }
 
 pvst::Concealed gen_ai_slubble(const pst::Tree &st, pt::idx_t ai_st_v_idx,
-                               src_lca_t tb,
-                               //pt::idx_t sl_st_idx,
-                               pvst::sl_type_e t, pt::idx_t fl_v_idx) {
+                               src_lca_t tb, pvst::sl_type_e t, pt::idx_t fl_v_idx) {
   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
   auto [be_src_v_idx, sl_st_idx]= tb;
@@ -103,15 +103,13 @@ pvst::Concealed gen_ai_slubble(const pst::Tree &st, pt::idx_t ai_st_v_idx,
   }
 
   pvst::bounds_t bounds;
-  if (t == pvst::sl_type_e::ai_branch) {
+  if (t == pvst::sl_type_e::ai_trunk) {
     bounds = is_desc(st, ai_st_v_idx, be_src_v_idx)
                  ? pvst::bounds_t{ai_st_v_idx, be_src_v_idx}
                  : pvst::bounds_t{be_src_v_idx, ai_st_v_idx};
   }
   else {
-    bounds = is_desc(st, ai_st_v_idx, sl_st_idx)
-                 ? pvst::bounds_t{ai_st_v_idx, sl_st_idx}
-                 : pvst::bounds_t{sl_st_idx, ai_st_v_idx};
+    bounds = { sl_st_idx, pc::INVALID_IDX };
   }
   return pvst::Concealed(a, g, bounds, fl_v_idx, t, sl_st_idx);
 }
@@ -154,13 +152,12 @@ pvst::Concealed gen_zi_slubble(const pst::Tree &st, pt::idx_t zi_st_v_idx,
     ? pvst::bounds_t{zi_st_v_idx, sl_st_idx}
     : pvst::bounds_t{sl_st_idx, zi_st_v_idx};
 
-  return pvst::Concealed(s, z, bounds, fl_v_idx, t, sl_st_idx);
+  return pvst::Concealed(z, s, bounds, fl_v_idx, t, sl_st_idx);
 }
 
 
 // not inclusive
-bool is_btwn(const pst::Tree &st, pt::idx_t v_idx, pt::idx_t upper,
-             pt::idx_t lower) {
+bool is_btwn(const pst::Tree &st, pt::idx_t v_idx, pt::idx_t upper, pt::idx_t lower) {
   return is_desc(st, upper, v_idx) && is_desc(st, v_idx, lower);
 }
 
@@ -323,6 +320,8 @@ src_lca_t ai_trunk(const pst::Tree &st, const ptu::tree_meta &tm, pt::idx_t m,
 
   const std::vector<pt::idx_t> &depth = tm.depth;
 
+  bool dbg = (ai == 1664 && zi == 1669) ? true : false;
+
   if (n == pc::INVALID_IDX || m == pc::INVALID_IDX || depth[m] > depth[n]) {
     return INVALID_SRC_LCA;
   }
@@ -338,42 +337,47 @@ src_lca_t ai_trunk(const pst::Tree &st, const ptu::tree_meta &tm, pt::idx_t m,
       bool is_src_branch_vtx = is_desc(st, zi, br_src_v_idx);
       bool is_src_btwn_m_zi = is_btwn(st, br_src_v_idx, m, zi);
 
-      if (!is_tgt_ai_or_above && (is_src_branch_vtx ||is_src_btwn_m_zi)){
+      if(dbg) {
+        std::cerr << fn_name << " tgt <= ai " << is_tgt_ai_or_above <<  " tgt " << br_tgt_v_idx << " src" << br_src_v_idx << "\n";
+      }
+
+      if (!is_tgt_ai_or_above ) {
         return false;
       }
+      // if (!is_tgt_ai_or_above && (is_src_branch_vtx ||is_src_btwn_m_zi)){
+      //   return false;
+      // }
    }
     return true;
   };
 
-  auto cond_iii = [&](pt::idx_t ell) -> bool {
+   auto cond_iii = [&](pt::idx_t ell) -> bool {
     return !st.get_obe_idxs(ell).empty() || st.get_child_count(ell) > 1;
   };
-
+ 
   // cond ii and iii
   auto not_cond_ii_iii = [&](src_lca_t x) -> bool {
     return !ell_brackets(x.lca) && cond_iii(x.lca);
   };
 
-  bool dbg = (ai == 1338 && zi == 1343) ? true : false;
+  //bool dbg = (ai == 1772) ? true : false;
 
-  pt::idx_t v = zi;
-  std::cerr << fn_name << " trunk\n";
-  while(dbg && v >= ai) {
-    std::cerr << "\t " << st.get_vertex(v).g_v_id() << ", ";
-    // print children
-    std::cerr << "[ ";
-    for (pt::idx_t c_v_idx : st.get_children(v)) {
-      std::cerr << st.get_vertex(c_v_idx).g_v_id() << ", ";
-    }
-    std::cerr << "]\n";
-    v = st.get_parent_v_idx(v);
-  }
+  // pt::idx_t v = zi;
+  // std::cerr << fn_name << " trunk\n";
+  // while(dbg && v >= ai) {
+  //   std::cerr << "\t " << st.get_vertex(v).g_v_id() << ", ";
+  //   // print children
+  //   std::cerr << "[ ";
+  //   for (pt::idx_t c_v_idx : st.get_children(v)) {
+  //     std::cerr << st.get_vertex(c_v_idx).g_v_id() << ", ";
+  //   }
+  //   std::cerr << "]\n";
+  //   v = st.get_parent_v_idx(v);
+  // }
 
   // cond i
   // ------
-  //typedef src_lca = pt::op_t<pt::idx_t>;
   std::vector<src_lca_t> src_lca_vec;
-  //std::vector<pt::idx_t> x;
   for (pt::idx_t be_idx : st.get_ibe_idxs(ai)) {
     const pst::BackEdge &be = st.get_be(be_idx);
 
@@ -385,20 +389,56 @@ src_lca_t ai_trunk(const pst::Tree &st, const ptu::tree_meta &tm, pt::idx_t m,
     std::vector<pt::idx_t> p{be_src_v_idx, zi};
     pt::idx_t l = find_lca(tm, p);
 
+    
+
+    if (dbg) {
+      std::cerr << " l " << l << " ai " << ai << "\n";
+
+      std::cerr << fn_name << " ell br " << ell_brackets(l) << "\n";
+
+      pt::idx_t v = l;
+      //std::cerr << fn_name << " trunk\n";
+
+      // all brackets are from below zi
+
+      while(dbg && v >= ai) {
+        std::cerr << "\t " << st.get_vertex(v).g_v_id() << ", ";
+        // print children
+        std::cerr << "[ ";
+        for (pt::idx_t c_v_idx : st.get_children(v)) {
+          std::cerr << st.get_vertex(c_v_idx).g_v_id() << ", ";
+        }
+        std::cerr << "] \t";
+
+        // print IBE
+        std::cerr << "IBE: (";
+        for(auto src : st.get_ibe_src_v_idxs(v)){
+          std::cerr << st.get_vertex(src).g_v_id() << ", ";
+        }
+        std::cerr << ")\n";
+        v = st.get_parent_v_idx(v);
+      }
+    }
+
+
+    
+
     if (depth[l] <= depth[m]) {
-      std::cerr << fn_name << " " << st.get_vertex(l).g_v_id() << "\n";
+      // if (dbg) {
+      //   std::cerr << fn_name << " " << l << " " << st.get_vertex(l).g_v_id() << "\n";
+      // }
+
       src_lca_vec.push_back({be_src_v_idx, l});
-      //x.push_back(l);
     }
   }
-
+  
   // erase_if is C++20
   // remove elements that do not meet condition iv and v
   std::erase_if(src_lca_vec, not_cond_ii_iii);
 
   // sort by LCA depth (same as dfs num in this case) in ascending order
   std::sort(src_lca_vec.begin(), src_lca_vec.end(),
-            [&](src_lca_t a, src_lca_t b) { return a.lca < b.lca; });
+                        [&](src_lca_t a, src_lca_t b) { return a.lca < b.lca; });
 
   if (!src_lca_vec.empty()) {
     return src_lca_vec.back(); // return the last element (with max depth)
@@ -476,7 +516,6 @@ void with_ai(const pst::Tree &st, const ptu::tree_meta &tm,
              pt::idx_t ii_v_idx, pt::idx_t ji_v_idx, pt::idx_t fl_v_idx) {
   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
-  //std::vector<pvst::Concealed> res;
   src_lca_t tb = ai_trunk(st, tm, m, n, ii_v_idx, ji_v_idx);
   if (tb.lca != pc::INVALID_IDX) {
     pvst::Concealed sl = gen_ai_slubble(st, ii_v_idx, tb, pvst::sl_type_e::ai_trunk, fl_v_idx);
@@ -488,14 +527,12 @@ void with_ai(const pst::Tree &st, const ptu::tree_meta &tm,
   ai_branches(st, tm, ii_v_idx, ji_v_idx, bb);
   std::cerr << "branch sls:\n";
   for (auto b : bb) {
-    src_lca_t tb {pc::INVALID_IDX, b};
+    src_lca_t tb {pc::INVALID_IDX, b}; // TODO: [A] fix the inv idx
     pvst::Concealed sl = gen_ai_slubble(st, ii_v_idx, tb, pvst::sl_type_e::ai_branch, fl_v_idx);
     res.push_back(sl);
     std::cerr << sl.as_str() << ", ";
   }
   std::cerr << "\n";
-
-  //return res;
 }
 }; // namespace ai
 
@@ -629,6 +666,14 @@ pt::idx_t ji_trunk(const pst::Tree &st, const ptu::tree_meta &tm,
                  const std::pair<pt::idx_t, pt::idx_t> &b) {
                 return a.second < b.second;
               });
+
+    if (x.empty()){
+      return pc::INVALID_IDX;
+    }
+    else {
+      return x.front().first;
+    }
+
 
     for (auto [tgt_v_idx, h] : x) {
       bool valid{true};
@@ -826,7 +871,6 @@ void nest_trunk_ai(const pst::Tree &st, pvtr::Tree &vst,
       continue;
     }
 
-
     const pvst::Flubble &c_v = static_cast<const pvst::Flubble &>(vst.get_vertex(c_v_idx));
 
     pt::idx_t c_ai_idx = c_v.get_ai();
@@ -854,6 +898,8 @@ void nest_branch_ai(const pst::Tree &st, pvtr::Tree &vst,
                    pt::idx_t fl_v_idx, pt::idx_t sl_v_idx, pt::idx_t ai,
                    std::vector<pt::idx_t> &ch) {
   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+
+  // TODO: use pvst::bounds_t
 
   // is a descendant of...
   // a for ancestor, d for descendant
@@ -1072,16 +1118,15 @@ void find_concealed(const pst::Tree &st, pvtr::Tree &ft, const ptu::tree_meta &t
     ai::with_ai(st, tm, slubbles.ii_adj, m, n, ai, zi, ft_v_idx);
     zi::with_ji(st, tm, slubbles.ji_adj, m, n, ai, zi, ft_v_idx);
 
-    if (slubbles.size() > 0) {
+    if (ft_v.as_str() == ">1354>1361") {
       std::cerr << "fl: " << ft_v.as_str() << "\n";
-      if (ft_v.as_str() == ">933>937") {
-        std::cerr << "slubbles: " << ft_v.as_str() << "\n";
-        std::cerr << "ai: " << ai << " zi: " << zi << "\n";
-        std::cerr << "a adj" << slubbles.ii_adj.size() << "\n";
-        std::cerr << "z adj" << slubbles.ji_adj.size() << "\n";
+      std::cerr << "ai: " << ai << " zi: " << zi << "\n";
 
-        exit(1);
-      }
+      //exit(1);
+    }
+
+    if (slubbles.size() > 0) {
+      
       all_slubbles.push_back(slubbles);
     }
   }
@@ -1089,7 +1134,5 @@ void find_concealed(const pst::Tree &st, pvtr::Tree &ft, const ptu::tree_meta &t
   for (auto &sl : all_slubbles) {
     update_pvst::add_concealed(st, ft, tm, sl);
   }
-
-  //exit(1);
 }
 } // namespace povu::concealed

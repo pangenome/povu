@@ -86,7 +86,7 @@ std::vector<pgt::flubble> read_canonical_fl(const std::string& fp) {
 
 void write_bub(const pvtr::Tree &bt, const std::string &base_name, const core::config &app_config) {
   // TODO: combine and pass as single arg
-  std::string bub_file_name = std::format("{}/{}.flb", std::string{app_config.get_output_dir()}, base_name); // file path and name
+  std::string bub_file_name = std::format("{}/{}.pvst", std::string{app_config.get_output_dir()}, base_name); // file path and name
   std::ofstream bub_file(bub_file_name);
 
   if (!bub_file.is_open()) {
@@ -118,10 +118,13 @@ void write_bub(const pvtr::Tree &bt, const std::string &base_name, const core::c
         bub_file << pc::PVST_TINY_SYMBOL << pc::COL_SEP;
         break;
       case pvst::vt_e::parallel:
-        bub_file << pc::PVST_PARALLEL_SYMBOL << pc::COL_SEP;
+        bub_file << pc::PVST_OVERLAP_SYMBOL << pc::COL_SEP;
         break;
       case pvst::vt_e::smothered:
         bub_file << pc::PVST_SMOTHERED_SYMBOL << pc::COL_SEP;
+        break;
+      case pvst::vt_e::midi:
+        bub_file << pc::PVST_MIDI_SYMBOL << pc::COL_SEP;
         break;
       default:
         std::cerr << "ERROR: unknown vertex type in write_bub: " << v.as_str() << "\n";

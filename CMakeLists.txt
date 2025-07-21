@@ -70,7 +70,7 @@ ADD_LIBRARY(povulib
 
   # algorithms
   ${INCLUDE_DIR}/algorithms/concealed.cpp
-  ${INCLUDE_DIR}/algorithms/misc.cpp
+  ${INCLUDE_DIR}/algorithms/midi.cpp
   ${INCLUDE_DIR}/algorithms/smothered.cpp
   ${INCLUDE_DIR}/algorithms/parallel.cpp
   ${INCLUDE_DIR}/algorithms/tiny.cpp

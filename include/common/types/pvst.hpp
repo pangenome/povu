@@ -4,6 +4,8 @@
 #include "./core.hpp"
 #include "./constants.hpp"
 #include "./graph.hpp"
+#include <algorithm>
+#include <format>
 
 /* === PVST pangenome variation structure tree === */
 
@@ -22,7 +24,7 @@ enum class vt_e {
   /* types of bubbles */
   slubble, // rename to concealed
   smothered,   // rename to smothered
-
+  midi,
 };
 
 enum class sl_type_e {
@@ -40,7 +42,7 @@ enum class cn_type_e {
 
 struct bounds_t {
   pt::idx_t upper;
-  pt::idx_t lower;
+  pt::idx_t lower; // when invalid all leaves are the lower boundaries
 };
 
 /* an abstract class for vertices  */
@@ -58,6 +60,8 @@ public:
   void set_idx(povu::types::id_t idx) { this->idx_ = idx; }
   void set_type(vt_e type) { this->type_ = type; }
   virtual std::string as_str() const = 0;
+
+  // TODO: add get_bounds
 };
 
 
@@ -207,6 +211,28 @@ public:
     else { // s
       return std::format("{}{}", this->sm_b_.as_str(), this->cn_b_.as_str());
     }
+  }
+};
+
+
+class MidiBubble : public VertexBase {
+  pt::idx_t g_cn_idx_;
+  pt::idx_t s_cn_idx_;
+  pgt::id_or_t g_;
+  pgt::id_or_t s_;
+
+public:
+  MidiBubble(pt::idx_t g_cn_idx, pgt::id_or_t g, pt::idx_t s_cn_idx,
+             pgt::id_or_t s)
+      : VertexBase(pc::INVALID_IDX, vt_e::midi), g_cn_idx_(g_cn_idx),
+        s_cn_idx_(s_cn_idx), g_(g), s_(s) {}
+
+  bounds_t get_bounds() const {
+    return bounds_t { std::min(g_cn_idx_, s_cn_idx_), std::max(g_cn_idx_, s_cn_idx_) };
+  }
+
+  std::string as_str() const {
+    return std::format("{}{}", this->g_.as_str(), this->s_.as_str());
   }
 };
 

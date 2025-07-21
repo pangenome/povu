@@ -48,7 +48,8 @@ const char PVST_CONCEALED_SYMBOL = 'C';
 const char PVST_SMOTHERED_SYMBOL = 'S';
 const char PVST_DUMMY_SYMBOL = 'D';
 const char PVST_TINY_SYMBOL = 'T';
-const char PVST_PARALLEL_SYMBOL = 'O';
+const char PVST_OVERLAP_SYMBOL = 'O';
+const char PVST_MIDI_SYMBOL = 'M';
 
 const std::string PVST_VERSION = "0.2";
 

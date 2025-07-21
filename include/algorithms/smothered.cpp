@@ -288,7 +288,6 @@ void nest(const pst::Tree &st, pvtr::Tree &pvst, const ptu::tree_meta &tm,
       continue;
     }
 
-
     if (is_nesting(st, smo_v.get_bounds(), bounds)) {
       pvst.del_edge(cn_pvst_v_idx, c_v_idx);
       pvst.add_edge(smo_pvst_v_idx, c_v_idx);
