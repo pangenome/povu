@@ -1,3 +1,0 @@
-* Synthetic Data
-
-General descriptions of the datasets

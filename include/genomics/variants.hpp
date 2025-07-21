@@ -7,15 +7,16 @@
 #include <vector>
 
 #include "../../src/cli/app.hpp"
-#include "../common/types.hpp"
+#include "../common/types/types.hpp"
 #include "../common/genomics.hpp"
 #include "../graph/bidirected.hpp"
 
 
 namespace povu::variants {
-#define MODULE "povu::variants"
+  //#define MODULE "povu::variants"
+inline constexpr std::string_view MODULE = "povu::variants";
 
-namespace pgt = povu::graph_types;
+namespace pgt = povu::types::graph;
 namespace bd = povu::bidirected;
 namespace pt= povu::types;
 namespace pvt = povu::types::genomics;

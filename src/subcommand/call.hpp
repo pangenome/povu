@@ -6,11 +6,11 @@
 #include "../../include/graph/bidirected.hpp"
 #include "../io/to_vcf.hpp"
 
+#include "../../include/common/genomics.hpp"
+#include "../../include/genomics/genomics.hpp"
 #include "../cli/app.hpp"
 #include "../cli/cli.hpp"
-#include "../../include/genomics/genomics.hpp"
-#include "../../include/common/genomics.hpp"
-
+#include "../io/pvst.hpp"
 #include "./common.hpp"
 
 namespace povu::subcommands::call {
@@ -20,9 +20,9 @@ namespace pvt = povu::types::genomics;
 namespace pg = povu::genomics;
 namespace pt = povu::types;
 namespace bd = povu::bidirected;
-namespace pgt = povu::graph_types;
+namespace pgt = povu::types::graph;
 namespace pst = povu::spanning_tree;
-namespace pgt = povu::graph_types;
+
 namespace pvtr = povu::tree;
 
 

@@ -1,16 +1,17 @@
 #ifndef PV_ALN_HPP
 #define PV_ALN_HPP
 
+#include <iostream>
 #include <vector>
 
 #include "../common/genomics.hpp"
-#include "../common/types.hpp"
+#include "../common/types/types.hpp"
 
 namespace povu::align {
 namespace pt = povu::types;
 namespace pc = povu::constants;
 namespace pvt = povu::types::genomics;
-namespace pgt = povu::graph_types;
+namespace pgt = povu::types::graph;
 
 struct aln_scores_t {
   pt::idx_t match;

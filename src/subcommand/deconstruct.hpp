@@ -8,14 +8,20 @@
 #include <thread>
 #include <utility>
 
-#include "../../include/algorithms/algorithms.hpp"
-#include "../../include/common/types.hpp"
-#include "../../include/graph/flubble_tree.hpp"
-#include "../../include/graph/spanning_tree.hpp"
+#include "../../include/algorithms/flubbles.hpp"
+#include "../../include/algorithms/smothered.hpp"
+#include "../../include/algorithms/midi.hpp"
+#include "../../include/algorithms/tiny.hpp"
+#include "../../include/algorithms/concealed.hpp"
+#include "../../include/algorithms/parallel.hpp"
+#include "../../include/common/tree_utils.hpp"
+#include "../../include/common/types/types.hpp"
 #include "../../include/graph/bidirected.hpp"
-#include "../io/to_vcf.hpp"
+#include "../../include/graph/spanning_tree.hpp"
 #include "../cli/app.hpp"
 #include "../cli/cli.hpp"
+#include "../io/pvst.hpp"
+#include "../io/to_vcf.hpp"
 #include "./common.hpp"
 
 namespace povu::subcommands::deconstruct {
@@ -24,13 +30,13 @@ namespace fs = std::filesystem;
 namespace pvt = povu::types::genomics;
 namespace pt = povu::types;
 namespace bd = povu::bidirected;
-namespace pgt = povu::graph_types;
+namespace pgt = povu::types::graph;
 namespace pst = povu::spanning_tree;
-namespace pgt = povu::graph_types;
 namespace pvtr = povu::tree;
-
+namespace pvst = povu::types::pvst;
 namespace pic = povu::io::common;
-
+namespace ptu = povu::tree_utils;
+namespace pfl = povu::flubbles;
 
 using namespace povu::subcommands::common;
 

@@ -18,11 +18,9 @@
 namespace povu::io::from_gfa {
 namespace lq = liteseq;
 namespace bd = povu::bidirected;
-namespace pgt = povu::graph_types;
+namespace pgt = povu::types::graph;
 namespace pt = povu::types;
 
 bd::VG *to_bd(const core::config& app_config);
 }; // namespace io::from_gfa
-
-
 #endif

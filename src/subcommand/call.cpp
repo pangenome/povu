@@ -21,7 +21,7 @@ std::vector<pgt::flubble> get_can_flubbles(const core::config &app_config) {
   std::vector<pgt::flubble> can_flbs; // flubbles in a given file
   for (std::size_t i{}; i < flbs.size(); i++) {
     //std::cerr << std::format("Reading flubble file: {}\n", flbs[i].string());
-    std::vector<pgt::flubble> res = povu::io::bub::read_canonical_fl(flbs[i].string());
+    std::vector<pgt::flubble> res = povu::io::pvst::read_canonical_fl(flbs[i].string());
     can_flbs.insert(can_flbs.end(), res.begin(), res.end());
   }
 
@@ -73,7 +73,7 @@ void do_call(core::config &app_config) {
   //t3.join();
 
   if (true) { // debug
-    g->summary();
+    g->summary(false);
     std::cerr << "flubble count = " << canonical_flubbles.size() << "\n";
     std::cerr << "reference count = " << app_config.get_reference_paths().size() << "\n";
   }

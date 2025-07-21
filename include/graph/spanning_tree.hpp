@@ -10,16 +10,15 @@
 #include <map>
 #include <unordered_map>
 
-#include "../common/types.hpp"
+#include "../common/types/types.hpp"
 #include "./bracket_list.hpp"
 
 namespace povu::spanning_tree {
 
-namespace pgt = povu::graph_types;
+using namespace povu::types::graph;
+namespace pgt = povu::types::graph;
 namespace pt = povu::types;
 namespace pc = povu::constants;
-
-using namespace povu::graph_types;
 using namespace povu::bracket_list;
 using namespace povu::constants;
 
@@ -89,18 +88,21 @@ public:
  */
 class Vertex {
   // indexes of the children edges in the tree_edges vector
-  std::set<pt::idx_t> children; // children // index to the tree edge vector
+  std::set<pt::idx_t> child_e_idxs_; // children // index to the tree_edges vector
   std::set<pt::idx_t> obe;      // out back edges
   std::set<pt::idx_t> ibe;      // in back edges
 
   pt::idx_t dfs_num_; // Preorder DFS traversal number
-  pt::idx_t parent_id; // id to idx // index to the tree edge vector ?
+  pt::idx_t parent_e_idx_; // id to idx // index to the tree edge vector ?
   /*
    dfs_num of the highest node originating from an outgoing backedge from this
    vertex or from a child of this vertex
    */
   pt::idx_t hi_;
   pt::idx_t g_v_id_{}; // id/name of the vertex in the input GFA
+
+  pt::idx_t pre_order_;
+  pt::idx_t post_order_;
 
   pgt::v_type_e type_;
 
@@ -116,37 +118,38 @@ public:
   bool is_root() const;
   bool is_leaf() const;
   pt::idx_t dfs_num() const;
-  pt::idx_t parent() const; // TODO: remove
+  pt::idx_t pre_order() const;
+  pt::idx_t post_order() const;
+  //pt::idx_t parent() const; // TODO: remove
   pt::idx_t hi() const; // TODO: remove
   pt::idx_t g_v_id() const;
   v_type_e type() const;
 
-  std::set<pt::idx_t> const& get_obe() const;
+  std::set<pt::idx_t> const &get_obe() const;
   std::set<pt::idx_t> const& get_ibe() const;
-  //bool is_null() const;
 
   // get the index of the edge that points to the parent in the tree
-
-  pt::idx_t const& get_parent_idx() const; // TODO: remove, superceded by get_parent_edge_idx
   pt::idx_t get_parent_e_idx() const;
 
-  std::set<pt::idx_t> const& get_children() const;
+  std::set<pt::idx_t> const &get_child_edge_idxs() const;
+  pt::idx_t child_count() const;
 
   // ---------
   // setter(s)
   // ---------
   void add_obe(pt::idx_t obe_id);
   void add_ibe(pt::idx_t ibe_id);
-  void add_child(pt::idx_t e_id);
-  //void unset_null(); // sets null_ to false;
+  void add_child_e_idx(pt::idx_t e_id);
 
   // the index of the parent node in the tree vertex
-  void set_parent(pt::idx_t n_id);
+  void set_parent_e_idx(pt::idx_t e_idx);
   void set_g_v_id(pt::idx_t g_v_id);
   void set_type(v_type_e t);
   void set_hi(pt::idx_t val);
   // the dfs num of the node
   void set_dfs_num(pt::idx_t idx);
+  void set_pre_order(pt::idx_t idx);
+  void set_post_order(pt::idx_t idx);
 };
 
 class Tree {
@@ -220,10 +223,11 @@ public:
   std::size_t get_root_idx() const;
 
   // number of vertices in the tree
-  std::size_t size() const;
+  //[[deprecated("Use vtx_count")]]
+  //std::size_t size() const;
   pt::idx_t vtx_count() const;
-  std::size_t tree_edge_count() const;
-  std::size_t back_edge_count() const;
+  pt::idx_t tree_edge_count() const;
+  pt::idx_t back_edge_count() const;
 
 
   Vertex const &get_vertex(std::size_t vertex) const;
@@ -249,28 +253,36 @@ public:
 
 
   // return edges that point to children of the vertex
-  std::vector<Edge> get_child_edges(std::size_t vertex);
-
+  [[deprecated("use get_child_edges_mut()")]]
+  std::vector<Edge> get_child_edges(pt::idx_t v_idx);
+  std::vector<Edge> get_child_edges_mut(pt::idx_t v_idx);
+  std::vector<pt::idx_t> get_child_edge_idxs(pt::idx_t v_idx) const;
+  // returns v_idxs of the children of the vertex
+  std::set<std::size_t> get_children(pt::idx_t v_idx) const;
+  pt::idx_t get_child_count(pt::idx_t v_idx) const;
 
   // get index of the  be in back_edges vector
-  std::set<std::size_t> get_obe_idxs(std::size_t vertex);
-  std::set<std::size_t> get_ibe_idxs(std::size_t vertex);
+  std::set<std::size_t> get_obe_idxs(std::size_t vertex) const;
+  std::set<std::size_t> get_ibe_idxs(std::size_t vertex) const;
 
   size_t list_size(std::size_t vertex);
   size_t get_hi(std::size_t vertex);
 
+  bool is_desc(pt::idx_t a, pt::idx_t d) const;
 
   /**
     * @brief get indexes of the vertices the obes from this vertex points to (tgt/targets)
-   */
-    // TODO rename to get_obe_tgts
+    */
+  [[deprecated("use get_obe_tgt_v_idxs()")]]
   std::set<size_t> get_obe(std::size_t vertex); // get backedge target indexes
+  std::set<pt::idx_t> get_obe_tgt_v_idxs(std::size_t v_idx) const;
 
   /**
     * @brief get sources of the vertices the ibes from this vertex points from (srcs)
    */
-      // TODO rename to get_obe_srcs
+  [[deprecated("use get_ibe_src_v_idxs()")]]
   std::set<size_t> get_ibe(std::size_t vertex);
+  std::set<pt::idx_t> get_ibe_src_v_idxs(std::size_t v_idx) const;
 
   /**
    * @brief a reference to the tree edge given the index in the tree_edges vector
@@ -295,17 +307,17 @@ public:
   // return reference to a back edge given the
   // index of the back edge in the back_edges vector
   BackEdge& get_backedge(std::size_t backedge_idx);
+  const BackEdge& get_be(std::size_t backedge_idx) const;
   BackEdge& get_backedge_ref_given_id(std::size_t backedge_id);
   // given the back edge's unique back edge id return a reference to the backedge
   BackEdge get_backedge_given_id(std::size_t backedge_id);
-  std::set<std::size_t> get_children(std::size_t vertex);
+
 
   bool is_root(std::size_t vertex) const;
   bool is_leaf(std::size_t vertex) const;
 
   // given a vertex id, return a reference to the edge that points to the parent
   Edge const& get_parent_edge(std::size_t vertex) const;
-
 
   // TODO: rename to get_parent_edge_mut
   Edge& get_incoming_edge(std::size_t vertex);
@@ -314,6 +326,7 @@ public:
     * @brief get the index of the edge to the parent vertex
     * if v_idx is the root index it causes to undefined behavior
    */
+  [[deprecated("use get_parent_v_idx()")]]
   std::size_t get_parent(std::size_t v_idx); // TODO: remove, superceded by get_parent_idx
   std::size_t get_parent_v_idx(std::size_t v_idx) const;
 

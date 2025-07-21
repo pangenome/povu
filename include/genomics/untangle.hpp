@@ -9,12 +9,12 @@
 
 #include "../../src/cli/app.hpp"
 #include "../common/genomics.hpp"
-#include "../common/types.hpp"
+#include "../common/types/types.hpp"
 #include "../graph/bidirected.hpp"
 #include "../align/align.hpp"
 
 namespace povu::untangle {
-namespace pgt = povu::graph_types;
+namespace pgt = povu::types::graph;
 namespace pvt = povu::types::genomics;
 namespace bd = povu::bidirected;
 namespace pt = povu::types;

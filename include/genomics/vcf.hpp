@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "../common/genomics.hpp"
-#include "../common/types.hpp"
+#include "../common/types/types.hpp"
 #include "../graph/bidirected.hpp"
 
 namespace povu::genomics::vcf {
