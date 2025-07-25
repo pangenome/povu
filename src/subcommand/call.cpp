@@ -7,12 +7,13 @@ namespace povu::subcommands::call {
 
 std::vector<pgt::flubble> get_can_flubbles(const core::config &app_config) {
   std::string fn_name = std::format("[povu::subcommands::{}]", __func__);
-  // get the list of files in the forest dir that end in .flb
-  std::vector<fs::path> flbs = pic::get_files(app_config.get_forest_dir(), ".flb");
+
+  // get the list of files in the forest dir that end in .pvst
+  std::vector<fs::path> flbs = pic::get_files(app_config.get_forest_dir(), ".pvst");
 
   if (flbs.empty()) {
     std::cerr << fn_name
-              << " Could not find flb files in " << app_config.get_forest_dir()
+              << " Could not find pvst files in " << app_config.get_forest_dir()
               << std::endl;
     exit(EXIT_FAILURE);
   }
@@ -26,6 +27,28 @@ std::vector<pgt::flubble> get_can_flubbles(const core::config &app_config) {
   }
 
   return can_flbs;
+}
+
+void read_pvsts(const core::config &app_config, std::vector<pvtr::Tree> &pvsts) {
+  std::string fn_name = std::format("[povu::subcommands::{}]", __func__);
+
+  // get the list of files in the forest dir that end in .pvst
+  std::vector<fs::path> fps = pic::get_files(app_config.get_forest_dir(), ".pvst");
+
+  if (fps.empty()) {
+    std::cerr << fn_name << " Could not find pvst files in "
+              << app_config.get_forest_dir() << std::endl;
+    exit(EXIT_FAILURE);
+  }
+
+  // TODO: [c] parallelise
+  //std::vector<pvtr::Tree> pvsts; // flubbles in a given file
+  for (std::size_t i{}; i < fps.size(); i++) {
+    // std::cerr << std::format("Reading flubble file: {}\n", flbs[i].string());
+    pvsts.push_back( povu::io::pvst::read_pvst(fps[i].string()));
+  }
+
+  //return pvsts;
 }
 
 pt::status_t get_refs(core::config &app_config) {
@@ -58,14 +81,16 @@ void do_call(core::config &app_config) {
   /* parallel read for the graph, flubbles and references */
 
   bd::VG *g { nullptr };
-  std::vector<pgt::flubble> canonical_flubbles;
+  //std::vector<pgt::flubble> canonical_flubbles;
+  std::vector<pvtr::Tree> pvsts;
   pt::status_t _;
 
   std::thread t1([&] {
     get_refs(app_config);
     g = pcs::get_vg(app_config);
   });
-  std::thread t2([&] { canonical_flubbles = get_can_flubbles(app_config); });
+
+  std::thread t2([&] { read_pvsts(app_config, pvsts); });
   //std::thread t3([&] { _ = get_refs(app_config); });
 
   t1.join();
@@ -74,13 +99,13 @@ void do_call(core::config &app_config) {
 
   if (true) { // debug
     g->summary(false);
-    std::cerr << "flubble count = " << canonical_flubbles.size() << "\n";
+    std::cerr << "flubble count = " << pvsts.size() << "\n";
     std::cerr << "reference count = " << app_config.get_reference_paths().size() << "\n";
   }
 
   std::set<pt::id_t> ref_ids = get_ref_ids(*g, app_config);
 
-  pvt::VcfRecIdx vcf_recs = pg::gen_vcf_rec_map(canonical_flubbles, *g, app_config);
+  pvt::VcfRecIdx vcf_recs = pg::gen_vcf_rec_map(pvsts, *g, app_config);
 
   piv::write_vcfs(vcf_recs, *g, app_config);
 

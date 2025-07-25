@@ -5,7 +5,7 @@
 #include <fstream> // std::ofstream
 #include <vector>
 
-#include "../../include/common/genomics.hpp"
+#include "../../include/common/types/genomics.hpp"
 #include "../../include/common/types/types.hpp"
 #include "../../include/common/utils.hpp"
 #include "../../include/graph/bidirected.hpp"

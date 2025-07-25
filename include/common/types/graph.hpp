@@ -4,9 +4,11 @@
 #include <set>
 
 #include "./core.hpp"
+#include "./constants.hpp"
 
 namespace povu::types::graph {
 namespace pt = povu::types;
+namespace pc = povu::constants;
 
 // should this be renamed to clr_e or color_e?
 enum class color {
@@ -92,6 +94,7 @@ struct id_or_t {
   pt::id_t v_id; // TODO change type and name to id to pt::id_t
   or_e orientation;
 
+  
   std::string as_str() const {
     return std::format("{}{}", or_to_str(this->orientation) , this->v_id);
   }
@@ -145,6 +148,66 @@ std::string as_str() const {
 typedef  flubble flubble_t ;
 
 bool operator<(const flubble_t &lhs, const flubble_t &rhs);
+
+
+class Step {
+  // TODO: remove loop_no?
+  // pt::id_t loop_no_; // the nth time that a ref is going through a flubble RoV
+  pt::id_t v_id_;
+  pt::idx_t step_idx_; // also locus
+  or_e o_;
+
+public:
+  /* constructor */
+  Step(pt::id_t v_id, or_e o)
+    :v_id_(v_id), step_idx_(pc::INVALID_IDX), o_(o) {}
+  Step(pt::id_t v_id, pt::idx_t step_idx, or_e o )
+    :v_id_(v_id), step_idx_(step_idx), o_(o) {}
+
+  /*getters*/
+  pt::idx_t get_step_idx() const { return this->step_idx_; }
+  pt::id_t get_v_id() const { return this->v_id_; }
+  or_e get_o() const { return this->o_; }
+  //pt::id_t get_loop_no() const { return this->loop_no_; }
+
+  /*setters*/
+  void set_step_idx(pt::idx_t step_idx) { this->step_idx_ = step_idx; }
+  //void set_loop_no(pt::id_t loop_id) { this->loop_no_ = loop_id; }
+};
+
+/* an uninterrupted ordered sequence of steps bound by the start end of a RoV */
+class Walk {
+protected:
+  std::vector<Step> steps_;
+
+public:
+  /* constructors */
+  Walk() : steps_() {}
+  Walk(pt::id_t id, or_e o) : steps_(std::vector<Step>{Step{id, o}}) {}
+  Walk(Step s) : steps_(std::vector<Step>{s}) {}
+
+  /*getters*/
+  pt::idx_t step_count() const { return this->steps_.size(); }
+  const std::vector<Step> &get_steps() const { return this->steps_; }
+  std::vector<Step> &get_steps_mut() { return this->steps_; }
+  const Step &get_step(pt::idx_t idx) const { return this->steps_[idx]; }
+  std::string as_str() const {
+    std::string s;
+    for (const Step &step : this->steps_) {
+
+      s += std::format("{}{}", step.get_o() == or_e::forward ? ">" : "<",
+                       step.get_v_id());
+    }
+    return s;
+  }
+
+  /*setters*/
+  void append_step(Step s) { this->steps_.emplace_back(s); }
+};
+
+typedef Walk StepSeq;
+
+
 } // namespace povu::graph_types
 
 #endif

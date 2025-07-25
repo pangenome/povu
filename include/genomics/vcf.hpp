@@ -4,14 +4,16 @@
 #include <algorithm>
 #include <vector>
 
-#include "../common/genomics.hpp"
+#include "../common/types/genomics.hpp"
 #include "../common/types/types.hpp"
+#include "../common/types/graph.hpp"
 #include "../graph/bidirected.hpp"
 
 namespace povu::genomics::vcf {
 namespace pt = povu::types;
 namespace bd = povu::bidirected;
 namespace pvt = povu::types::genomics;
+namespace pgt = povu::types::graph;
 
 pvt::VcfRecIdx gen_vcf_records(const bd::VG &g,
                                const std::vector<pvt::RefWalks> &ref_walks);

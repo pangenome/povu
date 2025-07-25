@@ -39,7 +39,7 @@ void deconstruct_component(bd::VG *g, std::size_t component_id,
     povu::smothered::find_smothered(st, flubble_tree, tm);
   }
 
-  povu::io::pvst::write_bub(flubble_tree, std::to_string(component_id), app_config);
+  povu::io::pvst::write_pvst(flubble_tree, std::to_string(component_id), app_config);
 
   return;
 }

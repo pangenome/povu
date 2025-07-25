@@ -24,10 +24,11 @@ namespace pgt = povu::types::graph;
 namespace pvst = povu::types::pvst;
 namespace pc = povu::constants;
 namespace pu = povu::utils;
+namespace pt = povu::types;
 
+pvtr::Tree read_pvst(const std::string &fp);
 
-
-void write_bub(const pvtr::Tree &bt, const std::string &base_name, const core::config &app_config);
+void write_pvst(const pvtr::Tree &bt, const std::string &base_name, const core::config &app_config);
 /**
  * @brief Read a flb file but only return the canonical flubbles
  */

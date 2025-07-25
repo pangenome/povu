@@ -18,7 +18,7 @@ inline void write_header(const std::string &chrom , std::ostream &os) {
 void write_vcf_rec(const bd::VG &g, const pvt::VcfRec &r,
                    const std::string &chrom, std::ostream &os) {
   const std::string qual = "60";
-  auto get_label = [&](const pvt::Step &s) -> std::string {
+  auto get_label = [&](const pgt::Step &s) -> std::string {
     if (s.get_o() == pgt::or_e::forward) {
       return g.get_vertex_by_id(s.get_v_id()).get_label();
     } else {
@@ -30,7 +30,7 @@ void write_vcf_rec(const bd::VG &g, const pvt::VcfRec &r,
     std::string at_str = "";
 
     if (at.is_del()) {
-      const pvt::Step &s = at.get_step(0);
+      const pgt::Step &s = at.get_step(0);
       at_str += get_label(s).back();
     }
     else {

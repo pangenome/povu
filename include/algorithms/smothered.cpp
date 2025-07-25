@@ -363,7 +363,6 @@ void find_smothered(const pst::Tree &st, pvtr::Tree &ft, const ptu::tree_meta &t
   }
 
   add_smothered(st, ft, tm, all_smo);
-
 }
 
 } // namespace povu::smothered

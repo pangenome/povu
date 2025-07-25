@@ -8,7 +8,7 @@
 #include <algorithm>
 
 #include "../../src/cli/app.hpp"
-#include "../common/genomics.hpp"
+#include "../common/types/genomics.hpp"
 #include "../common/types/types.hpp"
 #include "../graph/bidirected.hpp"
 #include "../align/align.hpp"

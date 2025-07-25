@@ -8,7 +8,7 @@ namespace povu::untangle {
 #define MODULE "povu::untangle"
 
 
-std::map<pt::id_t, pt::idx_t> count_max_ats(const bd::VG &g, const pvt::Walk &w) {
+std::map<pt::id_t, pt::idx_t> count_max_ats(const bd::VG &g, const pgt::Walk &w) {
 
   std::map<pt::id_t, pt::idx_t> loop_count;
 
@@ -61,7 +61,7 @@ std::map<pt::id_t, pt::idx_t> count_max_ats(const bd::VG &g, const pvt::Walk &w)
  * @param w a single traversal bounded by start to the end of an RoV
  * @param rws the ref walks
  */
-void get_itns(const bd::VG &g, pt::idx_t walk_idx, const pvt::Walk &w, pvt::RefWalks &rws) {
+void get_itns(const bd::VG &g, pt::idx_t walk_idx, const pgt::Walk &w, pvt::RefWalks &rws) {
   std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
   pgt::flubble_t fl = rws.get_flb();
@@ -101,9 +101,9 @@ void get_itns(const bd::VG &g, pt::idx_t walk_idx, const pvt::Walk &w, pvt::RefW
   };
 
   auto is_extendable = [&](const pvt::AT &curr_at, pt::idx_t step_idx, pt::idx_t locus) -> bool {
-    const std::vector<pvt::Step> &steps = curr_at.get_steps();
+    const std::vector<pgt::Step> &steps = curr_at.get_steps();
 
-    const pvt::Step &s = steps.back();
+    const pgt::Step &s = steps.back();
     pt::idx_t prev_locus = s.get_step_idx();
     pt::id_t prev_v_id = s.get_v_id();
     const bd::Vertex &prev_v = g.get_vertex_by_id(prev_v_id);
@@ -142,7 +142,7 @@ void get_itns(const bd::VG &g, pt::idx_t walk_idx, const pvt::Walk &w, pvt::RefW
         pvt::AT &curr_at = ats[at_idx];
 
         if (curr_at.step_count() == 0 && step_idx == 0) {
-          curr_at.append_step(pvt::Step{v_id, locus, p_o});
+          curr_at.append_step(pgt::Step{v_id, locus, p_o});
           break;
         }
 
@@ -151,7 +151,7 @@ void get_itns(const bd::VG &g, pt::idx_t walk_idx, const pvt::Walk &w, pvt::RefW
         }
 
         if (is_extendable(curr_at, step_idx, locus)) {
-          curr_at.append_step(pvt::Step{v_id, locus, p_o});
+          curr_at.append_step(pgt::Step{v_id, locus, p_o});
           break;
         }
       }
@@ -207,34 +207,34 @@ pvt::Itn remove_invalid_ats(pvt::Itn &itn) {
 }
 
 /* untangle RoVs that are flubbles linearise refs in the flubble */
-pvt::RefWalks get_ref_traversals(const bd::VG &g, pvt::RoV &r) {
-  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+// pvt::RefWalks get_ref_traversals(const bd::VG &g, pvt::RoV &r) {
+//   std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
-  pvt::RefWalks rw { r.get_flb() };
+//   pvt::RefWalks rw { r.get_flb() };
 
-  /* a walk is a single traversal bounded by start to the end of an RoV */
-  for (pt::idx_t walk_idx{}; walk_idx < r.walk_count(); ++walk_idx) {
-    pvt::Walk const &w = r.get_walks()[walk_idx];
-    get_itns(g, walk_idx, w, rw);
-  }
+//   /* a walk is a single traversal bounded by start to the end of an RoV */
+//   for (pt::idx_t walk_idx{}; walk_idx < r.walk_count(); ++walk_idx) {
+//     pvt::Walk const &w = r.get_walks()[walk_idx];
+//     get_itns(g, walk_idx, w, rw);
+//   }
 
 
-  rw.sort_by_step_idx();
+//   rw.sort_by_step_idx();
 
-  for (auto &[r, itn] : rw.get_ref_itns_mut()) {
-    pvt::Itn n = remove_invalid_ats(itn);
-    rw.replace_itn(r, std::move(n));
-  }
+//   for (auto &[r, itn] : rw.get_ref_itns_mut()) {
+//     pvt::Itn n = remove_invalid_ats(itn);
+//     rw.replace_itn(r, std::move(n));
+//   }
 
-  for (auto &[_, itn] : rw.get_ref_itns()) {
-    if (itn.at_count() > 1) {
-      rw.set_tangled(true);
-      break;
-    }
-  }
+//   for (auto &[_, itn] : rw.get_ref_itns()) {
+//     if (itn.at_count() > 1) {
+//       rw.set_tangled(true);
+//       break;
+//     }
+//   }
 
-  return rw;
-}
+//   return rw;
+// }
 
 inline std::vector<pt::up_t<pt::id_t>> compute_pairs(pvt::RefWalks rt) {
   std::set<pt::id_t> ref_ids = rt.get_ref_ids();
@@ -291,13 +291,13 @@ std::vector<pvt::RefWalks> untangle_flb_rovs(const bd::VG &g, std::vector<pvt::R
 
   for (pt::idx_t i {}; i < rovs.size(); ++i) {
     pvt::RoV &r = rovs[i];
-    pvt::RefWalks rt = get_ref_traversals(g, r);
+    //pvt::RefWalks rt = get_ref_traversals(g, r);
 
-    if (rt.is_tangled()) {
-      untangle_flb(g, rt);
-    }
+    //if (rt.is_tangled()) {
+    //  untangle_flb(g, rt);
+    //}
 
-    all_rt.push_back(rt);
+    //all_rt.push_back(rt);
   }
 
   return all_rt;

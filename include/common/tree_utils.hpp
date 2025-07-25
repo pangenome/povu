@@ -17,12 +17,8 @@
 #include "./types/types.hpp"
 
 namespace povu::tree_utils {
-
-  //#define MODULE "povu::tree_utils"
 inline constexpr std::string_view MODULE = "povu::tree_utils";
 
-// namespace pgt = povu::graph_types;
-// using namespace povu::graph_types;
 using namespace povu::types::graph;
 namespace pgt = povu::types::graph;
 

@@ -94,7 +94,7 @@ void add_vcf_recs(const bd::VG &g, const pvt::RefWalks &rws, pvt::VcfRecIdx &vcf
       const pvt::AT &ref_at = itn.get_at(at_idx);
 
       // skip the first vertex in the flubble
-      const pvt::Step &s = ref_at.get_step(1);
+      const pgt::Step &s = ref_at.get_step(1);
 
       pt::id_t pos = ref_at.is_del() ? s.get_step_idx() - 1 : s.get_step_idx();
 

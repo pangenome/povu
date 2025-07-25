@@ -10,7 +10,8 @@
 #include <map>
 #include <unordered_map>
 
-#include "../common/types/types.hpp"
+#include "../common/types/constants.hpp"
+#include "../common/types/graph.hpp"
 #include "./bracket_list.hpp"
 
 namespace povu::spanning_tree {

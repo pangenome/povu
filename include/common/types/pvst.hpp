@@ -1,11 +1,13 @@
 #ifndef POVU_TYPES_PVST_HPP
 #define POVU_TYPES_PVST_HPP
 
+#include <algorithm>
+#include <format>
+
 #include "./core.hpp"
 #include "./constants.hpp"
 #include "./graph.hpp"
-#include <algorithm>
-#include <format>
+
 
 /* === PVST pangenome variation structure tree === */
 
@@ -13,6 +15,7 @@ namespace povu::types::pvst {
 namespace pc = povu::constants;
 namespace pt = povu::types;
 namespace pgt = povu::types::graph;
+  //namespace bd = povu::bidirected;
 
 // short for VertexType
 enum class vt_e {
@@ -40,10 +43,24 @@ enum class cn_type_e {
   s
 };
 
+// bounds in the spanning tree
 struct bounds_t {
   pt::idx_t upper;
   pt::idx_t lower; // when invalid all leaves are the lower boundaries
 };
+
+// bounds in the bidirected graph
+struct traversal_params_t {
+  pgt::id_or_t start;
+  pgt::id_or_t end;
+
+  bool traversable;
+  // if true traverse start to end else end to start
+  bool s2e; // start to end or end to start
+};
+
+traversal_params_t null_tp();
+
 
 /* an abstract class for vertices  */
 class VertexBase {
@@ -51,25 +68,36 @@ class VertexBase {
   vt_e type_;
 
 public:
-  VertexBase(povu::types::id_t idx, vt_e type)
-      : idx_(idx), type_(type) {}
+  // ——— constructors ———
+  VertexBase(povu::types::id_t idx, vt_e type) : idx_(idx), type_(type) {}
 
+  // ——— getters ———
   povu::types::id_t get_idx() const { return this->idx_; }
   vt_e get_type() const { return this->type_; }
 
+
+  // ——— pure virutal functions ———
+  virtual std::string as_str() const = 0;
+  virtual traversal_params_t get_traversal_params() const = 0;
+  virtual ~VertexBase() = default;
+
+  // ——— setters ———
   void set_idx(povu::types::id_t idx) { this->idx_ = idx; }
   void set_type(vt_e type) { this->type_ = type; }
-  virtual std::string as_str() const = 0;
-
-  // TODO: add get_bounds
 };
 
 
 class Dummy : public VertexBase {
 public:
+  // ——— constructors ———
   Dummy() : VertexBase(pc::INVALID_IDX, vt_e::dummy) {}
 
+  // ——— getters ———
   std::string as_str() const override { return "."; }
+  traversal_params_t get_traversal_params() const override {
+    // dummy vertex does not have any walks
+    return null_tp();
+  }
 };
 
 
@@ -84,16 +112,15 @@ class Flubble : public VertexBase {
   pt::idx_t n_; // n
 
 public:
-  /*
-   == constructor ==
-   */
+
+  // ——— constructors ———
+  Flubble(vt_e typ, pgt::id_or_t a, pgt::id_or_t z)
+      : VertexBase(pc::INVALID_IDX, typ), a_(a), z_(z) {}
 
   Flubble(pgt::id_or_t a, pgt::id_or_t z, pt::idx_t ai, pt::idx_t zi)
     : VertexBase(pc::INVALID_IDX, vt_e::flubble), a_(a), z_(z), ai_(ai), zi_(zi) {}
 
-  /*
-   == getters ==
-   */
+  // ——— getters ———
   pgt::id_or_t get_a() const { return this->a_; }
   pgt::id_or_t get_z() const { return this->z_; }
   pt::idx_t get_ai() const { return this->ai_; }
@@ -101,16 +128,19 @@ public:
   pt::idx_t get_m() const { return this->m_; }
   pt::idx_t get_n() const { return this->n_; }
   bounds_t get_bounds() const { return {this->get_ai(), this->get_zi()}; }
+  //bdg_bounds_t get_bdg_bounds() const { return {this->get_a(), this->get_z()}; }
+  traversal_params_t get_traversal_params() const override {
+    // dummy vertex does not have any walks
+    return traversal_params_t{
+      this->get_a(), this->get_z(), true, true
+    };
+  }
 
-  /*
-   == setters ==
-   */
+  // ——— setters ———
   void set_m(pt::idx_t m) { this->m_ = m; }
   void set_n(pt::idx_t n) { this->n_ = n; }
 
-  /*
-   == other(s) ==
-   */
+  // ——— others ———
   std::string as_str() const override {
     return std::format("{}{}", this->a_.as_str(), this->z_.as_str());
   }
@@ -138,27 +168,31 @@ private:
   }
 
 public:
-  /*
-   == constructor ==
-   */
-  Concealed(pgt::id_or_t fl_b, pgt::id_or_t cn_b, bounds_t bounds, pt::idx_t fl_idx,
-            sl_type_e sl_type, pt::idx_t sl_st_idx)
-    : VertexBase(pc::INVALID_IDX, vt_e::slubble), fl_idx(fl_idx),
-      sl_type_(sl_type), sl_st_idx_(sl_st_idx), fl_b_(fl_b), cn_b_(cn_b), bounds_(bounds) {}
+  // ——— constructors ———
+  Concealed(pgt::id_or_t fl_b, pgt::id_or_t cn_b)
+      : VertexBase(pc::INVALID_IDX, vt_e::slubble), fl_b_(fl_b), cn_b_(cn_b) {}
 
-  /*
-   == getters ==
-   */
+  Concealed(pgt::id_or_t fl_b, pgt::id_or_t cn_b, bounds_t bounds,
+            pt::idx_t fl_idx, sl_type_e sl_type, pt::idx_t sl_st_idx)
+    : VertexBase(pc::INVALID_IDX, vt_e::slubble), fl_idx(fl_idx),
+      sl_type_(sl_type), sl_st_idx_(sl_st_idx), fl_b_(fl_b), cn_b_(cn_b),
+      bounds_(bounds) {}
+
+  // ——— getters ———
   pt::idx_t get_fl_idx() const { return this->fl_idx; }
   sl_type_e get_sl_type() const { return this->sl_type_; }
   pt::idx_t get_sl_st_idx() const { return this->sl_st_idx_; }
   pgt::id_or_t get_fl_b() const { return this->fl_b_; }
   pgt::id_or_t get_cn_b() const { return this->cn_b_; }
   bounds_t get_bounds() const { return this->bounds_; }
+  traversal_params_t get_traversal_params() const override {
+    // dummy vertex does not have any walks
+    return traversal_params_t{
+      this->get_fl_b(), this->get_cn_b(), true, this->with_ai()
+    };
+  }
 
-  /*
-   == others ==
-   */
+  // ——— others ———
   std::string as_str() const override {
     if (with_ai()) { // formed with a
       return std::format("{}{}", this->fl_b_.as_str(), this->cn_b_.as_str());
@@ -186,17 +220,29 @@ class Smothered : public VertexBase {
   bounds_t bounds_;
 
 public:
+
+  // ——— constructors ———
+  Smothered(pgt::id_or_t cn_b, pgt::id_or_t sm_b)
+      : VertexBase(pc::INVALID_IDX, vt_e::smothered), cn_b_(cn_b), sm_b_(sm_b) {}
+
   Smothered(pgt::id_or_t cn_b, pgt::id_or_t sm_b, pt::idx_t cn_idx,
             bool cn_b_is_ans, pt::idx_t sm_st_idx, cn_type_e sm_type, bounds_t bounds)
       : VertexBase(pc::INVALID_IDX, vt_e::smothered),
         cn_idx(cn_idx), sm_st_idx(sm_st_idx), cn_b_(cn_b), sm_b_(sm_b),
         cn_b_is_ans_(cn_b_is_ans), cn_type_(sm_type), bounds_(bounds) {}
 
+  // ——— getters ———
   pt::idx_t get_cn_idx() const { return this->cn_idx; }
   pt::idx_t get_sm_st_idx() const { return this->sm_st_idx; }
   bounds_t get_bounds() const { return this->bounds_; }
   cn_type_e get_cn_type() const { return this->cn_type_; }
   bool is_cn_b_ancestor() const { return this->cn_b_is_ans_; }
+  traversal_params_t get_traversal_params() const override {
+    // dummy vertex does not have any walks
+    return traversal_params_t{
+      this->sm_b_, this->cn_b_, true, this->cn_b_is_ans_
+    };
+  }
 
   std::string as_str() const override {
     if (this->cn_type_ == cn_type_e::g) { // g
@@ -206,7 +252,6 @@ public:
       else { // sm_b is ancestor of cn_b
         return std::format("{}{}", this->sm_b_.as_str(), this->cn_b_.as_str());
       }
-      //return std::format("{}{}", this->cn_b_.as_str(), this->sm_b_.as_str());
     }
     else { // s
       return std::format("{}{}", this->sm_b_.as_str(), this->cn_b_.as_str());
@@ -222,120 +267,33 @@ class MidiBubble : public VertexBase {
   pgt::id_or_t s_;
 
 public:
+
+  // ——— constructors ———
+  MidiBubble(pgt::id_or_t g, pgt::id_or_t s)
+      : VertexBase(pc::INVALID_IDX, vt_e::midi), g_(g), s_(s) {}
+
   MidiBubble(pt::idx_t g_cn_idx, pgt::id_or_t g, pt::idx_t s_cn_idx,
              pgt::id_or_t s)
       : VertexBase(pc::INVALID_IDX, vt_e::midi), g_cn_idx_(g_cn_idx),
         s_cn_idx_(s_cn_idx), g_(g), s_(s) {}
 
+  // ——— getters ———
   bounds_t get_bounds() const {
     return bounds_t { std::min(g_cn_idx_, s_cn_idx_), std::max(g_cn_idx_, s_cn_idx_) };
   }
+  pgt::id_or_t get_g() const { return this->g_; }
+  pgt::id_or_t get_s() const { return this->s_; }
 
-  std::string as_str() const {
-    return std::format("{}{}", this->g_.as_str(), this->s_.as_str());
-  }
-};
-
-
-class Vertex {
-  // base
-  povu::types::id_t idx_; // idx of the vertex in the vst
-  vt_e type_;
-
-  // flubble
-  pgt::id_or_t a_;
-  pgt::id_or_t z_;
-  pt::idx_t ai_;
-  pt::idx_t zi_;
-
-  // only applies when is slubble
-  //fl_vtx_type_e fl_vtx_type_; // type of the flubble vertex (ai or zi)
-  sl_type_e fl_type_; // type of the flubble (trunk or branch)
-  //pt::idx_t fl_st_idx_; // idx in the spanning tree for flubble
-  pt::idx_t sl_st_idx_; // idx in the spanning tree for slubble
-
-  pt::idx_t sm_st_idx_; // idx in the spanning tree for smothered vertex
-
-private:
-  // constructor for a concealed
-  Vertex(pgt::id_or_t start, pgt::id_or_t end, pt::idx_t sl_st_idx, sl_type_e t, Vertex fl)
-      : idx_(pc::INVALID_IDX), type_(vt_e::slubble), a_(start), z_(end),
-        ai_(fl.get_ai()), zi_(fl.get_zi()), fl_type_(t), sl_st_idx_(sl_st_idx) {}
-
-  // constructor for a smothered vertex
-  Vertex(pgt::id_or_t start, pgt::id_or_t end, pt::idx_t sm_st_idx, Vertex fl)
-    : type_(vt_e::smothered), a_(start), z_(end), sl_st_idx_(fl.get_sl_st_idx()),
-      sm_st_idx_(sm_st_idx)  {}
-
-  // constructor for a flubble
-  Vertex(pgt::id_or_t a, pgt::id_or_t z, pt::idx_t ai, pt::idx_t zi)
-    : idx_(pc::INVALID_IDX), type_(vt_e::flubble), a_(a), z_(z), ai_(ai), zi_(zi) {}
-
-  // constructor for a dummy vertex
-  Vertex()
-      : idx_(pc::INVALID_IDX), type_(vt_e::dummy), a_(pgt::id_or_t{pc::INVALID_ID, pgt::or_e::forward}),
-        z_(pgt::id_or_t{pc::INVALID_ID, pgt::or_e::forward}),
-        ai_(pc::INVALID_IDX), zi_(pc::INVALID_IDX),
-        sl_st_idx_(pc::INVALID_IDX) {}
-
-public:
-  // --------------
-  // constructor(s)
-  // --------------
-  static Vertex make_flubble(pgt::id_or_t a, pgt::id_or_t z, pt::idx_t ai, pt::idx_t zi) {
-    return Vertex(a, z, ai, zi);
+  traversal_params_t get_traversal_params() const override {
+    // dummy vertex does not have any walks
+    return traversal_params_t{this->get_g(), this->get_s(), true, true};
   }
 
-  static Vertex make_slubble(pgt::id_or_t start, pgt::id_or_t end,
-                             pt::idx_t sl_st_idx, sl_type_e sl_t, Vertex fl) {
-    return Vertex(start, end, sl_st_idx, sl_t, fl);
-  }
-
-  static Vertex make_smothered(pgt::id_or_t start, pgt::id_or_t end,
-                               pt::idx_t sm_st_idx, Vertex fl) {
-    return Vertex(start, end, sm_st_idx, fl);
-  }
-
-  static Vertex make_dummy() {
-    return Vertex();
-  }
-
-  // ---------
-  // getter(s)
-  // ---------
-  povu::types::id_t get_idx() const { return this->idx_; }
-  pgt::id_or_t get_start() const { return this->a_; }
-  pgt::id_or_t get_end() const { return this->z_; }
-  vt_e get_type() const { return this->type_; }
-  pt::idx_t get_sl_st_idx() const { return this->sl_st_idx_; }
-
-  sl_type_e get_sl_type() const { return this->fl_type_; }
-
-  // get the idx of ui in the spanning tree
-  pt::idx_t get_ai() const { return this->ai_; }
-  pt::idx_t get_zi() const { return this->zi_; }
-
-  // ---------
-  // setter(s)
-  // ---------
-  void set_type(vt_e t) { this->type_ = t; }
-  void set_v_idx(pt::idx_t v_idx) { this->idx_ = v_idx; }
-
-  // ---------
-  // other(s)
-  // ---------
-  std::string as_str() const {
-
-    if (this->type_ == vt_e::dummy) {
-      return ".";
+    std::string as_str() const {
+      return std::format("{}{}", this->g_.as_str(), this->s_.as_str());
     }
+  };
 
-    std::string s;
-    s += this->a_.as_str();
-    s += this->z_.as_str();
-    return s;
-  }
-};
 } // namespace povu::types::pvst
 
 #endif

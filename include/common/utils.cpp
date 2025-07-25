@@ -73,7 +73,7 @@ std::pair<std::size_t, std::size_t> frm_bidirected_idx(std::size_t x, bool has_d
   return { foo(x) - 2, foo(x) - 1 };
 }
 
-void split(const std::string &line, char sep, std::vector<std::string>* tokens) {
+void split(const std::string &line, char sep, std::vector<std::string> *tokens) {
 
   // split line at sep and store results in tokens
   std::size_t start = 0;

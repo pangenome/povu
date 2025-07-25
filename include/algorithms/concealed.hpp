@@ -25,7 +25,6 @@
 
 namespace povu::concealed {
 
-  //#define MODULE "povu::concealed"
 inline constexpr std::string_view MODULE = "povu::concealed";
 
 namespace pgt = povu::types::graph;

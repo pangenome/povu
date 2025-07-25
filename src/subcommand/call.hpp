@@ -6,7 +6,7 @@
 #include "../../include/graph/bidirected.hpp"
 #include "../io/to_vcf.hpp"
 
-#include "../../include/common/genomics.hpp"
+#include "../../include/common/types/genomics.hpp"
 #include "../../include/genomics/genomics.hpp"
 #include "../cli/app.hpp"
 #include "../cli/cli.hpp"

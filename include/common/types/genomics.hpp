@@ -2,99 +2,62 @@
 #define POVU_GENOMIC_TYPES_HPP
 
 #include <map>
+#include <memory>
 #include <string>
 #include <thread>
 #include <utility>
 #include <vector>
 
-#include "./types/types.hpp"
-
+//#include "../../graph/bidirected.hpp"
+#include "./pvst.hpp"
+#include "./types.hpp"
+#include "./graph.hpp"
 
 namespace povu::types::genomics {
 namespace pgt = povu::types::graph;
 namespace pt = povu::types;
 namespace pc = povu::constants;
+namespace pvst = povu::types::pvst;
 
-class Step {
-  // TODO: remove loop_no?
-  //pt::id_t loop_no_; // the nth time that a ref is going through a flubble RoV
-  pt::id_t v_id_;
-  pt::idx_t step_idx_; // also locus
-  pgt::or_e o_;
-
-public:
-  /* constructor */
-  Step(pt::id_t v_id, pgt::or_e o)
-    :v_id_(v_id), step_idx_(pc::INVALID_IDX), o_(o) {}
-  Step(pt::id_t v_id, pt::idx_t step_idx, pgt::or_e o )
-    :v_id_(v_id), step_idx_(step_idx), o_(o) {}
-
-  /*getters*/
-  pt::idx_t get_step_idx() const { return this->step_idx_; }
-  pt::id_t get_v_id() const { return this->v_id_; }
-  pgt::or_e get_o() const { return this->o_; }
-  //pt::id_t get_loop_no() const { return this->loop_no_; }
-
-  /*setters*/
-  void set_step_idx(pt::idx_t step_idx) { this->step_idx_ = step_idx; }
-  //void set_loop_no(pt::id_t loop_id) { this->loop_no_ = loop_id; }
-};
-
-/* an uninterrupted ordered sequence of steps bound by the start end of a RoV */
-class Walk {
-protected:
-  std::vector<Step> steps_;
-
-public:
-  /* constructors */
-  Walk() : steps_() {}
-  Walk(pt::id_t id, pgt::or_e o) : steps_(std::vector<Step>{Step{id, o}}) {}
-  Walk(Step s) : steps_(std::vector<Step>{s}) {}
-
-  /*getters*/
-  pt::idx_t step_count() const { return this->steps_.size(); }
-  const std::vector<Step> &get_steps() const { return this->steps_; }
-  std::vector<Step> &get_steps_mut() { return this->steps_; }
-  const Step &get_step(pt::idx_t idx) const { return this->steps_[idx]; }
-  std::string as_str() const {
-    std::string s;
-    for (const Step &step : this->steps_) {
-
-      s += std::format("{}{}", step.get_o() == pgt::or_e::forward ? ">" : "<",
-                       step.get_v_id());
-    }
-    return s;
-  }
-
-  /*setters*/
-  void append_step(Step s) { this->steps_.emplace_back(s); }
-};
-
-typedef Walk StepSeq;
 
 
 /* region of variation */
 class RoV {
-std::vector<Walk> walks_;
-pgt::flubble_t fl_;
+std::vector<pgt::Walk> walks_;
+const pvst::VertexBase *pvst_vtx;
 
 public:
-RoV(pgt::flubble_t fl) : walks_(), fl_(fl) {}
 
-/*getters*/
+// --------------
+// constructor(s)
+// --------------
+
+RoV(const pvst::VertexBase *v) : walks_(), pvst_vtx(v) {}
+
+// --------------
+// getter(s)
+// --------------
+
 pt::idx_t walk_count() const { return this->walks_.size(); }
-const pgt::id_or_t &get_entry() const { return this->fl_.start_; }
-const pgt::id_or_t &get_exit() const { return this->fl_.end_; }
-pgt::flubble_t get_flb() const { return this->fl_; }
-const std::vector<Walk> &get_walks() const { return this->walks_; }
-std::vector<Walk> &get_walks_mut() { return this->walks_; }
 
-/*setters*/
-void set_walks(std::vector<Walk> &&walks) { this->walks_ = walks; }
+// const pgt::id_or_t &get_entry() const { return this->fl_.start_; }
+// const pgt::id_or_t &get_exit() const { return this->fl_.end_; }
+// pgt::flubble_t get_flb() const { return this->fl_; }
+const std::vector<pgt::Walk> &get_walks() const { return this->walks_; }
+std::vector<pgt::Walk> &get_walks_mut() { return this->walks_; }
 
-/* other */
+// --------------
+// setter(s)
+// --------------
+
+void set_walks(std::vector<pgt::Walk> &&walks) { this->walks_ = walks; }
+
+// --------------
+// other(s)
+// --------------
+
 std::string as_str() const {
-  return this->fl_.start_.as_str() + this->fl_.end_.as_str();
+  return this->pvst_vtx->as_str();
 }
 };
 
@@ -103,12 +66,12 @@ std::string as_str() const {
 /*allele traversal---a walk taken by a reference*/
 // when the AT is a deletion, the walk is empty
 //typedef Walk AT;
-class AT : public Walk {
+class AT : public pgt::Walk {
 bool is_del_;
 public:
   /* constructors */
-  AT() : Walk(){}
-  AT(Step s) : Walk(s) {}
+  AT() : pgt::Walk(){}
+  AT(pgt::Step s) : pgt::Walk(s) {}
 
   /*getters*/
   bool is_del() const { return this->is_del_; }
@@ -140,7 +103,7 @@ public:
   const AT &get_at(pt::idx_t at_idx) const { return this->it_[at_idx]; }
   AT &get_at_mut(pt::idx_t at_idx) { return this->it_[at_idx]; }
 
-  const Step &get_step(pt::idx_t idx) const {
+  const pgt::Step &get_step(pt::idx_t idx) const {
     pt::idx_t i = 0;
     for (const AT &w : this->it_) {
       if (i + w.step_count() > idx) {
@@ -168,7 +131,7 @@ public:
     this->len += w.step_count();
   }
 
-  void append_step(pt::idx_t at_idx, Step s) {
+  void append_step(pt::idx_t at_idx, pgt::Step s) {
     if (at_idx >= this->at_count()) {
       throw std::out_of_range("at index out of range");
     }

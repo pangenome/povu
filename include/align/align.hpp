@@ -4,7 +4,7 @@
 #include <iostream>
 #include <vector>
 
-#include "../common/genomics.hpp"
+#include "../common/types/genomics.hpp"
 #include "../common/types/types.hpp"
 
 namespace povu::align {

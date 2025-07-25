@@ -20,13 +20,13 @@ inline match_res_t eq_step(const pvt::Itn &a, pt::idx_t a_idx,
     exit(1);
   }
 
-  auto is_match = [](const pvt::Step &a, const pvt::Step &b) {
+  auto is_match = [](const pgt::Step &a, const pgt::Step &b) {
     return a.get_v_id() == b.get_v_id() && a.get_o() == b.get_o();
   };
 
 
-  const pvt::Step &a_step = a.get_step(a_idx);
-  const pvt::Step b_step = b.get_step(b_idx);
+  const pgt::Step &a_step = a.get_step(a_idx);
+  const pgt::Step b_step = b.get_step(b_idx);
 
 
   if (is_match(a_step, b_step)) {
@@ -53,7 +53,7 @@ inline match_res_t eq_at(const pvt::Itn &a, pt::idx_t a_idx,
   }
 
   // TODO: also compare loop no
-  auto is_match = [](const pvt::Step &a, const pvt::Step &b) {
+  auto is_match = [](const pgt::Step &a, const pgt::Step &b) {
     return a.get_v_id() == b.get_v_id() && a.get_o() == b.get_o();
   };
 
