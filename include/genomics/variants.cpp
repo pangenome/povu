@@ -81,11 +81,13 @@ inline std::vector<pvt::RoV> init_rovs(const bd::VG &g,
   rs.reserve(pvsts.size());
 
   for (const pvtr::Tree &pvst : pvsts) {
-    for (pt::idx_t ft_v_idx{}; ft_v_idx < pvst.vtx_count(); ft_v_idx++) {
-      if (pvst.is_leaf(ft_v_idx)) {
-        const pvst::VertexBase *pvst_v_ptr = pvst.get_vertex_const_ptr(ft_v_idx);
+    for (pt::idx_t pvst_v_idx{}; pvst_v_idx < pvst.vtx_count(); pvst_v_idx++) {
+      if (pvst.is_leaf(pvst_v_idx)) {
+        const pvst::VertexBase *pvst_v_ptr = pvst.get_vertex_const_ptr(pvst_v_idx);
         pvt::RoV r { pvst_v_ptr };
-        std::vector<pgt::Walk> walks = graph_utils::get_walks(g, pvst_v_ptr);
+        std::cerr << "adding RoV for " << r.as_str() << "\n";
+        std::vector<pgt::Walk> walks;
+        graph_utils::get_walks(g, pvst_v_ptr, walks);
         r.set_walks(std::move(walks));
         rs.push_back(std::move(r));
       }

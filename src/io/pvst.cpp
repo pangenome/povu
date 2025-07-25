@@ -258,8 +258,6 @@ pvtr::Tree read_pvst(const std::string &fp) {
     for (const pt::idx_t &c_idx : split_numbers(ch)) {
       pt::idx_t ch_pvst_idx = line_idx_to_pvst_idx[c_idx];
       pvst.add_edge(p_pvst_idx, ch_pvst_idx);
-      std::cerr << "added " << pvst.get_vertex(p_pvst_idx).as_str()
-                << " -> " << pvst.get_vertex(ch_pvst_idx).as_str() << "\n";
     }
   }
 

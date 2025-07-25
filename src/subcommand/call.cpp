@@ -42,13 +42,10 @@ void read_pvsts(const core::config &app_config, std::vector<pvtr::Tree> &pvsts) 
   }
 
   // TODO: [c] parallelise
-  //std::vector<pvtr::Tree> pvsts; // flubbles in a given file
+  // loop through the .pvst files and read them
   for (std::size_t i{}; i < fps.size(); i++) {
-    // std::cerr << std::format("Reading flubble file: {}\n", flbs[i].string());
-    pvsts.push_back( povu::io::pvst::read_pvst(fps[i].string()));
+    pvsts.push_back(povu::io::pvst::read_pvst(fps[i].string()));
   }
-
-  //return pvsts;
 }
 
 pt::status_t get_refs(core::config &app_config) {
@@ -78,35 +75,35 @@ inline std::set<pt::id_t> get_ref_ids(const bd::VG &g, const core::config &app_c
 void do_call(core::config &app_config) {
   std::string fn_name = std::format("[povu::main::{}]", __func__);
 
-  /* parallel read for the graph, flubbles and references */
-
+  // ----------------------------------------------------
+  // parallel read for the graph, flubbles and references
+  // ----------------------------------------------------
   bd::VG *g { nullptr };
-  //std::vector<pgt::flubble> canonical_flubbles;
   std::vector<pvtr::Tree> pvsts;
   pt::status_t _;
 
+  // read graph & refs
   std::thread t1([&] {
     get_refs(app_config);
     g = pcs::get_vg(app_config);
   });
 
+  // read PVST
   std::thread t2([&] { read_pvsts(app_config, pvsts); });
-  //std::thread t3([&] { _ = get_refs(app_config); });
 
   t1.join();
   t2.join();
-  //t3.join();
 
-  if (true) { // debug
+#ifdef DEBUG
+  if (true) {
     g->summary(false);
     std::cerr << "flubble count = " << pvsts.size() << "\n";
     std::cerr << "reference count = " << app_config.get_reference_paths().size() << "\n";
   }
+#endif
 
   std::set<pt::id_t> ref_ids = get_ref_ids(*g, app_config);
-
   pvt::VcfRecIdx vcf_recs = pg::gen_vcf_rec_map(pvsts, *g, app_config);
-
   piv::write_vcfs(vcf_recs, *g, app_config);
 
   return;

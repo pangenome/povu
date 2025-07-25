@@ -30,6 +30,17 @@ enum class vt_e {
   midi,
 };
 
+constexpr bool is_fl_like(pvst::vt_e t) noexcept {
+  switch (t) {
+  case pvst::vt_e::flubble:
+  case pvst::vt_e::tiny:
+  case pvst::vt_e::parallel:
+    return true;
+  default:
+    return false;
+  }
+}
+
 enum class sl_type_e {
   ai_trunk,
   ai_branch,

@@ -3,10 +3,12 @@
 
 #include <algorithm>
 #include <format>
+#include <vector>
 
 #include "./types/pvst.hpp"
 #include "./types/genomics.hpp"
 #include "../graph/bidirected.hpp"
+#include "types/graph.hpp"
 
 
 namespace povu::graph_utils {
@@ -23,7 +25,8 @@ namespace pvt = povu::types::genomics;
 // Maximum number of steps to take from flubble start to end
 const pt::idx_t MAX_FLUBBLE_STEPS{20};
 
-std::vector<pgt::Walk> get_walks(const bd::VG &g, const pvst::VertexBase *pvst_vtx_ptr);
+void get_walks(const bd::VG &g, const pvst::VertexBase *pvst_vtx_ptr,
+               std::vector<pgt::Walk>);
 
 } // namespace povu::graph_utils
 

@@ -21,6 +21,8 @@ namespace pt = povu::types;
 namespace pc = povu::constants;
 namespace pa = povu::align;
 
+inline constexpr std::string_view MODULE = "povu::untangle";
+
 std::vector<pvt::RefWalks> untangle_flb_rovs(const bd::VG &g, std::vector<pvt::RoV> &rovs);
 } // namespace povu::untangle
 

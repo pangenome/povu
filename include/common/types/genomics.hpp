@@ -83,6 +83,7 @@ public:
 /*
  * an interrupted
  * sequence of looped walks in a RoV for a given ref
+ * useful for repeats
 */
 class It {
   std::vector<AT> it_;
