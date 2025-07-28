@@ -84,13 +84,13 @@ ADD_LIBRARY(povulib
   ${INCLUDE_DIR}/common/types/pvst.cpp
   ${INCLUDE_DIR}/common/utils.cpp
   ${INCLUDE_DIR}/common/tree_utils.cpp
-  ${INCLUDE_DIR}/common/graph_utils.cpp
+  
 
   # genomics
   ${INCLUDE_DIR}/genomics/untangle.cpp
   ${INCLUDE_DIR}/genomics/variants.cpp
-  ${INCLUDE_DIR}/genomics/genomics.cpp
   ${INCLUDE_DIR}/genomics/vcf.cpp
+  ${INCLUDE_DIR}/genomics/utils.cpp
 
   # graph
   ${INCLUDE_DIR}/graph/bidirected.cpp

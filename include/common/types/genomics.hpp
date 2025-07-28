@@ -1,17 +1,18 @@
 #ifndef POVU_GENOMIC_TYPES_HPP
 #define POVU_GENOMIC_TYPES_HPP
 
+#include <format>
 #include <map>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <utility>
 #include <vector>
 
-//#include "../../graph/bidirected.hpp"
 #include "./pvst.hpp"
-#include "./types.hpp"
 #include "./graph.hpp"
+#include "./core.hpp"
 
 namespace povu::types::genomics {
 namespace pgt = povu::types::graph;
@@ -19,11 +20,21 @@ namespace pt = povu::types;
 namespace pc = povu::constants;
 namespace pvst = povu::types::pvst;
 
+/* ===========================================================
+     types that involve the graph itself
 
+      step, walk, RoV
+   =========================================================== */
 
-/* region of variation */
+// TODO: move to graph types
+typedef pgt::id_or_t step;
+typedef std::vector<pgt::id_or_t> walk;
+
+/**
+ * a collection of walks within a region of variation from start to end
+ */
 class RoV {
-std::vector<pgt::Walk> walks_;
+std::vector<walk> walks_;
 const pvst::VertexBase *pvst_vtx;
 
 public:
@@ -34,79 +45,202 @@ public:
 
 RoV(const pvst::VertexBase *v) : walks_(), pvst_vtx(v) {}
 
-// --------------
+// ---------
 // getter(s)
-// --------------
+// ---------
 
 pt::idx_t walk_count() const { return this->walks_.size(); }
+const pvst::VertexBase *get_pvst_vtx() const { return this->pvst_vtx; }
+const std::vector<walk> &get_walks() const { return this->walks_; }
+std::vector<walk> &get_walks_mut() { return this->walks_; }
 
-// const pgt::id_or_t &get_entry() const { return this->fl_.start_; }
-// const pgt::id_or_t &get_exit() const { return this->fl_.end_; }
-// pgt::flubble_t get_flb() const { return this->fl_; }
-const std::vector<pgt::Walk> &get_walks() const { return this->walks_; }
-std::vector<pgt::Walk> &get_walks_mut() { return this->walks_; }
-
-// --------------
+// ---------
 // setter(s)
-// --------------
+// ---------
 
-void set_walks(std::vector<pgt::Walk> &&walks) { this->walks_ = walks; }
+void set_walks(std::vector<walk> &&walks) { this->walks_ = walks; }
 
-// --------------
+// --------
 // other(s)
-// --------------
+// --------
 
 std::string as_str() const {
   return this->pvst_vtx->as_str();
 }
 };
 
-/* variation related types */
+/* ===========================================================
+     types that involve the reference
 
-/*allele traversal---a walk taken by a reference*/
-// when the AT is a deletion, the walk is empty
-//typedef Walk AT;
-class AT : public pgt::Walk {
-bool is_del_;
-public:
-  /* constructors */
-  AT() : pgt::Walk(){}
-  AT(pgt::Step s) : pgt::Walk(s) {}
+      Allele Step, Allele Walk, Itinerary, Ref Walks
+   =========================================================== */
 
-  /*getters*/
-  bool is_del() const { return this->is_del_; }
-
-  /* setters */
-  void set_is_del(bool is_del) { this->is_del_ = is_del; }
+enum class var_type_e {
+  del, // deletion
+  ins, // insertion
+  sub, // substitution
+  und // undetermined
 };
 
-/*
+// add operator << for var_type_e
+inline std::ostream &operator<<(std::ostream &os, var_type_e vt) {
+  switch (vt) {
+    case var_type_e::del:
+      os << "DEL";
+      break;
+    case var_type_e::ins:
+      os << "INS";
+      break;
+    case var_type_e::sub:
+      os << "SUB";
+      break;
+    case var_type_e::und:
+      os << "UND";
+      break;
+  }
+  return os;
+}
+
+// 1) A helper to turn enum → string_view:
+constexpr std::string_view to_string_view(var_type_e vt) noexcept {
+  switch (vt) {
+  case var_type_e::del:
+    return "DEL";
+  case var_type_e::ins:
+    return "INS";
+  case var_type_e::sub:
+    return "SUB";
+  case var_type_e::und:
+    return "UND";
+  }
+  // optional: handle out-of-range
+  return "??";
+}
+
+/**
+ * Allele or Ref Step
+ */
+class AS {
+  // TODO: remove loop_no?
+  // pt::id_t loop_no_; // the nth time that a ref is going through a flubble RoV
+  pt::id_t v_id_;
+  pt::idx_t step_idx_; // TODO: rename to locus_?
+  pgt::or_e o_;
+
+public:
+
+  // --------------
+  // constructor(s)
+  // --------------
+  AS(pt::id_t v_id, pgt::or_e o) :v_id_(v_id), step_idx_(pc::INVALID_IDX), o_(o) {}
+  AS(pt::id_t v_id, pt::idx_t step_idx, pgt::or_e o ) :v_id_(v_id), step_idx_(step_idx), o_(o) {}
+
+  // ---------
+  // getter(s)
+  // ---------
+  pt::idx_t get_step_idx() const { return this->step_idx_; }
+  pt::id_t get_v_id() const { return this->v_id_; }
+  pgt::or_e get_o() const { return this->o_; }
+  //pt::id_t get_loop_no() const { return this->loop_no_; }
+
+  // ---------
+  // setter(s)
+  // ---------
+  void set_step_idx(pt::idx_t step_idx) { this->step_idx_ = step_idx; }
+  //void set_loop_no(pt::id_t loop_id) { this->loop_no_ = loop_id; }
+};
+
+// implement == operator for AS
+inline bool operator==(const AS &lhs, const AS &rhs) {
+  return lhs.get_v_id() == rhs.get_v_id() &&
+         lhs.get_step_idx() == rhs.get_step_idx() &&
+         lhs.get_o() == rhs.get_o();
+}
+
+/**
+ * Ref walk or Allele Walk
+ * allele walk---a walk taken by a reference
+ * an uninterrupted ordered sequence of steps bound by the start end of a RoV
+ */
+class AW {
+  std::vector<AS> steps_;
+  //const pvst::VertexBase *pvst_vtx; // TODO: remove
+  //bool is_del_; // TODO: remove
+  //var_type_e vt_;
+  pt::idx_t walk_idx_;
+
+public:
+
+  // --------------
+  // constructor(s)
+  // --------------
+  AW() : steps_() {}
+  AW(pt::idx_t w_idx) : steps_(), walk_idx_(w_idx) {}
+  AW(pt::id_t id, pgt::or_e o) : steps_(std::vector<AS>{AS{id, o}}) {}
+  AW(AS s) : steps_(std::vector<AS>{s}) {}
+
+  // ---------
+  // getter(s)
+  // ---------
+  pt::idx_t step_count() const { return this->steps_.size(); }
+  const std::vector<AS> &get_steps() const { return this->steps_; }
+  std::vector<AS> &get_steps_mut() { return this->steps_; }
+  const AS &get_step(pt::idx_t idx) const { return this->steps_[idx]; }
+  std::string as_str() const {
+    std::string s;
+    for (const AS &step : this->steps_) {
+      s += std::format("{}{}", step.get_o() == pgt::or_e::forward ? ">" : "<", step.get_v_id());
+    }
+    return s;
+  }
+  // bool is_del() const { return this->is_del_; }
+  //var_type_e get_var_type() const { return this->vt_; }
+  bool empty() const noexcept { return this->step_count() == 0; }
+  pt::idx_t get_walk_idx() const { return this->walk_idx_; }
+
+
+  // ---------
+  // setter(s)
+  // ---------
+  void append_step(AS s) { this->steps_.emplace_back(s); }
+  //void set_var_type(var_type_e vt) { this->vt_ = vt; }
+  //void set_is_del(bool is_del) { this->is_del_ = is_del; }
+};
+
+// TODO: replace instances of at with aw
+
+/**
+ * Ref Itinerary or just Itinerary
  * an interrupted
  * sequence of looped walks in a RoV for a given ref
  * useful for repeats
-*/
-class It {
-  std::vector<AT> it_;
-  pt::idx_t len;
+ */
+class Itn {
+  std::vector<AW> it_;
+  pt::idx_t len; // total step count in the itinerary
 
 public:
-  /* constructors */
-  It() : it_(), len(0) {}
-  //It(AT &&w) : it_(std::vector<AT>{w}), len(w.step_count()) {}
 
-  /* getters */
+  // --------------
+  // constructor(s)
+  // --------------
+  Itn() : it_(), len(0) {}
+
+  // ---------
+  // getter(s)
+  // ---------
   pt::idx_t at_count() const { return this->it_.size(); }
   pt::idx_t step_count() const { return this->len; }
 
-  const std::vector<AT> &get_ats() const { return this->it_; }
-  std::vector<AT> &get_ats_mut() { return this->it_; }
+  const std::vector<AW> &get_ats() const { return this->it_; }
+  std::vector<AW> &get_ats_mut() { return this->it_; }
 
-  const AT &get_at(pt::idx_t at_idx) const { return this->it_[at_idx]; }
-  AT &get_at_mut(pt::idx_t at_idx) { return this->it_[at_idx]; }
+  const AW &get_at(pt::idx_t at_idx) const { return this->it_[at_idx]; }
+  AW &get_at_mut(pt::idx_t at_idx) { return this->it_[at_idx]; }
 
-  const pgt::Step &get_step(pt::idx_t idx) const {
+  const AS &get_step(pt::idx_t idx) const {
     pt::idx_t i = 0;
-    for (const AT &w : this->it_) {
+    for (const AW &w : this->it_) {
       if (i + w.step_count() > idx) {
         return w.get_steps()[idx - i];
       }
@@ -115,24 +249,15 @@ public:
     throw std::out_of_range("step index out of range");
   }
 
-  // const AT &get_at_by_step_idx(pt::idx_t idx) const {
-  //   pt::idx_t i = 0;
-  //   for (const AT &w : this->it_) {
-  //     if (i + w.step_count() > idx) {
-  //       return w;
-  //     }
-  //     i += w.step_count();
-  //   }
-  //   throw std::out_of_range("step index out of range");
-  // }
-
-  /* setters */
-  void append_at(AT &&w) {
+  // ---------
+  // setter(s)
+  // ---------
+  void append_at(AW &&w) {
     this->it_.emplace_back(w);
     this->len += w.step_count();
   }
 
-  void append_step(pt::idx_t at_idx, pgt::Step s) {
+  void append_step(pt::idx_t at_idx, AS s) {
     if (at_idx >= this->at_count()) {
       throw std::out_of_range("at index out of range");
     }
@@ -150,39 +275,73 @@ public:
     this->it_.erase(this->it_.begin() + at_idx);
   }
 
-  //void dec_step_count(pt::idx_t dec) { this->len -= dec; }
+
+  // If you delete the highest indices first, the lower-indexed ones never
+  // shift:
+  void remove_aws(const std::set<pt::idx_t> &to_remove) {
+    // walk the set in reverse (largest index → smallest)
+    for (auto it = to_remove.rbegin(); it != to_remove.rend(); ++it) {
+      pt::idx_t aw_idx = *it;
+      if (aw_idx >= this->at_count())
+        throw std::out_of_range("…");
+
+      // now it's safe to use aw_idx directly:
+      this->len -= this->it_[aw_idx].step_count();
+      this->it_.erase(this->it_.begin() + aw_idx);
+    }
+  }
 };
-typedef It Itn;
 
-/*  map of ref_id to the walk of the ref in a RoV */
-class RefWalks {
-
-  // use Walk instead of vector<Step>?
+/**
+ * exp short for expedition: a journey undertaken by a group of people with a particular purpose,
+ * especially that of exploration, research, or war.
+  *
+ * a collection of itineraries for each reference in a region of variation
+ * map of ref_id to the itn of
+ * the ref in a RoV
+ */
+class Exp {
+  // use Walk instead of vector<AS>?
   // map of ref_id to the walk of the ref in a RoV
   // a ref can have multiple walks in a RoV
   // the order of walks is not assured
   std::map<pt::id_t, Itn> ref_itns_;
 
   //alignment between two refs
-  std::map<pt::up_t<pt::id_t>, std::string> aln;
+  std::map<pt::op_t<pt::id_t>, std::string> aln;
 
-  pgt::flubble_t fl_;
+  //pgt::flubble_t fl_;
+  const pvst::VertexBase *pvst_vtx;
 
+  // is true when tangling exists.
+  // tangling exists when a walk traverses an RoV more than once
   bool is_tangled_;
 
-  /* private methods */
-  // returns an unordered pair
-  // up_t to_up (pt::id_t a, pt::id_t b) const {
-  //   return {std::min(a, b), std::max(a, b)};
-  // };
+  // an idex in RoV walks vector
+  // the walk for which this Exp focuses on
+  //pt::idx_t walk_id_;
 
 public:
-  /* constructor */
-  RefWalks(pgt::flubble_t fl) : ref_itns_(), fl_(fl), is_tangled_(false) {}
 
-  /*getters*/
+  // -------------
+  // constructor(s)
+  // -------------
+
+  Exp(const pvst::VertexBase *v) : ref_itns_(), pvst_vtx(v), is_tangled_(false) {}
+
+  // ---------
+  // getter(s)
+  // ---------
+
   pt::idx_t ref_count() const { return this->ref_itns_.size(); }
-  const pgt::flubble_t &get_flb() const { return this->fl_; }
+
+  const pvst::VertexBase* get_pvst_vtx_const_ptr() const {
+    return this->pvst_vtx;
+  }
+
+  std::string id() const {
+    return this->pvst_vtx->as_str();
+  }
 
   std::set<pt::id_t> get_ref_ids() const {
     std::set<pt::id_t> ref_ids;
@@ -196,6 +355,10 @@ public:
     return this->ref_itns_.at(ref_id);
   }
 
+  Itn &get_itn_mut(pt::id_t ref_id) {
+    return this->ref_itns_.at(ref_id);
+  }
+
   const std::map<pt::id_t, Itn> &get_ref_itns() const {
     return this->ref_itns_;
   }
@@ -204,32 +367,33 @@ public:
     return this->ref_itns_;
   }
 
-  // bool has_aln(pt::id_t ref_id1, pt::id_t ref_id2) const {
-  //   return this->aln.find(to_up(ref_id1, ref_id2)) != this->aln.end();
-  // }
-
   const std::string &get_aln(pt::id_t ref_id1, pt::id_t ref_id2) const {
-    return this->aln.at(pt::up_t<pt::id_t>{ref_id1, ref_id2});
+    return this->aln.at(pt::op_t<pt::id_t>{ref_id1, ref_id2});
   }
 
-  const std::map<pt::up_t<pt::id_t>, std::string> &get_alns() const {
+  bool has_aln(pt::id_t ref_id1, pt::id_t ref_id2) const {
+    return this->aln.contains(pt::op_t<pt::id_t>{ref_id1, ref_id2});
+  }
+
+  const std::map<pt::op_t<pt::id_t>, std::string> &get_alns() const {
     return this->aln;
   }
 
   bool is_tangled() const { return this->is_tangled_; }
 
-  /*setters*/
-  // returns true to mean that tangling exists. a walk traverses an RoV more than once
+  // ---------
+  // setter(s)
+  // ---------
+
   void add_itn(id_t ref_id, Itn &&itn) {
     if (this->ref_itns_.find(ref_id) == this->ref_itns_.end()) {
       this->ref_itns_[ref_id] = std::move(itn);
-    } else {
+    }
+    else {
       Itn &itn_ = this->ref_itns_[ref_id];
       for (auto &w : itn.get_ats_mut()) {
         itn_.append_at(std::move(w));
       }
-
-      //is_tangled_ = true;
     }
   }
 
@@ -237,75 +401,82 @@ public:
     this->ref_itns_[ref_id] = std::move(itn);
   }
 
-  void sort_by_step_idx() {
-
-    auto compare_si = [](const AT &a, const AT &b) {
-      return a.get_steps().front().get_step_idx() < b.get_steps().front().get_step_idx();
-    };
-
-    // for each ref, sort the walks by step_idx of the first step
-    for (auto &[_, itn] : this->ref_itns_) {
-      std::sort(itn.get_ats_mut().begin(), itn.get_ats_mut().end(), compare_si);
-    }
-  }
-
-    // set the loop number for each step
-    // steps within the same walk share the same loop number
-    // for (auto &[_, itn] : this->ref_walks_) {
-    //   //pt::id_t loop_no = 0;
-    //   for (Walk &w : itn.get_walks_mut()) {
-    //     for (Step &s : w.get_steps_mut()) {
-    //       // s.set_loop_no(loop_no);
-    //     }
-    //     //loop_no++;
-    //   }
-
   void add_aln(pt::id_t ref_id1, pt::id_t ref_id2 , std::string &&aln) {
-    this->aln[pt::up_t<pt::id_t>{ref_id1, ref_id2}] = aln;
+    this->aln[pt::op_t<pt::id_t>{ref_id1, ref_id2}] = aln;
   }
 
-  void set_tangled(bool is_tangled) { this->is_tangled_ = is_tangled; }
+  void set_tangled(bool is_tangled) {
+    this->is_tangled_ = is_tangled;
+  }
 };
+
 
 class VcfRec {
   pt::id_t ref; // chrom
   pt::idx_t pos; // 1-based step idx
   std::string id; // start and end of a RoV e.g >1>4
-  AT ref_at; //
-  std::vector<AT> alt_ats;
+  AW ref_at; //
+  std::vector<AW> alt_ats;
   // std::string qual;
   // std::string filter;
   // std::string info;
   std::string format;
+  var_type_e var_type_; // type of the variant, e.g. del, ins, sub, und
+  bool is_tangled_ = false; // is true when tangling exists, i.e. when a walk traverses an RoV more than once
 
 public:
-  /* constructor */
-  VcfRec(pt::id_t ref, pt::idx_t pos, std::string id, AT ref_at, std::vector<AT> alt_ats)
-      : ref(ref), pos(pos), id(id), ref_at(ref_at), alt_ats(alt_ats) {}
 
-  /*getters*/
+  // --------------
+  // constructor(s)
+  // --------------
+
+  VcfRec(pt::id_t ref, pt::idx_t pos, std::string id, AW ref_at, std::vector<AW> alt_ats, var_type_e variant_type, bool is_tangled)
+    : ref(ref), pos(pos), id(id), ref_at(ref_at), alt_ats(alt_ats), var_type_(variant_type), is_tangled_(is_tangled) {}
+
+  // ---------
+  // getter(s)
+  // ---------
+
   pt::idx_t get_pos() const { return this->pos; }
   std::string get_id() const { return this->id; }
-  const AT &get_ref_at() const { return this->ref_at; }
-  const std::vector<AT> &get_alt_ats() const { return this->alt_ats; }
+  const AW &get_ref_at() const { return this->ref_at; }
+  const std::vector<AW> &get_alt_ats() const { return this->alt_ats; }
+  var_type_e get_var_type() const { return this->var_type_; }
+  bool is_tangled() const { return this->is_tangled_; }
 
-  /*setters*/
+
+  // ---------
+  // setter(s)
+  // ---------
+  void append_alt_at(AW &&alt_at) {
+    this->alt_ats.emplace_back(std::move(alt_at));
+  }
 };
 
-// TODO: find a better name
+
+// TODO: [c] find a better name
 class VcfRecIdx {
   std::map<pt::idx_t, std::vector<VcfRec>> vcf_recs_;
 
-  public:
-  /* constructor */
+public:
+
+  // --------------
+  // constructor(s)
+  // --------------
+
   VcfRecIdx() : vcf_recs_() {}
 
-  /*getters*/
+  // ---------
+  // getter(s)
+  // ---------
   const std::map<pt::idx_t, std::vector<VcfRec>> &get_recs() const {
     return this->vcf_recs_;
   }
+  
+  // ---------
+  // setter(s)
+  // ---------
 
-  /*setters*/
   void add_rec(pt::idx_t ref_idx, VcfRec &&vcf_rec) {
     if (this->vcf_recs_.find(ref_idx) == this->vcf_recs_.end()) {
       this->vcf_recs_[ref_idx] = std::vector<VcfRec>{vcf_rec};
@@ -315,15 +486,21 @@ class VcfRecIdx {
   }
 
 };
-/*
-  enums
-  -----
-*/
+
+
+/* ===========================================================
+     enums
+
+      aln_level_e
+   =========================================================== */
+
+/**
+ * used in untangling, the level of alignment
+ */
 enum class aln_level_e {
   step,
   at // allele traversal
 };
 
-} // namespace povu::types::variation
-
+} // namespace povu::types::genomics
 #endif // POVU_GENOMIC_TYPES_HPP

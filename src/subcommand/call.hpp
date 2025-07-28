@@ -7,7 +7,7 @@
 #include "../io/to_vcf.hpp"
 
 #include "../../include/common/types/genomics.hpp"
-#include "../../include/genomics/genomics.hpp"
+#include "../../include/genomics/variants.hpp"
 #include "../cli/app.hpp"
 #include "../cli/cli.hpp"
 #include "../io/pvst.hpp"
@@ -17,7 +17,7 @@ namespace povu::subcommands::call {
 namespace fs = std::filesystem;
 
 namespace pvt = povu::types::genomics;
-namespace pg = povu::genomics;
+namespace pg = povu::variants;
 namespace pt = povu::types;
 namespace bd = povu::bidirected;
 namespace pgt = povu::types::graph;

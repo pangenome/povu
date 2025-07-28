@@ -1,94 +1,118 @@
 #include "./variants.hpp"
 
+
 namespace povu::variants {
 
+void remove_prefix_walks(pvt::Itn &itn) {
+  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
-// void populate_walks(const bd::VG &g, std::vector<pvt::RoV> &rovs) {
-//   std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+  std::set<pt::idx_t> to_remove; // we add walk idx which are prefixes is_prefix
 
-//   for (pt::idx_t i {}; i < rovs.size(); i++) {
-//     bd::populate_walks(g, rovs[i], MAX_FLUBBLE_STEPS);
-//   }
+  for (pt::idx_t qry_w_idx {}; qry_w_idx < itn.at_count(); ++qry_w_idx)    {
+    const pvt::AW &qry_aw = itn.get_at(qry_w_idx);
+    for (pt::idx_t txt_w_idx = {}; txt_w_idx < itn.at_count(); ++txt_w_idx) {
+      const pvt::AW &txt_aw = itn.get_at(txt_w_idx);
 
-//   return;
-// }
 
-// std::vector<pvt::RoV> par_populate_walks(const bd::VG &g, std::vector<pvt::RoV> &rs) {
-//   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
-//   std::size_t cfl_count = rs.size();
+      if(qry_aw.step_count() < txt_aw.step_count() &&
+         qry_aw.get_steps().front() == txt_aw.get_steps().front()) {
+        //std::cerr << "remove\n";
+        to_remove.insert(qry_w_idx);
+      }
 
-//   uint8_t num_threads = std::thread::hardware_concurrency();
-//   if (num_threads == 0) {
-//     num_threads = 1;
-//   }
-//   // avoid creating more threads than flubbles
-//   if (static_cast<std::size_t>(num_threads) > cfl_count) {
-//     num_threads = cfl_count;
-//   }
 
-//   std::vector<std::thread> threads;
-//   threads.reserve(num_threads);
+    }
+  }
 
-//   //std::size_t fl_count = can_fls.size();
-//   std::size_t chunk_size = cfl_count / num_threads;
-//   std::size_t remainder = cfl_count % num_threads;
-//   std::size_t start { 0 };
+  // remove the walks that are prefixes
+  itn.remove_aws(to_remove);
+}
 
-//   auto worker = [&](std::size_t start, std::size_t end) {
-//     for (std::size_t i = start; i < end; ++i) {
-//       bd::populate_walks(g, rs[i], MAX_FLUBBLE_STEPS);
-//     }
-//   };
+/**
+  * Associate walks in an RoV with references
+ */
+void gen_rov_ref_walks(const bd::VG &g, const pvt::RoV &rov, std::vector<pvt::Exp> &ref_walks_vec) {
+    std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
-//   for (uint8_t i = 0; i < num_threads; ++i) {
-//     std::size_t end = start + chunk_size + (i < remainder ? 1 : 0);
-//     threads.push_back(std::thread(worker, start, end));
-//     start = end;
-//   }
+  const std::vector<pvt::walk> &walks = rov.get_walks();
+  const pvst::VertexBase *pvst_v_ptr = rov.get_pvst_vtx();
 
-//   for (auto &t : threads) {
-//     t.join();
-//   }
+  pvt::Exp ref_walks{pvst_v_ptr}; // create a Exp object for the RoV
 
-//   return rs;
-// }
+  //  a walk is a single traversal bounded by start to the end of an RoV
+  for (pt::idx_t w_idx{}; w_idx < rov.walk_count(); w_idx++) {
+    const pvt::walk &w = walks[w_idx];
+    pgu::variants::comp_itineraries(g, w, w_idx, ref_walks);
 
- /* filter out RoVs whose walk count is less than 2 */
-// inline void filter_invalid(std::vector<pvt::RoV> &r) {
-//   const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
-//   int y = 0;
-//   int z = 0;
+    for (pt::idx_t ref_id : ref_walks.get_ref_ids()) {
+      remove_prefix_walks(ref_walks.get_itn_mut(ref_id));
+    }
+  }
 
-//   for (auto x: r) {
-//     if( x.walk_count() < 2) {
-//       z += 1;
-//     }
-//     else {
-//       y += 1;
-//     }
-//   }
+  for (const pt::idx_t ref_id : ref_walks.get_ref_ids()) {
+    if (ref_walks.get_itn(ref_id).at_count() > 1) {
+      //std::cerr << std::format("{}: RoV {} is tangled for ref {}\n", fn_name, rov.as_str(), ref_id);
+      ref_walks.set_tangled(true); // if any ref has more than one walk, the RoV is tangled
+      break;     // no need to check other refs, we know the RoV is tangled
+    }
+  }
 
-//   std::cerr << "removed " << z << " keppt " << y << "\n";
+  if (ref_walks.is_tangled()) {
+    put::untangle_ref_walks(g, ref_walks);
+  }
 
-//   return;
-// };
+  ref_walks_vec.push_back(std::move(ref_walks));
 
-/* initialize RoVs from flubbles */
-inline std::vector<pvt::RoV> init_rovs(const bd::VG &g,
-                                       const std::vector<pvtr::Tree> &pvsts) {
+  return;
+}
+
+
+/**
+ * Check if a vertex in the pvst is a flubble leaf
+ * A flubble leaf is a vertex that has no children that are also flubbles
+ */
+bool is_fl_leaf(const pvtr::Tree &pvst, pt::idx_t pvst_v_idx){
+  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+
+  const pvst::VertexBase *pvst_v_ptr = pvst.get_vertex_const_ptr(pvst_v_idx);
+
+  if (pvst_v_ptr->get_type() != pvst::vt_e::flubble) {
+    return false; // not a flubble
+  }
+
+  for (pt::idx_t v_idx : pvst.get_children(pvst_v_idx)) {
+    if (pvst.get_vertex_const_ptr(v_idx)->get_type() == pvst::vt_e::flubble) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * find walks in the graph based on the leaves of the pvst
+  * initialize RoVs from flubbles
+ */
+std::vector<pvt::RoV> gen_rov(const std::vector<pvtr::Tree> &pvsts, const bd::VG &g) {
+  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+
+  // the set of RoVs to return
   std::vector<pvt::RoV> rs;
   rs.reserve(pvsts.size());
 
-  for (const pvtr::Tree &pvst : pvsts) {
+  for (const pvtr::Tree &pvst : pvsts) { // for each pvst
+    // loop through each tree
     for (pt::idx_t pvst_v_idx{}; pvst_v_idx < pvst.vtx_count(); pvst_v_idx++) {
-      if (pvst.is_leaf(pvst_v_idx)) {
+      // call variants on the leaves only
+      if (is_fl_leaf(pvst, pvst_v_idx) || pvst.is_leaf(pvst_v_idx)) {
+        // create a RoV for the vertex
         const pvst::VertexBase *pvst_v_ptr = pvst.get_vertex_const_ptr(pvst_v_idx);
         pvt::RoV r { pvst_v_ptr };
-        std::cerr << "adding RoV for " << r.as_str() << "\n";
-        std::vector<pgt::Walk> walks;
-        graph_utils::get_walks(g, pvst_v_ptr, walks);
-        r.set_walks(std::move(walks));
+
+        // get the set of walks for the RoV
+        pgu::graph::find_walks(g, r);
+
         rs.push_back(std::move(r));
       }
     }
@@ -97,16 +121,19 @@ inline std::vector<pvt::RoV> init_rovs(const bd::VG &g,
   return rs;
 }
 
-std::vector<pvt::RoV> gen_rov(const std::vector<pvtr::Tree> &pvsts,
-                              const bd::VG &g,
-                              const core::config &app_config) {
-  std::string fn_name {std::format("[{}::{}]", MODULE, __func__)};
+pvt::VcfRecIdx gen_vcf_rec_map(const std::vector<pvtr::Tree> &pvsts, const bd::VG &g) {
+  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
-  std::vector<pvt::RoV> rs = init_rovs(g, pvsts);
-  //populate_walks(g, rs);
-  //filter_invalid(rs);
+  std::vector<pvt::RoV> all_rovs = gen_rov(pvsts, g);
+
+  std::vector<pvt::Exp> all_ref_walks;
+  all_ref_walks.reserve(all_rovs.size());
+  for (const pvt::RoV &r : all_rovs) {
+    gen_rov_ref_walks(g, r, all_ref_walks);
+  }
+
+  pvt::VcfRecIdx rs = pgv::gen_vcf_records(g, all_ref_walks);
 
   return rs;
 }
-
-} // namespace povu::variants
+} // namespace povu::genomics

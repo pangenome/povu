@@ -25,8 +25,7 @@ typedef Stride span;
 typedef std::pair<std::size_t, std::size_t> size_t_pair;
 
 /**
- * ordered pair similar to std::pair but with same type on both sides for less
- * typing
+ * ordered pair similar to std::pair but with same type on both sides for less typing
  */
 template <typename T> struct Pair {
   T first;
@@ -41,7 +40,7 @@ template <typename T> struct Pair {
 };
 
 template<typename T>
-using op_t = Pair<T> ;
+using op_t = Pair<T>;
 
 /**
  * unordered pair with same type on both sides
@@ -53,8 +52,7 @@ template <typename T> struct unordered_pair {
   unordered_pair(T l, T r) : l(std::min(l, r)), r(std::max(l, r)) {}
 
   // spaceship operator
-  friend constexpr auto operator<=>(const unordered_pair &,
-                                    const unordered_pair &) = default;
+  friend constexpr auto operator<=>(const unordered_pair &, const unordered_pair &) = default;
 };
 
 template <typename T>

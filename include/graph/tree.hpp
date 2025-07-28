@@ -92,8 +92,6 @@ public:
     return this->children_v[v_idx];
   }
 
-
-
   // ---------
   // setter(s)
   // ---------

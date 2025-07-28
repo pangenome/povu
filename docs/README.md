@@ -71,6 +71,16 @@ Generate the VCF files related to the LPA dataset
 povu call -i test_data/real/LPA.gfa -f ~/Data/povu/results/flb -r ~/Data/povu/results/refs.txt -o ~/Data/povu/results/vcf
 ```
 
+
+### VCF Format
+
+Output in VCF 4.2 it represents variation as follows
+#### deletions
+
+#### insertions
+
+#### substitution
+
 ## Input
 Input GFA
 

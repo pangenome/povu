@@ -14,9 +14,12 @@ namespace pt = povu::types;
 namespace bd = povu::bidirected;
 namespace pvt = povu::types::genomics;
 namespace pgt = povu::types::graph;
+namespace pvst = povu::types::pvst;
 
-pvt::VcfRecIdx gen_vcf_records(const bd::VG &g,
-                               const std::vector<pvt::RefWalks> &ref_walks);
+
+inline constexpr std::string_view MODULE = "povu::genomics::vcf";
+
+pvt::VcfRecIdx gen_vcf_records(const bd::VG &g, const std::vector<pvt::Exp> &ref_walks);
 
 } // namespace povu::genomics::vcf
 

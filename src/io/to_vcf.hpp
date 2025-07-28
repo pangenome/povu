@@ -13,6 +13,7 @@
 
 
 namespace povu::io::to_vcf {
+inline constexpr std::string_view MODULE = "povu::io::to_vcf";
 namespace pvt = povu::types::genomics;
 namespace bd = povu::bidirected;
 namespace pu = povu::utils;
