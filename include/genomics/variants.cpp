@@ -3,25 +3,25 @@
 
 namespace povu::variants {
 
+/**
+ * Remove walks that are prefixes of other walks in the same Itn
+ * This is done to avoid redundant walks in the RoV
+ * A walk is a prefix of another walk if it has fewer steps and starts with the same step
+ */
 void remove_prefix_walks(pvt::Itn &itn) {
   std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
-  std::set<pt::idx_t> to_remove; // we add walk idx which are prefixes is_prefix
+  // we add walk idx which are prefixes is_prefix
+  std::set<pt::idx_t> to_remove;
 
   for (pt::idx_t qry_w_idx {}; qry_w_idx < itn.at_count(); ++qry_w_idx)    {
     const pvt::AW &qry_aw = itn.get_at(qry_w_idx);
     for (pt::idx_t txt_w_idx = {}; txt_w_idx < itn.at_count(); ++txt_w_idx) {
       const pvt::AW &txt_aw = itn.get_at(txt_w_idx);
 
-
-
-      if(qry_aw.step_count() < txt_aw.step_count() &&
-         qry_aw.get_steps().front() == txt_aw.get_steps().front()) {
-        //std::cerr << "remove\n";
+      if(qry_aw.step_count() < txt_aw.step_count() && qry_aw.get_steps().front() == txt_aw.get_steps().front()) {
         to_remove.insert(qry_w_idx);
       }
-
-
     }
   }
 
@@ -30,31 +30,40 @@ void remove_prefix_walks(pvt::Itn &itn) {
 }
 
 /**
-  * Associate walks in an RoV with references
+ * Associate walks in an RoV with references
  */
 void gen_rov_ref_walks(const bd::VG &g, const pvt::RoV &rov, std::vector<pvt::Exp> &ref_walks_vec) {
-    std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
   const std::vector<pvt::walk> &walks = rov.get_walks();
   const pvst::VertexBase *pvst_v_ptr = rov.get_pvst_vtx();
 
-  pvt::Exp ref_walks{pvst_v_ptr}; // create a Exp object for the RoV
+  // create an expedition object for the RoV
+  pvt::Exp ref_walks {pvst_v_ptr};
 
-  //  a walk is a single traversal bounded by start to the end of an RoV
+  // a walk is a single traversal bounded by start to the end of an RoV
   for (pt::idx_t w_idx{}; w_idx < rov.walk_count(); w_idx++) {
     const pvt::walk &w = walks[w_idx];
     pgu::variants::comp_itineraries(g, w, w_idx, ref_walks);
+  }
 
-    for (pt::idx_t ref_id : ref_walks.get_ref_ids()) {
-      remove_prefix_walks(ref_walks.get_itn_mut(ref_id));
-    }
+  for (pt::idx_t ref_id : ref_walks.get_ref_ids()) {
+    remove_prefix_walks(ref_walks.get_itn_mut(ref_id));
   }
 
   for (const pt::idx_t ref_id : ref_walks.get_ref_ids()) {
     if (ref_walks.get_itn(ref_id).at_count() > 1) {
-      //std::cerr << std::format("{}: RoV {} is tangled for ref {}\n", fn_name, rov.as_str(), ref_id);
-      ref_walks.set_tangled(true); // if any ref has more than one walk, the RoV is tangled
-      break;     // no need to check other refs, we know the RoV is tangled
+      // if any ref has more than one walk, the RoV is tangled
+      ref_walks.set_tangled(true);
+      // no need to check other refs, we know the RoV is tangled
+      break;
+    }
+  }
+
+  for (const pt::id_t ref_id : ref_walks.get_ref_ids()) {
+    pvt::Itn &itn = ref_walks.get_itn_mut(ref_id);
+    for (pvt::AW &aw : itn.get_ats_mut()) {
+      aw.add_ref_id(ref_id); // add the ref id to each walk
     }
   }
 
@@ -62,6 +71,29 @@ void gen_rov_ref_walks(const bd::VG &g, const pvt::RoV &rov, std::vector<pvt::Ex
     put::untangle_ref_walks(g, ref_walks);
   }
 
+  
+  // {
+  //   std::cerr << fn_name
+  //             << " " << pvst_v_ptr->as_str()
+  //             << " ref count " << ref_walks.get_ref_ids().size()
+  //             << "\n";
+
+  //   for (pt::idx_t ref_id : ref_walks.get_ref_ids()) {
+  //     std::cerr << fn_name << " " << g.get_ref_label(ref_id) << "\n";
+
+  //     auto itn = ref_walks.get_itn(ref_id);
+  //     for (pt::idx_t i{}; i < itn.at_count(); ++i) {
+  //       const pvt::AW &aw = itn.get_at(i);
+  //       std::cerr << " aw: " << aw.as_str() << "\n";
+  //       std::cerr << " ref count " << aw.get_ref_ids().size() << "\n";
+  //     }
+  //   }
+  // }
+
+  // if (pvst_v_ptr->as_str() == ">11>13") {
+  //   exit(1);
+  // }
+  
   ref_walks_vec.push_back(std::move(ref_walks));
 
   return;
@@ -92,7 +124,7 @@ bool is_fl_leaf(const pvtr::Tree &pvst, pt::idx_t pvst_v_idx){
 
 /**
  * find walks in the graph based on the leaves of the pvst
-  * initialize RoVs from flubbles
+ * initialize RoVs from flubbles
  */
 std::vector<pvt::RoV> gen_rov(const std::vector<pvtr::Tree> &pvsts, const bd::VG &g) {
   std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};

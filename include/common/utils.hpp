@@ -15,12 +15,27 @@ std::string reverse_complement(const std::string& sequence);
 /**
  * @brief Concatenates a vector of strings with a given character
  */
-template <typename T> std::string concat_with(const T& v, char delim) {
-  if (v.empty()) { return ""; }
+// template <typename T> std::string concat_with(const T& v, char delim) {
+//   if (v.empty()) { return ""; }
 
-  std::string s {};
-  for (auto x: v) { s = s + x + delim; }
-  return s.substr(0, s.length()-1);
+//   std::string s {};
+//   for (auto x: v) {
+//     s = s + x + delim;
+//   }
+//   return s.substr(0, s.length()-1);
+// }
+
+template <typename Container> std::string concat_with(const Container &v, char delim) {
+  std::ostringstream oss;
+  auto it = v.begin();
+  if (it != v.end()) {
+    oss << *it;
+    ++it;
+    for (; it != v.end(); ++it) {
+      oss << delim << *it;
+    }
+  }
+  return oss.str();
 }
 
 // TODO rename to print_with_delim or print_with

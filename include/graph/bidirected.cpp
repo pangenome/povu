@@ -53,8 +53,8 @@ const std::vector<PathInfo>& Vertex::get_refs() const { return refs_; }
 /* setters */
 void Vertex::add_edge_l(pt::idx_t e_idx) { e_l.insert(e_idx); }
 void Vertex::add_edge_r(pt::idx_t e_idx) { e_r.insert(e_idx); }
-void Vertex::add_ref(pt::idx_t path_id, pgt::or_e strand, pt::idx_t step_index) {
-  this->refs_.push_back(PathInfo(path_id, strand, step_index));
+void Vertex::add_ref(pt::idx_t ref_id, pgt::or_e strand, pt::idx_t step_index) {
+  this->refs_.push_back(PathInfo(ref_id, strand, step_index));
 }
 
 
@@ -63,12 +63,25 @@ void Vertex::add_ref(pt::idx_t path_id, pgt::or_e strand, pt::idx_t step_index) 
   -----
  */
 
-VariationGraph::VariationGraph(pt::idx_t v_count, pt::idx_t e_count) {
+
+// --------------
+// constructor(s)
+// --------------
+
+VariationGraph::VariationGraph(pt::idx_t v_count, pt::idx_t e_count, bool inc_refs) {
   this->vertices.reserve(v_count);
   this->edges.reserve(e_count);
+
+  this->has_refs_ = false;
+  if (inc_refs) {
+    this->has_refs_ = true;
+    this->refs_ = Refs();
+  }
 }
 
-/* getters */
+// ---------
+// getter(s)
+// ---------
 
 pt::id_t VG::v_idx_to_id(pt::idx_t v_idx) const {
   return this->v_id_to_idx_.get_key(v_idx);
@@ -94,16 +107,26 @@ const Vertex& VG::get_vertex_by_id(pt::id_t v_id) const {
 Vertex& VG::get_vertex_mut_by_id(pt::id_t v_id) {
   return vertices[this->v_id_to_idx_.get_value(v_id)];
 }
-const std::string &VG::get_ref_name(pt::id_t ref_id) const {
-  return this->refs_.at(ref_id);
+const std::string &VG::get_ref_label(pt::id_t ref_id) const {
+  return this->refs_.get_ref_label(ref_id);
 }
 
-
-const std::map<pt::id_t, std::string> &VG::get_refs() const {
-  return this->refs_;
+const pgt::Ref &VG::get_ref_by_id(pt::id_t ref_id) const {
+  return this->refs_.get_ref(ref_id);
 }
 
-/* setters */
+pgt::Ref &VG::get_ref_by_id_mut(pt::id_t ref_id) {
+  return this->refs_.get_ref_mut(ref_id);
+}
+
+pt::id_t VG::get_ref_id(const std::string &ref_label) const {
+  return this->refs_.get_ref_id(ref_label);
+}
+
+// ---------
+// setter(s)
+// ---------
+
 void VG::add_tip(pt::id_t v_id, pgt::v_end_e end) {
   this->tips_.insert(pgt::side_n_id_t{end, v_id});
 }
@@ -137,11 +160,21 @@ pt::idx_t VG::add_edge(pt::id_t v1_id, pgt::v_end_e v1_end, pt::id_t v2_id, pgt:
   return e_idx;
 }
 
-pt::id_t VG::add_ref(const std::string& ref_name) {
-  pt::id_t ref_id = this->refs_.size();
-  this->refs_[ref_id] = ref_name;
+pt::id_t VG::add_ref(const std::string &label, char delim) {
+  std::string fn_name{std::format("[{}::VG::{}]", MODULE, __func__)};
+  pt::id_t ref_id = this->refs_.add_ref(label, delim);
+
   return ref_id;
 }
+
+const std::set<pt::id_t> &VG::get_shared_samples(pt::id_t ref_id) const {
+  return this->refs_.get_shared_samples(ref_id);
+}
+
+pt::id_t VG::ref_id_count() const {
+  return this->refs_.ref_id_count();
+}
+
 
 void VG::shrink_to_fit() {
   this->vertices.shrink_to_fit();
@@ -200,6 +233,8 @@ graph G {
   os << "}" << std::endl;
 }
 
+// TODO: make this static factory fn
+// does not handle refs, should it?
 std::vector<VG *> componetize(const povu::bidirected::VG &g) {
   std::string fn_name = std::format("[povu::graph_ops::{}]", __func__);
 
@@ -261,7 +296,7 @@ std::vector<VG *> componetize(const povu::bidirected::VG &g) {
     }
 
     if (s.empty()) {
-      curr_vg = new VG(comp_vtxs.size(), added_edges.size());
+      curr_vg = new VG(comp_vtxs.size(), added_edges.size(), false);
 
       /* add vertices */
       for (auto v_idx : comp_vtxs) {
@@ -473,152 +508,5 @@ pst::Tree compute_spanning_tree(const VG &g) {
   return t;
 }
 
-
-// void populate_walks2(const VG &g, pvt::RoV &r, pt::idx_t max_steps) {
-//   const std::string fn_name = std::format("[povu::bidirected::{}]", __func__);
-
-//   //TODO use Step class
-//   typedef id_or_t idx_or_t; // specifically for idx instead of id
-//   //typedef idx_or_t step;
-//   enum class dir_e { in, out }; // direction
-
-//   std::queue<idx_or_t> q;
-
-//   // a map to keep track of the vertices whose incoming neighbours paths we have
-//   // extended so far key is the vertex and value is the set of vertices whose
-//   // paths we have extended
-//   std::map<idx_or_t, std::set<idx_or_t>> seen;
-
-//   // a set to keep track of the vertices we've seen
-//   std::set<idx_or_t> explored;
-
-//   bool all_incoming_explored{true};
-
-//   std::size_t counter {}; // a counter to keep track of the number of iterations
-//   // allows us to short circuit the traversal if counter > max_steps
-
-//   // a map of an idx and orientation to the incoming walk from the entry to the
-//   // idx and side that is incoming for the orientation
-//   std::map<idx_or_t, std::vector<pvt::Walk>> in_walks;
-
-//   // Returns the edge set for a vertex based on orientation and direction.
-//   auto get_edges = [](const Vertex &v, pgt::or_e o, dir_e d) -> const std::set<pt::idx_t> & {
-//     // For "in" direction, use left edges if forward; right otherwise.
-//     // For "out" direction, swap the logic.
-//     return d == dir_e::in
-//                ? (o == pgt::or_e::forward ? v.get_edges_l() : v.get_edges_r())
-//                : (o == pgt::or_e::forward ? v.get_edges_r() : v.get_edges_l());
-//   };
-
-//   auto or_to_v_end = [](pgt::or_e o, dir_e d) -> pgt::v_end_e {
-//     return d == dir_e::in
-//       ? (o == pgt::or_e::forward ? pgt::v_end_e::l : pgt::v_end_e::r)
-//       : (o == pgt::or_e::forward ? pgt::v_end_e::r : pgt::v_end_e::l);
-//   };
-
-//   // Given a vertex end side, compute the alternate orientation.
-//   auto get_alt_or = [](pgt::v_end_e side, dir_e d) -> pgt::or_e {
-//     return d == dir_e::in
-//       ? (side == pgt::v_end_e::r ? pgt::or_e::forward : pgt::or_e::reverse)
-//       : (side == pgt::v_end_e::l ? pgt::or_e::forward : pgt::or_e::reverse);
-//   };
-
-//   auto get_neighbours = [&](idx_or_t idx_n_o, dir_e d) -> std::set<idx_or_t> {
-//     auto [v_idx, o] = idx_n_o;
-//     std::set<idx_or_t> neighbours;
-//     pgt::v_end_e ve = or_to_v_end(o, d);
-//     const Vertex &v = g.get_vertex_by_idx(v_idx);
-
-//     //pgt::or_e alt_o;
-//     for (const auto &e_idx : get_edges(v, o, d)) {
-//       const Edge &e = g.get_edge(e_idx);
-//       auto [side, alt_idx] = e.get_other_vtx(v_idx, ve);
-//       neighbours.insert({alt_idx, get_alt_or(side, d)});
-//     }
-
-//     return neighbours;
-//   };
-
-//   auto append_q = [&](idx_or_t current) {
-//     for (const idx_or_t &out_n : get_neighbours(current, dir_e::out)) {
-//       if (!explored.contains(current) || !explored.contains(out_n)) {
-//         q.push(out_n);
-//       }
-//     }
-//   };
-
-//   auto [start_id, start_o] = r.get_entry();
-//   auto [stop_id, stop_o] = r.get_exit();
-
-//   pt::idx_t start_idx = g.v_id_to_idx(start_id);
-//   pt::idx_t stop_idx = g.v_id_to_idx(stop_id);
-
-//   idx_or_t s = {start_idx, start_o};
-//   idx_or_t t = {stop_idx, stop_o};
-
-//   /* initialise the traversal */
-//   q.push(s);
-//   in_walks[{start_id, start_o}].emplace_back( pvt::Walk{start_id, start_o} );
-//   append_q({g.v_idx_to_id(start_id), start_o});
-
-//   while (!q.empty()) {
-//     if (counter++ > max_steps) {
-
-//       std::cerr << fn_name << " max_steps reached for flubble "
-//                 << r.get_entry() << " ~> "
-//                 << r.get_exit() << std::endl;
-
-//       break;
-//     }
-
-//     idx_or_t current = q.front();
-//     auto [c_v_idx, c_o] = current;
-
-//     std::cerr << " current " << g.v_idx_to_id(c_v_idx) << " " << c_o << std::endl;
-
-//     q.pop();
-
-//     all_incoming_explored = true;
-
-//     for (const idx_or_t &n : get_neighbours(current, dir_e::in)) {
-
-//       auto [n_idx, n_o] = n;
-//       // if we've added paths from this neighbour before
-
-//       // by default the start will be explored
-//       if (!explored.count(n) && n_idx != c_v_idx) {
-//         all_incoming_explored = false;
-//       }
-
-//       if (seen[current].contains(n) || !explored.contains(n)) {
-//         continue;
-//       }
-
-//       // append the current step to the incoming walks of n
-//       in_walks[current] = in_walks[n];
-//       for (pvt::Walk &w : in_walks[current]) {
-//         w.append_step( pvt::Step{g.v_idx_to_id(c_v_idx), c_o} );
-//       }
-
-//       seen[current].insert(n);
-//     }
-
-//     if (current != t) {
-//       append_q(current);
-//     }
-
-//     if (all_incoming_explored) {
-//       explored.insert(current);
-//     }
-
-//   }
-
-//   std::cerr << " rov " << r.get_flb().as_str()
-//             << " walk count " << in_walks[{stop_id, stop_o}].size() << std::endl;
-
-
-//   r.set_walks(std::move(in_walks[{stop_id, stop_o}]));
-//   return;
-// }
 
 } // namespace povu::bidirected

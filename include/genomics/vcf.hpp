@@ -2,6 +2,9 @@
 #define POVU_GENOMICS_VCF_HPP
 
 #include <algorithm>
+#include <map>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "../common/types/genomics.hpp"

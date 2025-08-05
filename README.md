@@ -19,12 +19,19 @@ For general help, run:
 ./bin/povu
 ```
 
-povu currently has two subcommands:
- - **deconstruct**: finds flubbles, reports hairpin inversion boundaries
- - **call**: call variants
- - **info**: get a summary of the input GFA
+The table below summarizes the subcommands currently available:
 
-for more documentation refer to the [docs/](./docs) directory
+
+| Subcommand | Description                                 |
+|------------|---------------------------------------------|
+| decompose | Identifies regions of variation in the graph |
+| call      | Call variants                                |
+| info      | Provides a summary of the input GFA          |
+
+
+For detailed documentation on each subcommand, refer to the [docs/](./docs) directory.
+
+
 
 ## Building povu
 Prerequisites:

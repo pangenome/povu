@@ -132,7 +132,7 @@ int cli(int argc, char **argv, core::config& app_config) {
   args::ArgumentParser p("Explore genomic variation in a variation graph");
   args::Group commands(p, "commands");
 
-  args::Command deconstruct(commands, "deconstruct", "Find regions of variation",
+  args::Command deconstruct(commands, "decompose", "Find regions of variation",
                        [&](args::Subparser &parser) { deconstruct_handler(parser, app_config); });
   args::Command call(commands, "call", "Generate a VCF from the variation graph",
                        [&](args::Subparser &parser) { call_handler(parser, app_config); });

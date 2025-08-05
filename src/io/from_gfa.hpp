@@ -13,13 +13,17 @@
 #include "../../include/graph/tree.hpp"
 #include "../../include/common/utils.hpp"
 #include "../../include/graph/tree.hpp"
-
+#include "../../include/common/types/types.hpp"
 
 namespace povu::io::from_gfa {
 namespace lq = liteseq;
 namespace bd = povu::bidirected;
 namespace pgt = povu::types::graph;
 namespace pt = povu::types;
+namespace pc = povu::constants;
+
+inline constexpr std::string_view MODULE = "povu::io::from_gfa";
+
 
 bd::VG *to_bd(const core::config& app_config);
 }; // namespace io::from_gfa

@@ -1,12 +1,13 @@
 #ifndef PV_SUBCOMMANDS_CALL_HPP
 #define PV_SUBCOMMANDS_CALL_HPP
 
+#include <set>
 #include <thread>
+#include <vector>
 
 #include "../../include/graph/bidirected.hpp"
 #include "../io/to_vcf.hpp"
-
-#include "../../include/common/types/genomics.hpp"
+#include "../../include/common/types/types.hpp"
 #include "../../include/genomics/variants.hpp"
 #include "../cli/app.hpp"
 #include "../cli/cli.hpp"
@@ -22,16 +23,12 @@ namespace pt = povu::types;
 namespace bd = povu::bidirected;
 namespace pgt = povu::types::graph;
 namespace pst = povu::spanning_tree;
-
+namespace pc = povu::constants;
 namespace pvtr = povu::tree;
-
-
 namespace pic = povu::io::common;
 namespace piv = povu::io::to_vcf;
-
 namespace pcs = povu::subcommands::common;
 
 void do_call(core::config &app_config);
-}
-
+} // povu::subcommands::call
 #endif

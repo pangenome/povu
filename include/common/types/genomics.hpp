@@ -169,6 +169,8 @@ class AW {
   //var_type_e vt_;
   pt::idx_t walk_idx_;
 
+  std::set<pt::id_t> ref_ids_; // set of ref ids that take this walk
+
 public:
 
   // --------------
@@ -197,12 +199,14 @@ public:
   //var_type_e get_var_type() const { return this->vt_; }
   bool empty() const noexcept { return this->step_count() == 0; }
   pt::idx_t get_walk_idx() const { return this->walk_idx_; }
+  const std::set<pt::id_t> &get_ref_ids() const { return this->ref_ids_; }
 
 
   // ---------
   // setter(s)
   // ---------
   void append_step(AS s) { this->steps_.emplace_back(s); }
+  void add_ref_id(pt::id_t ref_id) { this->ref_ids_.insert(ref_id); }
   //void set_var_type(var_type_e vt) { this->vt_ = vt; }
   //void set_is_del(bool is_del) { this->is_del_ = is_del; }
 };
@@ -275,7 +279,6 @@ public:
     this->it_.erase(this->it_.begin() + at_idx);
   }
 
-
   // If you delete the highest indices first, the lower-indexed ones never
   // shift:
   void remove_aws(const std::set<pt::idx_t> &to_remove) {
@@ -293,39 +296,31 @@ public:
 };
 
 /**
- * exp short for expedition: a journey undertaken by a group of people with a particular purpose,
- * especially that of exploration, research, or war.
-  *
- * a collection of itineraries for each reference in a region of variation
- * map of ref_id to the itn of
- * the ref in a RoV
+ * Exp, short for expedition: a journey undertaken by a group of people with
+ * a particular purpose, especially that of exploration, research, or war.
+ *
+ * A collection of itineraries for each reference in a region of variation
+ * map of ref_id to the itn of the ref in a RoV
  */
 class Exp {
-  // use Walk instead of vector<AS>?
-  // map of ref_id to the walk of the ref in a RoV
-  // a ref can have multiple walks in a RoV
-  // the order of walks is not assured
+  // map of ref_id to the itinerary (set of walks) of the ref in a RoV
+  // when tangled, a ref can have multiple walks in a RoV
   std::map<pt::id_t, Itn> ref_itns_;
 
-  //alignment between two refs
+  // alignment between two refs
   std::map<pt::op_t<pt::id_t>, std::string> aln;
 
-  //pgt::flubble_t fl_;
   const pvst::VertexBase *pvst_vtx;
 
   // is true when tangling exists.
   // tangling exists when a walk traverses an RoV more than once
   bool is_tangled_;
 
-  // an idex in RoV walks vector
-  // the walk for which this Exp focuses on
-  //pt::idx_t walk_id_;
-
 public:
 
-  // -------------
+  // --------------
   // constructor(s)
-  // -------------
+  // --------------
 
   Exp(const pvst::VertexBase *v) : ref_itns_(), pvst_vtx(v), is_tangled_(false) {}
 
@@ -412,7 +407,7 @@ public:
 
 
 class VcfRec {
-  pt::id_t ref; // chrom
+  pt::id_t ref_id_; // chrom
   pt::idx_t pos; // 1-based step idx
   std::string id; // start and end of a RoV e.g >1>4
   AW ref_at; //
@@ -430,33 +425,57 @@ public:
   // constructor(s)
   // --------------
 
-  VcfRec(pt::id_t ref, pt::idx_t pos, std::string id, AW ref_at, std::vector<AW> alt_ats, var_type_e variant_type, bool is_tangled)
-    : ref(ref), pos(pos), id(id), ref_at(ref_at), alt_ats(alt_ats), var_type_(variant_type), is_tangled_(is_tangled) {}
+  VcfRec(pt::id_t ref_id, pt::idx_t pos, std::string id, AW ref_at,
+         std::vector<AW> alt_ats, var_type_e variant_type, bool is_tangled)
+    : ref_id_(ref_id), pos(pos), id(id), ref_at(ref_at), alt_ats(alt_ats),
+      var_type_(variant_type), is_tangled_(is_tangled) {}
 
   // ---------
   // getter(s)
   // ---------
-
+  pt::id_t get_ref_id() const { return this->ref_id_; }
   pt::idx_t get_pos() const { return this->pos; }
   std::string get_id() const { return this->id; }
   const AW &get_ref_at() const { return this->ref_at; }
   const std::vector<AW> &get_alt_ats() const { return this->alt_ats; }
+  std::vector<AW> &get_alt_ats_mut() { return this->alt_ats; }
   var_type_e get_var_type() const { return this->var_type_; }
   bool is_tangled() const { return this->is_tangled_; }
+
+  std::set<pt::id_t> get_ref_ids() const {
+    std::set<pt::id_t> ref_ids;
+    ref_ids.insert(this->ref_id_);
+    for (const auto &aw : this->alt_ats) {
+      for (const auto &ref_id : aw.get_ref_ids()) {
+        ref_ids.insert(ref_id);
+      }
+    }
+    return ref_ids;
+  }
 
 
   // ---------
   // setter(s)
   // ---------
-  void append_alt_at(AW &&alt_at) {
+  pt::idx_t append_alt_at(AW &&alt_at) {
     this->alt_ats.emplace_back(std::move(alt_at));
+    return this->alt_ats.size() - 1;
   }
 };
 
 
+struct genotype_data_t {
+  std::map<pt::id_t, pt::idx_t> ref_id_to_col_idx;
+
+  // the size is the number of columns in the genotype data
+  // string contains the sample name or label
+  std::vector<std::string> genotype_cols;
+};
+
 // TODO: [c] find a better name
 class VcfRecIdx {
   std::map<pt::idx_t, std::vector<VcfRec>> vcf_recs_;
+  genotype_data_t gd_;
 
 public:
 
@@ -472,7 +491,11 @@ public:
   const std::map<pt::idx_t, std::vector<VcfRec>> &get_recs() const {
     return this->vcf_recs_;
   }
-  
+
+  const genotype_data_t &get_genotype_data() const {
+    return this->gd_;
+  }
+
   // ---------
   // setter(s)
   // ---------
@@ -483,6 +506,10 @@ public:
     } else {
       this->vcf_recs_[ref_idx].emplace_back(vcf_rec);
     }
+  }
+
+  void set_genotype_data(genotype_data_t &&gd) {
+    this->gd_ = std::move(gd);
   }
 
 };
