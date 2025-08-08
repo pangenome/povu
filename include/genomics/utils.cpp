@@ -249,8 +249,8 @@ pt::idx_t find_loop_start_locus(const WalkRefMeta &wrm, pt::id_t ref_id, pt::idx
 /**
  * @brief compute itineraries for a walk
  *
- * For each ref in the walk, find the steps that are continuous with the previous
- * steps for that ref and append them to the itinerary.
+ * For each ref in the walk, find the steps that are continuous with the
+ * previous steps for that ref and append them to the itinerary.
  *
  * The itinerary is a collection of allele walks for each ref in the walk.
  */
@@ -293,8 +293,6 @@ void comp_itineraries(const bd::VG &g, const pvt::walk &w, pt::idx_t w_idx, pvt:
       }
 
       if (allele_walk.step_count() > 1) {
-
-
         pvt::Itn &itn = ref_map[ref_id];
         itn.append_at(std::move(allele_walk));
       }

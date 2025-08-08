@@ -1,4 +1,5 @@
 #include "./from_gfa.hpp"
+#include <string>
 
 namespace povu::io::from_gfa {
 
@@ -19,11 +20,15 @@ lq::gfa_config gen_lq_conf(const core::config &app_config,
   lq::gfa_config conf = {.fp = gfa_fp.c_str(),
                          .inc_vtx_labels = app_config.inc_vtx_labels(),
                          .inc_refs = app_config.inc_refs(),
-                         .ref_count = ref_count,
-                         .ref_names = refs.data()};
+                         .read_all_refs = true,
+                         .ref_count = 0,
+                         .ref_names = NULL,
+  };
 
   return conf;
 }
+
+
 
 /**
  * Read GFA into a variation graph represented as a bidirected graph
@@ -33,7 +38,7 @@ lq::gfa_config gen_lq_conf(const core::config &app_config,
  * @return A VariationGraph object from the GFA file
  */
 bd::VG *to_bd(const core::config& app_config) {
-  std::string fn_name { std::format("[povu::io::{}]", __func__) };
+  std::string fn_name { std::format("{}::{}]", MODULE, __func__) }; 
 
   /* initialize a liteseq gfa */
   std::vector<const char *> refs;
@@ -43,10 +48,10 @@ bd::VG *to_bd(const core::config& app_config) {
 
   pt::idx_t vtx_count = gfa->s_line_count;
   pt::idx_t edge_count = gfa->l_line_count;
-  pt::idx_t ref_count = conf.ref_count;
+  pt::idx_t ref_count = gfa->p_line_count;
 
   /* initialize a povu bidirected graph */
-  bd::VG *vg = new bd::VG(vtx_count, edge_count);
+  bd::VG *vg = new bd::VG(vtx_count, edge_count, app_config.inc_refs());
 
   /* add vertices */
   for (size_t i {}; i < vtx_count; ++i) {
@@ -69,9 +74,19 @@ bd::VG *to_bd(const core::config& app_config) {
   /* add references if necessary */
   // TODO: to parallise run in parallel for each vertex
   if (app_config.inc_refs()) {
+
+    //std::cerr << "inc ref\n";
+
     std::size_t path_pos {}; // the position of a base in a reference path
+    pt::id_t curr_ref_id {pc::INVALID_ID};
     for (pt::idx_t ref_idx {}; ref_idx < ref_count; ++ref_idx) {
-      pt::id_t vg_ref_id = vg->add_ref(gfa->refs[ref_idx].name);
+      const std::string &label = gfa->refs[ref_idx].name;
+
+      //std::cerr << "reading ref " << label << "\n";
+
+      char delim = '#';
+      curr_ref_id = vg->add_ref(label, delim);
+      //pt::id_t vg_ref_id = vg->add_ref(label, delim);
       path_pos = 1; // this is 1 indexed
 
       // color each vertex in the path
@@ -81,10 +96,13 @@ bd::VG *to_bd(const core::config& app_config) {
         pgt::or_e o = (s == lq::strand_e::FORWARD) ? pgt::or_e::forward : pgt::or_e::reverse;
 
         bd::Vertex& v = vg->get_vertex_mut_by_id(v_id);
-        v.add_ref(vg_ref_id, o, path_pos);
+        v.add_ref(curr_ref_id, o, path_pos);
         path_pos += v.get_label().length();
       }
 
+      // set the length of the reference
+      pgt::Ref &ref = vg->get_ref_by_id_mut(curr_ref_id);
+      ref.set_length(path_pos - 1);
     }
   }
 

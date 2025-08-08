@@ -1,6 +1,6 @@
 #include "./vcf.hpp"
+#include <tuple>
 #include <utility>
-#include <vector>
 
 
 namespace povu::genomics::vcf {
@@ -58,6 +58,7 @@ std::vector<pvt::AW> get_alts(pt::id_t ref_id, const pvt::Exp &rws) {
   return alt_ats;
 };
 
+
 std::vector<pvt::AW> get_alts_tangled(const bd::VG &g, pt::id_t ref_id,
                                       pt::idx_t at_idx, const pvt::Exp &rws) {
   std::vector<pvt::AW> alt_ats;
@@ -93,6 +94,10 @@ std::vector<pvt::AW> get_alts_tangled(const bd::VG &g, pt::id_t ref_id,
   return alt_ats;
 };
 
+/**
+ * @brief
+ *
+ */
 bool is_del(const pvt::AW &aw, const pgt::walk &bounds) {
   std::string fn_name = std::format("[{}::{}]", MODULE, __func__);
 
@@ -111,8 +116,13 @@ bool is_del(const pvt::AW &aw, const pgt::walk &bounds) {
   return true;
 }
 
-pvt::var_type_e det_var_type(const pvst::VertexBase *pvst_vtx, const pvt::AW &ref_aw,
-             const pvt::AW &alt_aw) {
+
+/**
+ * @brief 
+ * 
+ */
+pvt::var_type_e det_var_type(const pvst::VertexBase *pvst_vtx,
+                             const pvt::AW &ref_aw, const pvt::AW &alt_aw) {
 
   // const pvst::VertexBase *pvst_vtx = exp.get_pvst_vtx_const_ptr();
   const pvst::traversal_params_t &tp = pvst_vtx->get_traversal_params();
@@ -130,7 +140,56 @@ pvt::var_type_e det_var_type(const pvst::VertexBase *pvst_vtx, const pvt::AW &re
   }
 }
 
-void handle_allele_walk() {}
+pvt::genotype_data_t comp_gt(const bd::VG &g) {
+  std::string fn_name = std::format("[{}::{}]", MODULE, __func__);
+
+  pvt::genotype_data_t gd;
+
+  std::set<pt::id_t> handled;
+
+  // auto get_col_name = [&](pt::id_t ref_id) -> std::string {
+  //   return g.get_ref_by_id(ref_id).get_col_name();
+  //   // const pgt::Ref &r = g.get_ref_by_id(ref_id);
+  //   // return r.has_pansn_data() ? r.get_sample_name() : r.get_label();
+    
+  // };
+
+  //pt::idx_t cols_count {};
+
+  for (pt::id_t ref_id = 0; ref_id < g.ref_id_count(); ++ref_id) {
+    if (handled.contains(ref_id)) {
+      continue;
+    }
+
+    handled.insert(ref_id);
+
+    
+    const std::set<pt::id_t> &sample_refs =  g.get_shared_samples(ref_id);
+
+    std::string col_name = g.get_ref_by_id(ref_id).get_col_name();
+
+    //std::cerr << ref_id  << " sample count: " << sample_refs.size() << "\n";
+
+    if (sample_refs.empty()) {
+      // throw an exeption
+      throw std::runtime_error(std::format("{}: No sample names found for ref_id {}", fn_name, ref_id));
+    }
+    else if (sample_refs.size() == 1) {
+      // throw an exeption
+      gd.ref_id_to_col_idx[ref_id] = gd.genotype_cols.size();
+      gd.genotype_cols.push_back(col_name);
+    }
+    else if (sample_refs.size() > 1) {
+      for (pt::id_t ref_id_ : sample_refs) {
+        gd.ref_id_to_col_idx[ref_id_] = gd.genotype_cols.size();
+        handled.insert(ref_id_);
+      }
+      gd.genotype_cols.push_back(col_name);
+    }
+  }
+
+  return gd;
+}
 
 /**
  * @brief
@@ -153,6 +212,9 @@ void add_vcf_recs(const bd::VG &g, const pvt::Exp &exp, pvt::VcfRecIdx &vcf_recs
 
     std::vector<pvt::AW> alt_aws;
 
+    // std::map<std::pair<pvt::var_type_e, pt::idx_t>, pt::idx_t> w_idx_to_alt_col_;
+    std::map<pt::idx_t, std::pair<pvt::var_type_e, pt::idx_t>> w_idx_to_alt_col;
+
     std::set<pt::idx_t> alt_walks_covered;
 
     std::map<pvt::var_type_e, pvt::VcfRec> var_type_to_vcf_rec;
@@ -165,6 +227,12 @@ void add_vcf_recs(const bd::VG &g, const pvt::Exp &exp, pvt::VcfRecIdx &vcf_recs
       pvt::Itn alt_itn = exp.get_itn(alt_ref_id);
       pvt::AW alt_aw = alt_itn.get_ats().front();
 
+      if (alt_walks_covered.contains(alt_aw.get_walk_idx())) {
+        auto [var_typ, alt_col_idx] = w_idx_to_alt_col[alt_aw.get_walk_idx()];
+        std::vector<pvt::AW> &alt_aws = var_type_to_vcf_rec.at(var_typ).get_alt_ats_mut();
+        alt_aws[alt_col_idx].add_ref_id(alt_ref_id);
+      }
+
       // if they are the same walk idx there's no point in calling variants on them
       if (ref_aw.get_walk_idx() == alt_aw.get_walk_idx() || alt_walks_covered.contains(alt_aw.get_walk_idx())) {
         continue;
@@ -172,12 +240,14 @@ void add_vcf_recs(const bd::VG &g, const pvt::Exp &exp, pvt::VcfRecIdx &vcf_recs
 
       pvt::var_type_e var_typ = det_var_type(exp.get_pvst_vtx_const_ptr(), ref_aw, alt_aw);
       pt::idx_t pos = s.get_step_idx();
-      //comp_pos(var_typ, s.get_step_idx());
 
       // inserts in-place if the key does not exist, does nothing if the key exists
       var_type_to_vcf_rec.try_emplace(var_typ, pvt::VcfRec{ref_ref_id, pos, id, ref_aw, {}, var_typ, false});
 
-      var_type_to_vcf_rec.at(var_typ).append_alt_at(std::move(alt_aw));
+      pt::idx_t alt_col_idx = var_type_to_vcf_rec.at(var_typ).append_alt_at(std::move(alt_aw));
+      //w_idx_to_alt_col_[{var_typ, alt_aw.get_walk_idx()}] = alt_aw.get_walk_idx();
+
+      w_idx_to_alt_col[alt_aw.get_walk_idx()] = std::make_pair(var_typ, alt_col_idx);
 
       alt_walks_covered.insert(alt_aw.get_walk_idx());
     }
@@ -193,8 +263,6 @@ void add_vcf_recs_tangled(const bd::VG &g, const pvt::Exp &exp, pvt::VcfRecIdx &
 
   std::string id = exp.id();
 
-  // std::cerr << fn_name << " RoV " << id << " ref count: " << exp.get_ref_ids().size() << "\n";
-
   for (pt::id_t ref_ref_id : exp.get_ref_ids()) {
     // we know it has only one walk
     // because it is not tangled the ref_itm has only one allele walk
@@ -204,6 +272,10 @@ void add_vcf_recs_tangled(const bd::VG &g, const pvt::Exp &exp, pvt::VcfRecIdx &
 
     std::set<pt::idx_t> alt_walks_covered;
 
+    // key is walk_idx the value is var_type, i, alt col
+    std::map<pt::idx_t, std::tuple<pvt::var_type_e, pt::idx_t, pt::idx_t>> w_idx_to_alt_col;
+
+    // i, var type
     std::map<std::pair<pt::idx_t, pvt::var_type_e>, pvt::VcfRec> var_type_to_vcf_rec;
 
     for (pt::id_t alt_ref_id : exp.get_ref_ids()) {
@@ -213,20 +285,7 @@ void add_vcf_recs_tangled(const bd::VG &g, const pvt::Exp &exp, pvt::VcfRecIdx &
 
       pvt::Itn alt_itn = exp.get_itn(alt_ref_id);
 
-      // std::cerr << fn_name << " RoV " << id << " ref " << g.get_ref_name(ref_ref_id) << " alt " << g.get_ref_name(alt_ref_id) << "\n";
-
       const std::string &aln = exp.get_aln(ref_ref_id, alt_ref_id);
-
-      //std::cerr << "aln: " << aln << "\n";
-
-      // std::cerr << "ref_itn:\n";
-      // for (const auto &aw : ref_itn.get_ats()) {
-      //   std::cerr << aw.as_str() << "\n";
-      // }
-      // std::cerr << "alt_itn:\n";
-      // for (const auto &aw : alt_itn.get_ats()) {
-      //   std::cerr << aw.as_str() << "\n";
-      // }
 
       for (pt::idx_t i{}, j{}, k{}; k < aln.size() ; k++) {
         char edit_op = aln[k];
@@ -250,6 +309,12 @@ void add_vcf_recs_tangled(const bd::VG &g, const pvt::Exp &exp, pvt::VcfRecIdx &
         const pvt::AS &s = ref_aw.get_step(1);
         pvt::AW alt_aw = alt_itn.get_at(j);
 
+        if (alt_walks_covered.contains(alt_aw.get_walk_idx())) {
+          auto [var_typ, i, alt_col_idx] = w_idx_to_alt_col[alt_aw.get_walk_idx()];
+          std::vector<pvt::AW> &alt_aws =var_type_to_vcf_rec.at({i, var_typ}).get_alt_ats_mut();
+          alt_aws[alt_col_idx].add_ref_id(alt_ref_id);
+        }
+
         // if they are the same walk idx there's no point in calling variants on them
         if (ref_aw.get_walk_idx() == alt_aw.get_walk_idx() || alt_walks_covered.contains(alt_aw.get_walk_idx())) {
           continue;
@@ -264,7 +329,10 @@ void add_vcf_recs_tangled(const bd::VG &g, const pvt::Exp &exp, pvt::VcfRecIdx &
         // inserts in-place if the key does not exist, does nothing if the key exists
         var_type_to_vcf_rec.try_emplace(std::make_pair(i, var_typ), pvt::VcfRec{ref_ref_id, pos, id, ref_aw, {}, var_typ, true});
 
-        var_type_to_vcf_rec.at(std::make_pair(i, var_typ)).append_alt_at(std::move(alt_aw));
+        pt::idx_t alt_col_idx = var_type_to_vcf_rec.at(std::make_pair(i, var_typ)).append_alt_at(std::move(alt_aw));
+
+        w_idx_to_alt_col.try_emplace(alt_aw.get_walk_idx(), std::make_tuple(var_typ, i, alt_col_idx));
+        //w_idx_to_alt_col[alt_col_idx]= ;
 
         alt_walks_covered.insert(alt_aw.get_walk_idx());
 
@@ -286,22 +354,17 @@ void add_vcf_recs_tangled(const bd::VG &g, const pvt::Exp &exp, pvt::VcfRecIdx &
     for (auto &r : buf) {
       vcf_recs.add_rec(ref_ref_id, std::move(r));
     }
-
-    // for (auto &[_, r] : var_type_to_vcf_rec) {
-    //   vcf_recs.add_rec(ref_ref_id, std::move(r));
-    // }
-
-    // if (g.get_ref_name(ref_ref_id) == "chm13__LPA__tig00000001") {
-    //   exit(1);
-    // }
   }
-
-  //exit(1);
 }
 
 
 pvt::VcfRecIdx gen_vcf_records(const bd::VG &g, const std::vector<pvt::Exp> &exps) {
+  std::string fn_name = std::format("[{}::{}]", MODULE, __func__);
+
   pvt::VcfRecIdx vcf_recs;
+
+  // compute genotype data-common for all records
+  vcf_recs.set_genotype_data(comp_gt(g));
 
   for (const pvt::Exp &exp : exps) {
     if (exp.is_tangled()) {
@@ -310,7 +373,6 @@ pvt::VcfRecIdx gen_vcf_records(const bd::VG &g, const std::vector<pvt::Exp> &exp
     else {
       add_vcf_recs(g, exp, vcf_recs);
     }
-
   }
 
   return vcf_recs;

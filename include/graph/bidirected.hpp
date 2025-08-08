@@ -25,22 +25,18 @@
 #include <vector>
 
 #include "../../src/cli/app.hpp" // for core::config TODO: find a proper place for the app config
-//#include "../common/types/core.hpp"
 #include "../common/utils.hpp"
-//#include "../common/types/genomics.hpp"
 #include "./spanning_tree.hpp"
-//#include "../common/types/pvst.hpp"
-
 
 namespace povu::bidirected {
+inline constexpr std::string_view MODULE = "povu::bidirected";
+
 namespace pu = povu::utils;
 namespace pst = povu::spanning_tree;
 namespace pt = povu::types;
 namespace pc = povu::constants;
 using namespace povu::types::graph;
 namespace pgt = povu::types::graph;
-  //namespace pvt = povu::types::genomics;
-  //namespace pvst = povu::types::pvst;
 
 
 /**
@@ -58,6 +54,8 @@ struct PathInfo {
     : path_id(path_id),strand(strand), step_index(step_index)  {}
 };
 typedef PathInfo pi_t;
+
+typedef PathInfo VtxRefInfo; 
 
 // undirected edge
 // stores the index of the vertex in the graph not the id
@@ -119,7 +117,7 @@ public:
   // ---------
   void add_edge_l(pt::idx_t e_idx);
   void add_edge_r(pt::idx_t e_idx);
-  void add_ref(pt::id_t path_id, pgt::or_e strand, pt::idx_t step_index);
+  void add_ref(pt::id_t ref_id, pgt::or_e strand, pt::idx_t step_index);
 };
 
 
@@ -127,14 +125,17 @@ class VariationGraph {
   std::vector<Vertex> vertices;
   std::vector<Edge> edges;
   pu::TwoWayMap<std::size_t, std::size_t> v_id_to_idx_; // TODO: reserve size
-  std::map<id_t, std::string> refs_; // a map of ref ids to names
+  //std::map<id_t, std::string> refs_; // a map of ref ids to names
+  //std::map<id_t, pgt::RefInfo> ref_info_; // a map of ref ids to ref info
+  bool has_refs_;
+  pgt::Refs refs_;
   std::set<pgt::side_n_id_t> tips_; // the set of side and id of the tips
 
 public:
   // --------------
   // constructor(s)
   // --------------
-  VariationGraph(pt::idx_t vtx_count, pt::idx_t edge_count);
+  VariationGraph(pt::idx_t vtx_count, pt::idx_t edge_count, bool inc_refs);
 
 
   // ---------
@@ -152,8 +153,16 @@ public:
   const Vertex& get_vertex_by_idx(pt::idx_t v_idx) const;
   const Vertex& get_vertex_by_id(pt::id_t v_id) const;
   Vertex& get_vertex_mut_by_id(pt::id_t v_id);
-  const std::string &get_ref_name(pt::id_t ref_id) const;
-  const std::map<id_t, std::string>& get_refs() const;
+
+  // ref
+  const std::string &get_ref_label(pt::id_t ref_id) const;
+  const pgt::Ref &get_ref_by_id(pt::id_t ref_id) const;
+  pgt::Ref &get_ref_by_id_mut(pt::id_t ref_id);
+  pt::id_t get_ref_id(const std::string &ref_label) const;
+  //const std::map<id_t, std::string>& get_refs() const;
+  const std::set<pt::id_t> &get_shared_samples(pt::id_t ref_id) const;
+  pt::id_t ref_id_count() const;
+  bool has_refs() const;
 
   // ---------
   // setter(s)
@@ -163,7 +172,7 @@ public:
   pt::idx_t add_vertex(pt::id_t v_id, const std::string& label);
   // returns the index (e_idx) of the added edge
   pt::idx_t add_edge(pt::id_t v1_id, pgt::v_end_e v1_end, pt::id_t v2_id, pgt::v_end_e v2_end);
-  pt::id_t add_ref(const std::string &ref_name);
+  pt::id_t add_ref(const std::string &label, char delim);
   void shrink_to_fit();
 
   // other
