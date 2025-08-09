@@ -72,14 +72,24 @@ chr1    200   .   CGT   TAA
 
 Here POS = 200, REF = CGT, ALT = TAA, indicating “at 200–202, replace CGT with TAA.”
 
+## Qual
+
+Fixed at 60
+
+## Filter
+
+Fixed at PASS
+
 ## Info field
 
-| field name | VCF description                                       |                                                                |
-|------------|-------------------------------------------------------|----------------------------------------------------------------|
-| `AN`       | Total number of alleles in called genotypes           | Total number of called alleles (ref + alt), across all samples |
-| `AC`       | Total number of alternate alleles in called genotypes | Number of alternate alleles only, across all samples           |
-
-
+| field name | VCF description                                       |                                                                  |
+|------------|-------------------------------------------------------|------------------------------------------------------------------|
+| `AN`       | Total number of alleles in called genotypes           | Total number of called alleles (ref + alt), across all samples   |
+| `AC`       | Total number of alternate alleles in called genotypes | Number of alternate alleles only, across all samples             |
+| `AF`       |                                                       | AF=AC/AN                                                         |
+| `AT`       |                                                       | not always (but tries to be) minimal walks for ref and alt calls |
+| `NS`       |                                                       | how many samples at this variant site have genotype data         |
+|            |                                                       |                                                                  |
 
 ## Genotyping
 

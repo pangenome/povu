@@ -200,6 +200,7 @@ void add_vcf_recs(const bd::VG &g, const pvt::Exp &exp, pvt::VcfRecIdx &vcf_recs
   std::string fn_name = std::format("[{}::{}]", MODULE, __func__);
 
   std::string id = exp.id();
+  pt::idx_t height = exp.get_pvst_vtx_const_ptr()->get_height();
 
   for (pt::id_t ref_ref_id : exp.get_ref_ids()) {
     // we know it has only one walk
@@ -242,7 +243,7 @@ void add_vcf_recs(const bd::VG &g, const pvt::Exp &exp, pvt::VcfRecIdx &vcf_recs
       pt::idx_t pos = s.get_step_idx();
 
       // inserts in-place if the key does not exist, does nothing if the key exists
-      var_type_to_vcf_rec.try_emplace(var_typ, pvt::VcfRec{ref_ref_id, pos, id, ref_aw, {}, var_typ, false});
+      var_type_to_vcf_rec.try_emplace(var_typ, pvt::VcfRec{ref_ref_id, pos, id, ref_aw, {}, height, var_typ, false});
 
       pt::idx_t alt_col_idx = var_type_to_vcf_rec.at(var_typ).append_alt_at(std::move(alt_aw));
       //w_idx_to_alt_col_[{var_typ, alt_aw.get_walk_idx()}] = alt_aw.get_walk_idx();
@@ -262,6 +263,7 @@ void add_vcf_recs_tangled(const bd::VG &g, const pvt::Exp &exp, pvt::VcfRecIdx &
   std::string fn_name = std::format("[{}::{}]", MODULE, __func__);
 
   std::string id = exp.id();
+  pt::idx_t height = exp.get_pvst_vtx_const_ptr()->get_height();
 
   for (pt::id_t ref_ref_id : exp.get_ref_ids()) {
     // we know it has only one walk
@@ -327,7 +329,7 @@ void add_vcf_recs_tangled(const bd::VG &g, const pvt::Exp &exp, pvt::VcfRecIdx &
         pt::idx_t pos = s.get_step_idx();
 
         // inserts in-place if the key does not exist, does nothing if the key exists
-        var_type_to_vcf_rec.try_emplace(std::make_pair(i, var_typ), pvt::VcfRec{ref_ref_id, pos, id, ref_aw, {}, var_typ, true});
+        var_type_to_vcf_rec.try_emplace(std::make_pair(i, var_typ), pvt::VcfRec{ref_ref_id, pos, id, ref_aw, {}, height, var_typ, true});
 
         pt::idx_t alt_col_idx = var_type_to_vcf_rec.at(std::make_pair(i, var_typ)).append_alt_at(std::move(alt_aw));
 

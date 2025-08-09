@@ -25,8 +25,9 @@ inline void write_header(const std::string &chrom, pt::idx_t len, std::ostream &
   os << "##INFO=<ID=TANGLED,Number=1,Type=String,Description=\"Variant lies in a tangled region of the graph: T or F\">\n";
   os << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
   os << std::format("##contig=<ID={},length={}>\n", chrom, len);
-}
 
+  return;
+}
 
 
 inline void write_col_header(pvt::genotype_data_t gtd, std::ostream &os) {
@@ -39,6 +40,7 @@ inline void write_col_header(pvt::genotype_data_t gtd, std::ostream &os) {
   }
   os << "\n";
 }
+
 
 // ns and the genotype columns are generated from the genotype data
 std::pair<pt::idx_t, std::string> gen_genotype_cols(const bd::VG &g, pt::id_t ref_count,
@@ -126,6 +128,7 @@ void write_vcf_rec(const bd::VG &g, const pvt::genotype_data_t &gtd,
 
 
     const std::string qual = "60";
+    const std::string filter = "PASS";
     pvt::var_type_e var_typ = r.get_var_type();
 
     auto get_label = [&](const pvt::AS &s) -> std::string {
@@ -264,12 +267,13 @@ void write_vcf_rec(const bd::VG &g, const pvt::genotype_data_t &gtd,
 
     std::ostringstream info_field;
     info_field << "AC=" << ac_str
-               << ",AF=" << af_str
-               << ",AN=" << an_str
-               << ",NS=" << ns_str
-               << ",AT=" << fmt_field(r)
-               << ",VARTYPE=" << pvt::to_string_view(var_typ)
-               << ",TANGLED=" << (r.is_tangled() ? "T" : "F");
+               << ";AF=" << af_str
+               << ";AN=" << an_str
+               << ";NS=" << ns_str
+               << ";AT=" << fmt_field(r)
+               << ";VARTYPE=" << pvt::to_string_view(var_typ)
+               << ";TANGLED=" << (r.is_tangled() ? "T" : "F")
+               << ";LV=" << (r.get_height() - 1);
 
     // std::string info_field_ = std::format(
     //     "AC={},AF={},AN={},NS={},AT={},VARTYPE={},TANGLED={}", ac_str, af_str, an_str, ns_str,
@@ -281,7 +285,7 @@ void write_vcf_rec(const bd::VG &g, const pvt::genotype_data_t &gtd,
        << "\t" << ref_dna
        << "\t" << alt_dna
        << "\t" << qual
-       << "\t" << "."
+       << "\t" << filter
        << "\t" << info_field.str()
        << "\t" << "GT"
        << "\t" << gt_cols
@@ -302,29 +306,32 @@ void write_vcf(const bd::VG &g, pt::id_t ref_id, const std::string &chrom,
     return;
   }
 
-  void write_vcfs(const pvt::VcfRecIdx &vcf_recs, const bd::VG &g,
-                  const core::config &app_config) {
-    std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+void write_vcfs(const pvt::VcfRecIdx &vcf_recs, const bd::VG &g, const core::config &app_config) {
+  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
-    std::string out_dir = std::string(app_config.get_output_dir());
+  std::string out_dir = std::string(app_config.get_output_dir());
 
-    const pvt::genotype_data_t &gtd = vcf_recs.get_genotype_data();
+  const pvt::genotype_data_t &gtd = vcf_recs.get_genotype_data();
+  const std::vector<std::string> &ref_paths = app_config.get_reference_paths();
 
-    for (const auto &[ref_id, recs] : vcf_recs.get_recs()) {
-      std::string ref_name = g.get_ref_label(ref_id);
-      auto it = std::find(app_config.get_reference_paths().begin(), app_config.get_reference_paths().end(), ref_name);
+  auto is_in_ref_paths = [&](const std::string &ref_name) -> bool {
+    return std::find(ref_paths.begin(), ref_paths.end(), ref_name) != ref_paths.end();
+  };
 
-      if (it == app_config.get_reference_paths().end()) {
-        continue;
-      }
+  for (const auto &[ref_id, recs] : vcf_recs.get_recs()) {
+    std::string ref_name = g.get_ref_label(ref_id);
 
-      std::string vcf_fp = std::format("{}/{}.vcf", out_dir, ref_name);
-      std::ofstream os(vcf_fp);
-      write_vcf(g, ref_id, ref_name, gtd, recs, os);
-      std::cerr << "wrote " << vcf_fp << "\n";
+    if (!is_in_ref_paths(ref_name)) {
+      continue;
     }
 
-    return;
+    std::string vcf_fp = std::format("{}/{}.vcf", out_dir, ref_name);
+    std::ofstream os(vcf_fp);
+    write_vcf(g, ref_id, ref_name, gtd, recs, os);
+    std::cerr << "wrote " << vcf_fp << "\n";
   }
+
+  return;
+}
 
 } // namespacepovu::io::vcf

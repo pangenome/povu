@@ -14,6 +14,8 @@
 #include <utility>
 #include <variant>
 #include <vector>
+#include <stack>
+
 
 #include "../common/types/pvst.hpp"
 #include "../common/types/constants.hpp"
@@ -47,10 +49,6 @@ public:
   // getter(s)
   // ---------
 
-  // [[deprecated("use vtx_count() instead")]]
-  // pt::idx_t size() const {
-  //   return this->vertices.size();
-  // }
 
   pt::idx_t vtx_count() const {
     return this->vertices.size();
@@ -84,17 +82,48 @@ public:
     return this->parent_v[v_idx];
   }
 
-  bool is_leaf(pt::idx_t v_idx) const {
-    return  v_idx >= this->children_v.size() || this->children_v[v_idx].empty();
-  }
-
   const std::vector<pt::idx_t>& get_children(pt::idx_t v_idx) const {
     return this->children_v[v_idx];
+  }
+
+  bool is_leaf(pt::idx_t v_idx) const {
+    return  v_idx >= this->children_v.size() || this->children_v[v_idx].empty();
   }
 
   // ---------
   // setter(s)
   // ---------
+
+  /**
+   * @brief Compute the heights of all vertices in the tree
+   */
+  void comp_heights() {
+    std::cerr << "start\n";
+    if (this->root_idx_ == INVALID_IDX) {
+      throw std::logic_error("Root index is not set");
+    }
+
+    // reset heights
+    for (auto &v : this->vertices) {
+      v->set_height(0);
+    }
+
+    // compute heights using DFS
+    std::stack<pt::idx_t> s;
+    s.push(this->root_idx_);
+
+    while (!s.empty()) {
+      pt::idx_t v_idx = s.top();
+      s.pop();
+
+      for (pt::idx_t child_v_idx : this->get_children(v_idx)) {
+        auto &child_v = this->get_vertex_mut(child_v_idx);
+        child_v.set_height(this->get_vertex(v_idx).get_height() + 1);
+        s.push(child_v_idx);
+      }
+    }
+    std::cerr << "done\n";
+  }
 
   void set_root_idx(pt::idx_t v_idx) {
     if (this->root_idx_ != INVALID_IDX){
@@ -128,7 +157,7 @@ public:
     // create a unique pointer to the vertex and add it to the vertices vector
     auto ptr = std::make_unique<T>(v);
     this->vertices.push_back(std::move(ptr));
-    
+
     return v_idx;
   }
 

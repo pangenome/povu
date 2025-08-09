@@ -114,10 +114,10 @@ bool is_fl_leaf(const pvtr::Tree &pvst, pt::idx_t pvst_v_idx){
   }
 
   for (pt::idx_t v_idx : pvst.get_children(pvst_v_idx)) {
-    if (pvst.get_vertex_const_ptr(v_idx)->get_type() == pvst::vt_e::flubble) {
+    if (pvst::is_fl_like(pvst.get_vertex_const_ptr(v_idx)->get_type())) {
       return false;
     }
-  }
+   }
 
   return true;
 }

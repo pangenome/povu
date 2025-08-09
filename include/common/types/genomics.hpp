@@ -416,6 +416,7 @@ class VcfRec {
   // std::string filter;
   // std::string info;
   std::string format;
+  pt::idx_t height_; // height of the pvst node in the tree
   var_type_e var_type_; // type of the variant, e.g. del, ins, sub, und
   bool is_tangled_ = false; // is true when tangling exists, i.e. when a walk traverses an RoV more than once
 
@@ -426,9 +427,9 @@ public:
   // --------------
 
   VcfRec(pt::id_t ref_id, pt::idx_t pos, std::string id, AW ref_at,
-         std::vector<AW> alt_ats, var_type_e variant_type, bool is_tangled)
+         std::vector<AW> alt_ats, pt::idx_t height, var_type_e variant_type, bool is_tangled)
     : ref_id_(ref_id), pos(pos), id(id), ref_at(ref_at), alt_ats(alt_ats),
-      var_type_(variant_type), is_tangled_(is_tangled) {}
+      height_(height), var_type_(variant_type), is_tangled_(is_tangled) {}
 
   // ---------
   // getter(s)
@@ -439,6 +440,7 @@ public:
   const AW &get_ref_at() const { return this->ref_at; }
   const std::vector<AW> &get_alt_ats() const { return this->alt_ats; }
   std::vector<AW> &get_alt_ats_mut() { return this->alt_ats; }
+  pt::idx_t get_height() const { return this->height_; }
   var_type_e get_var_type() const { return this->var_type_; }
   bool is_tangled() const { return this->is_tangled_; }
 

@@ -165,6 +165,9 @@ pvtr::Tree read_pvst(const std::string &fp) {
   // a map from line in the .pvst file to the vertex index in the PVST
   std::map<pt::idx_t, pt::idx_t> line_idx_to_pvst_idx;
 
+  // map file vertex index to pvst vertex index
+  std::map<pt::idx_t, pt::idx_t> file_v_idx_to_pvst_idx;
+
   // number of columns in a .pvst file
   const std::size_t PVST_COLS {4};
 
@@ -185,7 +188,11 @@ pvtr::Tree read_pvst(const std::string &fp) {
     }
 
     char typ = tokens[0][0];
-    pt::idx_t v_idx { pc::INVALID_IDX };
+    // id of the vertex in the file
+    // assume that the value here will always be numeric
+    pt::idx_t id = std::stoul(tokens[1]);
+
+    pt::idx_t v_idx{pc::INVALID_IDX};
     const std::string &pvst_label = tokens[2];
 
     switch (typ) {
@@ -199,36 +206,42 @@ pvtr::Tree read_pvst(const std::string &fp) {
       auto [g, s] = str_to_id_or_t(pvst_label);
       pvst::MidiBubble v(g, s);
       v_idx = pvst.add_vertex(v);
+      file_v_idx_to_pvst_idx[id] = v_idx;
       break;
     }
     case pc::PVST_FLUBBLE_SYMBOL: {
       auto [a, z] = str_to_id_or_t(pvst_label);
       pvst::Flubble v(pvst::vt_e::flubble, a, z);
       v_idx = pvst.add_vertex(v);
+      file_v_idx_to_pvst_idx[id] = v_idx;
       break;
     }
     case pc::PVST_TINY_SYMBOL: {
       auto [a, z] = str_to_id_or_t(pvst_label);
       pvst::Flubble v(pvst::vt_e::tiny, a, z);
       v_idx = pvst.add_vertex(v);
+      file_v_idx_to_pvst_idx[id] = v_idx;
       break;
     }
     case pc::PVST_OVERLAP_SYMBOL: {
       auto [a, z] = str_to_id_or_t(pvst_label);
       pvst::Flubble v(pvst::vt_e::parallel, a, z);
       v_idx = pvst.add_vertex(v);
+      file_v_idx_to_pvst_idx[id] = v_idx;
       break;
     }
     case pc::PVST_CONCEALED_SYMBOL: {
       auto [f, s] = str_to_id_or_t(pvst_label);
       pvst::Concealed v(f, s);
       v_idx = pvst.add_vertex(v);
+      file_v_idx_to_pvst_idx[id] = v_idx;
       break;
     }
     case pc::PVST_SMOTHERED_SYMBOL: {
       auto [f, s] = str_to_id_or_t(pvst_label);
       pvst::Smothered v(f, s);
       v_idx = pvst.add_vertex(v);
+      file_v_idx_to_pvst_idx[id] = v_idx;
       break;
     }
     }
@@ -256,7 +269,8 @@ pvtr::Tree read_pvst(const std::string &fp) {
 
     pt::idx_t p_pvst_idx = line_idx_to_pvst_idx[line_idx];
     for (const pt::idx_t &c_idx : split_numbers(ch)) {
-      pt::idx_t ch_pvst_idx = line_idx_to_pvst_idx[c_idx];
+      //pt::idx_t ch_pvst_idx = line_idx_to_pvst_idx[c_idx];
+      pt::idx_t ch_pvst_idx = file_v_idx_to_pvst_idx[c_idx];
       pvst.add_edge(p_pvst_idx, ch_pvst_idx);
     }
   }

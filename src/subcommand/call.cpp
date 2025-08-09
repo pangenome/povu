@@ -3,30 +3,6 @@
 
 namespace povu::subcommands::call {
 
-// std::vector<pgt::flubble> get_can_flubbles(const core::config &app_config) {
-//   std::string fn_name = std::format("[povu::subcommands::{}]", __func__);
-
-//   // get the list of files in the forest dir that end in .pvst
-//   std::vector<fs::path> flbs = pic::get_files(app_config.get_forest_dir(), ".pvst");
-
-//   if (flbs.empty()) {
-//     std::cerr << fn_name
-//               << " Could not find pvst files in " << app_config.get_forest_dir()
-//               << std::endl;
-//     exit(EXIT_FAILURE);
-//   }
-
-//   // TODO: [c] parallelise
-//   std::vector<pgt::flubble> can_flbs; // flubbles in a given file
-//   for (std::size_t i{}; i < flbs.size(); i++) {
-//     //std::cerr << std::format("Reading flubble file: {}\n", flbs[i].string());
-//     std::vector<pgt::flubble> res = povu::io::pvst::read_canonical_fl(flbs[i].string());
-//     can_flbs.insert(can_flbs.end(), res.begin(), res.end());
-//   }
-
-//   return can_flbs;
-// }
-
 /**
  * loop through the .pvst files and read them
  */
@@ -44,7 +20,9 @@ void read_pvsts(const core::config &app_config, std::vector<pvtr::Tree> &pvsts) 
   // TODO: [c] parallelise
   // loop through the .pvst files and read them
   for (std::size_t i{}; i < fps.size(); i++) {
-    pvsts.push_back(povu::io::pvst::read_pvst(fps[i].string()));
+    pvtr::Tree pvst = povu::io::pvst::read_pvst(fps[i].string());
+    pvst.comp_heights();
+    pvsts.push_back(std::move(pvst));
   }
 }
 
@@ -60,26 +38,6 @@ pt::status_t get_refs(core::config &app_config) {
   return 0;
 }
 
-// inline std::set<pt::id_t> get_ref_ids(const bd::VG &g, const core::config &app_config) {
-//   const std::vector<std::string> &refs = app_config.get_reference_paths();
-//   std::set<pt::id_t> ref_ids;
-
-//   for (const std::string &ref_label: refs) {
-//     pt::id_t ref_id = g.get_ref_id(ref_label);
-//     if (ref_id == pc::INVALID_ID) {
-//       // throw exception
-
-//     }
-//     ref_ids.insert(ref_id);
-//   }
-
-//   // for (const auto &[ref_id, ref_name] : g.get_refs()) {
-//   //   if (std::find(refs.begin(), refs.end(), ref_name) != refs.end()) {
-//   //     ref_ids.insert(ref_id);
-//   //   }
-//   // }
-//   return ref_ids;
-// }
 
 void do_call(core::config &app_config) {
   std::string fn_name = std::format("[povu::main::{}]", __func__);

@@ -30,6 +30,10 @@ enum class vt_e {
   midi,
 };
 
+std::ostream& operator<<(std::ostream& os, vt_e t);
+
+
+
 constexpr bool is_fl_like(pvst::vt_e t) noexcept {
   switch (t) {
   case pvst::vt_e::flubble:
@@ -76,6 +80,7 @@ traversal_params_t null_tp();
 /* an abstract class for vertices  */
 class VertexBase {
   povu::types::id_t idx_; // idx of the vertex in the vst
+  pt::idx_t height_; // height of the vertex in the tree
   vt_e type_;
 
 public:
@@ -85,6 +90,7 @@ public:
   // ——— getters ———
   povu::types::id_t get_idx() const { return this->idx_; }
   vt_e get_type() const { return this->type_; }
+  pt::idx_t get_height() const { return this->height_; }
 
 
   // ——— pure virutal functions ———
@@ -95,6 +101,7 @@ public:
   // ——— setters ———
   void set_idx(povu::types::id_t idx) { this->idx_ = idx; }
   void set_type(vt_e type) { this->type_ = type; }
+  void set_height(pt::idx_t height) { this->height_ = height; }
 };
 
 
