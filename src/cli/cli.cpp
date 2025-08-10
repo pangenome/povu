@@ -25,6 +25,8 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
   args::ValueFlag<std::string> ref_list(parser, "ref_list", "path to txt file containing reference haplotypes [optional]", {'r', "ref-list"});
   args::ValueFlag<std::string> chrom(parser, "chrom", "graph identifier, default is from GFA file. Chrom column in VCF [optional]", {'c', "chrom"});
   args::Flag undefined_vcf(parser, "undefined_vcf", "Generate VCF file for flubbles without a reference path [default: false]", {'u', "undefined"});
+  args::Flag stdout_vcf(parser, "stdout_vcf", "Output single VCF to stdout instead of separate files [default: false]", {"stdout"});
+  args::ValueFlagList<std::string> path_prefixes(parser, "path_prefix", "All paths beginning with NAME used as reference (multiple allowed) [optional]", {'P', "path-prefix"});
   args::PositionalList<std::string> refsList(parser, "refs", "list of refs to use as reference haplotypes [optional]");
 
   parser.Parse();
@@ -55,22 +57,37 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
     app_config.set_undefined_vcf(true);
   }
 
+  if (stdout_vcf) {
+    app_config.set_stdout_vcf(true);
+  }
+
   /* set graph properties */
   app_config.set_inc_vtx_labels(true);
   app_config.set_inc_refs(true);
 
-  /* One of ref_list or path_list must be set—never both, and never none */
-  if (!ref_list && std::begin(refsList) == std::end(refsList)) {
-    std::cerr << "[cli::call_handler] Error: need either ref_list or path_list" << std::endl;
+  /* One of ref_list, path_prefixes, or list of references must be set—never multiple, and never none */
+  int ref_options_set = 0;
+  if (ref_list) ref_options_set++;
+  if (path_prefixes) ref_options_set++;
+  if (std::begin(refsList) != std::end(refsList)) ref_options_set++;
+
+  if (ref_options_set == 0) {
+    std::cerr << "[cli::call_handler] Error: need one of: ref_list, path_prefix, or positional refs" << std::endl;
     std::exit(1);
   }
-  else if (ref_list && std::begin(refsList) != std::end(refsList)) {
-    std::cerr << "[cli::call_handler] Error: cannot set both ref_list and path_list" << std::endl;
+  else if (ref_options_set > 1) {
+    std::cerr << "[cli::call_handler] Error: cannot set multiple reference options (ref_list, path_prefix, positional refs)" << std::endl;
     std::exit(1);
   }
   else if (ref_list) {
     app_config.set_ref_input_format(core::input_format_e::file_path);
     app_config.set_reference_txt_path(std::move(args::get(ref_list)));
+  }
+  else if (path_prefixes) {
+    app_config.set_ref_input_format(core::input_format_e::params);
+    for (auto &&prefix : args::get(path_prefixes)) {
+      app_config.add_path_prefix(prefix);
+    }
   }
   else { // we already made sure that the list of refs is not empty
     app_config.set_ref_input_format(core::input_format_e::params);
