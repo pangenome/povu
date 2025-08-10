@@ -9,12 +9,6 @@
 
 namespace povu::io::to_vcf {
 
-
-inline void write_header(const std::string &chrom, pt::idx_t len, std::ostream &os) {
-  std::vector<std::pair<std::string, pt::idx_t>> contigs = {{chrom, len}};
-  write_header(contigs, os);
-}
-
 inline void write_header(const std::vector<std::pair<std::string, pt::idx_t>> &contigs, std::ostream &os) {
   os << "##fileformat=VCFv4.2\n";
   os << "##fileDate=" << pu::today() << std::endl;
@@ -37,10 +31,14 @@ inline void write_header(const std::vector<std::pair<std::string, pt::idx_t>> &c
   return;
 }
 
+inline void write_single_header(const std::string &chrom, pt::idx_t len, std::ostream &os) {
+  write_header({{chrom, len}}, os);
+}
+
+
 inline void write_combined_header(const std::vector<std::pair<std::string, pt::idx_t>> &contigs, std::ostream &os) {
   write_header(contigs, os);
 }
-
 
 inline void write_col_header(pvt::genotype_data_t gtd, std::ostream &os) {
   os << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t";
@@ -309,7 +307,7 @@ void write_vcf(const bd::VG &g, pt::id_t ref_id, const std::string &chrom,
                std::ostream &os) {
     std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
-    write_header(chrom, g.get_ref_by_id(ref_id).get_length(), os);
+    write_single_header(chrom, g.get_ref_by_id(ref_id).get_length(), os);
     write_col_header(gtd, os);
     for (const pvt::VcfRec &r : recs) {
       write_vcf_rec(g, gtd, r, chrom, os);
