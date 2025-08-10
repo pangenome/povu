@@ -61,12 +61,15 @@ void do_gfa2vcf(const core::config &app_config) {
     std::cerr << fn_name << " Step 2: Calling variants..." << std::endl;
   }
   
+  // Create a config for call with the temp directory as forest_dir
+  core::config call_config = app_config;
+  call_config.set_forest_dir(temp_dir_str);
+  
   // Read PVST files from temp directory
   std::vector<pvtr::Tree> pvsts;
-  call::read_pvsts(decompose_config, pvsts);
+  call::read_pvsts(call_config, pvsts);
   
   // Get references
-  core::config call_config = app_config;
   call::get_refs(call_config);
   
   // Load graph for variant calling
