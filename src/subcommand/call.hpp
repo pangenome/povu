@@ -29,6 +29,7 @@ namespace pic = povu::io::common;
 namespace piv = povu::io::to_vcf;
 namespace pcs = povu::subcommands::common;
 
+std::vector<std::string> filter_paths_by_prefix(const core::config &app_config);
 void do_call(core::config &app_config);
 } // povu::subcommands::call
 #endif
