@@ -60,18 +60,18 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
   app_config.set_inc_vtx_labels(true);
   app_config.set_inc_refs(true);
 
-  /* One of ref_list, path_list, or path_prefixes must be set—never multiple, and never none */
+  /* One of ref_list, path_prefixes, or list of references must be set—never multiple, and never none */
   int ref_options_set = 0;
   if (ref_list) ref_options_set++;
-  if (std::begin(refsList) != std::end(refsList)) ref_options_set++;
   if (path_prefixes) ref_options_set++;
-  
+  if (std::begin(refsList) != std::end(refsList)) ref_options_set++;
+
   if (ref_options_set == 0) {
-    std::cerr << "[cli::call_handler] Error: need one of: ref_list, path_list, or path_prefix" << std::endl;
+    std::cerr << "[cli::call_handler] Error: need one of: ref_list, path_prefix, or positional refs" << std::endl;
     std::exit(1);
   }
   else if (ref_options_set > 1) {
-    std::cerr << "[cli::call_handler] Error: cannot set multiple reference options (ref_list, path_list, path_prefix)" << std::endl;
+    std::cerr << "[cli::call_handler] Error: cannot set multiple reference options (ref_list, path_prefix, positional refs)" << std::endl;
     std::exit(1);
   }
   else if (ref_list) {
