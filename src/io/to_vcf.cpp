@@ -11,28 +11,16 @@ namespace povu::io::to_vcf {
 
 
 inline void write_header(const std::string &chrom, pt::idx_t len, std::ostream &os) {
-  os << "##fileformat=VCFv4.2\n";
-  os << "##fileDate=" << pu::today() << std::endl;
-  os << "##source=povu\n";
-  os << "##reference=" << chrom << "\n";
-  os << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
-  os << "##INFO=<ID=AC,Number=A,Type=Integer,Description=\"Total number of alternate alleles in called genotypes\">\n";
-  os << "##INFO=<ID=AT,Number=R,Type=String,Description=\"Allele traversal path through the graph\">\n";
-  os << "##INFO=<ID=AN,Number=1,Type=String,Description=\"Total number of alleles in called genotypes\">\n";
-  os << "##INFO=<ID=AF,Number=A,Type=Float,Description=\"Allele frequency in the population\">\n";
-  os << "##INFO=<ID=NS,Number=1,Type=Integer,Description=\"Number of samples with data\">\n";
-  os << "##INFO=<ID=VARTYPE,Number=1,Type=String,Description=\"Type of variation: INS (insertion), DEL (deletion), SUB (substitution)\">\n";
-  os << "##INFO=<ID=TANGLED,Number=1,Type=String,Description=\"Variant lies in a tangled region of the graph: T or F\">\n";
-  os << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
-  os << std::format("##contig=<ID={},length={}>\n", chrom, len);
-
-  return;
+  write_header({{chrom, len}}, &chrom, os);
 }
 
-inline void write_combined_header(const std::vector<std::pair<std::string, pt::idx_t>> &contigs, std::ostream &os) {
+inline void write_header(const std::vector<std::pair<std::string, pt::idx_t>> &contigs, const std::string *reference_chrom, std::ostream &os) {
   os << "##fileformat=VCFv4.2\n";
   os << "##fileDate=" << pu::today() << std::endl;
   os << "##source=povu\n";
+  if (reference_chrom) {
+    os << "##reference=" << *reference_chrom << "\n";
+  }
   os << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
   os << "##INFO=<ID=AC,Number=A,Type=Integer,Description=\"Total number of alternate alleles in called genotypes\">\n";
   os << "##INFO=<ID=AT,Number=R,Type=String,Description=\"Allele traversal path through the graph\">\n";
@@ -41,6 +29,7 @@ inline void write_combined_header(const std::vector<std::pair<std::string, pt::i
   os << "##INFO=<ID=NS,Number=1,Type=Integer,Description=\"Number of samples with data\">\n";
   os << "##INFO=<ID=VARTYPE,Number=1,Type=String,Description=\"Type of variation: INS (insertion), DEL (deletion), SUB (substitution)\">\n";
   os << "##INFO=<ID=TANGLED,Number=1,Type=String,Description=\"Variant lies in a tangled region of the graph: T or F\">\n";
+  os << "##INFO=<ID=LV,Number=1,Type=Integer,Description=\"Level in the snarl tree (0=top level)\">\n";
   os << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
   
   for (const auto &[chrom, len] : contigs) {
@@ -48,6 +37,10 @@ inline void write_combined_header(const std::vector<std::pair<std::string, pt::i
   }
 
   return;
+}
+
+inline void write_combined_header(const std::vector<std::pair<std::string, pt::idx_t>> &contigs, std::ostream &os) {
+  write_header(contigs, nullptr, os);
 }
 
 
