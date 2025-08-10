@@ -208,13 +208,13 @@ int cli(int argc, char **argv, core::config& app_config) {
   args::ArgumentParser p("Explore genomic variation in a variation graph");
   args::Group commands(p, "commands");
 
-  args::Command gfa2vcf(commands, "gfa2vcf", "Convert GFA directly to VCF (combines decompose and call)",
+  args::Command gfa2vcf(commands, "gfa2vcf", "Convert GFA to VCF (decompose + call)",
                        [&](args::Subparser &parser) { gfa2vcf_handler(parser, app_config); });
   args::Command decompose(commands, "decompose", "Find regions of variation",
                        [&](args::Subparser &parser) { deconstruct_handler(parser, app_config); });
-  args::Command call(commands, "call", "Generate a VCF from the variation graph",
+  args::Command call(commands, "call", "Generate a VCF from regions of variation",
                        [&](args::Subparser &parser) { call_handler(parser, app_config); });
-  args::Command info(commands, "info", "Print information about the graph [use 1 thread for meaningful results]",
+  args::Command info(commands, "info", "Print graph information [use 1 thread for meaningful results]",
                      [&](args::Subparser &parser) { info_handler(parser, app_config); });
 
   args::Group arguments(p, "arguments", args::Group::Validators::DontCare, args::Options::Global);
