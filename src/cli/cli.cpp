@@ -24,6 +24,7 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
   args::ValueFlag<std::string> output_dir(parser, "output_dir", "Output directory [default: .]", {'o', "output-dir"});
   args::ValueFlag<std::string> ref_list(parser, "ref_list", "path to txt file containing reference haplotypes [optional]", {'r', "ref-list"});
   args::ValueFlag<std::string> chrom(parser, "chrom", "graph identifier, default is from GFA file. Chrom column in VCF [optional]", {'c', "chrom"});
+  args::Flag stdout_vcf(parser, "stdout_vcf", "Output single VCF to stdout instead of separate files [default: false]", {"stdout"});
   args::ValueFlagList<std::string> path_prefixes(parser, "path_prefix", "All paths beginning with NAME used as reference (multiple allowed) [optional]", {'P', "path-prefix"});
   args::PositionalList<std::string> refsList(parser, "refs", "list of refs to use as reference haplotypes [optional]");
 
@@ -51,7 +52,9 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
     app_config.set_chrom(filePath.stem().string());
   }
 
-
+  if (stdout_vcf) {
+    app_config.set_stdout_vcf(true);
+  }
 
   /* set graph properties */
   app_config.set_inc_vtx_labels(true);

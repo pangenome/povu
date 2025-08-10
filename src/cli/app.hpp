@@ -76,6 +76,7 @@ struct config {
   input_format_e ref_input_format;
   std::vector<std::string> reference_paths; // or just references
   std::vector<std::string> path_prefixes; // path prefixes for reference selection
+  bool stdout_vcf; // output single VCF to stdout instead of separate files
 
   // -------------
   // Contructor(s)
@@ -96,7 +97,8 @@ struct config {
         references_txt(""),
         ref_input_format(input_format_e::unset),
         reference_paths(std::vector<std::string>{}),
-        path_prefixes(std::vector<std::string>{})
+        path_prefixes(std::vector<std::string>{}),
+        stdout_vcf(false)
     {}
 
   // ---------
@@ -119,6 +121,7 @@ struct config {
   std::size_t verbosity() const { return this->v; } // can we avoid this being a size_t?
   unsigned int thread_count() const { return this->thread_count_; }
   bool print_dot() const { return this->print_dot_; }
+  bool get_stdout_vcf() const { return this->stdout_vcf; }
   task_e get_task() const { return this->task; }
 
   // ---------
@@ -145,6 +148,7 @@ struct config {
   void set_forest_dir(std::string s) { this->forest_dir = s; }
   void set_output_dir(std::string s) { this->output_dir = s; }
   void set_task(task_e t) { this->task = t; }
+  void set_stdout_vcf(bool b) { this->stdout_vcf = b; }
 
   // --------
   // other(s)

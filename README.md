@@ -53,8 +53,11 @@ For more control, use the separate `decompose` and `call` commands:
 # Step 1: Identify regions of variation
 ./bin/povu decompose -i input.gfa -o regions/
 
-# Step 2: Generate VCF files from regions
+# Step 2a: Generate separate VCF files (one per reference)
 ./bin/povu call -i input.gfa -f regions/ -r ref_list.txt -o vcf_output/
+
+# Step 2b: Generate single combined VCF to stdout
+./bin/povu call -i input.gfa -f regions/ -r ref_list.txt --stdout > output.vcf
 ```
 
 

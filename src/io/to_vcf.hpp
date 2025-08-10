@@ -21,7 +21,7 @@ namespace pgt = povu::types::graph;
 namespace pt = povu::types;
 
 void write_vcfs(const pvt::VcfRecIdx &vcf_recs, const bd::VG &g, const core::config &app_config);
-void write_vcfs_to_stdout(const pvt::VcfRecIdx &vcf_recs, const bd::VG &g, const core::config &app_config);
+void write_combined_vcf_to_stdout(const pvt::VcfRecIdx &vcf_recs, const bd::VG &g, const core::config &app_config);
 
 } // namespace povu::io::vcf
 

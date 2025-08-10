@@ -1,5 +1,4 @@
 #include "./gfa2vcf.hpp"
-#include "./common.hpp"
 #include "./call.hpp"
 #include "./deconstruct.hpp"
 
@@ -7,22 +6,7 @@
 #include <iostream>
 #include <cstdlib>
 
-#include "../../include/graph/bidirected.hpp"
-#include "../../include/common/types/pvst.hpp"
-#include "../../include/genomics/variants.hpp"
-#include "../io/pvst.hpp"
-#include "../io/to_vcf.hpp"
-#include "../io/common.hpp"
-
 namespace fs = std::filesystem;
-namespace bd = povu::bidirected;
-namespace pvtr = povu::tree;
-namespace pcs = povu::subcommands::common;
-namespace pic = povu::io::common;
-namespace pvt = povu::types::genomics;
-namespace pt = povu::types;
-namespace pg = povu::variants;
-namespace piv = povu::io::to_vcf;
 
 namespace povu::subcommands::gfa2vcf {
 
@@ -48,40 +32,27 @@ void do_gfa2vcf(const core::config &app_config) {
     std::cerr << fn_name << " Step 1: Decomposing graph..." << std::endl;
   }
   
-  // Create a modified config for decompose with the temp directory
+  // Create a config for decompose with the temp directory
   core::config decompose_config = app_config;
   decompose_config.set_task(core::task_e::deconstruct);
   decompose_config.set_output_dir(temp_dir_str);
   
-  // Reuse the existing deconstruct function
+  // Run decompose
   deconstruct::do_deconstruct(decompose_config);
   
-  // Step 2: Run call to generate VCF and output to stdout
+  // Step 2: Run call to generate VCF
   if (ll > 0) {
     std::cerr << fn_name << " Step 2: Calling variants..." << std::endl;
   }
   
-  // Create a config for call with the temp directory as forest_dir
+  // Create a config for call with stdout output and the temp forest directory
   core::config call_config = app_config;
+  call_config.set_task(core::task_e::call);
   call_config.set_forest_dir(temp_dir_str);
+  call_config.set_stdout_vcf(true);  // Always output to stdout for gfa2vcf
   
-  // Read PVST files from temp directory
-  std::vector<pvtr::Tree> pvsts;
-  call::read_pvsts(call_config, pvsts);
-  
-  // Get references
-  call::get_refs(call_config);
-  
-  // Load graph for variant calling
-  bd::VG *g = pcs::get_vg(call_config);
-  
-  // Generate VCF records
-  pvt::VcfRecIdx vcf_recs = pg::gen_vcf_rec_map(pvsts, *g);
-  
-  // Write VCF to stdout
-  piv::write_vcfs_to_stdout(vcf_recs, *g, call_config);
-  
-  delete g;
+  // Run call (it will handle everything including stdout output)
+  call::do_call(call_config);
   
   // Clean up the temporary directory
   fs::remove_all(temp_dir_str);

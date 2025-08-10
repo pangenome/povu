@@ -337,26 +337,31 @@ void write_vcfs(const pvt::VcfRecIdx &vcf_recs, const bd::VG &g, const core::con
     return std::find(ref_paths.begin(), ref_paths.end(), ref_name) != ref_paths.end();
   };
 
-  // Always write to separate files for call command
-  std::string out_dir = std::string(app_config.get_output_dir());
-  
-  for (const auto &[ref_id, recs] : vcf_recs.get_recs()) {
-    std::string ref_name = g.get_ref_label(ref_id);
+  if (app_config.get_stdout_vcf()) {
+    // Write to stdout
+    write_combined_vcf_to_stdout(vcf_recs, g, app_config);
+  } else {
+    // Write to separate files
+    std::string out_dir = std::string(app_config.get_output_dir());
+    
+    for (const auto &[ref_id, recs] : vcf_recs.get_recs()) {
+      std::string ref_name = g.get_ref_label(ref_id);
 
-    if (!is_in_ref_paths(ref_name)) {
-      continue;
+      if (!is_in_ref_paths(ref_name)) {
+        continue;
+      }
+
+      std::string vcf_fp = std::format("{}/{}.vcf", out_dir, ref_name);
+      std::ofstream os(vcf_fp);
+      write_vcf(g, ref_id, ref_name, gtd, recs, os);
+      std::cerr << "wrote " << vcf_fp << "\n";
     }
-
-    std::string vcf_fp = std::format("{}/{}.vcf", out_dir, ref_name);
-    std::ofstream os(vcf_fp);
-    write_vcf(g, ref_id, ref_name, gtd, recs, os);
-    std::cerr << "wrote " << vcf_fp << "\n";
   }
 
   return;
 }
 
-void write_vcfs_to_stdout(const pvt::VcfRecIdx &vcf_recs, const bd::VG &g, const core::config &app_config) {
+void write_combined_vcf_to_stdout(const pvt::VcfRecIdx &vcf_recs, const bd::VG &g, const core::config &app_config) {
   std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
   const pvt::genotype_data_t &gtd = vcf_recs.get_genotype_data();
