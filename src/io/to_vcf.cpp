@@ -11,16 +11,13 @@ namespace povu::io::to_vcf {
 
 
 inline void write_header(const std::string &chrom, pt::idx_t len, std::ostream &os) {
-  write_header({{chrom, len}}, &chrom, os);
+  write_header({{chrom, len}}, os);
 }
 
-inline void write_header(const std::vector<std::pair<std::string, pt::idx_t>> &contigs, const std::string *reference_chrom, std::ostream &os) {
+inline void write_header(const std::vector<std::pair<std::string, pt::idx_t>> &contigs, std::ostream &os) {
   os << "##fileformat=VCFv4.2\n";
   os << "##fileDate=" << pu::today() << std::endl;
   os << "##source=povu\n";
-  if (reference_chrom) {
-    os << "##reference=" << *reference_chrom << "\n";
-  }
   os << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
   os << "##INFO=<ID=AC,Number=A,Type=Integer,Description=\"Total number of alternate alleles in called genotypes\">\n";
   os << "##INFO=<ID=AT,Number=R,Type=String,Description=\"Allele traversal path through the graph\">\n";
@@ -40,7 +37,7 @@ inline void write_header(const std::vector<std::pair<std::string, pt::idx_t>> &c
 }
 
 inline void write_combined_header(const std::vector<std::pair<std::string, pt::idx_t>> &contigs, std::ostream &os) {
-  write_header(contigs, nullptr, os);
+  write_header(contigs, os);
 }
 
 
