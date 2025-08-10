@@ -25,10 +25,22 @@ The table below summarizes the subcommands currently available:
 | Subcommand | Description                                 |
 |------------|---------------------------------------------|
 | decompose | Identifies regions of variation in the graph |
-| call      | Call variants                                |
+| call      | Call variants (supports VCF output to stdout) |
 | info      | Provides a summary of the input GFA          |
 
 For detailed documentation on each subcommand, refer to the [docs/](./docs) directory.
+
+### VCF Output
+
+The `call` subcommand supports VCF output in two modes:
+
+- **File output** (default): Creates separate `.vcf` files for each reference path
+- **stdout output**: Use `--stdout` flag to output a single VCF with all reference paths to standard output
+
+```bash
+# Output single VCF to stdout with all reference paths
+./bin/povu call -i input.gfa -f forest_dir --stdout -r ref_list.txt > output.vcf
+```
 
 
 ## Building povu
@@ -39,7 +51,7 @@ Prerequisites:
 
 **Clone the repository:**
 ```bash
-git clone --recursive https://github.com/urbanslug/povu.git
+git clone --recursive https://github.com/pangenome/povu.git
 cd povu
 ```
 

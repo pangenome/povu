@@ -25,6 +25,7 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
   args::ValueFlag<std::string> ref_list(parser, "ref_list", "path to txt file containing reference haplotypes [optional]", {'r', "ref-list"});
   args::ValueFlag<std::string> chrom(parser, "chrom", "graph identifier, default is from GFA file. Chrom column in VCF [optional]", {'c', "chrom"});
   args::Flag undefined_vcf(parser, "undefined_vcf", "Generate VCF file for flubbles without a reference path [default: false]", {'u', "undefined"});
+  args::Flag stdout_vcf(parser, "stdout_vcf", "Output single VCF to stdout instead of separate files [default: false]", {"stdout"});
   args::ValueFlagList<std::string> path_prefixes(parser, "path_prefix", "All paths beginning with NAME used as reference (multiple allowed) [optional]", {'P', "path-prefix"});
   args::PositionalList<std::string> refsList(parser, "refs", "list of refs to use as reference haplotypes [optional]");
 
@@ -54,6 +55,10 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
 
   if (undefined_vcf) {
     app_config.set_undefined_vcf(true);
+  }
+
+  if (stdout_vcf) {
+    app_config.set_stdout_vcf(true);
   }
 
   /* set graph properties */
