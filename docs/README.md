@@ -78,7 +78,7 @@ povu call -i test/LPA.gfa -f ~/Data/povu/results/flb -r ~/Data/povu/results/refs
 
 Or using path prefixes (multiple prefixes can be specified):
 ```
-povu call -i test/LPA.gfa -f ~/Data/povu/results/flb -P HG -P SAMPLE -o ~/Data/povu/results/vcf
+povu call -i test/LPA.gfa -f ~/Data/povu/results/flb -P HG -P NA -o ~/Data/povu/results/vcf
 ```
 
 ### The Ref List
