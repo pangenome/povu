@@ -24,10 +24,10 @@
 
 namespace fs = std::filesystem;
 namespace bd = povu::bidirected;
-namespace pvtr = povu::types::pvst;
+namespace pvtr = povu::tree;
 namespace pcs = povu::subcommands::common;
 namespace pic = povu::io::common;
-namespace pvt = povu::types;
+namespace pvt = povu::types::genomics;
 namespace pt = povu::types;
 namespace pg = povu::genomics;
 namespace piv = povu::io::to_vcf;
