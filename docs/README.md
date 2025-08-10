@@ -53,32 +53,32 @@ Using the LPA dataset as an example. You have several options to specify referen
 
 1. Generate a list of references from the P lines:
 ```
-grep '^P' test/LPA.gfa | cut -f 2 > ~/Data/povu/results/refs.txt
+grep '^P' test_data/LPA.gfa | cut -f 2 > ~/Data/povu/results/refs.txt
 ```
 
 2. Or use path prefixes to automatically select paths:
 ```
 # Single prefix
-povu call -i test/LPA.gfa -f ~/Data/povu/results/flb -P HG -o ~/Data/povu/results/vcf
+povu call -i test_data/LPA.gfa -f ~/Data/povu/results/flb -P HG -o ~/Data/povu/results/vcf
 
 # Multiple prefixes
-povu call -i test/LPA.gfa -f ~/Data/povu/results/flb -P HG -P NA -o ~/Data/povu/results/vcf
+povu call -i test_data/LPA.gfa -f ~/Data/povu/results/flb -P HG -P NA -o ~/Data/povu/results/vcf
 ```
 
 Generate the flubble tree for the same dataset
 
 ```
-povu decompose -t 4 -v 2 -i test/LPA.gfa -o ~/Data/povu/results
+povu decompose -t 4 -v 2 -i test_data/LPA.gfa -o ~/Data/povu/results
 ```
 
 Generate the VCF files related to the LPA dataset (using reference file):
 ```
-povu call -i test/LPA.gfa -f ~/Data/povu/results/flb -r ~/Data/povu/results/refs.txt -o ~/Data/povu/results/vcf
+povu call -i test_data/LPA.gfa -f ~/Data/povu/results/flb -r ~/Data/povu/results/refs.txt -o ~/Data/povu/results/vcf
 ```
 
 Or using path prefixes (multiple prefixes can be specified):
 ```
-povu call -i test/LPA.gfa -f ~/Data/povu/results/flb -P HG -P NA -o ~/Data/povu/results/vcf
+povu call -i test_data/LPA.gfa -f ~/Data/povu/results/flb -P HG -P NA -o ~/Data/povu/results/vcf
 ```
 
 ### The Ref List
