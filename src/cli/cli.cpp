@@ -24,7 +24,6 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
   args::ValueFlag<std::string> output_dir(parser, "output_dir", "Output directory [default: .]", {'o', "output-dir"});
   args::ValueFlag<std::string> ref_list(parser, "ref_list", "path to txt file containing reference haplotypes [optional]", {'r', "ref-list"});
   args::ValueFlag<std::string> chrom(parser, "chrom", "graph identifier, default is from GFA file. Chrom column in VCF [optional]", {'c', "chrom"});
-  args::Flag undefined_vcf(parser, "undefined_vcf", "Generate VCF file for flubbles without a reference path [default: false]", {'u', "undefined"});
   args::ValueFlagList<std::string> path_prefixes(parser, "path_prefix", "All paths beginning with NAME used as reference (multiple allowed) [optional]", {'P', "path-prefix"});
   args::PositionalList<std::string> refsList(parser, "refs", "list of refs to use as reference haplotypes [optional]");
 
@@ -52,9 +51,6 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
     app_config.set_chrom(filePath.stem().string());
   }
 
-  if (undefined_vcf) {
-    app_config.set_undefined_vcf(true);
-  }
 
 
   /* set graph properties */
@@ -127,7 +123,6 @@ void gfa2vcf_handler(args::Subparser &parser, core::config& app_config) {
   args::ValueFlag<std::string> input_gfa(parser, "gfa", "path to input gfa [required]", {'i', "input-gfa"}, args::Options::Required);
   args::ValueFlag<std::string> ref_list(parser, "ref_list", "path to txt file containing reference haplotypes [optional]", {'r', "ref-list"});
   args::ValueFlag<std::string> chrom(parser, "chrom", "graph identifier, default is from GFA file. Chrom column in VCF [optional]", {'c', "chrom"});
-  args::Flag undefined_vcf(parser, "undefined_vcf", "Generate VCF file for flubbles without a reference path [default: false]", {'u', "undefined"});
   args::Flag hairpins(parser, "hairpins", "Find hairpins in the variation graph", {'h', "hairpins"});
   args::Flag hubbles(parser, "hubbles", "Find hubbles in the variation graph", {'s', "hubbles"});
   args::ValueFlagList<std::string> path_prefixes(parser, "path_prefix", "All paths beginning with NAME used as reference (multiple allowed) [optional]", {'P', "path-prefix"});
@@ -154,9 +149,6 @@ void gfa2vcf_handler(args::Subparser &parser, core::config& app_config) {
     app_config.set_chrom(filePath.stem().string());
   }
 
-  if (undefined_vcf) {
-    app_config.set_undefined_vcf(true);
-  }
 
   app_config.set_inc_vtx_labels(true);
   app_config.set_inc_refs(true);
@@ -216,12 +208,12 @@ int cli(int argc, char **argv, core::config& app_config) {
   args::ArgumentParser p("Explore genomic variation in a variation graph");
   args::Group commands(p, "commands");
 
-  args::Command deconstruct(commands, "decompose", "Find regions of variation",
+  args::Command gfa2vcf(commands, "gfa2vcf", "Convert GFA directly to VCF (combines decompose and call)",
+                       [&](args::Subparser &parser) { gfa2vcf_handler(parser, app_config); });
+  args::Command decompose(commands, "decompose", "Find regions of variation",
                        [&](args::Subparser &parser) { deconstruct_handler(parser, app_config); });
   args::Command call(commands, "call", "Generate a VCF from the variation graph",
                        [&](args::Subparser &parser) { call_handler(parser, app_config); });
-  args::Command gfa2vcf(commands, "gfa2vcf", "Convert GFA directly to VCF (combines decompose and call)",
-                       [&](args::Subparser &parser) { gfa2vcf_handler(parser, app_config); });
   args::Command info(commands, "info", "Print information about the graph [use 1 thread for meaningful results]",
                      [&](args::Subparser &parser) { info_handler(parser, app_config); });
 
