@@ -52,6 +52,23 @@ cmake -H. -Bbuild && cmake --build build -- -j 3
 
 The binary should be in `./bin/povu`
 
+### Installing with Guix
+
+1. **Clone the repository**
+```
+git clone --recursive https://github.com/urbanslug/povu.git
+cd povu
+```
+
+2. **Enter Guix development shell**
+```
+guix shell -C -N -D -f guix.scm
+```
+
+3. **Build inside the shell**
+```
+cmake -H. -Bbuild -D CMAKE_BUILD_TYPE=Release && cmake --build build -- -j 3
+```
 
 ### Building specific target
 
