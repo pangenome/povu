@@ -50,9 +50,20 @@ The pvst format is a plain-text file representing flubble tree(s) and ends with 
 > **help:** `./bin/povu call -h`
 
 
-Using the LPA dataset as an example. Generate a list of references from the P lines.
+Using the LPA dataset as an example. You have several options to specify reference paths:
+
+1. Generate a list of references from the P lines:
 ```
 grep '^P' test_data/real/LPA.gfa | cut -f 2 > ~/Data/povu/results/refs.txt
+```
+
+2. Or use path prefixes to automatically select paths:
+```
+# Single prefix
+povu call -i test_data/real/LPA.gfa -f ~/Data/povu/results/flb -P HG -o ~/Data/povu/results/vcf
+
+# Multiple prefixes
+povu call -i test_data/real/LPA.gfa -f ~/Data/povu/results/flb -P HG -P SAMPLE -o ~/Data/povu/results/vcf
 ```
 
 Generate the flubble tree for the same dataset
@@ -61,9 +72,14 @@ Generate the flubble tree for the same dataset
 povu decompose -t 4 -v 2 -i test_data/real/LPA.gfa -o ~/Data/povu/results
 ```
 
-Generate the VCF files related to the LPA dataset
+Generate the VCF files related to the LPA dataset (using reference file):
 ```
 povu call -i test_data/real/LPA.gfa -f ~/Data/povu/results/flb -r ~/Data/povu/results/refs.txt -o ~/Data/povu/results/vcf
+```
+
+Or using path prefixes (multiple prefixes can be specified):
+```
+povu call -i test_data/real/LPA.gfa -f ~/Data/povu/results/flb -P HG -P SAMPLE -o ~/Data/povu/results/vcf
 ```
 
 ### The Ref List
