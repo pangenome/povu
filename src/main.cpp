@@ -2,6 +2,7 @@
 
 #include "./subcommand/call.hpp"
 #include "./subcommand/deconstruct.hpp"
+#include "./subcommand/gfa2vcf.hpp"
 #include "./subcommand/info.hpp"
 
 namespace pv = povu::subcommands;
@@ -20,6 +21,9 @@ int main(int argc, char *argv[]) {
     break;
   case core::task_e::call:
     pv::call::do_call(app_config);
+    break;
+  case core::task_e::gfa2vcf:
+    pv::gfa2vcf::do_gfa2vcf(app_config);
     break;
   case core::task_e::info:
     pv::info::do_info(app_config);
