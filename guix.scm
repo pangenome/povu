@@ -25,6 +25,8 @@
 ;;   cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_STATIC=ON ..
 ;;   cmake --build . --verbose -- -j $(nproc)
 
+;; by Uncle Claude & Andrea Guarracino (c) 2025
+
 (use-modules
   (ice-9 popen)
   (ice-9 rdelim)
