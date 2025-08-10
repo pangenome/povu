@@ -11,7 +11,8 @@ namespace povu::io::to_vcf {
 
 
 inline void write_header(const std::string &chrom, pt::idx_t len, std::ostream &os) {
-  write_header({{chrom, len}}, os);
+  std::vector<std::pair<std::string, pt::idx_t>> contigs = {{chrom, len}};
+  write_header(contigs, os);
 }
 
 inline void write_header(const std::vector<std::pair<std::string, pt::idx_t>> &contigs, std::ostream &os) {
