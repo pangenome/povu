@@ -1,8 +1,4 @@
 #include "./bidirected.hpp"
-#include <algorithm>
-#include <stack>
-#include <string>
-#include <vector>
 
 namespace povu::bidirected {
 
@@ -161,7 +157,7 @@ pt::idx_t VG::add_edge(pt::id_t v1_id, pgt::v_end_e v1_end, pt::id_t v2_id, pgt:
 }
 
 pt::id_t VG::add_ref(const std::string &label, char delim) {
-  std::string fn_name{std::format("[{}::VG::{}]", MODULE, __func__)};
+  std::string fn_name{pv_cmp::format("[{}::VG::{}]", MODULE, __func__)};
   pt::id_t ref_id = this->refs_.add_ref(label, delim);
 
   return ref_id;
@@ -216,7 +212,7 @@ graph G {
     const Vertex& v = this->get_vertex_by_idx(v_idx);
     std::string v_id = v.id() == constants::UNDEFINED_ID ? "d" : std::to_string(v.id());
 
-    os << std::format("\t{}[label=\"+ {} - \\n ({})\"];\n", v_idx, v_id, v_idx);
+    os << pv_cmp::format("\t{}[label=\"+ {} - \\n ({})\"];\n", v_idx, v_id, v_idx);
   }
 
   /* edges */
@@ -226,7 +222,7 @@ graph G {
     pt::idx_t v2_idx = e.get_v2_idx();
     std::string v2_e = v_end_to_dot(e.get_v2_end());
 
-    os << std::format("\t{}:{}--{}:{}[color=gray];\n", v1_idx, v1_e, v2_idx, v2_e);
+    os << pv_cmp::format("\t{}:{}--{}:{}[color=gray];\n", v1_idx, v1_e, v2_idx, v2_e);
   }
 
   /* footer */
@@ -236,7 +232,7 @@ graph G {
 // TODO: make this static factory fn
 // does not handle refs, should it?
 std::vector<VG *> componetize(const povu::bidirected::VG &g) {
-  std::string fn_name = std::format("[povu::graph_ops::{}]", __func__);
+  std::string fn_name = pv_cmp::format("[povu::graph_ops::{}]", __func__);
 
   std::unordered_set<pt::idx_t> visited;
   visited.reserve(g.vtx_count());

@@ -12,14 +12,14 @@
 #include <vector>
 
 #include "../graph/bidirected.hpp"
-#include "../common/types/genomics.hpp"
+#include "../common/types/types.hpp"
 #include "../common/types/pvst.hpp"
 #include "../common/types/core.hpp"
 #include "../common/types/graph.hpp"
 
 
 namespace povu::genomics::utils {
-inline constexpr std::string_view MODULE = "povu::graph_utils";
+inline constexpr std::string_view MODULE = "povu::genomics::utils";
 
 using namespace povu::types::graph;
 namespace pt = povu::types;
@@ -31,10 +31,8 @@ namespace pc = povu::constants;
 namespace pgt = povu::types::graph;
 
 
-
-
 namespace variants {
-  void comp_itineraries(const bd::VG &g, const pvt::walk &w, pt::idx_t w_idx, pvt::Exp &rw);
+void comp_itineraries(const bd::VG &g, const pvt::walk &w, pt::idx_t w_idx, pvt::Exp &rw);
 } // namespace variants
 
 namespace graph {

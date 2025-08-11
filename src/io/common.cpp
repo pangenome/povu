@@ -1,11 +1,3 @@
-#include <cstdlib>
-#include <format>
-#include <fstream>
-#include <cstddef>
-#include <iostream>
-#include <ostream>
-#include <filesystem>
-
 #include "./common.hpp"
 
 namespace povu::io::common {
@@ -13,9 +5,9 @@ namespace povu::io::common {
 void write_txt(const std::vector<pgt::flubble>& flubbles,
                const std::string& base_name,
                const core::config& app_config) {
-  std::string fn_name = std::format("[povu::io::generic::{}]", __func__);
+  std::string fn_name = pv_cmp::format("[povu::io::generic::{}]", __func__);
 
-  std::string bub_file_name = std::format("{}/{}.txt", std::string{app_config.get_output_dir()}, base_name); // file path and name
+  std::string bub_file_name = pv_cmp::format("{}/{}.txt", std::string{app_config.get_output_dir()}, base_name); // file path and name
   std::ofstream bub_file(bub_file_name);
 
   for (auto const& [s, e] : flubbles) {

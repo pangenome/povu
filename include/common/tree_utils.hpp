@@ -14,7 +14,7 @@
 #include <vector>
 
 #include "../graph/spanning_tree.hpp"
-#include "./types/types.hpp"
+#include "./types/compat.hpp"
 
 namespace povu::tree_utils {
 inline constexpr std::string_view MODULE = "povu::tree_utils";
@@ -84,41 +84,41 @@ struct tree_meta {
     // print lo
     std::cerr << "lo: \n";
     for (std::size_t v_idx = 0; v_idx < this->lo.size(); ++v_idx) {
-      std::cerr << std::format("({}, {}), ", v_idx, this->lo[v_idx]);
+      std::cerr << pv_cmp::format("({}, {}), ", v_idx, this->lo[v_idx]);
     }
     std::cerr << "\n\n";
 
     // print HiD
     std::cerr << "HiD: \n";
     for (std::size_t v_idx = 0; v_idx < this->HiD.size(); ++v_idx) {
-      std::cerr << std::format("({}, {}), ", v_idx, this->HiD[v_idx]);
+      std::cerr << pv_cmp::format("({}, {}), ", v_idx, this->HiD[v_idx]);
     }
 
     // print E
     std::cerr << "E: \n";
     for (auto v_idx : this->E) {
-      std::cerr << std::format("{} ", v_idx);
+      std::cerr << pv_cmp::format("{} ", v_idx);
     }
     std::cerr << "\n\n";
 
     // print D
     std::cerr << "D: \n";
     for (std::size_t v_idx = 0; v_idx < this->D.size(); ++v_idx) {
-      std::cerr << std::format("({}, {}), ", v_idx, this->D[v_idx]);
+      std::cerr << pv_cmp::format("({}, {}), ", v_idx, this->D[v_idx]);
     }
     std::cerr << "\n\n";
 
     // print first
     std::cerr << "first (idx is v_idx value is the first time it is seen in E): \n";
     for (pt::idx_t v_idx = 0; v_idx < this->first.size(); ++v_idx) {
-      std::cerr << std::format("({}, {}), ", v_idx, this->first[v_idx]);
+      std::cerr << pv_cmp::format("({}, {}), ", v_idx, this->first[v_idx]);
     }
     std::cerr << "\n\n";
 
     // print depth
     std::cerr << "depth: \n";
     for (pt::idx_t v_idx = 0; v_idx < this->depth.size(); ++v_idx) {
-      std::cerr << std::format("({}, {}), ", v_idx, this->depth[v_idx]);
+      std::cerr << pv_cmp::format("({}, {}), ", v_idx, this->depth[v_idx]);
     }
   }
 };

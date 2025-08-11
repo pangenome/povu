@@ -1,6 +1,4 @@
 #include "./pvst.hpp"
-#include <format>
-#include <map>
 
 namespace povu::io::pvst {
 
@@ -90,7 +88,7 @@ void read_lines_to_vector_str(const std::string& fp, std::vector<std::string>* v
  *        s is in the form of >1<2 or >1>2 or <1<2 or <1>2
  */
 std::pair<pgt::id_or_t, pgt::id_or_t> str_to_id_or_t(const std::string &s) {
-  std::string fn_name = std::format("[povu::main::{}]", __func__);
+  std::string fn_name = pv_cmp::format("[povu::main::{}]", __func__);
 
   // find the first > or <
   auto first = s.find_first_of("><");
@@ -132,7 +130,7 @@ std::vector<pgt::flubble> read_canonical_fl(const std::string& fp) {
     pu::split(line, pc::COL_SEP, &tokens);
 
     if (tokens.size() != FL_COLS) {
-      std::cerr << std::format("ERROR: invalid number of columns. Expected {}, got {} in file {}\n", FL_COLS, tokens.size(), fp);
+      std::cerr << pv_cmp::format("ERROR: invalid number of columns. Expected {}, got {} in file {}\n", FL_COLS, tokens.size(), fp);
       std::exit(1);
     }
 
@@ -152,7 +150,7 @@ std::vector<pgt::flubble> read_canonical_fl(const std::string& fp) {
 }
 
 pvtr::Tree read_pvst(const std::string &fp) {
-  std::string fn_name = std::format("[povu::main::{}]", __func__);
+  std::string fn_name = pv_cmp::format("[povu::main::{}]", __func__);
 
   pvtr::Tree pvst;
 
@@ -280,7 +278,7 @@ pvtr::Tree read_pvst(const std::string &fp) {
 
 void write_pvst(const pvtr::Tree &bt, const std::string &base_name, const core::config &app_config) {
   // TODO: combine and pass as single arg
-  std::string bub_file_name = std::format("{}/{}.pvst", std::string{app_config.get_output_dir()}, base_name); // file path and name
+  std::string bub_file_name = pv_cmp::format("{}/{}.pvst", std::string{app_config.get_output_dir()}, base_name); // file path and name
   std::ofstream bub_file(bub_file_name);
 
   if (!bub_file.is_open()) {

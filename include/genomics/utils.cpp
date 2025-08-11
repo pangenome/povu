@@ -120,7 +120,7 @@ public:
  * associate the ref id and the steps, sort the steps in ascending order.
  */
 VtxRefMeta get_vtx_itn(const bd::VG &g, const pvt::step &s) {
-  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   pt::id_t v_id = s.v_id;
   const bd::Vertex &v = g.get_vertex_by_id(v_id);
@@ -145,7 +145,7 @@ VtxRefMeta get_vtx_itn(const bd::VG &g, const pvt::step &s) {
  * allele steps (AS) that the ref takes in the vertex at that step.
 */
 WalkRefMeta comp_walk_ref_meta(const bd::VG &g, const pvt::walk &w) {
-  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   WalkRefMeta wrm;
   for (pt::idx_t step_idx{}; step_idx < w.size(); ++step_idx) {
@@ -171,7 +171,7 @@ pt::idx_t get_vtx_len(const bd::VG &g, pvt::AS s) {
 std::pair<pt::idx_t, pt::idx_t> comp_ref_visit_bounds(pt::id_t ref_id,
                                                       const WalkRefMeta &wrm,
                                                       const pvt::walk &w) {
-  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   // TODO: paralleise
 
@@ -222,7 +222,7 @@ std::pair<pt::idx_t, pt::idx_t> comp_ref_visit_bounds(pt::id_t ref_id,
   * the next loop must start at the first step in the walk
   */
 pt::idx_t find_loop_start_locus(const WalkRefMeta &wrm, pt::id_t ref_id, pt::idx_t curr_locus) {
-  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   const VtxRefVisits &vtx_ref_visits = wrm.get_step_ref_data(ref_id, 0);
   // get lowest number that is greater than curr_locus
@@ -236,7 +236,7 @@ pt::idx_t find_loop_start_locus(const WalkRefMeta &wrm, pt::id_t ref_id, pt::idx
     // throw an exception because we broke the assumption that the ref
     //  must start at the first step in other loops
     std::string msg =
-      std::format("{}: could not find next locus for ref {} in rov: ", fn_name, ref_id);
+      pv_cmp::format("{}: could not find next locus for ref {} in rov: ", fn_name, ref_id);
     throw std::runtime_error(msg);
   }
 
@@ -252,7 +252,7 @@ pt::idx_t find_loop_start_locus(const WalkRefMeta &wrm, pt::id_t ref_id, pt::idx
  * The itinerary is a collection of allele walks for each ref in the walk.
  */
 void comp_itineraries(const bd::VG &g, const pvt::walk &w, pt::idx_t w_idx, pvt::Exp &rw) {
-  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   // a map of ref_id to itinerary
   std::map<pt::id_t, pvt::Itn> &ref_map = rw.get_ref_itns_mut();
@@ -348,7 +348,7 @@ constexpr v_end_e get_v_end(or_e o, dir_e e) {
   case dir_e::out:
     return (o == or_e::forward) ? v_end_e::r : v_end_e::l;
   default:
-    std::string msg = std::format("[{}::{}] Invalid v_end: {}",
+    std::string msg = pv_cmp::format("[{}::{}] Invalid v_end: {}",
                                   MODULE, __func__, static_cast<int>(e));
     throw std::invalid_argument(msg);
   }
@@ -369,7 +369,7 @@ constexpr or_e get_or(pgt::v_end_e side, dir_e d) {
   case OUT:
     return (side == pgt::v_end_e::l ? pgt::or_e::reverse : pgt::or_e::forward);
   default:
-    std::string msg = std::format("[{}::{}] Invalid orientation: {}",
+    std::string msg = pv_cmp::format("[{}::{}] Invalid orientation: {}",
                   MODULE, __func__, static_cast<int>(d));
     throw std::invalid_argument(msg);
   }
@@ -380,7 +380,7 @@ constexpr or_e get_or(pgt::v_end_e side, dir_e d) {
  * @brief the stack is a unique path from s to t
  */
 pvt::walk walk_from_stack(const bd::VG &g, const std::deque<idx_or_t> &dq) {
-  const std::string fn_name = std::format("[povu::bidirected::{}]", __func__);
+  const std::string fn_name = pv_cmp::format("[povu::bidirected::{}]", __func__);
 
   //pvt::AW w;
   pvt::walk w;
@@ -400,7 +400,7 @@ pvt::walk walk_from_stack(const bd::VG &g, const std::deque<idx_or_t> &dq) {
 // Runs in O((V+E)·(P+1)) time where P = number of paths found.
 // when a vertex has been explored we unblock its neighbours and the current vertex
 void comp_walks_fl_like(const bd::VG &g, pvt::RoV &rov) {
-  const std::string fn_name = std::format("[povu::bidirected::{}]", __func__);
+  const std::string fn_name = pv_cmp::format("[povu::bidirected::{}]", __func__);
 
   std::vector<pvt::walk> &walks = rov.get_walks_mut();
 
@@ -476,19 +476,17 @@ void comp_walks_fl_like(const bd::VG &g, pvt::RoV &rov) {
       dq.pop_back(); // we are done with this path up to this point
     }
   }
-  
-
 
   return;
 }
 
 void find_walks(const bd::VG &g, pvt::RoV &rov) {
-  const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+  const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   pvst::traversal_params_t p = rov.get_pvst_vtx()->get_traversal_params();
 
   if (!p.traversable) {
-    std::cerr << std::format("{}: RoV {} is not traversable\n", fn_name, rov.as_str());
+    std::cerr << pv_cmp::format("{}: RoV {} is not traversable\n", fn_name, rov.as_str());
     return; // return empty vector if the vertex is not traversable
   }
 

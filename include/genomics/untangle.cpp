@@ -2,8 +2,6 @@
 
 namespace povu::untangle {
 
-
-
 inline std::vector<pt::up_t<pt::id_t>> compute_pairs(pvt::Exp rt) {
   std::set<pt::id_t> ref_ids = rt.get_ref_ids();
 
@@ -59,7 +57,7 @@ std::string invert_aln(const std::string &aln) {
  * align the traversals of two refs
  */
 void untangle_ref_walks(const bd::VG &g, pvt::Exp &rt) {
-  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   std::string et;
 

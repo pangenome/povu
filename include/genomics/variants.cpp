@@ -9,7 +9,7 @@ namespace povu::variants {
  * A walk is a prefix of another walk if it has fewer steps and starts with the same step
  */
 void remove_prefix_walks(pvt::Itn &itn) {
-  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   // we add walk idx which are prefixes is_prefix
   std::set<pt::idx_t> to_remove;
@@ -33,7 +33,7 @@ void remove_prefix_walks(pvt::Itn &itn) {
  * Associate walks in an RoV with references
  */
 void gen_rov_ref_walks(const bd::VG &g, const pvt::RoV &rov, std::vector<pvt::Exp> &ref_walks_vec) {
-  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   const std::vector<pvt::walk> &walks = rov.get_walks();
   const pvst::VertexBase *pvst_v_ptr = rov.get_pvst_vtx();
@@ -71,7 +71,7 @@ void gen_rov_ref_walks(const bd::VG &g, const pvt::RoV &rov, std::vector<pvt::Ex
     put::untangle_ref_walks(g, ref_walks);
   }
 
-  
+
   // {
   //   std::cerr << fn_name
   //             << " " << pvst_v_ptr->as_str()
@@ -93,7 +93,7 @@ void gen_rov_ref_walks(const bd::VG &g, const pvt::RoV &rov, std::vector<pvt::Ex
   // if (pvst_v_ptr->as_str() == ">11>13") {
   //   exit(1);
   // }
-  
+
   ref_walks_vec.push_back(std::move(ref_walks));
 
   return;
@@ -105,7 +105,7 @@ void gen_rov_ref_walks(const bd::VG &g, const pvt::RoV &rov, std::vector<pvt::Ex
  * A flubble leaf is a vertex that has no children that are also flubbles
  */
 bool is_fl_leaf(const pvtr::Tree &pvst, pt::idx_t pvst_v_idx){
-  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   const pvst::VertexBase *pvst_v_ptr = pvst.get_vertex_const_ptr(pvst_v_idx);
 
@@ -127,7 +127,7 @@ bool is_fl_leaf(const pvtr::Tree &pvst, pt::idx_t pvst_v_idx){
  * initialize RoVs from flubbles
  */
 std::vector<pvt::RoV> gen_rov(const std::vector<pvtr::Tree> &pvsts, const bd::VG &g) {
-  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   // the set of RoVs to return
   std::vector<pvt::RoV> rs;
@@ -154,7 +154,7 @@ std::vector<pvt::RoV> gen_rov(const std::vector<pvtr::Tree> &pvsts, const bd::VG
 }
 
 pvt::VcfRecIdx gen_vcf_rec_map(const std::vector<pvtr::Tree> &pvsts, const bd::VG &g) {
-  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   std::vector<pvt::RoV> all_rovs = gen_rov(pvsts, g);
 

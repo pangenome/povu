@@ -11,6 +11,7 @@
 #include <unordered_map>
 
 #include "../common/types/constants.hpp"
+#include "../common/types/compat.hpp"
 #include "../common/types/graph.hpp"
 #include "./bracket_list.hpp"
 

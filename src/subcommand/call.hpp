@@ -1,7 +1,9 @@
 #ifndef PV_SUBCOMMANDS_CALL_HPP
 #define PV_SUBCOMMANDS_CALL_HPP
 
+#include <fstream>
 #include <set>
+#include <sstream>
 #include <thread>
 #include <vector>
 

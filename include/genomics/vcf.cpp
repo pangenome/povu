@@ -1,6 +1,4 @@
 #include "./vcf.hpp"
-#include <tuple>
-#include <utility>
 
 
 namespace povu::genomics::vcf {
@@ -24,7 +22,7 @@ inline bool at_match(const pvt::AW &at1, const pvt::AW &at2) {
 };
 
 pt::idx_t comp_pos(pvt::var_type_e vt, pt::idx_t step_idx) {
-  std::string fn_name = std::format("[{}::{}]", MODULE, __func__);
+  std::string fn_name = pv_cmp::format("[{}::{}]", MODULE, __func__);
 
   switch (vt) {
   case pvt::var_type_e::del:
@@ -36,7 +34,7 @@ pt::idx_t comp_pos(pvt::var_type_e vt, pt::idx_t step_idx) {
 }
 
 std::vector<pvt::AW> get_alts(pt::id_t ref_id, const pvt::Exp &rws) {
-  std::string fn_name = std::format("[{}::{}]", MODULE, __func__);
+  std::string fn_name = pv_cmp::format("[{}::{}]", MODULE, __func__);
 
   std::vector<pvt::AW> alt_ats;
   const pvt::AW &ref_at = rws.get_itn(ref_id).get_at(0);
@@ -99,7 +97,7 @@ std::vector<pvt::AW> get_alts_tangled(const bd::VG &g, pt::id_t ref_id,
  *
  */
 bool is_del(const pvt::AW &aw, const pgt::walk &bounds) {
-  std::string fn_name = std::format("[{}::{}]", MODULE, __func__);
+  std::string fn_name = pv_cmp::format("[{}::{}]", MODULE, __func__);
 
   if (aw.step_count() != 2) {
     return false;
@@ -118,8 +116,8 @@ bool is_del(const pvt::AW &aw, const pgt::walk &bounds) {
 
 
 /**
- * @brief 
- * 
+ * @brief
+ *
  */
 pvt::var_type_e det_var_type(const pvst::VertexBase *pvst_vtx,
                              const pvt::AW &ref_aw, const pvt::AW &alt_aw) {
@@ -141,7 +139,7 @@ pvt::var_type_e det_var_type(const pvst::VertexBase *pvst_vtx,
 }
 
 pvt::genotype_data_t comp_gt(const bd::VG &g) {
-  std::string fn_name = std::format("[{}::{}]", MODULE, __func__);
+  std::string fn_name = pv_cmp::format("[{}::{}]", MODULE, __func__);
 
   pvt::genotype_data_t gd;
 
@@ -151,7 +149,7 @@ pvt::genotype_data_t comp_gt(const bd::VG &g) {
   //   return g.get_ref_by_id(ref_id).get_col_name();
   //   // const pgt::Ref &r = g.get_ref_by_id(ref_id);
   //   // return r.has_pansn_data() ? r.get_sample_name() : r.get_label();
-    
+
   // };
 
   //pt::idx_t cols_count {};
@@ -163,7 +161,7 @@ pvt::genotype_data_t comp_gt(const bd::VG &g) {
 
     handled.insert(ref_id);
 
-    
+
     const std::set<pt::id_t> &sample_refs =  g.get_shared_samples(ref_id);
 
     std::string col_name = g.get_ref_by_id(ref_id).get_col_name();
@@ -172,7 +170,7 @@ pvt::genotype_data_t comp_gt(const bd::VG &g) {
 
     if (sample_refs.empty()) {
       // throw an exeption
-      throw std::runtime_error(std::format("{}: No sample names found for ref_id {}", fn_name, ref_id));
+      throw std::runtime_error(pv_cmp::format("{}: No sample names found for ref_id {}", fn_name, ref_id));
     }
     else if (sample_refs.size() == 1) {
       // throw an exeption
@@ -197,7 +195,7 @@ pvt::genotype_data_t comp_gt(const bd::VG &g) {
  * if not tangled itn has an AT count of 1
  */
 void add_vcf_recs(const bd::VG &g, const pvt::Exp &exp, pvt::VcfRecIdx &vcf_recs) {
-  std::string fn_name = std::format("[{}::{}]", MODULE, __func__);
+  std::string fn_name = pv_cmp::format("[{}::{}]", MODULE, __func__);
 
   std::string id = exp.id();
   pt::idx_t height = exp.get_pvst_vtx_const_ptr()->get_height();
@@ -260,7 +258,7 @@ void add_vcf_recs(const bd::VG &g, const pvt::Exp &exp, pvt::VcfRecIdx &vcf_recs
 }
 
 void add_vcf_recs_tangled(const bd::VG &g, const pvt::Exp &exp, pvt::VcfRecIdx &vcf_recs) {
-  std::string fn_name = std::format("[{}::{}]", MODULE, __func__);
+  std::string fn_name = pv_cmp::format("[{}::{}]", MODULE, __func__);
 
   std::string id = exp.id();
   pt::idx_t height = exp.get_pvst_vtx_const_ptr()->get_height();
@@ -361,7 +359,7 @@ void add_vcf_recs_tangled(const bd::VG &g, const pvt::Exp &exp, pvt::VcfRecIdx &
 
 
 pvt::VcfRecIdx gen_vcf_records(const bd::VG &g, const std::vector<pvt::Exp> &exps) {
-  std::string fn_name = std::format("[{}::{}]", MODULE, __func__);
+  std::string fn_name = pv_cmp::format("[{}::{}]", MODULE, __func__);
 
   pvt::VcfRecIdx vcf_recs;
 

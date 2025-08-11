@@ -8,5 +8,6 @@
 #include "./constants.hpp"
 #include "./graph.hpp"
 #include "./compat.hpp"
+#include "./genomics.hpp"
 
 #endif

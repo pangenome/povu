@@ -7,7 +7,7 @@ namespace povu::flubbles {
 
 pvst::Flubble gen_fl(pt::id_t start_id, pgt::or_e start_or, pt::id_t end_id,
                                pgt::or_e end_or, pt::idx_t ai, pt::idx_t zi) {
-  std::string fn_name = std::format("[povu::algorithms::flubble_tree::{}]", __func__);
+  std::string fn_name = pv_cmp::format("[povu::algorithms::flubble_tree::{}]", __func__);
 
   auto [a_g_id, a_or, z_g_id, z_or] =
       (start_or == pgt::or_e::reverse && end_or == pgt::or_e::reverse)
@@ -33,7 +33,7 @@ pvst::Flubble gen_fl(pt::id_t start_id, pgt::or_e start_or, pt::id_t end_id,
 std::pair<pt::idx_t, pt::idx_t> compute_ai_zi(const pst::Tree &st,
                                               pt::idx_t a_e_idx,
                                               pt::idx_t z_e_idx) {
-  std::string fn_name = std::format("[povu::algorithms::flubble_tree::{}]", __func__);
+  std::string fn_name = pv_cmp::format("[povu::algorithms::flubble_tree::{}]", __func__);
 
   std::vector<pt::idx_t> vtxs {};
   auto get_vtx_pair = [&](pt::idx_t e_idx) -> void {
@@ -60,7 +60,7 @@ std::pair<pt::idx_t, pt::idx_t> compute_ai_zi(const pst::Tree &st,
  */
 void add_flubbles(const pst::Tree &st, const eq_class_stack_t &ecs,
                   pvtr::Tree &vst) {
-  std::string fn_name = std::format("[povu::algorithms::flubble_tree::{}]", __func__);
+  std::string fn_name = pv_cmp::format("[povu::algorithms::flubble_tree::{}]", __func__);
 
   const auto &[stack_, next_seen] = ecs;
 
@@ -130,7 +130,7 @@ void add_flubbles(const pst::Tree &st, const eq_class_stack_t &ecs,
  * @return The next seen index for each equivalence class
  */
 void compute_eq_class_metadata(eq_class_stack_t &ecs) {
-  std::string fn_name = std::format("[povu::algorithms::flubble_tree::{}]", __func__);
+  std::string fn_name = pv_cmp::format("[povu::algorithms::flubble_tree::{}]", __func__);
 
   const std::vector<oic_t> &stack_ = ecs.s;
   std::vector<pt::idx_t> &next_seen = ecs.next_seen;
@@ -154,7 +154,7 @@ void compute_eq_class_metadata(eq_class_stack_t &ecs) {
 
 
 void compute_eq_class_stack(const pst::Tree &st, std::vector<oic_t> &stack) {
-  std::string fn_name = std::format("[povu::algorithms::flubble_tree::{}]", __func__);
+  std::string fn_name = pv_cmp::format("[povu::algorithms::flubble_tree::{}]", __func__);
 
   ptu::BranchDesc desc = ptu::br_desc(st);
 
@@ -226,7 +226,7 @@ void compute_eq_class_stack(const pst::Tree &st, std::vector<oic_t> &stack) {
 void handle_vertex(pst::Tree &t, std::size_t v, std::vector<boundary> &hairpins,
                    boundary &curr_bry, bool &in_hairpin,
                    std::set<std::size_t> &articulated_vertices) {
-  std::string fn_name = std::format("[povu::algorithms::{}]", __func__);
+  std::string fn_name = pv_cmp::format("[povu::algorithms::{}]", __func__);
 
   /*
    * compute v.hi
@@ -403,7 +403,7 @@ void handle_vertex(pst::Tree &t, std::size_t v, std::vector<boundary> &hairpins,
 
 void simple_cycle_equiv(pst::Tree &t, const core::config &app_config) {
 
-  std::string fn_name = std::format("[povu::algorithms::{}]", __func__);
+  std::string fn_name = pv_cmp::format("[povu::algorithms::{}]", __func__);
 
   std::set<std::size_t> articulated_vertices;
 
@@ -427,7 +427,7 @@ void simple_cycle_equiv(pst::Tree &t, const core::config &app_config) {
 }
 
 pvtr::Tree find_flubbles(pst::Tree &st, const core::config &app_config) {
-  std::string fn_name = std::format("[povu::algorithms::{}]", __func__);
+  std::string fn_name = pv_cmp::format("[povu::algorithms::{}]", __func__);
 
   simple_cycle_equiv(st, app_config);
 

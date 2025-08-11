@@ -1,5 +1,5 @@
 #include "./from_gfa.hpp"
-#include <string>
+
 
 namespace povu::io::from_gfa {
 
@@ -38,7 +38,7 @@ lq::gfa_config gen_lq_conf(const core::config &app_config,
  * @return A VariationGraph object from the GFA file
  */
 bd::VG *to_bd(const core::config& app_config) {
-  std::string fn_name { std::format("{}::{}]", MODULE, __func__) }; 
+  std::string fn_name { pv_cmp::format("{}::{}]", MODULE, __func__) };
 
   /* initialize a liteseq gfa */
   std::vector<const char *> refs;
@@ -114,7 +114,7 @@ bd::VG *to_bd(const core::config& app_config) {
 
     if (v.get_edges_l().empty() && v.get_edges_r().empty()) {
       if (app_config.verbosity() > 2 ){
-        std::cerr << std::format(" {} WARN isolated node {} \n", fn_name, v.id());
+        std::cerr << pv_cmp::format(" {} WARN isolated node {} \n", fn_name, v.id());
       }
       vg->add_tip(v.id(), pgt::v_end_e::l);
     }

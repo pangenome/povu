@@ -1,10 +1,3 @@
-#include <ctime>
-#include <iomanip>
-#include <iostream>
-#include <iterator>
-#include <sstream>
-#include <string>
-
 #include "./utils.hpp"
 
 namespace povu::utils {
@@ -52,7 +45,7 @@ std::string today() {
 }
 
 void report_time(std::ostream& os, std::string fn_name, std::string action, std::chrono::duration<double> period) {
-  os << std::format("{} INFO Time spent by {}: {:.2f} sec\n", fn_name, action, period.count());
+  os << pv_cmp::format("{} INFO Time spent by {}: {:.2f} sec\n", fn_name, action, period.count());
 }
 
 std::vector<std::string> immutable_erase(std::vector<std::string> v, std::size_t idx) {

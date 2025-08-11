@@ -19,6 +19,7 @@
 
 #include "../common/types/pvst.hpp"
 #include "../common/types/constants.hpp"
+#include "../common/types/compat.hpp"
 
 // generic tree implementation
 namespace povu::tree {
@@ -182,7 +183,7 @@ public:
   // misc
   // ----
   void print_dot() const {
-  std::cout << std::format(
+  std::cout << pv_cmp::format(
     "graph G {{\n"
     "\trankdir = TD;\n"
     "\tnode[shape = circle];\n"
@@ -191,13 +192,13 @@ public:
 
   // print vertices
   for (pt::idx_t i{}; i < this->vtx_count(); i++) {
-    std::cout << std::format("\t{} [label=\"{}\"];\n", i, this->get_vertex(i).as_str());
+    std::cout << pv_cmp::format("\t{} [label=\"{}\"];\n", i, this->get_vertex(i).as_str());
   }
 
   // print edges
   for (pt::idx_t i{}; i < this->vtx_count(); i++) {
     for (pt::idx_t c : this->get_children(i)) {
-      std::cout << std::format("\t{} -- {};\n", i, c);
+      std::cout << pv_cmp::format("\t{} -- {};\n", i, c);
     }
   }
 

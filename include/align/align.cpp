@@ -243,7 +243,7 @@ std::string align(const pvt::Itn &i_itn, const pvt::Itn &j_itn, pvt::aln_level_e
                       {0, 1, 4, 1},
                       pvt::aln_level_e::step};
     default:
-      std::string msg = std::format("[{}::{}] Invalid alignment level: {}",
+      std::string msg = pv_cmp::format("[{}::{}] Invalid alignment level: {}",
                                     MODULE, __func__, static_cast<int>(level));
       throw std::invalid_argument(msg);
     }

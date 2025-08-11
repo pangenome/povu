@@ -1,6 +1,4 @@
 #include "./call.hpp"
-#include <fstream>
-#include <sstream>
 
 
 namespace povu::subcommands::call {
@@ -9,7 +7,7 @@ namespace povu::subcommands::call {
  * loop through the .pvst files and read them
  */
 void read_pvsts(const core::config &app_config, std::vector<pvtr::Tree> &pvsts) {
-  std::string fn_name = std::format("[povu::subcommands::{}]", __func__);
+  std::string fn_name = pv_cmp::format("[povu::subcommands::{}]", __func__);
 
   // get the list of files in the forest dir that end in .pvst
   std::vector<fs::path> fps = pic::get_files(app_config.get_forest_dir(), ".pvst");
@@ -29,40 +27,40 @@ void read_pvsts(const core::config &app_config, std::vector<pvtr::Tree> &pvsts) 
 }
 
 std::vector<std::string> filter_paths_by_prefix(const core::config &app_config) {
-  std::string fn_name = std::format("[povu::subcommands::{}]", __func__);
-  
+  std::string fn_name = pv_cmp::format("[povu::subcommands::{}]", __func__);
+
   // Read GFA file and extract all P-line names
   std::ifstream gfa_file(app_config.get_input_gfa());
   if (!gfa_file.is_open()) {
     std::cerr << fn_name << " Could not open GFA file: " << app_config.get_input_gfa() << std::endl;
     exit(EXIT_FAILURE);
   }
-  
+
   std::vector<std::string> all_paths;
   std::string line;
-  
+
   while (std::getline(gfa_file, line)) {
     if (line.empty() || line[0] != 'P') continue;
-    
+
     // P-line format: P<tab>path_name<tab>path_in_graph<tab>cigars
     std::istringstream ss(line);
     std::string token;
-    
+
     // Skip the 'P' token
     std::getline(ss, token, '\t');
     if (token != "P") continue;
-    
+
     // Get path name
     if (std::getline(ss, token, '\t')) {
       all_paths.push_back(token);
     }
   }
   gfa_file.close();
-  
+
   // Filter paths by prefixes
   std::vector<std::string> filtered_paths;
   const auto& prefixes = app_config.get_path_prefixes();
-  
+
   for (const std::string& path : all_paths) {
     for (const std::string& prefix : prefixes) {
       if (path.substr(0, prefix.length()) == prefix) {
@@ -71,11 +69,11 @@ std::vector<std::string> filter_paths_by_prefix(const core::config &app_config) 
       }
     }
   }
-  
+
   if (filtered_paths.empty()) {
     std::cerr << fn_name << " Warning: No paths found matching the provided prefixes" << std::endl;
   }
-  
+
   return filtered_paths;
 }
 
@@ -101,7 +99,7 @@ pt::status_t get_refs(core::config &app_config) {
 
 
 void do_call(core::config &app_config) {
-  std::string fn_name = std::format("[povu::main::{}]", __func__);
+  std::string fn_name = pv_cmp::format("[povu::main::{}]", __func__);
 
   // ----------------------------------------------------
   // parallel read for the graph, flubbles and references

@@ -9,9 +9,7 @@
 #include <string>
 #include <vector>
 
-
-//#include "../../include/common/utils.hpp"
-//#include "../../include/graph/bidirected.hpp"
+#include "../../include/common/types/compat.hpp"
 #include "../../include/graph/tree.hpp"
 #include "../cli/app.hpp"
 #include "./common.hpp"

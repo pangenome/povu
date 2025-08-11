@@ -7,8 +7,6 @@
 #include "./subcommand/gfa2vcf.hpp"
 #include "./subcommand/info.hpp"
 
-
-
 namespace pv = povu::subcommands;
 
 int main(int argc, char *argv[]) {

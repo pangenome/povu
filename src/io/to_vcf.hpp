@@ -5,6 +5,7 @@
 #include <fstream> // std::ofstream
 #include <vector>
 
+#include "../../include/common/types/compat.hpp"
 #include "../../include/common/types/genomics.hpp"
 #include "../../include/common/types/types.hpp"
 #include "../../include/common/utils.hpp"
@@ -22,7 +23,6 @@ namespace pt = povu::types;
 
 void write_vcfs(const pvt::VcfRecIdx &vcf_recs, const bd::VG &g, const core::config &app_config);
 void write_combined_vcf_to_stdout(const pvt::VcfRecIdx &vcf_recs, const bd::VG &g, const core::config &app_config);
-
 } // namespace povu::io::vcf
 
 

@@ -5,14 +5,14 @@ namespace  povu::subcommands::common {
  * Read the input gfa into a bidirected variation graph
  */
 bd::VG *get_vg(const core::config &app_config) {
-  std::string fn_name = std::format("[povu::deconstruct::{}]", __func__);
+  std::string fn_name = pv_cmp::format("[povu::deconstruct::{}]", __func__);
   std::size_t ll = app_config.verbosity(); // log level
 
   std::chrono::duration<double> timeRefRead;
   auto t0 = pt::Time::now();
 
   // if (ll > 2) {
-  //   std::cerr << std::format("{} Reading graph\n", fn_name);
+  //   std::cerr << pv_cmp::format("{} Reading graph\n", fn_name);
   // }
   bd::VG *g = povu::io::from_gfa::to_bd(app_config);
 

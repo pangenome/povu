@@ -2,11 +2,17 @@
 #define UTILS_HPP
 
 #include <chrono>
+#include <ctime>
 #include <format>
+#include <iomanip>
 #include <iostream>
+#include <iterator>
+#include <sstream>
 #include <string>
-#include <vector>
 #include <unordered_map>
+#include <vector>
+
+#include "./types/compat.hpp"
 
 namespace povu::utils {
 

@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "./compat.hpp"
 #include "./core.hpp"
 #include "../utils.hpp"
 
@@ -100,7 +101,7 @@ struct id_or_t {
 
 
   std::string as_str() const {
-    return std::format("{}{}", or_to_str(this->orientation) , this->v_id);
+    return pv_cmp::format("{}{}", or_to_str(this->orientation) , this->v_id);
   }
 };
 
@@ -145,7 +146,7 @@ std::string as_str() const {
   s += this->start_.as_str();
   s += this->end_.as_str();
   return s;
-  //return std::format("{}{}", this->start_.as_str(), this->end_.as_str());
+  //return pv_cmp::format("{}{}", this->start_.as_str(), this->end_.as_str());
 }
 };
 

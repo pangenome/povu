@@ -13,6 +13,7 @@
 #include "./pvst.hpp"
 #include "./graph.hpp"
 #include "./core.hpp"
+#include "./compat.hpp"
 
 namespace povu::types::genomics {
 namespace pgt = povu::types::graph;
@@ -191,7 +192,8 @@ public:
   std::string as_str() const {
     std::string s;
     for (const AS &step : this->steps_) {
-      s += std::format("{}{}", step.get_o() == pgt::or_e::forward ? ">" : "<", step.get_v_id());
+      // TODO: [C] [PERF] replace with format_to?
+      s += pv_cmp::format("{}{}", step.get_o() == pgt::or_e::forward ? ">" : "<", step.get_v_id());
     }
     return s;
   }
