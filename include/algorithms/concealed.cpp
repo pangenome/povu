@@ -1115,6 +1115,8 @@ void find_concealed(const pst::Tree &st, pvtr::Tree &ft, const ptu::tree_meta &t
     // pass these as arguments to the slubble functions
     fl_sls slubbles;
     slubbles.fl_v_idx = ft_v_idx;
+    slubbles.m = m;
+    slubbles.n = n;
     ai::with_ai(st, tm, slubbles.ii_adj, m, n, ai, zi, ft_v_idx);
     zi::with_ji(st, tm, slubbles.ji_adj, m, n, ai, zi, ft_v_idx);
 

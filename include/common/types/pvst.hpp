@@ -133,10 +133,13 @@ public:
 
   // ——— constructors ———
   Flubble(vt_e typ, pgt::id_or_t a, pgt::id_or_t z)
-      : VertexBase(pc::INVALID_IDX, typ), a_(a), z_(z) {}
+      : VertexBase(pc::INVALID_IDX, typ), a_(a), z_(z), 
+        ai_(pc::INVALID_IDX), zi_(pc::INVALID_IDX), 
+        m_(pc::INVALID_IDX), n_(pc::INVALID_IDX) {}
 
   Flubble(pgt::id_or_t a, pgt::id_or_t z, pt::idx_t ai, pt::idx_t zi)
-    : VertexBase(pc::INVALID_IDX, vt_e::flubble), a_(a), z_(z), ai_(ai), zi_(zi) {}
+    : VertexBase(pc::INVALID_IDX, vt_e::flubble), a_(a), z_(z), ai_(ai), zi_(zi),
+      m_(pc::INVALID_IDX), n_(pc::INVALID_IDX) {}
 
   // ——— getters ———
   pgt::id_or_t get_a() const { return this->a_; }
