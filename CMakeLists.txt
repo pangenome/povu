@@ -37,9 +37,7 @@ endif()
 # common flags for all build types
 set(CMAKE_CXX_FLAGS "-Wall -Wextra -Wpedantic")
 # Debug-specific flags
-#set(DEBUG_FLAGS " -Wpadded -Wunused -Wno-unused-include -Wno-unknown-pragmas -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-but-set-variable -Wno-unused-private-field -Wno-unused-local-typedefs")
-#remove Wpadded for now
-set(DEBUG_FLAGS "-Wunused -Wno-unused-include -Wno-unknown-pragmas -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-but-set-variable -Wno-unused-private-field -Wno-unused-local-typedefs")
+set(DEBUG_FLAGS " -Wunused -Wno-unused-include -Wno-unknown-pragmas -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-but-set-variable -Wno-unused-private-field -Wno-unused-local-typedefs")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG ${DEBUG_FLAGS}") # let cmake.sanitizers set debug level to -O1
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -DRELEASE")
 
