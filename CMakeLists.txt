@@ -58,17 +58,20 @@ set(INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(TEST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests)
 set(DEPS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps)
 
-add_subdirectory(deps/liteseq)
-
 
 # deps
 include_directories(
-  ${DEPS_DIR}/liteseq/include
   ${DEPS_DIR}/args/
 )
 
 
 include(FetchContent)
+
+FetchContent_Declare(
+  liteseqlib
+  GIT_REPOSITORY https://github.com/urbanslug/liteseq.git
+  GIT_TAG        3463414cede57f8a47383baea33a041b9450c15e)
+FetchContent_MakeAvailable(liteseqlib)
 
 FetchContent_Declare(
   fmt
