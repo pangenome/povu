@@ -320,11 +320,11 @@ bool Tree::has_child(std::size_t vertex, std::size_t child_idx)  {
 }
 
 bool Tree::has_ibe(std::size_t vertex, std::size_t qry_idx)  {
-  return this->get_ibe(vertex).count(qry_idx);
+  return this->get_ibe_src_v_idxs(vertex).count(qry_idx);
 }
 
 bool Tree::has_obe(std::size_t vertex, std::size_t qry_idx)  {
-  return this->get_obe(vertex).count(qry_idx);
+  return this->get_obe_tgt_v_idxs(vertex).count(qry_idx);
 }
 
 Edge& Tree::get_incoming_edge(std::size_t vertex) {
@@ -553,7 +553,7 @@ void Tree::print_dot(std::ostream &os) {
 
   // print the edges
   for (std::size_t i{}; i < this->vtx_count(); i++) {
-    for (auto &c : this->get_child_edges(i)) { // tree edges
+    for (auto &c : this->get_child_edges_mut(i)) { // tree edges
       tree_edge_to_dot(i, c);
     }
 

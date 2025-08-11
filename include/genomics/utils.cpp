@@ -2,9 +2,6 @@
 
 namespace povu::genomics::utils {
 
-namespace vcf {
-  
-} // namespace vcf
 
 // should this be genotyping?
 namespace variants {
@@ -344,14 +341,19 @@ inline const std::set<pt::idx_t> edges_at_end(const bd::Vertex &v, pgt::v_end_e 
   *@param e the direction
   *@return the end of the vertex
   */
-constexpr v_end_e get_v_end(or_e o, dir_e e) noexcept {
+constexpr v_end_e get_v_end(or_e o, dir_e e) {
   switch (e) {
   case dir_e::in:
     return (o == or_e::forward) ? v_end_e::l : v_end_e::r;
   case dir_e::out:
     return (o == or_e::forward) ? v_end_e::r : v_end_e::l;
+  default:
+    std::string msg = std::format("[{}::{}] Invalid v_end: {}",
+                                  MODULE, __func__, static_cast<int>(e));
+    throw std::invalid_argument(msg);
   }
 };
+
 
 /**
  *@brief get the orientation of a vertex end based on the side and direction of traversal
@@ -360,12 +362,16 @@ constexpr v_end_e get_v_end(or_e o, dir_e e) noexcept {
  *@param d the direction of traversal
  *@return the orientation of the vertex end
  */
-constexpr or_e get_or(pgt::v_end_e side, dir_e d) noexcept {
+constexpr or_e get_or(pgt::v_end_e side, dir_e d) {
   switch (d) {
   case IN:
     return (side == pgt::v_end_e::l ? pgt::or_e::forward : pgt::or_e::reverse);
   case OUT:
     return (side == pgt::v_end_e::l ? pgt::or_e::reverse : pgt::or_e::forward);
+  default:
+    std::string msg = std::format("[{}::{}] Invalid orientation: {}",
+                  MODULE, __func__, static_cast<int>(d));
+    throw std::invalid_argument(msg);
   }
 };
 

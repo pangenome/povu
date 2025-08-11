@@ -234,7 +234,7 @@ void handle_vertex(pst::Tree &t, std::size_t v, std::vector<boundary> &hairpins,
    */
 
   pt::idx_t hi_0 {pc::INVALID_IDX};
-  std::set<std::size_t> obe = t.get_obe(v);
+  std::set<pt::idx_t> obe = t.get_obe_tgt_v_idxs(v);
   for (auto be : obe) {
     hi_0 = std::min(hi_0, t.get_vertex(be).dfs_num());
   }

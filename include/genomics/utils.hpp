@@ -22,16 +22,16 @@ namespace povu::genomics::utils {
 inline constexpr std::string_view MODULE = "povu::graph_utils";
 
 using namespace povu::types::graph;
-namespace pc = povu::constants;
 namespace pt = povu::types;
-namespace pgt = povu::types::graph;
 namespace bd = povu::bidirected;
-namespace pvst = povu::types::pvst;
 namespace pvt = povu::types::genomics;
 
-namespace vcf {
-  
-} // namespace vcf
+namespace pvst = povu::types::pvst;
+namespace pc = povu::constants;
+namespace pgt = povu::types::graph;
+
+
+
 
 namespace variants {
   void comp_itineraries(const bd::VG &g, const pvt::walk &w, pt::idx_t w_idx, pvt::Exp &rw);
