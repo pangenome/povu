@@ -3,7 +3,6 @@
 
 #include <algorithm>
 #include <deque>
-#include <format>
 #include <set>
 #include <stack>
 #include <string>
@@ -12,29 +11,29 @@
 #include <vector>
 
 #include "../graph/bidirected.hpp"
-#include "../common/types/genomics.hpp"
+//#include "../common/types/types.hpp"
 #include "../common/types/pvst.hpp"
 #include "../common/types/core.hpp"
 #include "../common/types/graph.hpp"
+#include "../common/types/compat.hpp"
+#include "../common/types/genomics.hpp"
 
 
 namespace povu::genomics::utils {
-inline constexpr std::string_view MODULE = "povu::graph_utils";
+inline constexpr std::string_view MODULE = "povu::genomics::utils";
 
 using namespace povu::types::graph;
-namespace pc = povu::constants;
 namespace pt = povu::types;
-namespace pgt = povu::types::graph;
 namespace bd = povu::bidirected;
-namespace pvst = povu::types::pvst;
 namespace pvt = povu::types::genomics;
 
-namespace vcf {
-  
-} // namespace vcf
+namespace pvst = povu::types::pvst;
+namespace pc = povu::constants;
+namespace pgt = povu::types::graph;
+
 
 namespace variants {
-  void comp_itineraries(const bd::VG &g, const pvt::walk &w, pt::idx_t w_idx, pvt::Exp &rw);
+void comp_itineraries(const bd::VG &g, const pvt::walk &w, pt::idx_t w_idx, pvt::Exp &rw);
 } // namespace variants
 
 namespace graph {

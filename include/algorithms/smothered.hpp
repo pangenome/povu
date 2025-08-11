@@ -5,7 +5,6 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdio>
-#include <format>
 #include <iostream>
 #include <map>
 #include <optional>
@@ -18,7 +17,7 @@
 #include <vector>
 
 #include "../common/tree_utils.hpp"
-#include "../common/types/types.hpp"
+#include "../common/types/compat.hpp"
 #include "../common/utils.hpp"
 #include "../graph/spanning_tree.hpp"
 #include "../graph/tree.hpp"

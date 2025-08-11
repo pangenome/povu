@@ -1,7 +1,7 @@
 #ifndef PV_SUBCOMMANDS_INF_HPP
 #define PV_SUBCOMMANDS_INF_HPP
 
-#include "../../include/common/types/types.hpp"
+#include "../../include/common/types/compat.hpp"
 #include "../../include/graph/bidirected.hpp"
 #include "../cli/app.hpp"
 #include "./common.hpp"

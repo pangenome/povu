@@ -1,16 +1,9 @@
 #ifndef BIDIRECTED_HPP
 #define BIDIRECTED_HPP
 
-#include <cstddef>
-#include <map>
-#include <set>
-#include <string>
-#include <sys/types.h>
-#include <vector>
 #include <algorithm>
 #include <cstddef>
 #include <cstring>
-#include <format>
 #include <iostream>
 #include <iterator>
 #include <map>
@@ -27,6 +20,7 @@
 #include "../../src/cli/app.hpp" // for core::config TODO: find a proper place for the app config
 #include "../common/utils.hpp"
 #include "./spanning_tree.hpp"
+#include "../common/types/compat.hpp"
 
 namespace povu::bidirected {
 inline constexpr std::string_view MODULE = "povu::bidirected";
@@ -55,7 +49,7 @@ struct PathInfo {
 };
 typedef PathInfo pi_t;
 
-typedef PathInfo VtxRefInfo; 
+typedef PathInfo VtxRefInfo;
 
 // undirected edge
 // stores the index of the vertex in the graph not the id

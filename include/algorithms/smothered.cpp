@@ -19,7 +19,7 @@ struct fl_sls {
 };
 
 pvst::bounds_t compute_bounds(const pst::Tree &st, pt::idx_t cn_st_idx, pt::idx_t sm_st_idx) {
-  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   if (st.is_desc(cn_st_idx, sm_st_idx)) {
     return pvst::bounds_t{cn_st_idx, sm_st_idx};
@@ -30,7 +30,7 @@ pvst::bounds_t compute_bounds(const pst::Tree &st, pt::idx_t cn_st_idx, pt::idx_
 }
 
 bool is_nesting(const pst::Tree &st, const pvst::bounds_t &outer, const pvst::bounds_t &inner) {
-  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   return st.is_desc(outer.upper, inner.upper) && st.is_desc(inner.lower, outer.lower);
 }
@@ -40,7 +40,7 @@ namespace g {
 
 void trunk(const pst::Tree &st, const pvtr::Tree &pvst, const pvst::Concealed &ft_v,
            pt::idx_t cn_pvst_v_idx, const ptu::tree_meta &tm, std::vector<pvst::Smothered> &res) {
-  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   const std::vector<pt::idx_t> &depth = tm.depth;
 
@@ -103,7 +103,7 @@ void branch(const pst::Tree &st, const pvtr::Tree &pvst,
             const pvst::Concealed &ft_v, pt::idx_t cn_pvst_v_idx,
             const ptu::tree_meta &tm,
             std::vector<pvst::Smothered> &res) {
-  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   const pvst::Concealed &cn_v = ft_v;
   pt::idx_t fl_v_idx = cn_v.get_fl_idx();
@@ -166,7 +166,7 @@ void trunk(const pst::Tree &st, const pvtr::Tree &pvst,
            const pvst::Concealed &ft_v, pt::idx_t cn_pvst_v_idx,
            const ptu::tree_meta &tm,
            std::vector<pvst::Smothered> &res) {
-  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   const std::vector<pt::idx_t> &depth = tm.depth;
 
@@ -219,7 +219,7 @@ void branch(const pst::Tree &st, const pvtr::Tree &pvst,
             const pvst::Concealed &ft_v, pt::idx_t cn_pvst_v_idx,
             const ptu::tree_meta &tm,
             std::vector<pvst::Smothered> &res) {
-  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   const pvst::Concealed &cn_v = ft_v;
   pt::idx_t fl_v_idx = cn_v.get_fl_idx();
@@ -260,7 +260,7 @@ void branch(const pst::Tree &st, const pvtr::Tree &pvst,
 
 void nest(const pst::Tree &st, pvtr::Tree &pvst, const ptu::tree_meta &tm,
           pt::idx_t cn_pvst_v_idx, pt::idx_t smo_pvst_v_idx) {
-  const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+  const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   const pvst::Smothered &smo_v = static_cast<const pvst::Smothered &>(pvst.get_vertex(smo_pvst_v_idx));
 
@@ -297,7 +297,7 @@ void nest(const pst::Tree &st, pvtr::Tree &pvst, const ptu::tree_meta &tm,
 
 void add_smothered(const pst::Tree &st, pvtr::Tree &pvst,
                    const ptu::tree_meta &tm, const std::vector<fl_sls> &al_smo) {
-  const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+  const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   for (const fl_sls &smo : al_smo) {
 
@@ -323,7 +323,7 @@ void add_smothered(const pst::Tree &st, pvtr::Tree &pvst,
 }
 
 void find_smothered(const pst::Tree &st, pvtr::Tree &ft, const ptu::tree_meta &tm) {
-  const std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+  const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   pvtr::Tree &pvst = ft;
 

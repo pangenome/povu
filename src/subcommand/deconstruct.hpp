@@ -15,7 +15,7 @@
 #include "../../include/algorithms/concealed.hpp"
 #include "../../include/algorithms/parallel.hpp"
 #include "../../include/common/tree_utils.hpp"
-#include "../../include/common/types/types.hpp"
+#include "../../include/common/types/compat.hpp"
 #include "../../include/graph/bidirected.hpp"
 #include "../../include/graph/spanning_tree.hpp"
 #include "../cli/app.hpp"

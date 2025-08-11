@@ -5,7 +5,7 @@ namespace povu::subcommands::deconstruct {
 
 void deconstruct_component(bd::VG *g, std::size_t component_id,
                            const core::config &app_config) {
-  std::string fn_name = std::format("[povu::deconstruct::{}]", __func__);
+  std::string fn_name = pv_cmp::format("[povu::deconstruct::{}]", __func__);
 
 
 #ifdef DEBUG
@@ -48,7 +48,7 @@ std::pair<uint32_t, uint32_t> thread_count(const core::config &app_config, std::
   /* Divide the number of components into chunks for each thread */
   unsigned int total_threads = std::thread::hardware_concurrency();
 
-  // std::cerr << std::format("{} Max threads: {}\n", fn_name, total_threads);
+  // std::cerr << pv_cmp::format("{} Max threads: {}\n", fn_name, total_threads);
   std::size_t conf_num_threads = static_cast<std::size_t>(app_config.thread_count());
   uint32_t num_threads = (conf_num_threads > total_threads) ? total_threads : conf_num_threads;
   uint32_t chunk_size = item_count / num_threads;
@@ -57,17 +57,17 @@ std::pair<uint32_t, uint32_t> thread_count(const core::config &app_config, std::
 }
 
 void do_deconstruct(const core::config &app_config) {
-  std::string fn_name = std::format("[povu::deconstruct::{}]", __func__);
+  std::string fn_name = pv_cmp::format("[povu::deconstruct::{}]", __func__);
   std::size_t ll = app_config.verbosity(); // ll for log level, to avoid long names. good idea?
 
   bd::VG *g = get_vg(app_config);
 
-  if (ll > 1) std::cerr << std::format("{} Finding components\n", fn_name);
+  if (ll > 1) std::cerr << pv_cmp::format("{} Finding components\n", fn_name);
   std::vector<bd::VG *> components = bd::componetize(*g);
 
   delete g;
 
-  if (ll > 1) std::cerr << std::format("{} Found {} components\n", fn_name, components.size());
+  if (ll > 1) std::cerr << pv_cmp::format("{} Found {} components\n", fn_name, components.size());
 
   auto [num_threads, chunk_size] = thread_count(app_config, components.size());
 
@@ -84,12 +84,12 @@ void do_deconstruct(const core::config &app_config) {
         std::size_t component_id {i + 1};
 
         if (app_config.verbosity()) {
-          std::cerr << std::format("{} Handling component: {}\n", fn_name, component_id);
+          std::cerr << pv_cmp::format("{} Handling component: {}\n", fn_name, component_id);
         }
 
         if (components[i]->vtx_count() < 3) {
           if (app_config.verbosity() > 2) {
-            std::cerr << std::format("{} Skipping component {} because it is too small. (size: {})\n", fn_name, component_id, components[i]->vtx_count());
+            std::cerr << pv_cmp::format("{} Skipping component {} because it is too small. (size: {})\n", fn_name, component_id, components[i]->vtx_count());
           }
           continue;
         }

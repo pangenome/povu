@@ -23,9 +23,9 @@ inline void write_header(const std::vector<std::pair<std::string, pt::idx_t>> &c
   os << "##INFO=<ID=TANGLED,Number=1,Type=String,Description=\"Variant lies in a tangled region of the graph: T or F\">\n";
   os << "##INFO=<ID=LV,Number=1,Type=Integer,Description=\"Level in the snarl tree (0=top level)\">\n";
   os << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
-  
+
   for (const auto &[chrom, len] : contigs) {
-    os << std::format("##contig=<ID={},length={}>\n", chrom, len);
+    os << pv_cmp::format("##contig=<ID={},length={}>\n", chrom, len);
   }
 
   return;
@@ -58,7 +58,7 @@ std::pair<pt::idx_t, std::string> gen_genotype_cols(const bd::VG &g, pt::id_t re
                                                     pt::id_t ref_hap_id,
                                                     const pvt::AW &ref_aw,
                                                     const std::vector<pvt::AW> &alt_aws) {
-  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   typedef std::vector<std::string> gt_col;
 
@@ -134,7 +134,7 @@ std::pair<pt::idx_t, std::string> gen_genotype_cols(const bd::VG &g, pt::id_t re
 void write_vcf_rec(const bd::VG &g, const pvt::genotype_data_t &gtd,
                      const pvt::VcfRec &r, const std::string &chrom,
                      std::ostream &os) {
-    std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+    std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
 
     const std::string qual = "60";
@@ -196,7 +196,7 @@ void write_vcf_rec(const bd::VG &g, const pvt::genotype_data_t &gtd,
       std::string str;
 
       for (auto &s : at.get_steps()) {
-        str += std::format("{}{}", s.get_o() == pgt::or_e::forward ? ">" : "<",
+        str += pv_cmp::format("{}{}", s.get_o() == pgt::or_e::forward ? ">" : "<",
                            s.get_v_id());
       }
 
@@ -285,7 +285,7 @@ void write_vcf_rec(const bd::VG &g, const pvt::genotype_data_t &gtd,
                << ";TANGLED=" << (r.is_tangled() ? "T" : "F")
                << ";LV=" << (r.get_height() - 1);
 
-    // std::string info_field_ = std::format(
+    // std::string info_field_ = pv_cmp::format(
     //     "AC={},AF={},AN={},NS={},AT={},VARTYPE={},TANGLED={}", ac_str, af_str, an_str, ns_str,
     //     fmt_field(r), pvt::to_string_view(var_typ), r.is_tangled() ? "T" : "F");
 
@@ -305,7 +305,7 @@ void write_vcf_rec(const bd::VG &g, const pvt::genotype_data_t &gtd,
 void write_vcf(const bd::VG &g, pt::id_t ref_id, const std::string &chrom,
                const pvt::genotype_data_t &gtd, std::vector<pvt::VcfRec> recs,
                std::ostream &os) {
-    std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+    std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
     write_single_header(chrom, g.get_ref_by_id(ref_id).get_length(), os);
     write_col_header(gtd, os);
@@ -317,7 +317,7 @@ void write_vcf(const bd::VG &g, pt::id_t ref_id, const std::string &chrom,
   }
 
 void write_vcfs(const pvt::VcfRecIdx &vcf_recs, const bd::VG &g, const core::config &app_config) {
-  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   const pvt::genotype_data_t &gtd = vcf_recs.get_genotype_data();
   const std::vector<std::string> &ref_paths = app_config.get_reference_paths();
@@ -332,7 +332,7 @@ void write_vcfs(const pvt::VcfRecIdx &vcf_recs, const bd::VG &g, const core::con
   } else {
     // Write to separate files
     std::string out_dir = std::string(app_config.get_output_dir());
-    
+
     for (const auto &[ref_id, recs] : vcf_recs.get_recs()) {
       std::string ref_name = g.get_ref_label(ref_id);
 
@@ -340,7 +340,7 @@ void write_vcfs(const pvt::VcfRecIdx &vcf_recs, const bd::VG &g, const core::con
         continue;
       }
 
-      std::string vcf_fp = std::format("{}/{}.vcf", out_dir, ref_name);
+      std::string vcf_fp = pv_cmp::format("{}/{}.vcf", out_dir, ref_name);
       std::ofstream os(vcf_fp);
       write_vcf(g, ref_id, ref_name, gtd, recs, os);
       std::cerr << "wrote " << vcf_fp << "\n";
@@ -351,7 +351,7 @@ void write_vcfs(const pvt::VcfRecIdx &vcf_recs, const bd::VG &g, const core::con
 }
 
 void write_combined_vcf_to_stdout(const pvt::VcfRecIdx &vcf_recs, const bd::VG &g, const core::config &app_config) {
-  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   const pvt::genotype_data_t &gtd = vcf_recs.get_genotype_data();
   const std::vector<std::string> &ref_paths = app_config.get_reference_paths();
@@ -368,11 +368,11 @@ void write_combined_vcf_to_stdout(const pvt::VcfRecIdx &vcf_recs, const bd::VG &
       contigs.emplace_back(ref_name, g.get_ref_by_id(ref_id).get_length());
     }
   }
-  
+
   // Write combined header to stdout
   write_combined_header(contigs, std::cout);
   write_col_header(gtd, std::cout);
-  
+
   // Write all records to stdout
   for (const auto &[ref_id, recs] : vcf_recs.get_recs()) {
     std::string ref_name = g.get_ref_label(ref_id);

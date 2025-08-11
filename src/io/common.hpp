@@ -4,7 +4,6 @@
 #include <cstddef>
 #include <string>
 #include <vector>
-#include <format>
 #include <cstddef>
 #include <ostream>
 #include <fstream> // for std::ifstream
@@ -12,12 +11,11 @@
 #include <vector>
 #include <gfa.h> // from liteseq
 
-#include "../cli/app.hpp"
+#include "../../include/common/types/compat.hpp"
+#include "../../include/common/utils.hpp"
 #include "../../include/graph/bidirected.hpp"
 #include "../../include/graph/tree.hpp"
-#include "../../include/common/utils.hpp"
-#include "../../include/graph/tree.hpp"
-
+#include "../cli/app.hpp"
 
 namespace povu::io::common {
 namespace pgt = povu::types::graph;

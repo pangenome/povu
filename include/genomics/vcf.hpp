@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "../common/types/genomics.hpp"
-#include "../common/types/types.hpp"
+#include "../common/types/compat.hpp"
 #include "../common/types/graph.hpp"
 #include "../graph/bidirected.hpp"
 

@@ -1,7 +1,7 @@
 #ifndef PV_COMMON_SUBCOMMANDS_HPP
 #define PV_COMMON_SUBCOMMANDS_HPP
 
-#include "../../include/common/types/types.hpp"
+#include "../../include/common/types/compat.hpp"
 #include "../../include/graph/bidirected.hpp"
 #include "../cli/app.hpp"
 #include "../io/from_gfa.hpp"

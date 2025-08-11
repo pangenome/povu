@@ -1,5 +1,6 @@
 #include "./from_gfa.hpp"
-#include <string>
+#include "gfa.h"
+
 
 namespace povu::io::from_gfa {
 
@@ -9,23 +10,35 @@ lq::gfa_config gen_lq_conf(const core::config &app_config,
   gfa_fp = app_config.get_input_gfa();
   pt::idx_t ref_count = 0;
 
-  if (app_config.inc_refs()) {
-    ref_count = app_config.get_reference_paths().size();
-    refs.reserve(ref_count);
-    for (const std::string &r : app_config.get_reference_paths()) {
-      refs.push_back(r.c_str());
-    }
-  }
+  bool read_all_refs = app_config.inc_refs() && app_config.inc_vtx_labels();
 
-  lq::gfa_config conf = {.fp = gfa_fp.c_str(),
-                         .inc_vtx_labels = app_config.inc_vtx_labels(),
-                         .inc_refs = app_config.inc_refs(),
-                         .read_all_refs = true,
-                         .ref_count = 0,
-                         .ref_names = NULL,
-  };
+  // if (app_config.inc_refs()) {
+  //   ref_count = app_config.get_reference_paths().size();
+  //   refs.reserve(ref_count);
+  //   for (const std::string &r : app_config.get_reference_paths()) {
+  //     refs.push_back(r.c_str());
+  //   }
+  // }
 
-  return conf;
+
+  lq::gfa_config_cpp lq_conf(
+      gfa_fp.c_str(), // file path
+      app_config.inc_vtx_labels(), // include vertex labels
+      app_config.inc_refs(), // include references
+      read_all_refs, // read all references
+      ref_count, // reference count
+      NULL // reference names
+  );
+
+  // lq::gfa_config conf = {.fp = gfa_fp.c_str(),
+  //                        .inc_vtx_labels = app_config.inc_vtx_labels(),
+  //                        .inc_refs = app_config.inc_refs(),
+  //                        .read_all_refs = true,
+  //                        .ref_count = 0,
+  //                        .ref_names = NULL,
+  // };
+
+  return lq_conf;
 }
 
 
@@ -38,7 +51,7 @@ lq::gfa_config gen_lq_conf(const core::config &app_config,
  * @return A VariationGraph object from the GFA file
  */
 bd::VG *to_bd(const core::config& app_config) {
-  std::string fn_name { std::format("{}::{}]", MODULE, __func__) }; 
+  std::string fn_name { pv_cmp::format("{}::{}]", MODULE, __func__) };
 
   /* initialize a liteseq gfa */
   std::vector<const char *> refs;
@@ -114,7 +127,7 @@ bd::VG *to_bd(const core::config& app_config) {
 
     if (v.get_edges_l().empty() && v.get_edges_r().empty()) {
       if (app_config.verbosity() > 2 ){
-        std::cerr << std::format(" {} WARN isolated node {} \n", fn_name, v.id());
+        std::cerr << pv_cmp::format(" {} WARN isolated node {} \n", fn_name, v.id());
       }
       vg->add_tip(v.id(), pgt::v_end_e::l);
     }

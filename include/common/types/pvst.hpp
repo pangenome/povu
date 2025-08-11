@@ -2,12 +2,11 @@
 #define POVU_TYPES_PVST_HPP
 
 #include <algorithm>
-#include <format>
 
 #include "./core.hpp"
 #include "./constants.hpp"
 #include "./graph.hpp"
-
+#include "./compat.hpp"
 
 /* === PVST pangenome variation structure tree === */
 
@@ -133,10 +132,13 @@ public:
 
   // ——— constructors ———
   Flubble(vt_e typ, pgt::id_or_t a, pgt::id_or_t z)
-      : VertexBase(pc::INVALID_IDX, typ), a_(a), z_(z) {}
+      : VertexBase(pc::INVALID_IDX, typ), a_(a), z_(z), 
+        ai_(pc::INVALID_IDX), zi_(pc::INVALID_IDX), 
+        m_(pc::INVALID_IDX), n_(pc::INVALID_IDX) {}
 
   Flubble(pgt::id_or_t a, pgt::id_or_t z, pt::idx_t ai, pt::idx_t zi)
-    : VertexBase(pc::INVALID_IDX, vt_e::flubble), a_(a), z_(z), ai_(ai), zi_(zi) {}
+    : VertexBase(pc::INVALID_IDX, vt_e::flubble), a_(a), z_(z), ai_(ai), zi_(zi),
+      m_(pc::INVALID_IDX), n_(pc::INVALID_IDX) {}
 
   // ——— getters ———
   pgt::id_or_t get_a() const { return this->a_; }
@@ -160,7 +162,7 @@ public:
 
   // ——— others ———
   std::string as_str() const override {
-    return std::format("{}{}", this->a_.as_str(), this->z_.as_str());
+    return pv_cmp::format("{}{}", this->a_.as_str(), this->z_.as_str());
   }
 };
 
@@ -213,10 +215,10 @@ public:
   // ——— others ———
   std::string as_str() const override {
     if (with_ai()) { // formed with a
-      return std::format("{}{}", this->fl_b_.as_str(), this->cn_b_.as_str());
+      return pv_cmp::format("{}{}", this->fl_b_.as_str(), this->cn_b_.as_str());
     }
     else  { // formed with z
-      return std::format("{}{}", this->cn_b_.as_str(), this->fl_b_.as_str());
+      return pv_cmp::format("{}{}", this->cn_b_.as_str(), this->fl_b_.as_str());
     }
   }
 };
@@ -265,14 +267,14 @@ public:
   std::string as_str() const override {
     if (this->cn_type_ == cn_type_e::g) { // g
       if (this->cn_b_is_ans_) { // cn_b is ancestor of sm_b
-        return std::format("{}{}", this->cn_b_.as_str(), this->sm_b_.as_str());
+        return pv_cmp::format("{}{}", this->cn_b_.as_str(), this->sm_b_.as_str());
       }
       else { // sm_b is ancestor of cn_b
-        return std::format("{}{}", this->sm_b_.as_str(), this->cn_b_.as_str());
+        return pv_cmp::format("{}{}", this->sm_b_.as_str(), this->cn_b_.as_str());
       }
     }
     else { // s
-      return std::format("{}{}", this->sm_b_.as_str(), this->cn_b_.as_str());
+      return pv_cmp::format("{}{}", this->sm_b_.as_str(), this->cn_b_.as_str());
     }
   }
 };
@@ -307,8 +309,8 @@ public:
     return traversal_params_t{this->get_g(), this->get_s(), true, true};
   }
 
-    std::string as_str() const {
-      return std::format("{}{}", this->g_.as_str(), this->s_.as_str());
+    std::string as_str() const override {
+      return pv_cmp::format("{}{}", this->g_.as_str(), this->s_.as_str());
     }
   };
 

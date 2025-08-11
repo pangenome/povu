@@ -1,7 +1,6 @@
 #ifndef POVU_GENOMIC_TYPES_HPP
 #define POVU_GENOMIC_TYPES_HPP
 
-#include <format>
 #include <map>
 #include <memory>
 #include <string>
@@ -13,6 +12,7 @@
 #include "./pvst.hpp"
 #include "./graph.hpp"
 #include "./core.hpp"
+#include "./compat.hpp"
 
 namespace povu::types::genomics {
 namespace pgt = povu::types::graph;
@@ -191,7 +191,8 @@ public:
   std::string as_str() const {
     std::string s;
     for (const AS &step : this->steps_) {
-      s += std::format("{}{}", step.get_o() == pgt::or_e::forward ? ">" : "<", step.get_v_id());
+      // TODO: [C] [PERF] replace with format_to?
+      s += pv_cmp::format("{}{}", step.get_o() == pgt::or_e::forward ? ">" : "<", step.get_v_id());
     }
     return s;
   }
@@ -367,7 +368,7 @@ public:
   }
 
   bool has_aln(pt::id_t ref_id1, pt::id_t ref_id2) const {
-    return this->aln.contains(pt::op_t<pt::id_t>{ref_id1, ref_id2});
+    return pv_cmp::contains(this->aln, pt::op_t<pt::id_t>{ref_id1, ref_id2});
   }
 
   const std::map<pt::op_t<pt::id_t>, std::string> &get_alns() const {

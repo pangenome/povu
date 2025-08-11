@@ -17,7 +17,7 @@
 
 #include "../../src/cli/app.hpp"
 #include "../common/tree_utils.hpp"
-#include "../common/types/types.hpp"
+#include "../common/types/compat.hpp"
 #include "../graph/spanning_tree.hpp"
 #include "../graph/tree.hpp"
 
@@ -39,8 +39,8 @@ struct boundary {
   std::size_t b2;
 };
 
-const pt::idx_t EXPECTED_HAIRPIN_COUNT{1000}; // Expected number of hairpins
-const boundary NULL_BOUNDARY{.b1 = pc::INVALID_IDX, .b2 = pc::INVALID_IDX};
+const pt::idx_t EXPECTED_HAIRPIN_COUNT {1000}; // Expected number of hairpins
+const boundary NULL_BOUNDARY {pc::INVALID_IDX, pc::INVALID_IDX};
 
 // orientation, id, class
 struct oic_t {

@@ -23,7 +23,7 @@ if(BUILD_STATIC)
 endif()
 
 # GoogleTest requires at least C++14
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Check if CMAKE_BUILD_TYPE is set; if not, default to Release
 if(NOT CMAKE_BUILD_TYPE)
@@ -37,7 +37,7 @@ endif()
 # common flags for all build types
 set(CMAKE_CXX_FLAGS "-Wall -Wextra -Wpedantic")
 # Debug-specific flags
-set(DEBUG_FLAGS " -Wpadded -Wunused -Wno-unknown-pragmas -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-but-set-variable -Wno-unused-private-field -Wno-unused-local-typedefs")
+set(DEBUG_FLAGS " -Wunused -Wno-unused-include -Wno-unknown-pragmas -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-but-set-variable -Wno-unused-private-field -Wno-unused-local-typedefs")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG ${DEBUG_FLAGS}") # let cmake.sanitizers set debug level to -O1
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -DRELEASE")
 
@@ -56,15 +56,29 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(TEST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests)
+set(DEPS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps)
 
-
-add_subdirectory(deps/liteseq)
 
 # deps
 include_directories(
-  ${CMAKE_CURRENT_SOURCE_DIR}/deps/liteseq/include
-  ${CMAKE_CURRENT_SOURCE_DIR}/deps/args/
+  ${DEPS_DIR}/args/
 )
+
+
+include(FetchContent)
+
+FetchContent_Declare(
+  liteseqlib
+  GIT_REPOSITORY https://github.com/urbanslug/liteseq.git
+  GIT_TAG        3463414cede57f8a47383baea33a041b9450c15e)
+FetchContent_MakeAvailable(liteseqlib)
+
+FetchContent_Declare(
+  fmt
+  GIT_REPOSITORY https://github.com/fmtlib/fmt
+  GIT_TAG        e69e5f977d458f2650bb346dadf2ad30c5320281) # 10.2.1
+FetchContent_MakeAvailable(fmt)
+
 
 ADD_LIBRARY(povulib
 
@@ -84,7 +98,7 @@ ADD_LIBRARY(povulib
   ${INCLUDE_DIR}/common/types/pvst.cpp
   ${INCLUDE_DIR}/common/utils.cpp
   ${INCLUDE_DIR}/common/tree_utils.cpp
-  
+
 
   # genomics
   ${INCLUDE_DIR}/genomics/untangle.cpp
@@ -125,11 +139,13 @@ add_executable(povu
   ${SOURCE_FILES}
 )
 
-target_link_libraries(povu PRIVATE povulib liteseqlib)
+target_link_libraries(povulib PRIVATE fmt::fmt)
+
+target_link_libraries(povu PRIVATE povulib liteseqlib fmt::fmt)
 
 # create a bin directory (bin) and copy the binary to the bin directory
 set(BINARY_DIR ./bin)
 file(MAKE_DIRECTORY ${BINARY_DIR}/)
 add_custom_command(TARGET povu
-		   POST_BUILD
-		   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:povu> ../${BINARY_DIR}/)
+       POST_BUILD
+       COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:povu> ../${BINARY_DIR}/)

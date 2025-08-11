@@ -1,10 +1,3 @@
-#include <ctime>
-#include <iomanip>
-#include <iostream>
-#include <iterator>
-#include <sstream>
-#include <string>
-
 #include "./utils.hpp"
 
 namespace povu::utils {
@@ -29,6 +22,15 @@ std::string reverse_complement(const std::string& sequence) {
   return rc_sequence;
 }
 
+bool is_numeric_string(const std::string &s) {
+#if __cplusplus >= 202002L
+  return !s.empty() && std::all_of(s.begin(), s.end(), ::isdigit);
+#else
+  return !s.empty() && std::all_of(s.begin(), s.end(), [](char c) {
+    return std::isdigit(static_cast<unsigned char>(c));
+  });
+#endif
+}
 
 std::string today() {
     // Get the current time
@@ -52,7 +54,7 @@ std::string today() {
 }
 
 void report_time(std::ostream& os, std::string fn_name, std::string action, std::chrono::duration<double> period) {
-  os << std::format("{} INFO Time spent by {}: {:.2f} sec\n", fn_name, action, period.count());
+  os << pv_cmp::format("{} INFO Time spent by {}: {:.2f} sec\n", fn_name, action, period.count());
 }
 
 std::vector<std::string> immutable_erase(std::vector<std::string> v, std::size_t idx) {

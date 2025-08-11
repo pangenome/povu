@@ -5,9 +5,11 @@
 #include <vector>
 
 #include "../common/types/genomics.hpp"
-#include "../common/types/types.hpp"
+#include "../common/types/compat.hpp"
 
 namespace povu::align {
+inline constexpr std::string_view MODULE = "povu::align";
+
 namespace pt = povu::types;
 namespace pc = povu::constants;
 namespace pvt = povu::types::genomics;

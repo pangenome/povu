@@ -1,5 +1,5 @@
 #include "./spanning_tree.hpp"
-#include <vector>
+
 
 namespace povu::spanning_tree {
 
@@ -320,11 +320,11 @@ bool Tree::has_child(std::size_t vertex, std::size_t child_idx)  {
 }
 
 bool Tree::has_ibe(std::size_t vertex, std::size_t qry_idx)  {
-  return this->get_ibe(vertex).count(qry_idx);
+  return this->get_ibe_src_v_idxs(vertex).count(qry_idx);
 }
 
 bool Tree::has_obe(std::size_t vertex, std::size_t qry_idx)  {
-  return this->get_obe(vertex).count(qry_idx);
+  return this->get_obe_tgt_v_idxs(vertex).count(qry_idx);
 }
 
 Edge& Tree::get_incoming_edge(std::size_t vertex) {
@@ -403,7 +403,7 @@ void Tree::set_hi(std::size_t vertex, std::size_t val) {
  * @param child_vertex
 */
 void Tree::concat_bracket_lists(std::size_t parent_vertex, std::size_t child_vertex) {
-  std::string fn_name = std::format("[povu::spanning_tree::Tree::{}]", __func__);
+  std::string fn_name = pv_cmp::format("[povu::spanning_tree::Tree::{}]", __func__);
 
   WBracketList* bl_p = this->bracket_lists[parent_vertex];
   WBracketList* bl_c = this->bracket_lists[child_vertex];
@@ -424,7 +424,7 @@ void Tree::concat_bracket_lists(std::size_t parent_vertex, std::size_t child_ver
  * given a vertex id and a backedge idx
  */
 void Tree::del_bracket(std::size_t vertex, std::size_t backedge_idx) {
-  std::string fn_name = std::format("[povu::spanning_tree::Tree::{}]", __func__);
+  std::string fn_name = pv_cmp::format("[povu::spanning_tree::Tree::{}]", __func__);
 
   std::size_t be_id = this->back_edges.at(backedge_idx).id();
   this->bracket_lists[vertex]->del(be_id);
@@ -432,7 +432,7 @@ void Tree::del_bracket(std::size_t vertex, std::size_t backedge_idx) {
 
 
 void Tree::push(std::size_t vertex, std::size_t backege_idx) {
-  std::string fn_name = std::format("[povu::spanning_tree::{}]", __func__);
+  std::string fn_name = pv_cmp::format("[povu::spanning_tree::{}]", __func__);
 
   // TODO: based on the Tree constructor we expect the pointer at v_idx will
   // never be null why then do we need to check for null else code fails
@@ -447,9 +447,9 @@ void Tree::push(std::size_t vertex, std::size_t backege_idx) {
 
 
 BracketList& Tree::get_bracket_list(std::size_t vertex) {
-  std::string fn_name = std::format("[povu::spanning_tree::{}]", __func__);
+  std::string fn_name = pv_cmp::format("[povu::spanning_tree::{}]", __func__);
   if (this->bracket_lists[vertex] == nullptr) {
-    throw std::runtime_error(std::format("{} Bracket list is null", fn_name));
+    throw std::runtime_error(pv_cmp::format("{} Bracket list is null", fn_name));
   }
 
   return this->bracket_lists[vertex]->get_bracket_list();
@@ -457,7 +457,7 @@ BracketList& Tree::get_bracket_list(std::size_t vertex) {
 
 
 Bracket& Tree::top(std::size_t vertex) {
-  std::string fn_name = std::format("[povu::spanning_tree::{}]", __func__);
+  std::string fn_name = pv_cmp::format("[povu::spanning_tree::{}]", __func__);
 
   return this->bracket_lists[vertex]->top();
 }
@@ -495,12 +495,12 @@ void Tree::print_dot(std::ostream &os) {
 
     switch (vertex.type()) {
     case v_type_e::dummy:
-      str = std::format("\t{} [style=filled, fillcolor=pink];\n", i);
+      str = pv_cmp::format("\t{} [style=filled, fillcolor=pink];\n", i);
       break;
     case v_type_e::l:
     case v_type_e::r:
       std::string sign = (vertex.type() == pgt::v_type_e::l) ? "+" : "-";
-      str = std::format(
+      str = pv_cmp::format(
           "\t{} [style=filled, fillcolor=lightblue, label = \"{} \\n ({}{}) \\n [{},{}]\"];\n",
                                                                                             i, i, vertex.g_v_id(), sign, vertex.pre_order(), vertex.post_order());
       break;
@@ -513,7 +513,7 @@ void Tree::print_dot(std::ostream &os) {
     std::string cls = e.get_class() == INVALID_CLS ? "" : std::to_string(e.get_class());
     std::string clr = e.get_color() == pgt::color_e::gray ? "gray" : "black";
 
-    os << std::format("\t{}  -- {}  [label=\"{} {}\" color={}];\n",
+    os << pv_cmp::format("\t{}  -- {}  [label=\"{} {}\" color={}];\n",
                              p_v_idx, e.get_child_v_idx(), e.id(), cls, clr);
   };
 
@@ -532,19 +532,17 @@ void Tree::print_dot(std::ostream &os) {
       }
     }();
 
-    os << std::format("\t{} -- {} [label=\"{} {}\" style=\"dotted\" "
+    os << pv_cmp::format("\t{} -- {} [label=\"{} {}\" style=\"dotted\" "
                              "penwidth=\"3\" color=\"{}\"];\n",
                              i, be.get_tgt(), cl, class_, color);
   };
 
   /* ---------- dot format header ---------- */
 
-  os << std::format(
-    "graph G {{\n"
+  os << "graph G {{\n"
     "\trankdir = LR;\n"
     "\tnode[shape = circle];\n"
-    "\tedge [arrowhead=vee];\n"
-  );
+    "\tedge [arrowhead=vee];\n";
 
   //print the vertices
   for (std::size_t i{}; i < this->vtx_count(); i++){
@@ -553,7 +551,7 @@ void Tree::print_dot(std::ostream &os) {
 
   // print the edges
   for (std::size_t i{}; i < this->vtx_count(); i++) {
-    for (auto &c : this->get_child_edges(i)) { // tree edges
+    for (auto &c : this->get_child_edges_mut(i)) { // tree edges
       tree_edge_to_dot(i, c);
     }
 
