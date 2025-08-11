@@ -9,27 +9,7 @@
 
 namespace povu::io::to_vcf {
 
-
-inline void write_header(const std::string &chrom, pt::idx_t len, std::ostream &os) {
-  os << "##fileformat=VCFv4.2\n";
-  os << "##fileDate=" << pu::today() << std::endl;
-  os << "##source=povu\n";
-  os << "##reference=" << chrom << "\n";
-  os << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
-  os << "##INFO=<ID=AC,Number=A,Type=Integer,Description=\"Total number of alternate alleles in called genotypes\">\n";
-  os << "##INFO=<ID=AT,Number=R,Type=String,Description=\"Allele traversal path through the graph\">\n";
-  os << "##INFO=<ID=AN,Number=1,Type=String,Description=\"Total number of alleles in called genotypes\">\n";
-  os << "##INFO=<ID=AF,Number=A,Type=Float,Description=\"Allele frequency in the population\">\n";
-  os << "##INFO=<ID=NS,Number=1,Type=Integer,Description=\"Number of samples with data\">\n";
-  os << "##INFO=<ID=VARTYPE,Number=1,Type=String,Description=\"Type of variation: INS (insertion), DEL (deletion), SUB (substitution)\">\n";
-  os << "##INFO=<ID=TANGLED,Number=1,Type=String,Description=\"Variant lies in a tangled region of the graph: T or F\">\n";
-  os << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
-  os << std::format("##contig=<ID={},length={}>\n", chrom, len);
-
-  return;
-}
-
-inline void write_combined_header(const std::vector<std::pair<std::string, pt::idx_t>> &contigs, std::ostream &os) {
+inline void write_header(const std::vector<std::pair<std::string, pt::idx_t>> &contigs, std::ostream &os) {
   os << "##fileformat=VCFv4.2\n";
   os << "##fileDate=" << pu::today() << std::endl;
   os << "##source=povu\n";
@@ -41,6 +21,7 @@ inline void write_combined_header(const std::vector<std::pair<std::string, pt::i
   os << "##INFO=<ID=NS,Number=1,Type=Integer,Description=\"Number of samples with data\">\n";
   os << "##INFO=<ID=VARTYPE,Number=1,Type=String,Description=\"Type of variation: INS (insertion), DEL (deletion), SUB (substitution)\">\n";
   os << "##INFO=<ID=TANGLED,Number=1,Type=String,Description=\"Variant lies in a tangled region of the graph: T or F\">\n";
+  os << "##INFO=<ID=LV,Number=1,Type=Integer,Description=\"Level in the snarl tree (0=top level)\">\n";
   os << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
   
   for (const auto &[chrom, len] : contigs) {
@@ -50,6 +31,14 @@ inline void write_combined_header(const std::vector<std::pair<std::string, pt::i
   return;
 }
 
+inline void write_single_header(const std::string &chrom, pt::idx_t len, std::ostream &os) {
+  write_header({{chrom, len}}, os);
+}
+
+
+inline void write_combined_header(const std::vector<std::pair<std::string, pt::idx_t>> &contigs, std::ostream &os) {
+  write_header(contigs, os);
+}
 
 inline void write_col_header(pvt::genotype_data_t gtd, std::ostream &os) {
   os << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t";
@@ -318,7 +307,7 @@ void write_vcf(const bd::VG &g, pt::id_t ref_id, const std::string &chrom,
                std::ostream &os) {
     std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
 
-    write_header(chrom, g.get_ref_by_id(ref_id).get_length(), os);
+    write_single_header(chrom, g.get_ref_by_id(ref_id).get_length(), os);
     write_col_header(gtd, os);
     for (const pvt::VcfRec &r : recs) {
       write_vcf_rec(g, gtd, r, chrom, os);
@@ -338,31 +327,10 @@ void write_vcfs(const pvt::VcfRecIdx &vcf_recs, const bd::VG &g, const core::con
   };
 
   if (app_config.get_stdout_vcf()) {
-    // Collect all contigs for combined header
-    std::vector<std::pair<std::string, pt::idx_t>> contigs;
-    for (const auto &[ref_id, recs] : vcf_recs.get_recs()) {
-      std::string ref_name = g.get_ref_label(ref_id);
-      if (is_in_ref_paths(ref_name)) {
-        contigs.emplace_back(ref_name, g.get_ref_by_id(ref_id).get_length());
-      }
-    }
-    
-    // Write combined header to stdout
-    write_combined_header(contigs, std::cout);
-    write_col_header(gtd, std::cout);
-    
-    // Write all records to stdout
-    for (const auto &[ref_id, recs] : vcf_recs.get_recs()) {
-      std::string ref_name = g.get_ref_label(ref_id);
-      if (!is_in_ref_paths(ref_name)) {
-        continue;
-      }
-      for (const pvt::VcfRec &r : recs) {
-        write_vcf_rec(g, gtd, r, ref_name, std::cout);
-      }
-    }
+    // Write to stdout
+    write_combined_vcf_to_stdout(vcf_recs, g, app_config);
   } else {
-    // Original behavior: separate files
+    // Write to separate files
     std::string out_dir = std::string(app_config.get_output_dir());
     
     for (const auto &[ref_id, recs] : vcf_recs.get_recs()) {
@@ -376,6 +344,43 @@ void write_vcfs(const pvt::VcfRecIdx &vcf_recs, const bd::VG &g, const core::con
       std::ofstream os(vcf_fp);
       write_vcf(g, ref_id, ref_name, gtd, recs, os);
       std::cerr << "wrote " << vcf_fp << "\n";
+    }
+  }
+
+  return;
+}
+
+void write_combined_vcf_to_stdout(const pvt::VcfRecIdx &vcf_recs, const bd::VG &g, const core::config &app_config) {
+  std::string fn_name{std::format("[{}::{}]", MODULE, __func__)};
+
+  const pvt::genotype_data_t &gtd = vcf_recs.get_genotype_data();
+  const std::vector<std::string> &ref_paths = app_config.get_reference_paths();
+
+  auto is_in_ref_paths = [&](const std::string &ref_name) -> bool {
+    return std::find(ref_paths.begin(), ref_paths.end(), ref_name) != ref_paths.end();
+  };
+
+  // Collect all contigs for combined header
+  std::vector<std::pair<std::string, pt::idx_t>> contigs;
+  for (const auto &[ref_id, recs] : vcf_recs.get_recs()) {
+    std::string ref_name = g.get_ref_label(ref_id);
+    if (is_in_ref_paths(ref_name)) {
+      contigs.emplace_back(ref_name, g.get_ref_by_id(ref_id).get_length());
+    }
+  }
+  
+  // Write combined header to stdout
+  write_combined_header(contigs, std::cout);
+  write_col_header(gtd, std::cout);
+  
+  // Write all records to stdout
+  for (const auto &[ref_id, recs] : vcf_recs.get_recs()) {
+    std::string ref_name = g.get_ref_label(ref_id);
+    if (!is_in_ref_paths(ref_name)) {
+      continue;
+    }
+    for (const pvt::VcfRec &r : recs) {
+      write_vcf_rec(g, gtd, r, ref_name, std::cout);
     }
   }
 

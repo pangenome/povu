@@ -22,24 +22,42 @@ For general help, run:
 
 The table below summarizes the subcommands currently available:
 
-| Subcommand | Description                                 |
-|------------|---------------------------------------------|
-| decompose | Identifies regions of variation in the graph |
-| call      | Call variants (supports VCF output to stdout) |
-| info      | Provides a summary of the input GFA          |
+| Subcommand | Description                            |
+|------------|--------------------------------------- |
+| gfa2vcf    | Convert GFA to VCF (decompose + call)  |
+| decompose  | Identify regions of variation          |
+| call       | Generate VCF from regions of variation |
+| info       | Print graph information                |
 
 For detailed documentation on each subcommand, refer to the [docs/](./docs) directory.
 
-### VCF Output
+### Quick Start: GFA to VCF
 
-The `call` subcommand supports VCF output in two modes:
-
-- **File output** (default): Creates separate `.vcf` files for each reference path
-- **stdout output**: Use `--stdout` flag to output a single VCF with all reference paths to standard output
+The simplest way to call variants is using `gfa2vcf`:
 
 ```bash
-# Output single VCF to stdout with all reference paths
-./bin/povu call -i input.gfa -f forest_dir --stdout -r ref_list.txt > output.vcf
+# Convert GFA to VCF using path prefix
+./bin/povu gfa2vcf -i input.gfa -P HG > output.vcf
+
+# Using a reference list file
+./bin/povu gfa2vcf -i input.gfa -r ref_list.txt > output.vcf
+```
+
+The `gfa2vcf` command internally handles all intermediate steps and outputs a combined VCF to stdout.
+
+### Two-Step Workflow
+
+For more control, use the separate `decompose` and `call` commands:
+
+```bash
+# Step 1: Identify regions of variation
+./bin/povu decompose -i input.gfa -o regions/
+
+# Step 2a: Generate separate VCF files (one per reference)
+./bin/povu call -i input.gfa -f regions/ -r ref_list.txt -o vcf_output/
+
+# Step 2b: Generate single combined VCF to stdout
+./bin/povu call -i input.gfa -f regions/ -r ref_list.txt --stdout > output.vcf
 ```
 
 
