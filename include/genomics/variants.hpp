@@ -3,7 +3,8 @@
 
 #include "../../include/graph/tree.hpp"
 #include "./utils.hpp"
-#include "../common/types/types.hpp"
+#include "../common/types/compat.hpp"
+#include "../common/types/genomics.hpp"
 #include "../graph/bidirected.hpp"
 #include "./untangle.hpp"
 #include "./vcf.hpp"

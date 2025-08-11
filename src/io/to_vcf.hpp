@@ -7,7 +7,7 @@
 
 #include "../../include/common/types/compat.hpp"
 #include "../../include/common/types/genomics.hpp"
-#include "../../include/common/types/types.hpp"
+#include "../../include/common/types/graph.hpp"
 #include "../../include/common/utils.hpp"
 #include "../../include/graph/bidirected.hpp"
 #include "../cli/app.hpp"

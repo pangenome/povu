@@ -155,7 +155,7 @@ pvt::genotype_data_t comp_gt(const bd::VG &g) {
   //pt::idx_t cols_count {};
 
   for (pt::id_t ref_id = 0; ref_id < g.ref_id_count(); ++ref_id) {
-    if (handled.contains(ref_id)) {
+    if (pv_cmp::contains(handled, ref_id)) {
       continue;
     }
 
@@ -226,14 +226,16 @@ void add_vcf_recs(const bd::VG &g, const pvt::Exp &exp, pvt::VcfRecIdx &vcf_recs
       pvt::Itn alt_itn = exp.get_itn(alt_ref_id);
       pvt::AW alt_aw = alt_itn.get_ats().front();
 
-      if (alt_walks_covered.contains(alt_aw.get_walk_idx())) {
+      bool is_alt_walk_covered = pv_cmp::contains(alt_walks_covered, alt_aw.get_walk_idx());
+
+      if (is_alt_walk_covered) {
         auto [var_typ, alt_col_idx] = w_idx_to_alt_col[alt_aw.get_walk_idx()];
         std::vector<pvt::AW> &alt_aws = var_type_to_vcf_rec.at(var_typ).get_alt_ats_mut();
         alt_aws[alt_col_idx].add_ref_id(alt_ref_id);
       }
 
       // if they are the same walk idx there's no point in calling variants on them
-      if (ref_aw.get_walk_idx() == alt_aw.get_walk_idx() || alt_walks_covered.contains(alt_aw.get_walk_idx())) {
+      if (ref_aw.get_walk_idx() == alt_aw.get_walk_idx() || is_alt_walk_covered) {
         continue;
       }
 
@@ -309,14 +311,16 @@ void add_vcf_recs_tangled(const bd::VG &g, const pvt::Exp &exp, pvt::VcfRecIdx &
         const pvt::AS &s = ref_aw.get_step(1);
         pvt::AW alt_aw = alt_itn.get_at(j);
 
-        if (alt_walks_covered.contains(alt_aw.get_walk_idx())) {
+        bool is_alt_walk_covered = pv_cmp::contains(alt_walks_covered, alt_aw.get_walk_idx());
+
+        if (is_alt_walk_covered) {
           auto [var_typ, i, alt_col_idx] = w_idx_to_alt_col[alt_aw.get_walk_idx()];
           std::vector<pvt::AW> &alt_aws =var_type_to_vcf_rec.at({i, var_typ}).get_alt_ats_mut();
           alt_aws[alt_col_idx].add_ref_id(alt_ref_id);
         }
 
         // if they are the same walk idx there's no point in calling variants on them
-        if (ref_aw.get_walk_idx() == alt_aw.get_walk_idx() || alt_walks_covered.contains(alt_aw.get_walk_idx())) {
+        if (ref_aw.get_walk_idx() == alt_aw.get_walk_idx() || is_alt_walk_covered) {
           continue;
         }
 

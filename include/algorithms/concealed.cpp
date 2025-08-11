@@ -1,5 +1,5 @@
 #include "./concealed.hpp"
-#include <vector>
+
 
 namespace povu::concealed {
 
@@ -354,7 +354,7 @@ src_lca_t ai_trunk(const pst::Tree &st, const ptu::tree_meta &tm, pt::idx_t m,
    auto cond_iii = [&](pt::idx_t ell) -> bool {
     return !st.get_obe_idxs(ell).empty() || st.get_child_count(ell) > 1;
   };
- 
+
   // cond ii and iii
   auto not_cond_ii_iii = [&](src_lca_t x) -> bool {
     return !ell_brackets(x.lca) && cond_iii(x.lca);
@@ -389,7 +389,7 @@ src_lca_t ai_trunk(const pst::Tree &st, const ptu::tree_meta &tm, pt::idx_t m,
     std::vector<pt::idx_t> p{be_src_v_idx, zi};
     pt::idx_t l = find_lca(tm, p);
 
-    
+
 
     if (dbg) {
       std::cerr << " l " << l << " ai " << ai << "\n";
@@ -421,7 +421,7 @@ src_lca_t ai_trunk(const pst::Tree &st, const ptu::tree_meta &tm, pt::idx_t m,
     }
 
 
-    
+
 
     if (depth[l] <= depth[m]) {
       // if (dbg) {
@@ -431,10 +431,18 @@ src_lca_t ai_trunk(const pst::Tree &st, const ptu::tree_meta &tm, pt::idx_t m,
       src_lca_vec.push_back({be_src_v_idx, l});
     }
   }
-  
+
+  // remove elements that do not meet condition ii and iii
+  pv_cmp::erase_if(src_lca_vec, not_cond_ii_iii);
+
   // erase_if is C++20
   // remove elements that do not meet condition iv and v
-  std::erase_if(src_lca_vec, not_cond_ii_iii);
+  // std::erase_if(src_lca_vec, not_cond_ii_iii);
+
+  // remove_if is C++11
+  //   std::remove_if(...) moves the elements that don't match the predicate to the end.
+  //   .erase(...) trims those elements off the container.
+  //src_lca_vec.erase(std::remove_if(src_lca_vec.begin(), src_lca_vec.end(), not_cond_ii_iii), src_lca_vec.end());
 
   // sort by LCA depth (same as dfs num in this case) in ascending order
   std::sort(src_lca_vec.begin(), src_lca_vec.end(),
@@ -1128,7 +1136,7 @@ void find_concealed(const pst::Tree &st, pvtr::Tree &ft, const ptu::tree_meta &t
     }
 
     if (slubbles.size() > 0) {
-      
+
       all_slubbles.push_back(slubbles);
     }
   }

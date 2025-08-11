@@ -11,10 +11,12 @@
 #include <vector>
 
 #include "../graph/bidirected.hpp"
-#include "../common/types/types.hpp"
+//#include "../common/types/types.hpp"
 #include "../common/types/pvst.hpp"
 #include "../common/types/core.hpp"
 #include "../common/types/graph.hpp"
+#include "../common/types/compat.hpp"
+#include "../common/types/genomics.hpp"
 
 
 namespace povu::genomics::utils {

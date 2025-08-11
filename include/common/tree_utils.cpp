@@ -54,7 +54,7 @@ BranchDesc br_desc(const pst::Tree &st) {
   while(!s.empty()) {
     pt::idx_t v_idx = s.top();
 
-    if (explored.contains(v_idx)) {
+    if (pv_cmp::contains(explored, v_idx)) {
 
       if (v_idx == root_idx) {
         sort_branches(v_idx);
@@ -101,7 +101,7 @@ BranchDesc br_desc(const pst::Tree &st) {
     }
     else if (st.get_children(v_idx).size() > 1) { // 2 or more, a branching path
 
-      if (!in_br_stack.contains(v_idx)) {
+      if (!pv_cmp::contains(in_br_stack, v_idx)) {
         // if the vertex is branching, add it to the branch stack
         br_stack.push(v_idx);
         in_br_stack.insert(v_idx);
@@ -109,7 +109,7 @@ BranchDesc br_desc(const pst::Tree &st) {
 
       bool is_exp = true;
       for(auto c_v_idx : st.get_children(v_idx)) {
-        if (!explored.contains(c_v_idx)) {
+        if (!pv_cmp::contains(explored, c_v_idx)) {
           s.push(c_v_idx);
           is_exp = false;
           break;
@@ -326,7 +326,7 @@ void euler_tour(const pst::Tree &st, tree_meta &tm) {
 
     E.push_back(v_idx);
 
-    if (explored.contains(v_idx)) {
+    if (pv_cmp::contains(explored, v_idx)) {
       s.pop();
       continue;
     }
@@ -349,7 +349,7 @@ void euler_tour(const pst::Tree &st, tree_meta &tm) {
     else if (st.get_children(v_idx).size() > 1) { // 2 or more, a branching path
       bool is_exp = true;
       for(auto c_v_idx : st.get_children(v_idx)) {
-        if (!explored.contains(c_v_idx)) {
+        if (!pv_cmp::contains(explored, c_v_idx)) {
           //start = c_v_idx;
           s.push(c_v_idx);
           is_exp = false;
@@ -376,7 +376,7 @@ void euler_tour(const pst::Tree &st, tree_meta &tm) {
 
   for (pt::idx_t i = 0; i < E.size(); ++i) {
     pt::idx_t v_idx = E[i];
-    if (!seen.contains(v_idx)) {
+    if (!pv_cmp::contains(seen, v_idx)) {
       seen.insert(v_idx);
       first.push_back(i);
     }

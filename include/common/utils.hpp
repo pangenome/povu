@@ -15,7 +15,13 @@
 
 namespace povu::utils {
 
-std::string reverse_complement(const std::string& sequence);
+std::string reverse_complement(const std::string &sequence);
+
+/**
+ * @brief returns true if a string is made up of only digits.
+ */
+bool is_numeric_string(const std::string &s);
+
 
 /**
  * @brief Concatenates a vector of strings with a given character

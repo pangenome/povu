@@ -341,7 +341,7 @@ inline const std::set<pt::idx_t> edges_at_end(const bd::Vertex &v, pgt::v_end_e 
   *@param e the direction
   *@return the end of the vertex
   */
-constexpr v_end_e get_v_end(or_e o, dir_e e) {
+inline v_end_e get_v_end(or_e o, dir_e e) {
   switch (e) {
   case dir_e::in:
     return (o == or_e::forward) ? v_end_e::l : v_end_e::r;
@@ -362,7 +362,7 @@ constexpr v_end_e get_v_end(or_e o, dir_e e) {
  *@param d the direction of traversal
  *@return the orientation of the vertex end
  */
-constexpr or_e get_or(pgt::v_end_e side, dir_e d) {
+inline or_e get_or(pgt::v_end_e side, dir_e d) {
   switch (d) {
   case IN:
     return (side == pgt::v_end_e::l ? pgt::or_e::forward : pgt::or_e::reverse);
@@ -454,7 +454,7 @@ void comp_walks_fl_like(const bd::VG &g, pvt::RoV &rov) {
       auto [side, alt_idx] = e.get_other_vtx(v_idx, ve);
       idx_or_t nbr {alt_idx, get_or(side, IN)};
 
-      if(seen_[curr].contains(nbr)) {
+      if(pv_cmp::contains(seen_, nbr)) {
         continue;
       }
 

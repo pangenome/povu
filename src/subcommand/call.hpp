@@ -9,7 +9,7 @@
 
 #include "../../include/graph/bidirected.hpp"
 #include "../io/to_vcf.hpp"
-#include "../../include/common/types/types.hpp"
+#include "../../include/common/types/compat.hpp"
 #include "../../include/genomics/variants.hpp"
 #include "../cli/app.hpp"
 #include "../cli/cli.hpp"

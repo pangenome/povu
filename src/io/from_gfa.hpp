@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "../../include/common/types/compat.hpp"
-#include "../../include/common/types/types.hpp"
+//#include "../../include/common/types/types.hpp"
 #include "../../include/common/utils.hpp"
 #include "../../include/graph/bidirected.hpp"
 #include "../../include/graph/tree.hpp"

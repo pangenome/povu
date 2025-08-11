@@ -229,7 +229,7 @@ graph G {
   os << "}" << std::endl;
 }
 
-// TODO: make this static factory fn
+// TODO: [B] [CLEAN] make this static factory fn
 // does not handle refs, should it?
 std::vector<VG *> componetize(const povu::bidirected::VG &g) {
   std::string fn_name = pv_cmp::format("[povu::graph_ops::{}]", __func__);
@@ -258,7 +258,7 @@ std::vector<VG *> componetize(const povu::bidirected::VG &g) {
     const Edge &e = g.get_edge(e_idx);
     auto [_, adj_v_idx] = e.get_other_vtx(v_idx);
 
-    if (visited.contains(adj_v_idx)) return; // also handles self loops
+    if (pv_cmp::contains(visited, adj_v_idx)) return; // also handles self loops
 
     s.push(adj_v_idx);
     visited.insert(adj_v_idx);
@@ -267,7 +267,10 @@ std::vector<VG *> componetize(const povu::bidirected::VG &g) {
   };
 
   auto add_edges = [&](const Vertex &v, pgt::v_end_e ve, pt::idx_t v_idx, pt::idx_t e_idx) -> void {
-    if (added_edges.contains(e_idx)) return; // don't duplicate edges
+    // don't duplicate edges
+    if (pv_cmp::contains(added_edges, e_idx)) {
+      return;
+    }
 
     added_edges.insert(e_idx);
     const Edge &e = g.get_edge(e_idx);
@@ -314,7 +317,7 @@ std::vector<VG *> componetize(const povu::bidirected::VG &g) {
 
       /* add tips */
       for (auto [side, v_id] : g.tips()) {
-        if ( comp_vtxs.contains(g.v_id_to_idx(v_id))) {
+        if (pv_cmp::contains(comp_vtxs, g.v_id_to_idx(v_id))) {
           curr_vg->add_tip(v_id, side);
         }
       }
@@ -326,7 +329,7 @@ std::vector<VG *> componetize(const povu::bidirected::VG &g) {
 
       /* find the next unvisited vertex */
       for (std::size_t v_idx{}; v_idx < g.vtx_count(); ++v_idx) {
-        if (!visited.contains(v_idx)) { // if not visited
+        if (!pv_cmp::contains(visited, v_idx)) { // if not visited
           comp_vtxs.clear();
           s.push(v_idx);
           visited.insert(v_idx);
@@ -374,7 +377,7 @@ pst::Tree compute_spanning_tree(const VG &g) {
   };
 
   auto are_connected = [&](pt::idx_t a, pt::idx_t b) -> bool {
-    return added_edges.contains(unordered_pair(a, b));
+    return pv_cmp::contains(added_edges, unordered_pair(a, b));
   };
 
   auto to_be = [&g](pgt::side_n_id_t i) -> pt::idx_t {
@@ -441,7 +444,7 @@ pst::Tree compute_spanning_tree(const VG &g) {
       t.add_be(p_idx, be_idx_to_ctr[o_be_idx], pst::be_type_e::back_edge, pgt::color_e::gray);
       connect(p_idx, be_idx_to_ctr[o_be_idx]);
     }
-    else if (__builtin_expect((bd_v_idx == ov_idx && !self_loops.contains(bd_v_idx)), 0)) {
+    else if (__builtin_expect((bd_v_idx == ov_idx && !pv_cmp::contains(self_loops, bd_v_idx)), 0)) {
       // add a self loop backedge, a parent-child relationship
       t.add_be(p_idx, be_idx_to_ctr[o_be_idx] , pst::be_type_e::back_edge, pgt::color_e::gray);
       self_loops.insert(bd_v_idx);

@@ -6,6 +6,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 #include "./compat.hpp"
 #include "./core.hpp"

@@ -85,7 +85,7 @@ void add_flubbles(const pst::Tree &st, const eq_class_stack_t &ecs,
     }
 
     // find the parent vertex, applies for non-siblings
-    if (in_s.contains(cl_curr)) {
+    if (pv_cmp::contains(in_s, cl_curr)) {
 
       // pop until (and including) the one whose cl equals cl_curr
       while(!s.empty()) {
@@ -145,7 +145,7 @@ void compute_eq_class_metadata(eq_class_stack_t &ecs) {
 
   for (std::size_t i {stack_.size()};  i-- > 0; ) {
     auto [or_curr, id_curr, _, cl_curr] = stack_[i];
-    pt::idx_t next_idx = next_seen_map.contains(cl_curr) ? next_seen_map[cl_curr] : i;
+    pt::idx_t next_idx = pv_cmp::contains(next_seen_map, cl_curr) ? next_seen_map[cl_curr] : i;
 
     next_seen[i] = next_idx;
     next_seen_map[cl_curr] = i;
@@ -208,7 +208,9 @@ void compute_eq_class_stack(const pst::Tree &st, std::vector<oic_t> &stack) {
       pt::idx_t e_idx = st.get_vertex(v_idx).get_parent_e_idx();
       pt::idx_t p_v_idx = st.get_parent_v_idx(v_idx);
 
-      edge_stack_t &es = (cache.contains(p_v_idx)) ? cache[p_v_idx] : cache[p_v_idx] = {};
+      auto [it, _] = cache.try_emplace(p_v_idx); // default-constructs value if not present
+      edge_stack_t &es = it->second;
+      //edge_stack_t &es = pv_cmp::contains(cache, p_v_idx) ? cache[p_v_idx] : cache[p_v_idx] = {};
 
       es[e_idx] = mini_stack;
       cache[p_v_idx] = es;

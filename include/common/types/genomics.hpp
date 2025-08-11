@@ -368,7 +368,7 @@ public:
   }
 
   bool has_aln(pt::id_t ref_id1, pt::id_t ref_id2) const {
-    return this->aln.contains(pt::op_t<pt::id_t>{ref_id1, ref_id2});
+    return pv_cmp::contains(this->aln, pt::op_t<pt::id_t>{ref_id1, ref_id2});
   }
 
   const std::map<pt::op_t<pt::id_t>, std::string> &get_alns() const {
