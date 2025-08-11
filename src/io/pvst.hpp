@@ -2,7 +2,6 @@
 #define PVST_IO_HPP
 
 #include <cstddef>
-#include <format>
 #include <fstream> // for std::ifstream
 #include <gfa.h>   // from liteseq
 #include <ostream>

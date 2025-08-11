@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstring>
-#include <format>
 #include <iostream>
 #include <iterator>
 #include <map>

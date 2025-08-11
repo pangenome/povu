@@ -3,7 +3,6 @@
 
 #include <algorithm>
 #include <deque>
-#include <format>
 #include <set>
 #include <stack>
 #include <string>

@@ -2,7 +2,6 @@
 #define POVU_TYPES_PVST_HPP
 
 #include <algorithm>
-#include <format>
 
 #include "./core.hpp"
 #include "./constants.hpp"

@@ -4,7 +4,6 @@
 #include <cstddef>
 #include <string>
 #include <vector>
-#include <format>
 #include <cstddef>
 #include <ostream>
 #include <fstream> // for std::ifstream

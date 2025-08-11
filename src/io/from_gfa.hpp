@@ -1,7 +1,6 @@
 #ifndef PV_IO_FRM_GFA_HPP
 #define PV_IO_FRM_GFA_HPP
 
-#include <format>
 #include <fstream> // for std::ifstream
 #include <gfa.h>   // from liteseq
 #include <ostream>

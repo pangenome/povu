@@ -3,7 +3,6 @@
 
 #include <chrono>
 #include <ctime>
-#include <format>
 #include <iomanip>
 #include <iostream>
 #include <iterator>

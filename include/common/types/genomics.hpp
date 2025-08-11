@@ -1,7 +1,6 @@
 #ifndef POVU_GENOMIC_TYPES_HPP
 #define POVU_GENOMIC_TYPES_HPP
 
-#include <format>
 #include <map>
 #include <memory>
 #include <string>

@@ -2,7 +2,6 @@
 #define POVU_TREE_HPP
 
 #include <cstddef>
-#include <format>
 #include <iostream>
 #include <memory>
 #include <optional>
