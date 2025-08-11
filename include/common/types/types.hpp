@@ -5,5 +5,6 @@
 #include "./pvst.hpp"
 #include "./constants.hpp"
 #include "./graph.hpp"
+#include "./compat.hpp"
 
 #endif

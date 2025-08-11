@@ -60,11 +60,23 @@ set(TEST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests)
 
 add_subdirectory(deps/liteseq)
 
+
+
 # deps
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/deps/liteseq/include
   ${CMAKE_CURRENT_SOURCE_DIR}/deps/args/
 )
+
+
+include(FetchContent)
+
+FetchContent_Declare(
+  fmt
+  GIT_REPOSITORY https://github.com/fmtlib/fmt
+  GIT_TAG        e69e5f977d458f2650bb346dadf2ad30c5320281) # 10.2.1
+FetchContent_MakeAvailable(fmt)
+
 
 ADD_LIBRARY(povulib
 
@@ -125,7 +137,7 @@ add_executable(povu
   ${SOURCE_FILES}
 )
 
-target_link_libraries(povu PRIVATE povulib liteseqlib)
+target_link_libraries(povu PRIVATE povulib liteseqlib fmt::fmt)
 
 # create a bin directory (bin) and copy the binary to the bin directory
 set(BINARY_DIR ./bin)
