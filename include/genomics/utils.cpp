@@ -124,13 +124,12 @@ VtxRefMeta get_vtx_itn(const bd::VG &g, const pvt::step &s) {
 
   pt::id_t v_id = s.v_id;
   const bd::Vertex &v = g.get_vertex_by_id(v_id);
-  std::vector<bd::PathInfo> v_ref_data = v.get_refs();
+  std::vector<bd::RefInfo> v_ref_data = v.get_refs();
 
   VtxRefMeta vrm;
-  for (const bd::PathInfo &ref : v_ref_data) {
-    auto [ref_id, p_o, locus] = ref;
-    pvt::AS s {v_id, locus, p_o};
-    vrm.add(ref_id, std::move(s));
+  for (const bd::RefInfo &ref : v_ref_data) {
+    pt::id_t ref_id = ref.get_ref_id();
+    vrm.add(ref_id, pvt::AS::from_ref_info(ref));
   }
 
   return vrm;
@@ -428,8 +427,7 @@ void comp_walks_fl_like(const bd::VG &g, pvt::RoV &rov) {
 
   while (!dq.empty()) {
     // get the incoming vertices based on orientation
-    idx_or_t curr = dq.back();
-    auto [v_idx, o] = curr;
+    curr = dq.back();
 
     if (curr == t) {
       walks.push_back(walk_from_stack(g, dq));
@@ -441,6 +439,8 @@ void comp_walks_fl_like(const bd::VG &g, pvt::RoV &rov) {
       std::cerr << fn_name << "WARN: max steps reached for " << rov.get_pvst_vtx()->as_str() << "\n";
       return;
     }
+
+    auto [v_idx, o] = curr;
 
     // if we have explored all neighbours of the current vertex
     bool is_explored {true};

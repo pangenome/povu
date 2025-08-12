@@ -59,8 +59,8 @@ public:
 /* backedge: an edge from a vertex to an ancestor (not parent) in the spanning tree */
 class BackEdge {
   pt::id_t id_; // a unique indeifier of the backedge
-  pt::idx_t src; // target vertex
-  pt::idx_t tgt; // source vertex
+  pt::idx_t src_; // target vertex
+  pt::idx_t tgt_; // source vertex
   pt::idx_t class_; // equivalnce class id
   be_type_e type_;
   pgt::color_e color_; // TODO: remove, color does not matter for a backedge
@@ -112,7 +112,7 @@ public:
   // --------------
   // constructor(s)
   // --------------
-  Vertex(pt::idx_t dfs_num, pt::idx_t g_v_id, v_type_e type_);
+  Vertex(pt::idx_t dfs_num, pt::idx_t g_v_id, v_type_e type);
 
   // ---------
   // getter(s)

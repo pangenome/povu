@@ -26,15 +26,15 @@ void Edge::set_class(pt::idx_t c) { this->class_ = c; }
  * --------
  */
 BackEdge::BackEdge(pt::id_t id,  pt::idx_t src,  pt::idx_t tgt, be_type_e t, pgt::color_e c)
-  : id_(id), src(src), tgt(tgt), class_(INVALID_CLS), type_(t), color_(c) {}
+  : id_(id), src_(src), tgt_(tgt), class_(INVALID_CLS), type_(t), color_(c) {}
 /* getters */
 pt::id_t BackEdge::id() const { return this->id_; }
-pt::idx_t BackEdge::get_src() const { return this->src; }
-pt::idx_t BackEdge::get_tgt() const { return this->tgt; }
+pt::idx_t BackEdge::get_src() const { return this->src_; }
+pt::idx_t BackEdge::get_tgt() const { return this->tgt_; }
 pt::idx_t BackEdge::get_class() const { return this->class_; }
 bool BackEdge::is_class_defined() const { return this->class_ != INVALID_CLS; }
 be_type_e BackEdge::type() const { return this->type_; }
-  //pgt::color_e BackEdge::get_color() const { return this->color_; }
+
 /* setters */
 void BackEdge::set_class(pt::idx_t c) { this->class_ = c; }
 
@@ -44,9 +44,9 @@ void BackEdge::set_class(pt::idx_t c) { this->class_ = c; }
  */
 
 /* constructor(s) */
-Vertex::Vertex(pt::idx_t dfs_num, pt::idx_t g_v_id, v_type_e type_)
+Vertex::Vertex(pt::idx_t dfs_num, pt::idx_t g_v_id, v_type_e type)
     : dfs_num_(dfs_num), parent_e_idx_(pc::INVALID_IDX), hi_(pc::INVALID_IDX),
-      g_v_id_(g_v_id), type_(type_) {}
+      g_v_id_(g_v_id), type_(type) {}
 
 // getters
 pt::idx_t Vertex::g_v_id() const { return this->g_v_id_; }

@@ -66,7 +66,7 @@ struct config {
   bool inc_refs_; // whether to include references/paths
 
   // general
-  unsigned char v; // verbosity
+  unsigned char verbosity_; // verbosity
   bool print_dot_ { true }; // generate dot format graphs
 
   unsigned int thread_count_ {1}; // number of threads to use
@@ -92,7 +92,7 @@ struct config {
         print_tips_(false),
         inc_vtx_labels_(false),
         inc_refs_(false),
-        v(0),
+        verbosity_(0),
         thread_count_(1),
         references_txt(""),
         ref_input_format(input_format_e::unset),
@@ -118,7 +118,7 @@ struct config {
   input_format_e get_refs_input_fmt() const { return this->ref_input_format; }
   std::vector<std::string>* get_reference_ptr() { return &this->reference_paths; }
   const std::string& get_references_txt() const { return this->references_txt; }
-  std::size_t verbosity() const { return this->v; } // can we avoid this being a size_t?
+  std::size_t verbosity() const { return this->verbosity_; } // can we avoid this being a size_t?
   unsigned int thread_count() const { return this->thread_count_; }
   bool print_dot() const { return this->print_dot_; }
   bool get_stdout_vcf() const { return this->stdout_vcf; }
@@ -141,7 +141,7 @@ struct config {
   void set_path_prefixes(std::vector<std::string>&& v) { this->path_prefixes = std::move(v); }
   void set_reference_txt_path(std::string&& s) { this->references_txt = std::move(s); }
   void set_references_txt(std::string s) { this->references_txt = s; }
-  void set_verbosity(unsigned char v) { this->v = v; }
+  void set_verbosity(unsigned char v) { this->verbosity_ = v; }
   void set_thread_count(uint8_t t) { this->thread_count_ = t; }
   void set_print_dot(bool b) { this->print_dot_ = b; }
   void set_input_gfa(std::string s) { this->input_gfa = s; }

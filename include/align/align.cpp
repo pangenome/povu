@@ -20,8 +20,9 @@ inline match_res_t eq_step(const pvt::Itn &a, pt::idx_t a_idx,
     exit(1);
   }
 
-  auto is_match = [](const pvt::AS &a, const pvt::AS &b) {
-    return a.get_v_id() == b.get_v_id() && a.get_o() == b.get_o();
+  // TODO: [c] add an == operator to pvt::AS
+  auto is_match = [](const pvt::AS &a_, const pvt::AS &b_) {
+    return a_.get_v_id() == b_.get_v_id() && a_.get_o() == b_.get_o();
   };
 
 
@@ -52,9 +53,12 @@ inline match_res_t eq_at(const pvt::Itn &a, pt::idx_t a_idx,
     return {1, 1, false};
   }
 
-  // TODO: also compare loop no
-  auto is_match = [](const pvt::AS &a, const pvt::AS &b) {
-    return a.get_v_id() == b.get_v_id() && a.get_o() == b.get_o();
+  // TODO:
+  //   - also compare loop no
+  //   - this is duplicated
+  //   - add an == operator to pvt::AS
+  auto is_match = [](const pvt::AS &a_, const pvt::AS &b_) {
+    return a_.get_v_id() == b_.get_v_id() && a_.get_o() == b_.get_o();
   };
 
   // check for the order as well

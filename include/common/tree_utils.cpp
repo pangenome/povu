@@ -42,8 +42,8 @@ BranchDesc br_desc(const pst::Tree &st) {
     }
 
     std::sort(temp_sorted.begin(), temp_sorted.end(),
-              [&](pt::idx_t a, pt::idx_t b) {
-                return st.get_tree_edge(a).get_child_v_idx() > st.get_tree_edge(b).get_child_v_idx();
+              [&](pt::idx_t a_, pt::idx_t b_) {
+                return st.get_tree_edge(a_).get_child_v_idx() > st.get_tree_edge(b_).get_child_v_idx();
               });
 
     if (black_e_idx != pc::INVALID_IDX) {

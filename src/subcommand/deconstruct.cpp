@@ -74,11 +74,11 @@ void do_deconstruct(const core::config &app_config) {
   /* Create and launch threads */
   std::vector<std::thread> threads(num_threads);
   std::size_t start, end;
-  for (unsigned int i {}; i < num_threads; ++i) {
-    start = i * chunk_size;
-    end = (i == num_threads - 1) ? components.size() : (i + 1) * chunk_size;
+  for (unsigned int thread_idx{}; thread_idx < num_threads; ++thread_idx) {
+    start = thread_idx * chunk_size;
+    end = (thread_idx == num_threads - 1) ? components.size() : (thread_idx + 1) * chunk_size;
 
-    threads[i] = std::thread([start, end, fn_name, num_threads, app_config, &components] {
+    threads[thread_idx] = std::thread([start, end, fn_name, num_threads, app_config, &components] {
       for (std::size_t i{start}; i < end; i++) {
 
         std::size_t component_id {i + 1};

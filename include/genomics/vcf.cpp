@@ -230,8 +230,8 @@ void add_vcf_recs(const bd::VG &g, const pvt::Exp &exp, pvt::VcfRecIdx &vcf_recs
 
       if (is_alt_walk_covered) {
         auto [var_typ, alt_col_idx] = w_idx_to_alt_col[alt_aw.get_walk_idx()];
-        std::vector<pvt::AW> &alt_aws = var_type_to_vcf_rec.at(var_typ).get_alt_ats_mut();
-        alt_aws[alt_col_idx].add_ref_id(alt_ref_id);
+        std::vector<pvt::AW> &alt_aws_ = var_type_to_vcf_rec.at(var_typ).get_alt_ats_mut();
+        alt_aws_[alt_col_idx].add_ref_id(alt_ref_id);
       }
 
       // if they are the same walk idx there's no point in calling variants on them
@@ -314,9 +314,9 @@ void add_vcf_recs_tangled(const bd::VG &g, const pvt::Exp &exp, pvt::VcfRecIdx &
         bool is_alt_walk_covered = pv_cmp::contains(alt_walks_covered, alt_aw.get_walk_idx());
 
         if (is_alt_walk_covered) {
-          auto [var_typ, i, alt_col_idx] = w_idx_to_alt_col[alt_aw.get_walk_idx()];
-          std::vector<pvt::AW> &alt_aws =var_type_to_vcf_rec.at({i, var_typ}).get_alt_ats_mut();
-          alt_aws[alt_col_idx].add_ref_id(alt_ref_id);
+          auto [var_typ, i_, alt_col_idx] = w_idx_to_alt_col[alt_aw.get_walk_idx()];
+          std::vector<pvt::AW> &alt_aws_ = var_type_to_vcf_rec.at({i_, var_typ}).get_alt_ats_mut();
+          alt_aws_[alt_col_idx].add_ref_id(alt_ref_id);
         }
 
         // if they are the same walk idx there's no point in calling variants on them
