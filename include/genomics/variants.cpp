@@ -68,7 +68,7 @@ void gen_rov_ref_walks(const bd::VG &g, const pvt::RoV &rov, std::vector<pvt::Ex
   }
 
   if (ref_walks.is_tangled()) {
-    put::untangle_ref_walks(g, ref_walks);
+    put::untangle_ref_walks(ref_walks);
   }
 
 

@@ -360,12 +360,12 @@ std::vector<VG *> componetize(const povu::bidirected::VG &g) {
       added_edges.clear();
 
       /* find the next unvisited vertex */
-      for (std::size_t v_idx{}; v_idx < g.vtx_count(); ++v_idx) {
-        if (!pv_cmp::contains(visited, v_idx)) { // if not visited
+      for (std::size_t v_idx_{}; v_idx_ < g.vtx_count(); ++v_idx_) {
+        if (!pv_cmp::contains(visited, v_idx_)) { // if not visited
           comp_vtxs.clear();
-          s.push(v_idx);
-          visited.insert(v_idx);
-          comp_vtxs.insert(v_idx);
+          s.push(v_idx_);
+          visited.insert(v_idx_);
+          comp_vtxs.insert(v_idx_);
           break;
         }
       }

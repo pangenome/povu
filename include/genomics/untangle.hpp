@@ -26,7 +26,7 @@ namespace pvst = povu::types::pvst;
 
 inline constexpr std::string_view MODULE = "povu::untangle";
 
-void untangle_ref_walks(const bd::VG &g, pvt::Exp &rt);
+void untangle_ref_walks(pvt::Exp &rt);
 } // namespace povu::untangle
 
 #endif // POVU_UNTANGLE_HPP
