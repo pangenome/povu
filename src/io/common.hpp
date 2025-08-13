@@ -2,14 +2,11 @@
 #define IO_HPP
 
 #include <cstddef>
-#include <string>
-#include <vector>
-#include <cstddef>
-#include <ostream>
 #include <fstream> // for std::ifstream
+#include <gfa.h>   // from liteseq
+#include <ostream>
 #include <string>
 #include <vector>
-#include <gfa.h> // from liteseq
 
 #include "../../include/common/types/compat.hpp"
 #include "../../include/common/utils.hpp"

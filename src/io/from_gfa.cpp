@@ -1,5 +1,4 @@
 #include "./from_gfa.hpp"
-#include "gfa.h"
 
 
 namespace povu::io::from_gfa {
