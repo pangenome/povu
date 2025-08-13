@@ -33,7 +33,7 @@ namespace pgt = povu::types::graph;
 
 
 namespace variants {
-void comp_itineraries(const bd::VG &g, const pvt::walk &w, pt::idx_t w_idx, pvt::Exp &rw);
+void comp_itineraries(const bd::VG &g, const pvt::walk_t &w, pt::idx_t w_idx, pvt::Exp &rw);
 } // namespace variants
 
 namespace graph {

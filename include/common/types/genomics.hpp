@@ -30,14 +30,14 @@ namespace pbd = povu::bidirected;
    =========================================================== */
 
 // TODO: move to graph types
-typedef pgt::id_or_t step;
-typedef std::vector<pgt::id_or_t> walk;
+typedef pgt::id_or_t step_t;
+typedef std::vector<pgt::id_or_t> walk_t;
 
 /**
  * a collection of walks within a region of variation from start to end
  */
 class RoV {
-std::vector<walk> walks_;
+std::vector<walk_t> walks_;
 const pvst::VertexBase *pvst_vtx;
 
 public:
@@ -54,14 +54,14 @@ RoV(const pvst::VertexBase *v) : walks_(), pvst_vtx(v) {}
 
 pt::idx_t walk_count() const { return this->walks_.size(); }
 const pvst::VertexBase *get_pvst_vtx() const { return this->pvst_vtx; }
-const std::vector<walk> &get_walks() const { return this->walks_; }
-std::vector<walk> &get_walks_mut() { return this->walks_; }
+const std::vector<walk_t> &get_walks() const { return this->walks_; }
+std::vector<walk_t> &get_walks_mut() { return this->walks_; }
 
 // ---------
 // setter(s)
 // ---------
 
-void set_walks(std::vector<walk> &&walks) { this->walks_ = walks; }
+void set_walks(std::vector<walk_t> &&walks) { this->walks_ = walks; }
 
 // --------
 // other(s)
