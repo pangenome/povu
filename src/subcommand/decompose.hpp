@@ -24,7 +24,9 @@
 #include "../io/to_vcf.hpp"
 #include "./common.hpp"
 
-namespace povu::subcommands::deconstruct {
+namespace povu::subcommands::decompose {
+constexpr std::string_view MODULE = "povu::subcommands::decompose";
+
 namespace fs = std::filesystem;
 
 namespace pvt = povu::types::genomics;
@@ -40,7 +42,7 @@ namespace pfl = povu::flubbles;
 
 using namespace povu::subcommands::common;
 
-void do_deconstruct(const core::config &app_config);
+void do_decompose(const core::config &app_config);
 }
 
 #endif

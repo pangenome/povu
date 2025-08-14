@@ -181,7 +181,7 @@ set(SOURCE_FILES
 
   # subcommand
   ${SRC_DIR}/subcommand/common.cpp
-  ${SRC_DIR}/subcommand/deconstruct.cpp
+  ${SRC_DIR}/subcommand/decompose.cpp
   ${SRC_DIR}/subcommand/info.cpp
   ${SRC_DIR}/subcommand/call.cpp
   ${SRC_DIR}/subcommand/gfa2vcf.cpp

@@ -1,12 +1,10 @@
-#include "./deconstruct.hpp"
+#include "./decompose.hpp"
 
 
-namespace povu::subcommands::deconstruct {
+namespace povu::subcommands::decompose {
 
-void deconstruct_component(bd::VG *g, std::size_t component_id,
-                           const core::config &app_config) {
-  std::string fn_name = pv_cmp::format("[povu::deconstruct::{}]", __func__);
-
+void decompose_component(bd::VG *g, std::size_t component_id, const core::config &app_config) {
+  const std::string fn_name = pv_cmp::format("[{}::{}]", MODULE, __func__);
 
 #ifdef DEBUG
   if (app_config.verbosity() > 4) {
@@ -56,8 +54,8 @@ std::pair<uint32_t, uint32_t> thread_count(const core::config &app_config, std::
   return std::make_pair(num_threads, chunk_size);
 }
 
-void do_deconstruct(const core::config &app_config) {
-  std::string fn_name = pv_cmp::format("[povu::deconstruct::{}]", __func__);
+void do_decompose(const core::config &app_config) {
+  std::string fn_name = pv_cmp::format("[povu::decompose::{}]", __func__);
   std::size_t ll = app_config.verbosity(); // ll for log level, to avoid long names. good idea?
 
   bd::VG *g = get_vg(app_config);
@@ -99,7 +97,7 @@ void do_deconstruct(const core::config &app_config) {
         }
 
 
-        deconstruct_component(components[i], component_id, std::ref(app_config)); // Pass by reference
+        decompose_component(components[i], component_id, std::ref(app_config)); // Pass by reference
       }
     });
   }

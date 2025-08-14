@@ -3,7 +3,7 @@
 #include "../include/common/types/compat.hpp"
 
 #include "./subcommand/call.hpp"
-#include "./subcommand/deconstruct.hpp"
+#include "./subcommand/decompose.hpp"
 #include "./subcommand/gfa2vcf.hpp"
 #include "./subcommand/info.hpp"
 
@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
 
   switch (app_config.get_task()) {
   case core::task_e::deconstruct:
-    pv::deconstruct::do_deconstruct(app_config);
+    pv::decompose::do_decompose(app_config);
     break;
   case core::task_e::call:
     pv::call::do_call(app_config);
