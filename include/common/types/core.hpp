@@ -10,6 +10,8 @@
 #include <tuple>
 #include <algorithm>
 
+#include "./compat.hpp"
+
 namespace povu::types {
 
 typedef std::chrono::high_resolution_clock Time; // C++ timer
@@ -17,6 +19,8 @@ typedef std::chrono::high_resolution_clock Time; // C++ timer
 typedef u_int32_t id_t;
 typedef u_int32_t idx_t;
 typedef int8_t status_t; // return status of a fn
+
+#define FN() pv_cmp::format("[{}::{}]", MODULE, __func__)
 
 /**
  * ordered pair similar to std::pair but with same type on both sides for less typing
