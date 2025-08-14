@@ -1,7 +1,5 @@
 #include <iostream>
 
-#include "../include/common/types/compat.hpp"
-
 #include "./subcommand/call.hpp"
 #include "./subcommand/decompose.hpp"
 #include "./subcommand/gfa2vcf.hpp"
@@ -9,8 +7,9 @@
 
 namespace pv = povu::subcommands;
 
+constexpr std::string_view MODULE = "povu::main";
+
 int main(int argc, char *argv[]) {
-  std::string fn_name = pv_cmp::format("[povu::main::{}]", __func__);
 
   core::config app_config;
   cli::cli(argc, argv, app_config);
@@ -31,7 +30,7 @@ int main(int argc, char *argv[]) {
     pv::info::do_info(app_config);
     break;
   default:
-    std::cerr << pv_cmp::format("{} Task not recognized\n", fn_name);
+    std::cerr << pv_cmp::format("{} Task not recognized\n", FN());
     break;
   }
 
