@@ -15,7 +15,7 @@
 #include <utility>
 #include <vector>
 
-#include "../../src/cli/app.hpp"
+#include "../../app/cli/app.hpp"
 #include "../common/tree_utils.hpp"
 #include "../common/types/compat.hpp"
 #include "../graph/spanning_tree.hpp"

@@ -8,11 +8,11 @@
 #include <string>
 #include <vector>
 
+#include "../../app/cli/app.hpp"
 #include "../../include/common/types/compat.hpp"
 #include "../../include/common/utils.hpp"
 #include "../../include/graph/bidirected.hpp"
 #include "../../include/graph/tree.hpp"
-#include "../cli/app.hpp"
 
 namespace povu::io::common {
 namespace pgt = povu::types::graph;

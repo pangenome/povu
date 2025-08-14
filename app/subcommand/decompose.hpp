@@ -8,20 +8,20 @@
 #include <thread>
 #include <utility>
 
-#include "../../include/algorithms/flubbles.hpp"
-#include "../../include/algorithms/smothered.hpp"
-#include "../../include/algorithms/midi.hpp"
-#include "../../include/algorithms/tiny.hpp"
 #include "../../include/algorithms/concealed.hpp"
+#include "../../include/algorithms/flubbles.hpp"
+#include "../../include/algorithms/midi.hpp"
 #include "../../include/algorithms/parallel.hpp"
+#include "../../include/algorithms/smothered.hpp"
+#include "../../include/algorithms/tiny.hpp"
 #include "../../include/common/tree_utils.hpp"
 #include "../../include/common/types/compat.hpp"
 #include "../../include/graph/bidirected.hpp"
 #include "../../include/graph/spanning_tree.hpp"
+#include "../../include/io/pvst.hpp"
+#include "../../include/io/to_vcf.hpp"
 #include "../cli/app.hpp"
 #include "../cli/cli.hpp"
-#include "../io/pvst.hpp"
-#include "../io/to_vcf.hpp"
 #include "./common.hpp"
 
 namespace povu::subcommands::decompose {

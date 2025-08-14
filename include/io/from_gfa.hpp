@@ -9,10 +9,10 @@
 
 #include "../../include/common/types/compat.hpp"
 //#include "../../include/common/types/types.hpp"
+#include "../../app/cli/app.hpp"
 #include "../../include/common/utils.hpp"
 #include "../../include/graph/bidirected.hpp"
 #include "../../include/graph/tree.hpp"
-#include "../cli/app.hpp"
 
 namespace povu::io::from_gfa {
 namespace lq = liteseq;

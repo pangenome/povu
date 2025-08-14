@@ -3,14 +3,14 @@
 
 #include <cstddef>
 #include <fstream> // for std::ifstream
-#include <gfa.h> 
+#include <gfa.h>
 #include <ostream>
 #include <string>
 #include <vector>
 
+#include "../../app/cli/app.hpp"
 #include "../../include/common/types/compat.hpp"
 #include "../../include/graph/tree.hpp"
-#include "../cli/app.hpp"
 #include "./common.hpp"
 
 namespace povu::io::pvst {
