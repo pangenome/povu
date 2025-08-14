@@ -57,40 +57,40 @@ std::vector<pvt::AW> get_alts(pt::id_t ref_id, const pvt::Exp &rws) {
 };
 
 
-std::vector<pvt::AW> get_alts_tangled(const bd::VG &g, pt::id_t ref_id,
-                                      pt::idx_t at_idx, const pvt::Exp &rws) {
-  std::vector<pvt::AW> alt_ats;
+// std::vector<pvt::AW> get_alts_tangled(const bd::VG &g, pt::id_t ref_id,
+//                                       pt::idx_t at_idx, const pvt::Exp &rws) {
+//   std::vector<pvt::AW> alt_ats;
 
-  for (auto [up, aln] : rws.get_alns()) {
-    auto [up_ref1, up_ref2] = up;
+//   for (auto [up, aln] : rws.get_alns()) {
+//     auto [up_ref1, up_ref2] = up;
 
-    pt::idx_t at1_count = rws.get_itn(up_ref1).at_count();
-    pt::idx_t at2_count = rws.get_itn(up_ref2).at_count();
+//     pt::idx_t at1_count = rws.get_itn(up_ref1).at_count();
+//     pt::idx_t at2_count = rws.get_itn(up_ref2).at_count();
 
-    if ((up_ref1 != ref_id && up_ref2 != ref_id) || at_idx >= std::min(at1_count, at2_count) ) {
-      continue;
-    }
+//     if ((up_ref1 != ref_id && up_ref2 != ref_id) || at_idx >= std::min(at1_count, at2_count) ) {
+//       continue;
+//     }
 
-    if (aln[at_idx] == 'D' || aln[at_idx] == 'M') {
-      continue;
-    }
-    //std::cerr << "ref " << g.get_ref_name(up_ref1) << "\n";
+//     if (aln[at_idx] == 'D' || aln[at_idx] == 'M') {
+//       continue;
+//     }
+//     //std::cerr << "ref " << g.get_ref_name(up_ref1) << "\n";
 
-    auto alt_ref_id = up_ref1 == ref_id ? up_ref2 : up_ref1;
-    pvt::AW alt_at = rws.get_itn(alt_ref_id).get_at(at_idx);
+//     auto alt_ref_id = up_ref1 == ref_id ? up_ref2 : up_ref1;
+//     pvt::AW alt_at = rws.get_itn(alt_ref_id).get_at(at_idx);
 
-    // only leave the first and last elements in alt_at
+//     // only leave the first and last elements in alt_at
 
-    if (aln[at_idx] == 'I') {
-      alt_at.get_steps_mut().erase(alt_at.get_steps_mut().begin() + 1, alt_at.get_steps_mut().end() - 1);
-    }
+//     if (aln[at_idx] == 'I') {
+//       alt_at.get_steps_mut().erase(alt_at.get_steps_mut().begin() + 1, alt_at.get_steps_mut().end() - 1);
+//     }
 
 
-    alt_ats.push_back(alt_at);
-  }
+//     alt_ats.push_back(alt_at);
+//   }
 
-  return alt_ats;
-};
+//   return alt_ats;
+// };
 
 /**
  * @brief
@@ -194,7 +194,7 @@ pvt::genotype_data_t comp_gt(const bd::VG &g) {
  *
  * if not tangled itn has an AT count of 1
  */
-void add_vcf_recs(const bd::VG &g, const pvt::Exp &exp, pvt::VcfRecIdx &vcf_recs) {
+void add_vcf_recs(const pvt::Exp &exp, pvt::VcfRecIdx &vcf_recs) {
   std::string fn_name = pv_cmp::format("[{}::{}]", MODULE, __func__);
 
   std::string id = exp.id();
@@ -230,8 +230,8 @@ void add_vcf_recs(const bd::VG &g, const pvt::Exp &exp, pvt::VcfRecIdx &vcf_recs
 
       if (is_alt_walk_covered) {
         auto [var_typ, alt_col_idx] = w_idx_to_alt_col[alt_aw.get_walk_idx()];
-        std::vector<pvt::AW> &alt_aws = var_type_to_vcf_rec.at(var_typ).get_alt_ats_mut();
-        alt_aws[alt_col_idx].add_ref_id(alt_ref_id);
+        std::vector<pvt::AW> &alt_aws_ = var_type_to_vcf_rec.at(var_typ).get_alt_ats_mut();
+        alt_aws_[alt_col_idx].add_ref_id(alt_ref_id);
       }
 
       // if they are the same walk idx there's no point in calling variants on them
@@ -259,7 +259,7 @@ void add_vcf_recs(const bd::VG &g, const pvt::Exp &exp, pvt::VcfRecIdx &vcf_recs
   }
 }
 
-void add_vcf_recs_tangled(const bd::VG &g, const pvt::Exp &exp, pvt::VcfRecIdx &vcf_recs) {
+void add_vcf_recs_tangled(const pvt::Exp &exp, pvt::VcfRecIdx &vcf_recs) {
   std::string fn_name = pv_cmp::format("[{}::{}]", MODULE, __func__);
 
   std::string id = exp.id();
@@ -314,9 +314,9 @@ void add_vcf_recs_tangled(const bd::VG &g, const pvt::Exp &exp, pvt::VcfRecIdx &
         bool is_alt_walk_covered = pv_cmp::contains(alt_walks_covered, alt_aw.get_walk_idx());
 
         if (is_alt_walk_covered) {
-          auto [var_typ, i, alt_col_idx] = w_idx_to_alt_col[alt_aw.get_walk_idx()];
-          std::vector<pvt::AW> &alt_aws =var_type_to_vcf_rec.at({i, var_typ}).get_alt_ats_mut();
-          alt_aws[alt_col_idx].add_ref_id(alt_ref_id);
+          auto [var_typ, i_, alt_col_idx] = w_idx_to_alt_col[alt_aw.get_walk_idx()];
+          std::vector<pvt::AW> &alt_aws_ = var_type_to_vcf_rec.at({i_, var_typ}).get_alt_ats_mut();
+          alt_aws_[alt_col_idx].add_ref_id(alt_ref_id);
         }
 
         // if they are the same walk idx there's no point in calling variants on them
@@ -372,10 +372,10 @@ pvt::VcfRecIdx gen_vcf_records(const bd::VG &g, const std::vector<pvt::Exp> &exp
 
   for (const pvt::Exp &exp : exps) {
     if (exp.is_tangled()) {
-      add_vcf_recs_tangled(g, exp, vcf_recs);
+      add_vcf_recs_tangled(exp, vcf_recs);
     }
     else {
-      add_vcf_recs(g, exp, vcf_recs);
+      add_vcf_recs(exp, vcf_recs);
     }
   }
 

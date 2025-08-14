@@ -32,32 +32,36 @@ namespace pc = povu::constants;
 using namespace povu::types::graph;
 namespace pgt = povu::types::graph;
 
+// TODO: coem up with clear definitions for:
+// haplotype, ref, contig, path, etc.
+class RefInfo {
+  pt::id_t ref_id_;
+  pgt::or_e strand_; // TODO [c] chose between names orientation and strand
+  pt::idx_t locus_;
 
-/**
- *
-*/
-struct PathInfo {
-  pt::id_t path_id;
-  pgt::or_e strand;
-  pt::idx_t step_index;
-
+public:
   // --------------
   // constructor(s)
   // --------------
-  PathInfo(pt::id_t path_id, pgt::or_e strand, pt::id_t step_index)
-    : path_id(path_id),strand(strand), step_index(step_index)  {}
-};
-typedef PathInfo pi_t;
+  RefInfo(pt::id_t ref_id, pgt::or_e strand, pt::idx_t locus);
 
-typedef PathInfo VtxRefInfo;
+  // ---------
+  // getter(s)
+  // ---------
+  pt::id_t get_ref_id() const;
+  pgt::or_e get_strand() const;
+  pt::idx_t get_locus() const;
+};
+
+
 
 // undirected edge
 // stores the index of the vertex in the graph not the id
 class Edge {
   pt::idx_t v1_idx_;
-  pgt::v_end_e v1_end;
+  pgt::v_end_e v1_end_;
   pt::idx_t v2_idx_;
-  pgt::v_end_e v2_end;
+  pgt::v_end_e v2_end_;
 
 public:
   // --------------
@@ -80,7 +84,7 @@ public:
 
 
 class Vertex {
-  pt::id_t v_id; // this is the sequence name in the GFA file. Maybe Should support strings.
+  pt::id_t v_id_; // this is the sequence name in the GFA file. Maybe Should support strings.
   std::string label_; // or sequence
 
   // indexes to the edge vector in Graph
@@ -88,7 +92,7 @@ class Vertex {
   std::set<pt::idx_t> e_r;
 
   // references (also colors)
-  std::vector<PathInfo> refs_;
+  std::vector<RefInfo> refs_;
 
 public:
   // --------------
@@ -104,14 +108,14 @@ public:
   std::string get_rc_label() const; // reverse complement of the label
   const std::set<pt::idx_t>& get_edges_l() const;
   const std::set<pt::idx_t>& get_edges_r() const;
-  const std::vector<PathInfo>& get_refs() const;
+  const std::vector<RefInfo>& get_refs() const;
 
   // ---------
   // setter(s)
   // ---------
   void add_edge_l(pt::idx_t e_idx);
   void add_edge_r(pt::idx_t e_idx);
-  void add_ref(pt::id_t ref_id, pgt::or_e strand, pt::idx_t step_index);
+  void add_ref(pt::id_t ref_id, pgt::or_e strand, pt::idx_t locus);
 };
 
 

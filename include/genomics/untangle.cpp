@@ -56,7 +56,7 @@ std::string invert_aln(const std::string &aln) {
  * formerly untangle_flb
  * align the traversals of two refs
  */
-void untangle_ref_walks(const bd::VG &g, pvt::Exp &rt) {
+void untangle_ref_walks(pvt::Exp &rt) {
   std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   std::string et;

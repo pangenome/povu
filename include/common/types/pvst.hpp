@@ -132,8 +132,8 @@ public:
 
   // ——— constructors ———
   Flubble(vt_e typ, pgt::id_or_t a, pgt::id_or_t z)
-      : VertexBase(pc::INVALID_IDX, typ), a_(a), z_(z), 
-        ai_(pc::INVALID_IDX), zi_(pc::INVALID_IDX), 
+      : VertexBase(pc::INVALID_IDX, typ), a_(a), z_(z),
+        ai_(pc::INVALID_IDX), zi_(pc::INVALID_IDX),
         m_(pc::INVALID_IDX), n_(pc::INVALID_IDX) {}
 
   Flubble(pgt::id_or_t a, pgt::id_or_t z, pt::idx_t ai, pt::idx_t zi)
@@ -168,7 +168,7 @@ public:
 
 
 class Concealed : public VertexBase {
-  pt::idx_t fl_idx;
+  pt::idx_t fl_idx_; // v idx of the parent flubble in the PVST
   sl_type_e sl_type_; // type of the slubble (trunk or branch)
   pt::idx_t sl_st_idx_; // idx in the spanning tree for slubble
 
@@ -194,12 +194,12 @@ public:
 
   Concealed(pgt::id_or_t fl_b, pgt::id_or_t cn_b, bounds_t bounds,
             pt::idx_t fl_idx, sl_type_e sl_type, pt::idx_t sl_st_idx)
-    : VertexBase(pc::INVALID_IDX, vt_e::slubble), fl_idx(fl_idx),
+    : VertexBase(pc::INVALID_IDX, vt_e::slubble), fl_idx_(fl_idx),
       sl_type_(sl_type), sl_st_idx_(sl_st_idx), fl_b_(fl_b), cn_b_(cn_b),
       bounds_(bounds) {}
 
   // ——— getters ———
-  pt::idx_t get_fl_idx() const { return this->fl_idx; }
+  pt::idx_t get_fl_idx() const { return this->fl_idx_; }
   sl_type_e get_sl_type() const { return this->sl_type_; }
   pt::idx_t get_sl_st_idx() const { return this->sl_st_idx_; }
   pgt::id_or_t get_fl_b() const { return this->fl_b_; }
@@ -225,8 +225,8 @@ public:
 
 
 class Smothered : public VertexBase {
-  pt::idx_t cn_idx; // idx of the concealed vertex
-  pt::idx_t sm_st_idx; // idx in the spanning tree for smothered vertex
+  pt::idx_t cn_idx_; // idx of the concealed vertex
+  pt::idx_t sm_st_idx_; // idx in the spanning tree for smothered vertex
 
   // b for boundary
   pgt::id_or_t cn_b_; // g or s
@@ -248,12 +248,12 @@ public:
   Smothered(pgt::id_or_t cn_b, pgt::id_or_t sm_b, pt::idx_t cn_idx,
             bool cn_b_is_ans, pt::idx_t sm_st_idx, cn_type_e sm_type, bounds_t bounds)
       : VertexBase(pc::INVALID_IDX, vt_e::smothered),
-        cn_idx(cn_idx), sm_st_idx(sm_st_idx), cn_b_(cn_b), sm_b_(sm_b),
+        cn_idx_(cn_idx), sm_st_idx_(sm_st_idx), cn_b_(cn_b), sm_b_(sm_b),
         cn_b_is_ans_(cn_b_is_ans), cn_type_(sm_type), bounds_(bounds) {}
 
   // ——— getters ———
-  pt::idx_t get_cn_idx() const { return this->cn_idx; }
-  pt::idx_t get_sm_st_idx() const { return this->sm_st_idx; }
+  pt::idx_t get_cn_idx() const { return this->cn_idx_; }
+  pt::idx_t get_sm_st_idx() const { return this->sm_st_idx_; }
   bounds_t get_bounds() const { return this->bounds_; }
   cn_type_e get_cn_type() const { return this->cn_type_; }
   bool is_cn_b_ancestor() const { return this->cn_b_is_ans_; }

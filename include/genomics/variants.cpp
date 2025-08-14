@@ -35,7 +35,7 @@ void remove_prefix_walks(pvt::Itn &itn) {
 void gen_rov_ref_walks(const bd::VG &g, const pvt::RoV &rov, std::vector<pvt::Exp> &ref_walks_vec) {
   std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
-  const std::vector<pvt::walk> &walks = rov.get_walks();
+  const std::vector<pvt::walk_t> &walks = rov.get_walks();
   const pvst::VertexBase *pvst_v_ptr = rov.get_pvst_vtx();
 
   // create an expedition object for the RoV
@@ -43,7 +43,7 @@ void gen_rov_ref_walks(const bd::VG &g, const pvt::RoV &rov, std::vector<pvt::Ex
 
   // a walk is a single traversal bounded by start to the end of an RoV
   for (pt::idx_t w_idx{}; w_idx < rov.walk_count(); w_idx++) {
-    const pvt::walk &w = walks[w_idx];
+    const pvt::walk_t &w = walks[w_idx];
     pgu::variants::comp_itineraries(g, w, w_idx, ref_walks);
   }
 
@@ -68,7 +68,7 @@ void gen_rov_ref_walks(const bd::VG &g, const pvt::RoV &rov, std::vector<pvt::Ex
   }
 
   if (ref_walks.is_tangled()) {
-    put::untangle_ref_walks(g, ref_walks);
+    put::untangle_ref_walks(ref_walks);
   }
 
 

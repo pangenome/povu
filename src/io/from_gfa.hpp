@@ -2,7 +2,7 @@
 #define PV_IO_FRM_GFA_HPP
 
 #include <fstream> // for std::ifstream
-#include <gfa.h>   // from liteseq
+#include <gfa.h> // from liteseq
 #include <ostream>
 #include <string>
 #include <vector>

@@ -1,5 +1,4 @@
 #include "./smothered.hpp"
-#include <string>
 
 
 namespace povu::smothered {
@@ -129,9 +128,10 @@ void branch(const pst::Tree &st, const pvtr::Tree &pvst,
 
       // there exists at least one bracket of the src that goes into sl_st_idx
       // TODO: what is be_idx_ here?
-      for (auto be_idx_ : tm.get_brackets(be.get_src())){
-        const pst::BackEdge &be = st.get_be(be_idx);
-        if (be.get_tgt() == sl_st_idx) {
+      //  [A] fix broken loop here
+      for (auto be_idx_ : tm.get_brackets(be.get_src())) {
+        const pst::BackEdge &be_ = st.get_be(be_idx_); // should be get bracket?
+        if (be_.get_tgt() == sl_st_idx) {
           pt::idx_t src = be.get_src();
           pgt::id_or_t e = (st.get_vertex(src).type() == pst::v_type_e::l)
                                ? pgt::id_or_t{st.get_vertex(src).g_v_id(), pgt::or_e::reverse}
@@ -188,8 +188,7 @@ void trunk(const pst::Tree &st, const pvtr::Tree &pvst,
   // key is LCA value is all the srcs
   std::map<pt::idx_t, std::vector<pt::idx_t>> lca_map;
 
-  std::set<pt::idx_t> srcs = st.get_ibe_src_v_idxs(sl_st_idx);
-  for (auto src: srcs) {
+  for (auto src : st.get_ibe_src_v_idxs(sl_st_idx)) {
     if (depth[src] >= depth[zi_st_idx]) {
       continue;
     }
@@ -217,7 +216,6 @@ void trunk(const pst::Tree &st, const pvtr::Tree &pvst,
 
 void branch(const pst::Tree &st, const pvtr::Tree &pvst,
             const pvst::Concealed &ft_v, pt::idx_t cn_pvst_v_idx,
-            const ptu::tree_meta &tm,
             std::vector<pvst::Smothered> &res) {
   std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
@@ -258,8 +256,8 @@ void branch(const pst::Tree &st, const pvtr::Tree &pvst,
 
 } // namespace s
 
-void nest(const pst::Tree &st, pvtr::Tree &pvst, const ptu::tree_meta &tm,
-          pt::idx_t cn_pvst_v_idx, pt::idx_t smo_pvst_v_idx) {
+void nest(const pst::Tree &st, pvtr::Tree &pvst, pt::idx_t cn_pvst_v_idx,
+          pt::idx_t smo_pvst_v_idx) {
   const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   const pvst::Smothered &smo_v = static_cast<const pvst::Smothered &>(pvst.get_vertex(smo_pvst_v_idx));
@@ -295,8 +293,7 @@ void nest(const pst::Tree &st, pvtr::Tree &pvst, const ptu::tree_meta &tm,
   }
 }
 
-void add_smothered(const pst::Tree &st, pvtr::Tree &pvst,
-                   const ptu::tree_meta &tm, const std::vector<fl_sls> &al_smo) {
+void add_smothered(const pst::Tree &st, pvtr::Tree &pvst, const std::vector<fl_sls> &al_smo) {
   const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   for (const fl_sls &smo : al_smo) {
@@ -307,7 +304,7 @@ void add_smothered(const pst::Tree &st, pvtr::Tree &pvst,
 
       pt::idx_t g_adj_v_idx = pvst.add_vertex(g_adj_v);
       pvst.add_edge(smo.cn_v_idx, g_adj_v_idx);
-      nest(st, pvst, tm, smo.cn_v_idx, g_adj_v_idx);
+      nest(st, pvst, smo.cn_v_idx, g_adj_v_idx);
     }
 
     for (const pvst::Smothered &s_adj_v : smo.s_adj) {
@@ -315,7 +312,7 @@ void add_smothered(const pst::Tree &st, pvtr::Tree &pvst,
       // use a ref and move?
       pt::idx_t s_adj_v_idx = pvst.add_vertex(s_adj_v);
       pvst.add_edge(smo.cn_v_idx, s_adj_v_idx);
-      nest(st, pvst, tm, smo.cn_v_idx, s_adj_v_idx);
+      nest(st, pvst, smo.cn_v_idx, s_adj_v_idx);
     }
   }
 
@@ -350,7 +347,7 @@ void find_smothered(const pst::Tree &st, pvtr::Tree &ft, const ptu::tree_meta &t
        s::trunk(st, pvst, cn_v, ft_v_idx, tm, smo.s_adj);
        break;
      case pvst::sl_type_e::zi_branch:
-       s::branch(st, pvst, cn_v, ft_v_idx, tm, smo.s_adj);
+       s::branch(st, pvst, cn_v, ft_v_idx, smo.s_adj);
        break;
      default:
        std::cerr << fn_name << " unknown slubble type: " << ft_v_idx << "\n";
@@ -362,7 +359,7 @@ void find_smothered(const pst::Tree &st, pvtr::Tree &ft, const ptu::tree_meta &t
     }
   }
 
-  add_smothered(st, ft, tm, all_smo);
+  add_smothered(st, ft, all_smo);
 }
 
 } // namespace povu::smothered

@@ -119,18 +119,17 @@ public:
  * for a given AS in a walk, find the associated vertex in the graph and sort
  * associate the ref id and the steps, sort the steps in ascending order.
  */
-VtxRefMeta get_vtx_itn(const bd::VG &g, const pvt::step &s) {
+VtxRefMeta get_vtx_itn(const bd::VG &g, const pvt::step_t &s) {
   std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   pt::id_t v_id = s.v_id;
   const bd::Vertex &v = g.get_vertex_by_id(v_id);
-  std::vector<bd::PathInfo> v_ref_data = v.get_refs();
+  std::vector<bd::RefInfo> v_ref_data = v.get_refs();
 
   VtxRefMeta vrm;
-  for (const bd::PathInfo &ref : v_ref_data) {
-    auto [ref_id, p_o, locus] = ref;
-    pvt::AS s {v_id, locus, p_o};
-    vrm.add(ref_id, std::move(s));
+  for (const bd::RefInfo &ref : v_ref_data) {
+    pt::id_t ref_id = ref.get_ref_id();
+    vrm.add(ref_id, pvt::AS::from_ref_info(ref));
   }
 
   return vrm;
@@ -144,12 +143,12 @@ VtxRefMeta get_vtx_itn(const bd::VG &g, const pvt::step &s) {
  * step idx. The map contains a key of ref id and a value of a vector of
  * allele steps (AS) that the ref takes in the vertex at that step.
 */
-WalkRefMeta comp_walk_ref_meta(const bd::VG &g, const pvt::walk &w) {
+WalkRefMeta comp_walk_ref_meta(const bd::VG &g, const pvt::walk_t &w) {
   std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   WalkRefMeta wrm;
   for (pt::idx_t step_idx{}; step_idx < w.size(); ++step_idx) {
-    const pvt::step &s = w[step_idx];
+    const pvt::step_t &s = w[step_idx];
     VtxRefMeta ref_map = get_vtx_itn(g, s);
     wrm.add_vtx_ref_meta(std::move(ref_map));
   }
@@ -170,7 +169,7 @@ pt::idx_t get_vtx_len(const bd::VG &g, pvt::AS s) {
  */
 std::pair<pt::idx_t, pt::idx_t> comp_ref_visit_bounds(pt::id_t ref_id,
                                                       const WalkRefMeta &wrm,
-                                                      const pvt::walk &w) {
+                                                      const pvt::walk_t &w) {
   std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   // TODO: paralleise
@@ -251,7 +250,7 @@ pt::idx_t find_loop_start_locus(const WalkRefMeta &wrm, pt::id_t ref_id, pt::idx
  *
  * The itinerary is a collection of allele walks for each ref in the walk.
  */
-void comp_itineraries(const bd::VG &g, const pvt::walk &w, pt::idx_t w_idx, pvt::Exp &rw) {
+void comp_itineraries(const bd::VG &g, const pvt::walk_t &w, pt::idx_t w_idx, pvt::Exp &rw) {
   std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   // a map of ref_id to itinerary
@@ -379,11 +378,11 @@ inline or_e get_or(pgt::v_end_e side, dir_e d) {
 /**
  * @brief the stack is a unique path from s to t
  */
-pvt::walk walk_from_stack(const bd::VG &g, const std::deque<idx_or_t> &dq) {
+pvt::walk_t walk_from_stack(const bd::VG &g, const std::deque<idx_or_t> &dq) {
   const std::string fn_name = pv_cmp::format("[povu::bidirected::{}]", __func__);
 
   //pvt::AW w;
-  pvt::walk w;
+  pvt::walk_t w;
   for (auto it = dq.begin(); it != dq.end(); ++it) {
     auto [v_idx, o] = *it;
     pgt::id_or_t s {g.v_idx_to_id(v_idx), o};
@@ -402,7 +401,7 @@ pvt::walk walk_from_stack(const bd::VG &g, const std::deque<idx_or_t> &dq) {
 void comp_walks_fl_like(const bd::VG &g, pvt::RoV &rov) {
   const std::string fn_name = pv_cmp::format("[povu::bidirected::{}]", __func__);
 
-  std::vector<pvt::walk> &walks = rov.get_walks_mut();
+  std::vector<pvt::walk_t> &walks = rov.get_walks_mut();
 
   pvst::traversal_params_t tp = rov.get_pvst_vtx()->get_traversal_params();
 
@@ -428,8 +427,7 @@ void comp_walks_fl_like(const bd::VG &g, pvt::RoV &rov) {
 
   while (!dq.empty()) {
     // get the incoming vertices based on orientation
-    idx_or_t curr = dq.back();
-    auto [v_idx, o] = curr;
+    curr = dq.back();
 
     if (curr == t) {
       walks.push_back(walk_from_stack(g, dq));
@@ -441,6 +439,8 @@ void comp_walks_fl_like(const bd::VG &g, pvt::RoV &rov) {
       std::cerr << fn_name << "WARN: max steps reached for " << rov.get_pvst_vtx()->as_str() << "\n";
       return;
     }
+
+    auto [v_idx, o] = curr;
 
     // if we have explored all neighbours of the current vertex
     bool is_explored {true};

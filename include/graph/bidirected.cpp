@@ -2,21 +2,39 @@
 
 namespace povu::bidirected {
 
-/*
-  Edge
-  ------
- */
+// ============================================================
+//      RefInfo
+// ============================================================
+
+// --------------
+// constructor(s)
+// --------------
+RefInfo::RefInfo(pt::id_t ref_id, pgt::or_e strand, pt::idx_t locus)
+    : ref_id_(ref_id), strand_(strand), locus_(locus) {}
+
+// ---------
+// getter(s)
+// ---------
+pt::id_t RefInfo::get_ref_id() const { return ref_id_; }
+pgt::or_e RefInfo::get_strand() const { return strand_; }
+pt::idx_t RefInfo::get_locus() const { return locus_; }
+
+// ============================================================
+//      Edge
+// ============================================================
+
+
 Edge::Edge(pt::idx_t v1_idx, pgt::v_end_e v1_end , pt::idx_t v2_idx, pgt::v_end_e v2_end)
-  : v1_idx_{v1_idx}, v1_end{v1_end}, v2_idx_{v2_idx}, v2_end{v2_end} {}
+  : v1_idx_{v1_idx}, v1_end_{v1_end}, v2_idx_{v2_idx}, v2_end_{v2_end} {}
 pt::idx_t Edge::get_v1_idx() const { return this->v1_idx_; }
 pt::idx_t &Edge::get_v1_idx_mut() { return this->v1_idx_; }
-pgt::v_end_e Edge::get_v1_end() const { return this->v1_end; }
+pgt::v_end_e Edge::get_v1_end() const { return this->v1_end_; }
 pt::idx_t Edge::get_v2_idx() const { return this->v2_idx_; }
 pt::idx_t &Edge::get_v2_idx_mut() { return this->v2_idx_; }
-pgt::v_end_e Edge::get_v2_end() const { return this->v2_end; }
+pgt::v_end_e Edge::get_v2_end() const { return this->v2_end_; }
 pgt::side_n_idx_t Edge::get_other_vtx(pt::idx_t v_idx) const {
-  return (get_v1_idx() == v_idx) ? pgt::side_n_id_t{v2_end, v2_idx_}
-                                 : pgt::side_n_id_t{v1_end, v1_idx_};
+  return (get_v1_idx() == v_idx) ? pgt::side_n_id_t{v2_end_, v2_idx_}
+                                 : pgt::side_n_id_t{v1_end_, v1_idx_};
 }
 
 pgt::side_n_idx_t Edge::get_other_vtx(pt::idx_t v_idx, pgt::v_end_e ve) const {
@@ -28,7 +46,7 @@ pgt::side_n_idx_t Edge::get_other_vtx(pt::idx_t v_idx, pgt::v_end_e ve) const {
   }
 
   // Return the opposite vertex
-  return (v1 == v_idx) ? pgt::side_n_id_t{v2_end, v2_idx_} : pgt::side_n_id_t{v1_end, v1_idx_};
+  return (v1 == v_idx) ? pgt::side_n_id_t{v2_end_, v2_idx_} : pgt::side_n_id_t{v1_end_, v1_idx_};
 }
 
 
@@ -36,21 +54,35 @@ pgt::side_n_idx_t Edge::get_other_vtx(pt::idx_t v_idx, pgt::v_end_e ve) const {
   Vertex
   ------
  */
-Vertex::Vertex(pt::id_t v_id, const std::string& label) : v_id{v_id}, label_(label) {}
-pt::id_t Vertex::id() const { return v_id; }
-/* getters */
+
+// --------------
+// constructor(s)
+// --------------
+
+Vertex::Vertex(pt::id_t v_id, const std::string& label) : v_id_{v_id}, label_(label) {}
+
+
+// ---------
+// getter(s)
+// ---------
+
+pt::id_t Vertex::id() const { return v_id_; }
 const std::string &Vertex::get_label() const { return this->label_; }
 std::string Vertex::get_rc_label() const {
   return pu::reverse_complement(this->label_);
 }
 const std::set<pt::idx_t>& Vertex::get_edges_l() const { return e_l; }
 const std::set<pt::idx_t>& Vertex::get_edges_r() const { return e_r; }
-const std::vector<PathInfo>& Vertex::get_refs() const { return refs_; }
-/* setters */
+const std::vector<RefInfo>& Vertex::get_refs() const { return refs_; }
+
+// ---------
+// setter(s)
+// ---------
+
 void Vertex::add_edge_l(pt::idx_t e_idx) { e_l.insert(e_idx); }
 void Vertex::add_edge_r(pt::idx_t e_idx) { e_r.insert(e_idx); }
-void Vertex::add_ref(pt::idx_t ref_id, pgt::or_e strand, pt::idx_t step_index) {
-  this->refs_.push_back(PathInfo(ref_id, strand, step_index));
+void Vertex::add_ref(pt::idx_t ref_id, pgt::or_e strand, pt::idx_t locus) {
+  this->refs_.push_back(RefInfo(ref_id, strand, locus));
 }
 
 
@@ -298,20 +330,20 @@ std::vector<VG *> componetize(const povu::bidirected::VG &g) {
       curr_vg = new VG(comp_vtxs.size(), added_edges.size(), false);
 
       /* add vertices */
-      for (auto v_idx : comp_vtxs) {
-        const Vertex& v = g.get_vertex_by_idx(v_idx);
-        curr_vg->add_vertex(v.id(), v.get_label());
+      for (auto v_idx_ : comp_vtxs) {
+        const Vertex& v_ = g.get_vertex_by_idx(v_idx_);
+        curr_vg->add_vertex(v_.id(), v_.get_label());
       }
 
       /* add edges */
-      for (auto v_idx : comp_vtxs) {
-        const Vertex& v = g.get_vertex_by_idx(v_idx);
-        for (auto e_idx : v.get_edges_l()) {
-          add_edges(v, pgt::v_end_e::l, v_idx, e_idx);
+      for (auto v_idx_ : comp_vtxs) {
+        const Vertex& v_ = g.get_vertex_by_idx(v_idx_);
+        for (auto e_idx : v_.get_edges_l()) {
+          add_edges(v_, pgt::v_end_e::l, v_idx_, e_idx);
         }
 
         for (auto e_idx : v.get_edges_r()) {
-          add_edges(v, pgt::v_end_e::r, v_idx, e_idx);
+          add_edges(v_, pgt::v_end_e::r, v_idx_, e_idx);
         }
       }
 
@@ -328,12 +360,12 @@ std::vector<VG *> componetize(const povu::bidirected::VG &g) {
       added_edges.clear();
 
       /* find the next unvisited vertex */
-      for (std::size_t v_idx{}; v_idx < g.vtx_count(); ++v_idx) {
-        if (!pv_cmp::contains(visited, v_idx)) { // if not visited
+      for (std::size_t v_idx_{}; v_idx_ < g.vtx_count(); ++v_idx_) {
+        if (!pv_cmp::contains(visited, v_idx_)) { // if not visited
           comp_vtxs.clear();
-          s.push(v_idx);
-          visited.insert(v_idx);
-          comp_vtxs.insert(v_idx);
+          s.push(v_idx_);
+          visited.insert(v_idx_);
+          comp_vtxs.insert(v_idx_);
           break;
         }
       }
@@ -381,16 +413,15 @@ pst::Tree compute_spanning_tree(const VG &g) {
   };
 
   auto to_be = [&g](pgt::side_n_id_t i) -> pt::idx_t {
-    auto [s, v_id] = i;
+    auto [ve, v_id] = i;
     pt::idx_t v_idx = g.v_id_to_idx(v_id);
-
-    return (s == pgt::v_end_e::l) ? v_idx * 2 : (v_idx * 2) + 1;
+    return (ve == pgt::v_end_e::l) ? v_idx * 2 : (v_idx * 2) + 1;
   };
 
   auto to_bd = [&g](pt::idx_t be_v_idx) -> pgt::side_n_idx_t {
-    pgt::v_end_e s = (be_v_idx % 2 == 0) ? pgt::v_end_e::l : pgt::v_end_e::r;
+    pgt::v_end_e ve = (be_v_idx % 2 == 0) ? pgt::v_end_e::l : pgt::v_end_e::r;
     pt::id_t v_id = g.v_idx_to_id(be_v_idx / 2);
-    return {s, v_id};
+    return {ve, v_id};
   };
 
   auto end2typ = [](pgt::v_end_e e) -> pgt::v_type_e {

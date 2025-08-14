@@ -53,9 +53,8 @@ inline void write_col_header(pvt::genotype_data_t gtd, std::ostream &os) {
 
 
 // ns and the genotype columns are generated from the genotype data
-std::pair<pt::idx_t, std::string> gen_genotype_cols(const bd::VG &g, pt::id_t ref_count,
+std::pair<pt::idx_t, std::string> gen_genotype_cols(const bd::VG &g,
                                                     const pvt::genotype_data_t &gtd,
-                                                    pt::id_t ref_hap_id,
                                                     const pvt::AW &ref_aw,
                                                     const std::vector<pvt::AW> &alt_aws) {
   std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
@@ -216,7 +215,8 @@ void write_vcf_rec(const bd::VG &g, const pvt::genotype_data_t &gtd,
       return str;
     };
 
-    auto fmt_field = [&](const pvt::VcfRec &r) -> std::string {
+    // takes r by reference from outer scope
+    auto fmt_field = [&]() -> std::string {
       std::string s;
       s += at_as_str(r.get_ref_at());
       s += ",";
@@ -271,16 +271,16 @@ void write_vcf_rec(const bd::VG &g, const pvt::genotype_data_t &gtd,
     std::string af_str = pu::concat_with(af, ',');
 
     // gen genotype cols
-    auto [ns_str, gt_cols] = gen_genotype_cols(g, gtd.ref_id_to_col_idx.size(),
-                                               gtd, r.get_ref_id(),
-                                               r.get_ref_at(), r.get_alt_ats());
+    auto [ns_str, gt_cols] = gen_genotype_cols(g, gtd, r.get_ref_at(), r.get_alt_ats());
+
+    std::string at_str = fmt_field();
 
     std::ostringstream info_field;
     info_field << "AC=" << ac_str
                << ";AF=" << af_str
                << ";AN=" << an_str
                << ";NS=" << ns_str
-               << ";AT=" << fmt_field(r)
+               << ";AT=" << at_str
                << ";VARTYPE=" << pvt::to_string_view(var_typ)
                << ";TANGLED=" << (r.is_tangled() ? "T" : "F")
                << ";LV=" << (r.get_height() - 1);
@@ -297,7 +297,7 @@ void write_vcf_rec(const bd::VG &g, const pvt::genotype_data_t &gtd,
        << "\t" << qual
        << "\t" << filter
        << "\t" << info_field.str()
-       << "\t" << "GT"
+       << "\t" << "GT" // TODO: [c] make this a const
        << "\t" << gt_cols
        << "\n";
   }
