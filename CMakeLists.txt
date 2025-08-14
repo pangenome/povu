@@ -213,7 +213,7 @@ FetchContent_MakeAvailable(args)
 # --- liteseqlib (lightweight genomics data library) ---
 FetchContent_Declare(
   liteseq
-  GIT_REPOSITORY https://github.com/pangenome/povu.git
+  GIT_REPOSITORY https://github.com/urbanslug/liteseq.git
   GIT_TAG        b2abf40c1ad334019604dc085cb38cde772f76d2
 )
 FetchContent_MakeAvailable(liteseq)

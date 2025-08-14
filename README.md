@@ -69,7 +69,7 @@ Prerequisites:
 
 **Clone the repository:**
 ```bash
-git clone --recursive https://github.com/pangenome/povu.git
+git clone https://github.com/pangenome/povu.git
 cd povu
 ```
 
