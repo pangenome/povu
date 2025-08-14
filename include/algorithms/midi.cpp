@@ -82,7 +82,6 @@ pvst::MidiBubble gen_midi_bub(const pvtr::Tree &pvst, const std::vector<pt::idx_
 // find midibubbles in the flubble
 std::vector<pvst::MidiBubble> handle_fl(const pst::Tree &st,
                                         const pvtr::Tree &pvst,
-                                        const ptu::tree_meta &tm,
                                         const pvst::Flubble &fl_v,
                                         const std::vector<pt::idx_t> &c_bubs) {
 
@@ -172,7 +171,7 @@ void find_midi(const pst::Tree &st, pvtr::Tree &pvst, const ptu::tree_meta &tm) 
 
      const pvst::Flubble &fl_v = static_cast<const pvst::Flubble &>(pvst_v);
 
-     std::vector<pvst::MidiBubble> res = handle_fl(st, pvst, tm, fl_v, c_bubs);
+     std::vector<pvst::MidiBubble> res = handle_fl(st, pvst, fl_v, c_bubs);
      if (!res.empty()) {
        x[ft_v_idx] = res;
      }

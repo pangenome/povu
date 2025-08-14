@@ -334,8 +334,8 @@ src_lca_t ai_trunk(const pst::Tree &st, const ptu::tree_meta &tm, pt::idx_t m,
       pt::idx_t br_tgt_v_idx = be.get_tgt();
 
       bool is_tgt_ai_or_above = depth[br_tgt_v_idx] <= depth[ai];
-      bool is_src_branch_vtx = is_desc(st, zi, br_src_v_idx);
-      bool is_src_btwn_m_zi = is_btwn(st, br_src_v_idx, m, zi);
+      //bool is_src_branch_vtx = is_desc(st, zi, br_src_v_idx);
+      //bool is_src_btwn_m_zi = is_btwn(st, br_src_v_idx, m, zi);
 
       if(dbg) {
         std::cerr << fn_name << " tgt <= ai " << is_tgt_ai_or_above <<  " tgt " << br_tgt_v_idx << " src" << br_src_v_idx << "\n";
@@ -535,8 +535,8 @@ void with_ai(const pst::Tree &st, const ptu::tree_meta &tm,
   ai_branches(st, tm, ii_v_idx, ji_v_idx, bb);
   //std::cerr << "branch sls:\n";
   for (auto b : bb) {
-    src_lca_t tb {pc::INVALID_IDX, b}; // TODO: [A] fix the inv idx
-    pvst::Concealed sl = gen_ai_slubble(st, ii_v_idx, tb, pvst::sl_type_e::ai_branch, fl_v_idx);
+    src_lca_t tb_ {pc::INVALID_IDX, b}; // TODO: [A] fix the inv idx
+    pvst::Concealed sl = gen_ai_slubble(st, ii_v_idx, tb_, pvst::sl_type_e::ai_branch, fl_v_idx);
     res.push_back(sl);
     //std::cerr << sl.as_str() << ", ";
   }
@@ -578,14 +578,14 @@ pt::idx_t override_ji_trunk(const pst::Tree &st, const ptu::tree_meta &tm,
         continue;
       }
 
-      for (pt::idx_t be_idx : tm.get_brackets(c_v_idx)) {
-        const pst::BackEdge &be = st.get_be(be_idx);
-        pt::idx_t src_v_idx = be.get_src();
-        pt::idx_t tgt_v_idx = be.get_tgt();
+      //for (pt::idx_t be_idx : tm.get_brackets(c_v_idx)) {
+        //const pst::BackEdge &be = st.get_be(be_idx);
+        //pt::idx_t src_v_idx = be.get_src();
+        //pt::idx_t tgt_v_idx = be.get_tgt();
 
         //std::cerr << fn_name << " src: " << src_v_idx << " tgt: " << tgt_v_idx
         //         << "\n";
-      }
+        //}
 
       if (tm.get_brackets(c_v_idx).size() == 1) { // case (ii)
         std::vector<pt::idx_t> br = tm.get_brackets(c_v_idx);
