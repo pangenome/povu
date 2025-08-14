@@ -75,7 +75,16 @@ set(DEBUG_WARNINGS
   -Wpedantic
   -Wshadow
   -Wunused
-  # -Wpadding # Uncomment or gate by compiler if needed
+  -Wunknown-pragmas
+  -Wunused-parameter
+  -Wunused-variable
+  -Wunused-function
+  -Wunused-but-set-variable
+  -Wmissing-field-initializers
+  -Wunused-local-typedefs
+  -Wuninitialized
+  -Wmaybe-uninitialized
+  # -Wpadded # Uncomment or gate by compiler if needed
 )
 
 # Apply compiler flags per build type
@@ -197,22 +206,43 @@ set(ARGS_BUILD_EXAMPLE OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
   args
   GIT_REPOSITORY https://github.com/Taywee/args.git
-  GIT_TAG        114200a9ad5fe06c8dea76e15d92325695cf3e34) # v6.4.7
+  GIT_TAG        114200a9ad5fe06c8dea76e15d92325695cf3e34 # v6.4.7
+)
 FetchContent_MakeAvailable(args)
 
 # --- liteseqlib (lightweight genomics data library) ---
 FetchContent_Declare(
-  liteseqlib
-  GIT_REPOSITORY https://github.com/urbanslug/liteseq.git
-  GIT_TAG        3463414cede57f8a47383baea33a041b9450c15e)
-FetchContent_MakeAvailable(liteseqlib)
+  liteseq
+  GIT_REPOSITORY https://github.com/pangenome/povu.git
+  GIT_TAG        b2abf40c1ad334019604dc085cb38cde772f76d2
+)
+FetchContent_MakeAvailable(liteseq)
 
 # --- fmt (fast formatting library) ---
 FetchContent_Declare(
   fmt
-  GIT_REPOSITORY https://github.com/fmtlib/fmt
-  GIT_TAG        e69e5f977d458f2650bb346dadf2ad30c5320281) # v10.2.1
+  GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+  GIT_TAG        e69e5f977d458f2650bb346dadf2ad30c5320281 # v10.2.1
+)
 FetchContent_MakeAvailable(fmt)
+
+
+# --- Silence compiler warnings for dependencies ---
+function(silence_warnings target)
+  if(TARGET ${target})
+    get_target_property(type ${target} TYPE)
+    if(type STREQUAL "INTERFACE_LIBRARY")
+      target_compile_options(${target} INTERFACE -w)
+    else()
+      target_compile_options(${target} PRIVATE -w)
+    endif()
+  endif()
+endfunction()
+
+silence_warnings(fmt)
+silence_warnings(liteseq)
+silence_warnings(args)
+
 
 # === Link Dependencies ===
 # Link fmt to povulib (used in the library implementation)
@@ -222,7 +252,7 @@ target_link_libraries(povulib PRIVATE fmt::fmt)
 target_link_libraries(povu
   PRIVATE
   povulib        # internal library
-  liteseqlib     # gfa handling
+  liteseq     # gfa handling
   fmt::fmt       # formatting
   taywee::args   # argument parsing
 )
