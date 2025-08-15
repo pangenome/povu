@@ -13,7 +13,7 @@
 #include "../../include/genomics/variants.hpp"
 #include "../cli/app.hpp"
 #include "../cli/cli.hpp"
-#include "../../include/io/pvst.hpp"
+#include "../../include/io/from_pvst.hpp"
 #include "./common.hpp"
 
 namespace povu::subcommands::call {

@@ -19,6 +19,10 @@ void decompose_component(bd::VG *g, std::size_t component_id, const core::config
 
   ptu::tree_meta tm = ptu::gen_tree_meta(st);
 
+  pvtr::Tree flubble_tree = pfl::find_flubbles(st, app_config);
+  povu::tiny::find_tiny(st, flubble_tree, tm);
+  povu::parallel::find_parallel(st, flubble_tree, tm);
+
 #ifdef DEBUG
   if (app_config.verbosity() > 4) {
     std::cerr << "\n";
@@ -27,17 +31,13 @@ void decompose_component(bd::VG *g, std::size_t component_id, const core::config
   }
 #endif
 
-  pvtr::Tree flubble_tree = pfl::find_flubbles(st, app_config);
-  povu::tiny::find_tiny(st, flubble_tree, tm);
-  povu::parallel::find_parallel(st, flubble_tree, tm);
-
   if (app_config.find_hubbles()) {
     povu::concealed::find_concealed(st, flubble_tree, tm);
     povu::midi::find_midi(st, flubble_tree, tm);
     povu::smothered::find_smothered(st, flubble_tree, tm);
   }
 
-  povu::io::pvst::write_pvst(flubble_tree, std::to_string(component_id), app_config);
+  pv_to_pvst::write_pvst(flubble_tree, std::to_string(component_id), app_config);
 
   return;
 }

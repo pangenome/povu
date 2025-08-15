@@ -58,8 +58,7 @@ std::pair<pt::idx_t, pt::idx_t> compute_ai_zi(const pst::Tree &st,
 /**
   * @brief
  */
-void add_flubbles(const pst::Tree &st, const eq_class_stack_t &ecs,
-                  pvtr::Tree &vst) {
+void add_flubbles(const pst::Tree &st, const eq_class_stack_t &ecs, pvtr::Tree &vst) {
   std::string fn_name = pv_cmp::format("[povu::algorithms::flubble_tree::{}]", __func__);
 
   const auto &[stack_, next_seen] = ecs;
@@ -205,16 +204,16 @@ void compute_eq_class_stack(const pst::Tree &st, std::vector<oic_t> &stack) {
 
     // if the parent is braching
     if (is_branching(st.get_parent_v_idx(v_idx))) {
+
       pt::idx_t e_idx = st.get_vertex(v_idx).get_parent_e_idx();
       pt::idx_t p_v_idx = st.get_parent_v_idx(v_idx);
 
       auto [it, _] = cache.try_emplace(p_v_idx); // default-constructs value if not present
       edge_stack_t &es = it->second;
-      //edge_stack_t &es = pv_cmp::contains(cache, p_v_idx) ? cache[p_v_idx] : cache[p_v_idx] = {};
 
-      es[e_idx] = mini_stack;
-      cache[p_v_idx] = es;
-      mini_stack.clear();
+      es[e_idx] = std::move(mini_stack);
+      //cache[p_v_idx] = es;
+      mini_stack = std::list<oic_t>(); // clear the mini_stack for the next iteration
     }
   }
 
@@ -222,6 +221,7 @@ void compute_eq_class_stack(const pst::Tree &st, std::vector<oic_t> &stack) {
   for (auto it = mini_stack.begin(); it != mini_stack.end(); ++it) {
     stack.emplace_back(*it);
   }
+  return;
 }
 
 

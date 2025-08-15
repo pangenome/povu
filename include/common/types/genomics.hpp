@@ -136,8 +136,8 @@ public:
   AS(pt::id_t v_id, pgt::or_e o) :v_id_(v_id), step_idx_(pc::INVALID_IDX), o_(o) {}
   AS(pt::id_t v_id, pt::idx_t step_idx, pgt::or_e o ) :v_id_(v_id), step_idx_(step_idx), o_(o) {}
 
-  static AS from_ref_info(const pbd::RefInfo &ref_info) {
-    return AS(ref_info.get_ref_id(), ref_info.get_locus(), ref_info.get_strand());
+  static AS given_ref_info(pt::id_t v_id, const pbd::RefInfo &ref_info) {
+    return AS(v_id, ref_info.get_locus(), ref_info.get_strand());
   }
 
   // ---------

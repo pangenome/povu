@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
     pv::info::do_info(app_config);
     break;
   default:
-    std::cerr << pv_cmp::format("{} Task not recognized\n", FN());
+    // the help text handles this case
     break;
   }
 

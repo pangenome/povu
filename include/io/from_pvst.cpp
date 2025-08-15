@@ -1,6 +1,7 @@
-#include "./pvst.hpp"
+#include "./from_pvst.hpp"
+#include <sstream>
 
-namespace povu::io::pvst {
+namespace povu::io::from_pvst {
 
 /**
  * @brief Get the size of a file
@@ -114,41 +115,6 @@ void fp_to_vector (const std::string& fp, std::vector<std::string>* v) {
   v->shrink_to_fit();
 }
 
-
-std::vector<pgt::flubble> read_canonical_fl(const std::string& fp) {
-  std::vector<pgt::flubble> canonical_fl;
-
-  std::vector<std::string> lines;
-  fp_to_vector(fp, &lines);
-
-  std::vector<std::string> tokens;
-
-  const std::size_t FL_COLS {3}; // number of columns in a .fl file
-
-  for (const std::string& line : lines) {
-
-    pu::split(line, pc::COL_SEP, &tokens);
-
-    if (tokens.size() != FL_COLS) {
-      std::cerr << pv_cmp::format("ERROR: invalid number of columns. Expected {}, got {} in file {}\n", FL_COLS, tokens.size(), fp);
-      std::exit(1);
-    }
-
-    // if it is a dummy or not a leaf
-    if (tokens[1] == std::string(1, pc::NO_VALUE) || tokens[2] != std::string(1, pc::NO_VALUE)) {
-      tokens.clear();
-      continue;
-    }
-
-    pgt::flubble fl (tokens[1]) ;
-    canonical_fl.push_back(fl);
-
-    tokens.clear();
-  }
-
-  return canonical_fl;
-}
-
 pvtr::Tree read_pvst(const std::string &fp) {
   std::string fn_name = pv_cmp::format("[povu::main::{}]", __func__);
 
@@ -175,13 +141,14 @@ pvtr::Tree read_pvst(const std::string &fp) {
     pu::split(line, pc::COL_SEP, &tokens);
 
     if (tokens.size() != PVST_COLS) {
-      std::cerr << "ERROR: invalid number of columns. "
+      std::stringstream err_msg;
+      err_msg << "invalid number of columns. "
                 << "File " << fp
                 << ", line " << line_idx
                 << ". Expected " << PVST_COLS
                 << ", got " << tokens.size()
                 << '\n';
-
+      ERR("{}", err_msg.str());
       std::exit(1);
     }
 
@@ -198,6 +165,7 @@ pvtr::Tree read_pvst(const std::string &fp) {
       pvst::Dummy root_v;
       v_idx = pvst.add_vertex(root_v);
       pvst.set_root_idx(v_idx);
+      file_v_idx_to_pvst_idx[id] = v_idx;
       break;
     }
     case pc::PVST_MIDI_SYMBOL: {
@@ -243,7 +211,7 @@ pvtr::Tree read_pvst(const std::string &fp) {
       break;
     }
     }
-
+    
     if (v_idx != pc::INVALID_IDX) {
       line_idx_to_pvst_idx[line_idx] = v_idx;
     }
@@ -276,73 +244,4 @@ pvtr::Tree read_pvst(const std::string &fp) {
   return pvst;
 }
 
-void write_pvst(const pvtr::Tree &bt, const std::string &base_name, const core::config &app_config) {
-  // TODO: combine and pass as single arg
-  std::string bub_file_name = pv_cmp::format("{}/{}.pvst", std::string{app_config.get_output_dir()}, base_name); // file path and name
-  std::ofstream bub_file(bub_file_name);
-
-  if (!bub_file.is_open()) {
-    std::cerr << "ERROR: could not open file " << bub_file_name << "\n";
-    std::exit(1);
-  }
-
-  // writer header line
-  // ------------------
-  bub_file << constants::PVST_HEADER_SYMBOL << pc::COL_SEP << pc::PVST_VERSION
-           << pc::COL_SEP << "." << pc::COL_SEP << "." << "\n";
-
-  // write the rest of the PVST
-  // --------------------------
-  for (std::size_t i {}; i < bt.vtx_count(); ++i) {
-
-    const pvst::VertexBase &v = bt.get_vertex(i);
-
-    // line identifier
-    {
-    switch (v.get_type()) {
-      case pvst::vt_e::slubble:
-        bub_file << pc::PVST_CONCEALED_SYMBOL << pc::COL_SEP;
-        break;
-      case pvst::vt_e::flubble:
-        bub_file << pc::PVST_FLUBBLE_SYMBOL << pc::COL_SEP;
-        break;
-      case pvst::vt_e::dummy:
-        bub_file << pc::PVST_DUMMY_SYMBOL << pc::COL_SEP;
-        break;
-      case pvst::vt_e::tiny:
-        bub_file << pc::PVST_TINY_SYMBOL << pc::COL_SEP;
-        break;
-      case pvst::vt_e::parallel:
-        bub_file << pc::PVST_OVERLAP_SYMBOL << pc::COL_SEP;
-        break;
-      case pvst::vt_e::smothered:
-        bub_file << pc::PVST_SMOTHERED_SYMBOL << pc::COL_SEP;
-        break;
-      case pvst::vt_e::midi:
-        bub_file << pc::PVST_MIDI_SYMBOL << pc::COL_SEP;
-        break;
-      default:
-        std::cerr << "ERROR: unknown vertex type in write_bub: " << v.as_str() << "\n";
-        std::exit(1);
-    }
-    }
-
-    // vertex idx
-    bub_file << i << pc::COL_SEP;
-
-    // vertex as str
-    bub_file << v.as_str() << pc::COL_SEP;
-
-    // children
-    if (bt.is_leaf(i)) {
-      bub_file << pc::NO_VALUE << "\n";
-    }
-    else {
-      pu::print_with_comma(bub_file, bt.get_children(i), ',');
-      bub_file << "\n";
-    }
-  }
-
-  bub_file.close();
-}
-} // namespace povu::io::pvst
+} // namespace povu::io::from_pvst}

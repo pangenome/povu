@@ -165,7 +165,8 @@ ADD_LIBRARY(povulib
   ${INCLUDE_DIR}/graph/spanning_tree.cpp
 
   # io
-  ${INCLUDE_DIR}/io/pvst.cpp
+  ${INCLUDE_DIR}/io/from_pvst.cpp
+  ${INCLUDE_DIR}/io/to_pvst.cpp
   ${INCLUDE_DIR}/io/from_gfa.cpp
   ${INCLUDE_DIR}/io/common.cpp
   ${INCLUDE_DIR}/io/to_vcf.cpp

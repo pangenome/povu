@@ -10,17 +10,51 @@
 #include <tuple>
 #include <algorithm>
 
+
+#include <fmt/format.h>
+#include <fmt/color.h>
+
 #include "./compat.hpp"
 
 namespace povu::types {
+
+// =======
+// logging
+// =======
+
+#define FN() pv_cmp::format("[{}::{}]", MODULE, __func__)
+
+#define DEBUG_PRINT(format, ...)                                               \
+  fprintf(stderr, "%s:%d: " format, __FILE__, __LINE__, ##__VA_ARGS__)
+
+/**
+ * Generic logging macro: prints a label (e.g. "ERR") with color and formatted
+ * output.
+ */
+#define LOG(label, color, fmt_str, ...)                                        \
+  do {                                                                         \
+    fmt::print(stderr, fmt::fg(color) | fmt::emphasis::bold, "{} {} ", label,  \
+               FN());                                                          \
+    fmt::print(stderr, fmt_str, ##__VA_ARGS__);                                \
+    fmt::print(stderr, "\n");                                                  \
+  } while (false)
+
+#define ERR(fmt_str, ...)                                                      \
+  LOG("ERR", fmt::color::crimson, fmt_str, ##__VA_ARGS__)
+
+#define WARN(fmt_str, ...)                                                     \
+  LOG("WARN", fmt::color::yellow, fmt_str, ##__VA_ARGS__)
+
+
+// =====
+// types
+// =====
 
 typedef std::chrono::high_resolution_clock Time; // C++ timer
 
 typedef u_int32_t id_t;
 typedef u_int32_t idx_t;
 typedef int8_t status_t; // return status of a fn
-
-#define FN() pv_cmp::format("[{}::{}]", MODULE, __func__)
 
 /**
  * ordered pair similar to std::pair but with same type on both sides for less typing

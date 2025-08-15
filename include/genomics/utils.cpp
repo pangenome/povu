@@ -6,7 +6,7 @@ namespace povu::genomics::utils {
 // should this be genotyping?
 namespace variants {
 
-
+  //TODO: replace with walk_t?
 // the ref visits of a single vertex. Unlike the ref visits in a walk, this
 // contains the steps that the ref takes in the vertex, sorted by step index
 typedef std::vector<pvt::AS> VtxRefVisits;
@@ -36,7 +36,7 @@ public:
   }
 
   const VtxRefVisits &get_ref_steps(pt::id_t ref_id) const {
-    if (this->data_.find(ref_id) == this->data_.end()) {
+    if (pv_cmp::contains(this->data_, ref_id)) {
       // return an empty vector if the ref_id is not found
       static const VtxRefVisits empty_visits;
       return empty_visits;
@@ -120,8 +120,6 @@ public:
  * associate the ref id and the steps, sort the steps in ascending order.
  */
 VtxRefMeta get_vtx_itn(const bd::VG &g, const pvt::step_t &s) {
-  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
-
   pt::id_t v_id = s.v_id;
   const bd::Vertex &v = g.get_vertex_by_id(v_id);
   std::vector<bd::RefInfo> v_ref_data = v.get_refs();
@@ -129,7 +127,7 @@ VtxRefMeta get_vtx_itn(const bd::VG &g, const pvt::step_t &s) {
   VtxRefMeta vrm;
   for (const bd::RefInfo &ref : v_ref_data) {
     pt::id_t ref_id = ref.get_ref_id();
-    vrm.add(ref_id, pvt::AS::from_ref_info(ref));
+    vrm.add(ref_id, pvt::AS::given_ref_info(v_id, ref));
   }
 
   return vrm;
@@ -144,9 +142,8 @@ VtxRefMeta get_vtx_itn(const bd::VG &g, const pvt::step_t &s) {
  * allele steps (AS) that the ref takes in the vertex at that step.
 */
 WalkRefMeta comp_walk_ref_meta(const bd::VG &g, const pvt::walk_t &w) {
-  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
-
   WalkRefMeta wrm;
+
   for (pt::idx_t step_idx{}; step_idx < w.size(); ++step_idx) {
     const pvt::step_t &s = w[step_idx];
     VtxRefMeta ref_map = get_vtx_itn(g, s);
@@ -251,8 +248,6 @@ pt::idx_t find_loop_start_locus(const WalkRefMeta &wrm, pt::id_t ref_id, pt::idx
  * The itinerary is a collection of allele walks for each ref in the walk.
  */
 void comp_itineraries(const bd::VG &g, const pvt::walk_t &w, pt::idx_t w_idx, pvt::Exp &rw) {
-  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
-
   // a map of ref_id to itinerary
   std::map<pt::id_t, pvt::Itn> &ref_map = rw.get_ref_itns_mut();
 
@@ -262,8 +257,8 @@ void comp_itineraries(const bd::VG &g, const pvt::walk_t &w, pt::idx_t w_idx, pv
 
     auto [curr_locus, loop_count] = comp_ref_visit_bounds(ref_id, wrm, w);
 
-    for (pt::idx_t loop_no {}; loop_no < loop_count; loop_no++) {
-      pvt::AW allele_walk {w_idx};
+    for (pt::idx_t loop_no{}; loop_no < loop_count; loop_no++) {
+      pvt::AW allele_walk{w_idx};
 
       bool is_ref_cont{false}; // is the ref continuous in the walk?
 
@@ -399,12 +394,9 @@ pvt::walk_t walk_from_stack(const bd::VG &g, const std::deque<idx_or_t> &dq) {
 // Runs in O((V+E)·(P+1)) time where P = number of paths found.
 // when a vertex has been explored we unblock its neighbours and the current vertex
 void comp_walks_fl_like(const bd::VG &g, pvt::RoV &rov) {
-  const std::string fn_name = pv_cmp::format("[povu::bidirected::{}]", __func__);
 
   std::vector<pvt::walk_t> &walks = rov.get_walks_mut();
-
   pvst::traversal_params_t tp = rov.get_pvst_vtx()->get_traversal_params();
-
   std::string label = rov.get_pvst_vtx()->as_str();
 
   auto [start_id, start_o] = tp.start;
@@ -418,7 +410,7 @@ void comp_walks_fl_like(const bd::VG &g, pvt::RoV &rov) {
 
   std::deque<idx_or_t> dq;
 
-     // the key is a vertex and the value is a set of vertices that have been seen
+  // the key is a vertex and the value is a set of vertices that have been seen
   // from that vertex
   std::map<id_or_t, std::set<idx_or_t>> seen_;
 
@@ -436,7 +428,7 @@ void comp_walks_fl_like(const bd::VG &g, pvt::RoV &rov) {
     }
 
     if (dq.size() > MAX_FLUBBLE_STEPS) {
-      std::cerr << fn_name << "WARN: max steps reached for " << rov.get_pvst_vtx()->as_str() << "\n";
+      WARN("max steps reached for {}\n", rov.get_pvst_vtx()->as_str());
       return;
     }
 
@@ -454,7 +446,7 @@ void comp_walks_fl_like(const bd::VG &g, pvt::RoV &rov) {
       auto [side, alt_idx] = e.get_other_vtx(v_idx, ve);
       idx_or_t nbr {alt_idx, get_or(side, IN)};
 
-      if(pv_cmp::contains(seen_, nbr)) {
+      if(pv_cmp::contains(seen_[curr], nbr)) {
         continue;
       }
 
@@ -481,18 +473,7 @@ void comp_walks_fl_like(const bd::VG &g, pvt::RoV &rov) {
 }
 
 void find_walks(const bd::VG &g, pvt::RoV &rov) {
-  const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
-
-  pvst::traversal_params_t p = rov.get_pvst_vtx()->get_traversal_params();
-
-  if (!p.traversable) {
-    std::cerr << pv_cmp::format("{}: RoV {} is not traversable\n", fn_name, rov.as_str());
-    return; // return empty vector if the vertex is not traversable
-  }
-
-  if (pvst::is_fl_like(rov.get_pvst_vtx()->get_type())) {
-    graph::comp_walks_fl_like(g, rov);
-  }
+  graph::comp_walks_fl_like(g, rov);
 }
 } // namespace graph
 } // namespace povu::graph_utils

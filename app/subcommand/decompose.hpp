@@ -18,7 +18,7 @@
 #include "../../include/common/types/compat.hpp"
 #include "../../include/graph/bidirected.hpp"
 #include "../../include/graph/spanning_tree.hpp"
-#include "../../include/io/pvst.hpp"
+#include "../../include/io/to_pvst.hpp"
 #include "../../include/io/to_vcf.hpp"
 #include "../cli/app.hpp"
 #include "../cli/cli.hpp"
@@ -35,7 +35,7 @@ namespace bd = povu::bidirected;
 namespace pgt = povu::types::graph;
 namespace pst = povu::spanning_tree;
 namespace pvtr = povu::tree;
-namespace pvst = povu::types::pvst;
+
 namespace pic = povu::io::common;
 namespace ptu = povu::tree_utils;
 namespace pfl = povu::flubbles;
