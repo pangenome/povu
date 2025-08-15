@@ -3,22 +3,11 @@
 
 namespace povu::io::from_gfa {
 
-lq::gfa_config gen_lq_conf(const core::config &app_config,
-                           std::vector<const char *> &refs,
-                           std::string &gfa_fp) {
+inline lq::gfa_config gen_lq_conf(const core::config &app_config, std::string &gfa_fp) {
   gfa_fp = app_config.get_input_gfa();
   pt::idx_t ref_count = 0;
 
   bool read_all_refs = app_config.inc_refs() && app_config.inc_vtx_labels();
-
-  // if (app_config.inc_refs()) {
-  //   ref_count = app_config.get_reference_paths().size();
-  //   refs.reserve(ref_count);
-  //   for (const std::string &r : app_config.get_reference_paths()) {
-  //     refs.push_back(r.c_str());
-  //   }
-  // }
-
 
   lq::gfa_config_cpp lq_conf(
       gfa_fp.c_str(), // file path
@@ -29,17 +18,8 @@ lq::gfa_config gen_lq_conf(const core::config &app_config,
       NULL // reference names
   );
 
-  // lq::gfa_config conf = {.fp = gfa_fp.c_str(),
-  //                        .inc_vtx_labels = app_config.inc_vtx_labels(),
-  //                        .inc_refs = app_config.inc_refs(),
-  //                        .read_all_refs = true,
-  //                        .ref_count = 0,
-  //                        .ref_names = NULL,
-  // };
-
   return lq_conf;
 }
-
 
 
 /**
@@ -55,7 +35,7 @@ bd::VG *to_bd(const core::config& app_config) {
   /* initialize a liteseq gfa */
   std::vector<const char *> refs;
   std::string gfa_fp;
-  lq::gfa_config conf = gen_lq_conf(app_config, refs, gfa_fp);
+  lq::gfa_config conf = gen_lq_conf(app_config, gfa_fp);
   lq::gfa_props *gfa = lq::gfa_new(&conf);
 
   pt::idx_t vtx_count = gfa->s_line_count;
