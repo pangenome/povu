@@ -123,7 +123,7 @@ include(sanitizers.cmake)
 #
 # These variables define paths for source code, headers, and tests.
 # Used later in the project to organize sources and targets.
-set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/app)
 set(INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(TEST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests)
 
@@ -163,6 +163,13 @@ ADD_LIBRARY(povulib
   ${INCLUDE_DIR}/graph/bidirected.cpp
   ${INCLUDE_DIR}/graph/bracket_list.cpp
   ${INCLUDE_DIR}/graph/spanning_tree.cpp
+
+  # io
+  ${INCLUDE_DIR}/io/from_pvst.cpp
+  ${INCLUDE_DIR}/io/to_pvst.cpp
+  ${INCLUDE_DIR}/io/from_gfa.cpp
+  ${INCLUDE_DIR}/io/common.cpp
+  ${INCLUDE_DIR}/io/to_vcf.cpp
 )
 
 # === Command Line Executable Sources ===
@@ -173,15 +180,9 @@ set(SOURCE_FILES
   ${SRC_DIR}/cli/cli.cpp
   ${SRC_DIR}/cli/app.cpp
 
-  # io
-  ${SRC_DIR}/io/pvst.cpp
-  ${SRC_DIR}/io/from_gfa.cpp
-  ${SRC_DIR}/io/common.cpp
-  ${SRC_DIR}/io/to_vcf.cpp
-
   # subcommand
   ${SRC_DIR}/subcommand/common.cpp
-  ${SRC_DIR}/subcommand/deconstruct.cpp
+  ${SRC_DIR}/subcommand/decompose.cpp
   ${SRC_DIR}/subcommand/info.cpp
   ${SRC_DIR}/subcommand/call.cpp
   ${SRC_DIR}/subcommand/gfa2vcf.cpp
@@ -246,7 +247,11 @@ silence_warnings(args)
 
 # === Link Dependencies ===
 # Link fmt to povulib (used in the library implementation)
-target_link_libraries(povulib PRIVATE fmt::fmt)
+target_link_libraries(povulib
+  PRIVATE
+  fmt::fmt
+  liteseq     # gfa handling
+)
 
 # Link everything needed for the executable
 target_link_libraries(povu

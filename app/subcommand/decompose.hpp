@@ -8,23 +8,25 @@
 #include <thread>
 #include <utility>
 
-#include "../../include/algorithms/flubbles.hpp"
-#include "../../include/algorithms/smothered.hpp"
-#include "../../include/algorithms/midi.hpp"
-#include "../../include/algorithms/tiny.hpp"
 #include "../../include/algorithms/concealed.hpp"
+#include "../../include/algorithms/flubbles.hpp"
+#include "../../include/algorithms/midi.hpp"
 #include "../../include/algorithms/parallel.hpp"
+#include "../../include/algorithms/smothered.hpp"
+#include "../../include/algorithms/tiny.hpp"
 #include "../../include/common/tree_utils.hpp"
 #include "../../include/common/types/compat.hpp"
 #include "../../include/graph/bidirected.hpp"
 #include "../../include/graph/spanning_tree.hpp"
+#include "../../include/io/to_pvst.hpp"
+#include "../../include/io/to_vcf.hpp"
 #include "../cli/app.hpp"
 #include "../cli/cli.hpp"
-#include "../io/pvst.hpp"
-#include "../io/to_vcf.hpp"
 #include "./common.hpp"
 
-namespace povu::subcommands::deconstruct {
+namespace povu::subcommands::decompose {
+constexpr std::string_view MODULE = "povu::subcommands::decompose";
+
 namespace fs = std::filesystem;
 
 namespace pvt = povu::types::genomics;
@@ -33,14 +35,14 @@ namespace bd = povu::bidirected;
 namespace pgt = povu::types::graph;
 namespace pst = povu::spanning_tree;
 namespace pvtr = povu::tree;
-namespace pvst = povu::types::pvst;
+
 namespace pic = povu::io::common;
 namespace ptu = povu::tree_utils;
 namespace pfl = povu::flubbles;
 
 using namespace povu::subcommands::common;
 
-void do_deconstruct(const core::config &app_config);
+void do_decompose(const core::config &app_config);
 }
 
 #endif

@@ -1,19 +1,24 @@
-#ifndef PVST_IO_HPP
-#define PVST_IO_HPP
+#ifndef FROM_PVST_IO_HPP
+#define FROM_PVST_IO_HPP
 
 #include <cstddef>
 #include <fstream> // for std::ifstream
-#include <gfa.h> 
+#include <gfa.h>
 #include <ostream>
 #include <string>
 #include <vector>
 
+
+#include <fmt/color.h>
+
+#include "../../app/cli/app.hpp"
 #include "../../include/common/types/compat.hpp"
 #include "../../include/graph/tree.hpp"
-#include "../cli/app.hpp"
 #include "./common.hpp"
 
-namespace povu::io::pvst {
+namespace povu::io::from_pvst {
+constexpr std::string_view MODULE = "povu::io::from_pvst";
+
 using povu::types::graph::id_n_cls;
 using povu::types::graph::id_or_t;
 namespace pvtr = povu::tree;
@@ -25,11 +30,13 @@ namespace pt = povu::types;
 
 pvtr::Tree read_pvst(const std::string &fp);
 
-void write_pvst(const pvtr::Tree &bt, const std::string &base_name, const core::config &app_config);
-/**
- * @brief Read a flb file but only return the canonical flubbles
- */
-std::vector<pgt::flubble> read_canonical_fl(const std::string &fp);
+
 } // namespace povu::io::pvst
+
+// add namespace alias for povu::compat
+// below tells clang-tidy to skip that specific check for the next line.
+// NOLINTNEXTLINE(misc-unused-alias-decls)
+namespace pv_frm_pvst = povu::io::from_pvst;
+
 
 #endif

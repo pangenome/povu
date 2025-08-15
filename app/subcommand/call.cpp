@@ -20,7 +20,7 @@ void read_pvsts(const core::config &app_config, std::vector<pvtr::Tree> &pvsts) 
   // TODO: [c] parallelise
   // loop through the .pvst files and read them
   for (std::size_t i{}; i < fps.size(); i++) {
-    pvtr::Tree pvst = povu::io::pvst::read_pvst(fps[i].string());
+    pvtr::Tree pvst = povu::io::from_pvst::read_pvst(fps[i].string());
     pvst.comp_heights();
     pvsts.push_back(std::move(pvst));
   }

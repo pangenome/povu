@@ -261,10 +261,9 @@ graph G {
   os << "}" << std::endl;
 }
 
-// TODO: [B] [CLEAN] make this static factory fn
+// TODO: make this static factory fn
 // does not handle refs, should it?
 std::vector<VG *> componetize(const povu::bidirected::VG &g) {
-  std::string fn_name = pv_cmp::format("[povu::graph_ops::{}]", __func__);
 
   std::unordered_set<pt::idx_t> visited;
   visited.reserve(g.vtx_count());
@@ -290,7 +289,9 @@ std::vector<VG *> componetize(const povu::bidirected::VG &g) {
     const Edge &e = g.get_edge(e_idx);
     auto [_, adj_v_idx] = e.get_other_vtx(v_idx);
 
-    if (pv_cmp::contains(visited, adj_v_idx)) return; // also handles self loops
+    if (pv_cmp::contains(visited, adj_v_idx)) { // also handles self loops
+      return;
+    }
 
     s.push(adj_v_idx);
     visited.insert(adj_v_idx);
@@ -299,16 +300,15 @@ std::vector<VG *> componetize(const povu::bidirected::VG &g) {
   };
 
   auto add_edges = [&](const Vertex &v, pgt::v_end_e ve, pt::idx_t v_idx, pt::idx_t e_idx) -> void {
-    // don't duplicate edges
-    if (pv_cmp::contains(added_edges, e_idx)) {
-      return;
-    }
+   if (pv_cmp::contains(added_edges, e_idx)) { // don't duplicate edges
+       return;
+   }
 
-    added_edges.insert(e_idx);
-    const Edge &e = g.get_edge(e_idx);
+   added_edges.insert(e_idx);
+   const Edge &e = g.get_edge(e_idx);
 
-    auto [adj_s, adj_v_idx] = e.get_other_vtx(v_idx, ve); // handles self loops
-    curr_vg->add_edge(v.id(), ve, g.v_idx_to_id(adj_v_idx), adj_s);
+   auto [adj_s, adj_v_idx] = e.get_other_vtx(v_idx, ve); // handles self loops
+   curr_vg->add_edge(v.id(), ve, g.v_idx_to_id(adj_v_idx), adj_s);
   };
 
   /* ---------- Main Component Search Loop ---------- */
@@ -330,20 +330,20 @@ std::vector<VG *> componetize(const povu::bidirected::VG &g) {
       curr_vg = new VG(comp_vtxs.size(), added_edges.size(), false);
 
       /* add vertices */
-      for (auto v_idx_ : comp_vtxs) {
-        const Vertex& v_ = g.get_vertex_by_idx(v_idx_);
-        curr_vg->add_vertex(v_.id(), v_.get_label());
+      for (auto v_idx : comp_vtxs) {
+        const Vertex& v = g.get_vertex_by_idx(v_idx);
+        curr_vg->add_vertex(v.id(), v.get_label());
       }
 
       /* add edges */
-      for (auto v_idx_ : comp_vtxs) {
-        const Vertex& v_ = g.get_vertex_by_idx(v_idx_);
-        for (auto e_idx : v_.get_edges_l()) {
-          add_edges(v_, pgt::v_end_e::l, v_idx_, e_idx);
+      for (auto v_idx : comp_vtxs) {
+        const Vertex& v = g.get_vertex_by_idx(v_idx);
+        for (auto e_idx : v.get_edges_l()) {
+          add_edges(v, pgt::v_end_e::l, v_idx, e_idx);
         }
 
         for (auto e_idx : v.get_edges_r()) {
-          add_edges(v_, pgt::v_end_e::r, v_idx_, e_idx);
+          add_edges(v, pgt::v_end_e::r, v_idx, e_idx);
         }
       }
 
@@ -360,12 +360,12 @@ std::vector<VG *> componetize(const povu::bidirected::VG &g) {
       added_edges.clear();
 
       /* find the next unvisited vertex */
-      for (std::size_t v_idx_{}; v_idx_ < g.vtx_count(); ++v_idx_) {
-        if (!pv_cmp::contains(visited, v_idx_)) { // if not visited
+      for (std::size_t v_idx{}; v_idx < g.vtx_count(); ++v_idx) {
+        if (!pv_cmp::contains(visited, v_idx)) { // if not visited
           comp_vtxs.clear();
-          s.push(v_idx_);
-          visited.insert(v_idx_);
-          comp_vtxs.insert(v_idx_);
+          s.push(v_idx);
+          visited.insert(v_idx);
+          comp_vtxs.insert(v_idx);
           break;
         }
       }
@@ -374,6 +374,7 @@ std::vector<VG *> componetize(const povu::bidirected::VG &g) {
 
   return components;
 }
+
 
 pst::Tree compute_spanning_tree(const VG &g) {
 

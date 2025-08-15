@@ -10,8 +10,7 @@
 #include "../../include/common/types/graph.hpp"
 #include "../../include/common/utils.hpp"
 #include "../../include/graph/bidirected.hpp"
-#include "../cli/app.hpp"
-
+#include "../../app/cli/app.hpp"
 
 namespace povu::io::to_vcf {
 inline constexpr std::string_view MODULE = "povu::io::to_vcf";

@@ -7,7 +7,7 @@
 #include <vector>
 #include <algorithm>
 
-#include "../../src/cli/app.hpp"
+#include "../../app/cli/app.hpp"
 #include "../common/types/genomics.hpp"
 #include "../common/types/compat.hpp"
 #include "../graph/bidirected.hpp"

@@ -2,7 +2,7 @@
 #define PV_CLI_HPP
 
 #include "./app.hpp"
-#include "../io/common.hpp"
+#include "../../include/io/common.hpp"
 
 namespace cli {
 namespace pic = povu::io::common;

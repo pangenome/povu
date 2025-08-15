@@ -17,7 +17,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "../../src/cli/app.hpp" // for core::config TODO: find a proper place for the app config
+#include "../../app/cli/app.hpp" // for core::config TODO: find a proper place for the app config
 #include "../common/utils.hpp"
 #include "./spanning_tree.hpp"
 #include "../common/types/compat.hpp"

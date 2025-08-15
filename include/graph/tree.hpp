@@ -98,7 +98,6 @@ public:
    * @brief Compute the heights of all vertices in the tree
    */
   void comp_heights() {
-    std::cerr << "start\n";
     if (this->root_idx_ == INVALID_IDX) {
       throw std::logic_error("Root index is not set");
     }
@@ -122,7 +121,6 @@ public:
         s.push(child_v_idx);
       }
     }
-    std::cerr << "done\n";
   }
 
   void set_root_idx(pt::idx_t v_idx) {

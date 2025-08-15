@@ -1,12 +1,10 @@
-#include "./deconstruct.hpp"
+#include "./decompose.hpp"
 
 
-namespace povu::subcommands::deconstruct {
+namespace povu::subcommands::decompose {
 
-void deconstruct_component(bd::VG *g, std::size_t component_id,
-                           const core::config &app_config) {
-  std::string fn_name = pv_cmp::format("[povu::deconstruct::{}]", __func__);
-
+void decompose_component(bd::VG *g, std::size_t component_id, const core::config &app_config) {
+  const std::string fn_name = pv_cmp::format("[{}::{}]", MODULE, __func__);
 
 #ifdef DEBUG
   if (app_config.verbosity() > 4) {
@@ -21,6 +19,10 @@ void deconstruct_component(bd::VG *g, std::size_t component_id,
 
   ptu::tree_meta tm = ptu::gen_tree_meta(st);
 
+  pvtr::Tree flubble_tree = pfl::find_flubbles(st, app_config);
+  povu::tiny::find_tiny(st, flubble_tree, tm);
+  povu::parallel::find_parallel(st, flubble_tree, tm);
+
 #ifdef DEBUG
   if (app_config.verbosity() > 4) {
     std::cerr << "\n";
@@ -29,17 +31,13 @@ void deconstruct_component(bd::VG *g, std::size_t component_id,
   }
 #endif
 
-  pvtr::Tree flubble_tree = pfl::find_flubbles(st, app_config);
-  povu::tiny::find_tiny(st, flubble_tree, tm);
-  povu::parallel::find_parallel(st, flubble_tree, tm);
-
   if (app_config.find_hubbles()) {
     povu::concealed::find_concealed(st, flubble_tree, tm);
     povu::midi::find_midi(st, flubble_tree, tm);
     povu::smothered::find_smothered(st, flubble_tree, tm);
   }
 
-  povu::io::pvst::write_pvst(flubble_tree, std::to_string(component_id), app_config);
+  pv_to_pvst::write_pvst(flubble_tree, std::to_string(component_id), app_config);
 
   return;
 }
@@ -56,8 +54,8 @@ std::pair<uint32_t, uint32_t> thread_count(const core::config &app_config, std::
   return std::make_pair(num_threads, chunk_size);
 }
 
-void do_deconstruct(const core::config &app_config) {
-  std::string fn_name = pv_cmp::format("[povu::deconstruct::{}]", __func__);
+void do_decompose(const core::config &app_config) {
+  std::string fn_name = pv_cmp::format("[povu::decompose::{}]", __func__);
   std::size_t ll = app_config.verbosity(); // ll for log level, to avoid long names. good idea?
 
   bd::VG *g = get_vg(app_config);
@@ -99,7 +97,7 @@ void do_deconstruct(const core::config &app_config) {
         }
 
 
-        deconstruct_component(components[i], component_id, std::ref(app_config)); // Pass by reference
+        decompose_component(components[i], component_id, std::ref(app_config)); // Pass by reference
       }
     });
   }

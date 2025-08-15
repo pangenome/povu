@@ -33,7 +33,6 @@ void remove_prefix_walks(pvt::Itn &itn) {
  * Associate walks in an RoV with references
  */
 void gen_rov_ref_walks(const bd::VG &g, const pvt::RoV &rov, std::vector<pvt::Exp> &ref_walks_vec) {
-  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   const std::vector<pvt::walk_t> &walks = rov.get_walks();
   const pvst::VertexBase *pvst_v_ptr = rov.get_pvst_vtx();
@@ -60,7 +59,7 @@ void gen_rov_ref_walks(const bd::VG &g, const pvt::RoV &rov, std::vector<pvt::Ex
     }
   }
 
-  for (const pt::id_t ref_id : ref_walks.get_ref_ids()) {
+  for (pt::id_t ref_id : ref_walks.get_ref_ids()) {
     pvt::Itn &itn = ref_walks.get_itn_mut(ref_id);
     for (pvt::AW &aw : itn.get_ats_mut()) {
       aw.add_ref_id(ref_id); // add the ref id to each walk
@@ -72,7 +71,7 @@ void gen_rov_ref_walks(const bd::VG &g, const pvt::RoV &rov, std::vector<pvt::Ex
   }
 
 
-  // {
+  //{ 
   //   std::cerr << fn_name
   //             << " " << pvst_v_ptr->as_str()
   //             << " ref count " << ref_walks.get_ref_ids().size()
@@ -90,9 +89,9 @@ void gen_rov_ref_walks(const bd::VG &g, const pvt::RoV &rov, std::vector<pvt::Ex
   //   }
   // }
 
-  // if (pvst_v_ptr->as_str() == ">11>13") {
-  //   exit(1);
-  // }
+  //  if (pvst_v_ptr->as_str() == ">11>13") {
+  //    exit(1);
+  //  }
 
   ref_walks_vec.push_back(std::move(ref_walks));
 
@@ -104,12 +103,10 @@ void gen_rov_ref_walks(const bd::VG &g, const pvt::RoV &rov, std::vector<pvt::Ex
  * Check if a vertex in the pvst is a flubble leaf
  * A flubble leaf is a vertex that has no children that are also flubbles
  */
-bool is_fl_leaf(const pvtr::Tree &pvst, pt::idx_t pvst_v_idx){
-  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
-
+bool is_fl_leaf(const pvtr::Tree &pvst, pt::idx_t pvst_v_idx) noexcept {
   const pvst::VertexBase *pvst_v_ptr = pvst.get_vertex_const_ptr(pvst_v_idx);
 
-  if (pvst_v_ptr->get_type() != pvst::vt_e::flubble) {
+  if (!pvst::is_fl_like(pvst_v_ptr->get_type())) {
     return false; // not a flubble
   }
 
@@ -127,19 +124,20 @@ bool is_fl_leaf(const pvtr::Tree &pvst, pt::idx_t pvst_v_idx){
  * initialize RoVs from flubbles
  */
 std::vector<pvt::RoV> gen_rov(const std::vector<pvtr::Tree> &pvsts, const bd::VG &g) {
-  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
-
   // the set of RoVs to return
   std::vector<pvt::RoV> rs;
   rs.reserve(pvsts.size());
 
   for (const pvtr::Tree &pvst : pvsts) { // for each pvst
     // loop through each tree
+
     for (pt::idx_t pvst_v_idx{}; pvst_v_idx < pvst.vtx_count(); pvst_v_idx++) {
       // call variants on the leaves only
-      if (is_fl_leaf(pvst, pvst_v_idx) || pvst.is_leaf(pvst_v_idx)) {
-        // create a RoV for the vertex
-        const pvst::VertexBase *pvst_v_ptr = pvst.get_vertex_const_ptr(pvst_v_idx);
+      const pvst::VertexBase *pvst_v_ptr = pvst.get_vertex_const_ptr(pvst_v_idx);
+
+      pvst::traversal_params_t p = pvst_v_ptr->get_traversal_params();
+
+      if (p.traversable && (is_fl_leaf(pvst, pvst_v_idx) )) {
         pvt::RoV r { pvst_v_ptr };
 
         // get the set of walks for the RoV
@@ -154,7 +152,6 @@ std::vector<pvt::RoV> gen_rov(const std::vector<pvtr::Tree> &pvsts, const bd::VG
 }
 
 pvt::VcfRecIdx gen_vcf_rec_map(const std::vector<pvtr::Tree> &pvsts, const bd::VG &g) {
-  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   std::vector<pvt::RoV> all_rovs = gen_rov(pvsts, g);
 

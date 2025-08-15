@@ -8,12 +8,12 @@
 #include <vector>
 
 #include "../../include/graph/bidirected.hpp"
-#include "../io/to_vcf.hpp"
+#include "../../include/io/to_vcf.hpp"
 #include "../../include/common/types/compat.hpp"
 #include "../../include/genomics/variants.hpp"
 #include "../cli/app.hpp"
 #include "../cli/cli.hpp"
-#include "../io/pvst.hpp"
+#include "../../include/io/from_pvst.hpp"
 #include "./common.hpp"
 
 namespace povu::subcommands::call {

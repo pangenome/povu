@@ -32,7 +32,7 @@ void do_gfa2vcf(const core::config &app_config) {
   decompose_config.set_output_dir(temp_dir_str);
 
   // Run decompose
-  deconstruct::do_deconstruct(decompose_config);
+  decompose::do_decompose(decompose_config);
 
   // Step 2: Run call to generate VCF
   if (ll > 0) {

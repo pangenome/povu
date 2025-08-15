@@ -4,7 +4,7 @@
 #include "../../include/common/types/compat.hpp"
 #include "../../include/graph/bidirected.hpp"
 #include "../cli/app.hpp"
-#include "../io/from_gfa.hpp"
+#include "../../include/io/from_gfa.hpp"
 
 namespace povu::subcommands::common {
 namespace bd = povu::bidirected;
