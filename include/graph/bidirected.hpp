@@ -134,7 +134,8 @@ public:
   // constructor(s)
   // --------------
   VariationGraph(pt::idx_t vtx_count, pt::idx_t edge_count, bool inc_refs);
-
+  // return a vector of connected components as VG objects
+  static std::vector<VariationGraph *> componetize(const VariationGraph &g);
 
   // ---------
   // getter(s)
@@ -179,9 +180,5 @@ public:
 };
 
 typedef VariationGraph VG;
-
-std::vector<VG *> componetize(const VG &g);
-
-
 } // namespace povu::bidirected
 #endif

@@ -263,7 +263,7 @@ graph G {
 
 // TODO: make this static factory fn
 // does not handle refs, should it?
-std::vector<VG *> componetize(const povu::bidirected::VG &g) {
+std::vector<VG *> VG::componetize(const povu::bidirected::VG &g) {
 
   std::unordered_set<pt::idx_t> visited;
   visited.reserve(g.vtx_count());
@@ -374,5 +374,4 @@ std::vector<VG *> componetize(const povu::bidirected::VG &g) {
 
   return components;
 }
-
 } // namespace povu::bidirected

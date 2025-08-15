@@ -61,7 +61,7 @@ void do_decompose(const core::config &app_config) {
   bd::VG *g = get_vg(app_config);
 
   if (ll > 1) std::cerr << pv_cmp::format("{} Finding components\n", fn_name);
-  std::vector<bd::VG *> components = bd::componetize(*g);
+  std::vector<bd::VG *> components = bd::VG::componetize(*g);
 
   delete g;
 
