@@ -330,20 +330,20 @@ std::vector<VG *> VG::componetize(const povu::bidirected::VG &g) {
       curr_vg = new VG(comp_vtxs.size(), added_edges.size(), false);
 
       /* add vertices */
-      for (auto v_idx : comp_vtxs) {
-        const Vertex& v = g.get_vertex_by_idx(v_idx);
-        curr_vg->add_vertex(v.id(), v.get_label());
+      for (auto v_idx_ : comp_vtxs) {
+        const Vertex& v_ = g.get_vertex_by_idx(v_idx_);
+        curr_vg->add_vertex(v_.id(), v_.get_label());
       }
 
       /* add edges */
-      for (auto v_idx : comp_vtxs) {
-        const Vertex& v = g.get_vertex_by_idx(v_idx);
-        for (auto e_idx : v.get_edges_l()) {
-          add_edges(v, pgt::v_end_e::l, v_idx, e_idx);
+      for (auto v_idx_ : comp_vtxs) {
+        const Vertex &v_ = g.get_vertex_by_idx(v_idx_);
+        for (auto e_idx : v_.get_edges_l()) {
+          add_edges(v_, pgt::v_end_e::l, v_idx_, e_idx);
         }
 
-        for (auto e_idx : v.get_edges_r()) {
-          add_edges(v, pgt::v_end_e::r, v_idx, e_idx);
+        for (auto e_idx : v_.get_edges_r()) {
+          add_edges(v_, pgt::v_end_e::r, v_idx_, e_idx);
         }
       }
 
@@ -360,12 +360,12 @@ std::vector<VG *> VG::componetize(const povu::bidirected::VG &g) {
       added_edges.clear();
 
       /* find the next unvisited vertex */
-      for (std::size_t v_idx{}; v_idx < g.vtx_count(); ++v_idx) {
-        if (!pv_cmp::contains(visited, v_idx)) { // if not visited
+      for (std::size_t v_idx_{}; v_idx_ < g.vtx_count(); ++v_idx_) {
+        if (!pv_cmp::contains(visited, v_idx_)) { // if not visited
           comp_vtxs.clear();
-          s.push(v_idx);
-          visited.insert(v_idx);
-          comp_vtxs.insert(v_idx);
+          s.push(v_idx_);
+          visited.insert(v_idx_);
+          comp_vtxs.insert(v_idx_);
           break;
         }
       }
