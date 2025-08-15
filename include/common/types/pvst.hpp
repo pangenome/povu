@@ -84,7 +84,8 @@ class VertexBase {
 
 public:
   // ——— constructors ———
-  VertexBase(povu::types::id_t idx, vt_e type) : idx_(idx), type_(type) {}
+  VertexBase(povu::types::id_t idx, vt_e type)
+    : idx_(idx), height_(pc::INVALID_IDX), type_(type) {}
 
   // ——— getters ———
   povu::types::id_t get_idx() const { return this->idx_; }

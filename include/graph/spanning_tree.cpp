@@ -38,15 +38,16 @@ be_type_e BackEdge::type() const { return this->type_; }
 /* setters */
 void BackEdge::set_class(pt::idx_t c) { this->class_ = c; }
 
-/*
- * Vertex
- * ------
- */
+
+// ======
+// Vertex
+// ======
 
 /* constructor(s) */
 Vertex::Vertex(pt::idx_t dfs_num, pt::idx_t g_v_id, v_type_e type)
     : dfs_num_(dfs_num), parent_e_idx_(pc::INVALID_IDX), hi_(pc::INVALID_IDX),
-      g_v_id_(g_v_id), type_(type) {}
+      g_v_id_(g_v_id), pre_order_(pc::INVALID_IDX),
+      post_order_(pc::INVALID_IDX), type_(type) {}
 
 // getters
 pt::idx_t Vertex::g_v_id() const { return this->g_v_id_; }
