@@ -36,7 +36,7 @@ public:
   }
 
   const VtxRefVisits &get_ref_steps(pt::id_t ref_id) const {
-    if (pv_cmp::contains(this->data_, ref_id)) {
+    if (!pv_cmp::contains(this->data_, ref_id)) {
       // return an empty vector if the ref_id is not found
       static const VtxRefVisits empty_visits;
       return empty_visits;
