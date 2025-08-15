@@ -375,7 +375,4 @@ std::vector<VG *> componetize(const povu::bidirected::VG &g) {
   return components;
 }
 
-
-
-
 } // namespace povu::bidirected

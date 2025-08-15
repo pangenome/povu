@@ -705,7 +705,7 @@ void Tree::print_dot(std::ostream &os) {
 
   /* ---------- dot format header ---------- */
 
-  os << "graph G {{\n"
+  os << "graph G {\n"
     "\trankdir = LR;\n"
     "\tnode[shape = circle];\n"
     "\tedge [arrowhead=vee];\n";
