@@ -48,7 +48,7 @@ public:
   // setter(s)
   // ---------
 
-  void add(pt::id_t ref_id, pvt::AS s) {
+  void add(pt::id_t ref_id, pvt::AS &&s) {
     auto &visits = data_[ref_id]; // grab the reference once
 
     // append based on locus
@@ -164,13 +164,10 @@ pt::idx_t get_vtx_len(const bd::VG &g, pvt::AS s) {
 /**
  * @brief compute min_locus and loop_no
  */
+// TODO: paralleise
 std::pair<pt::idx_t, pt::idx_t> comp_ref_visit_bounds(pt::id_t ref_id,
                                                       const WalkRefMeta &wrm,
                                                       const pvt::walk_t &w) {
-  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
-
-  // TODO: paralleise
-
   // minimum locus for the ref in the walk
   pt::idx_t min_locus{pc::MAX_IDX};
   for (pt::idx_t step_idx{}; step_idx < w.size(); ++step_idx) {
@@ -196,7 +193,7 @@ std::pair<pt::idx_t, pt::idx_t> comp_ref_visit_bounds(pt::id_t ref_id,
 
   for (pt::idx_t step_idx{}; step_idx < w.size(); ++step_idx) {
 
-    const VtxRefVisits &vtx_ref_visits = wrm.get_step_ref_data(ref_id, step_idx);
+     const VtxRefVisits &vtx_ref_visits = wrm.get_step_ref_data(ref_id, step_idx);
 
     if (vtx_ref_visits.empty()) {
       // no visits for this ref in this step

@@ -10,16 +10,18 @@
 #include <map>
 #include <unordered_map>
 
-#include "../common/types/constants.hpp"
 #include "../common/compat.hpp"
+#include "../common/types/constants.hpp"
 #include "../common/types/graph.hpp"
 #include "./bracket_list.hpp"
+#include "./bidirected.hpp"
 
 namespace povu::spanning_tree {
 
 using namespace povu::types::graph;
 namespace pgt = povu::types::graph;
 namespace pt = povu::types;
+namespace bd = povu::bidirected;
 namespace pc = povu::constants;
 using namespace povu::bracket_list;
 using namespace povu::constants;
@@ -212,6 +214,7 @@ public:
   // constructor(s)
   // --------------
   Tree(std::size_t size);
+  static Tree from_bd(const bd::VG &g);
 
   // ---------
   // destructor(s)

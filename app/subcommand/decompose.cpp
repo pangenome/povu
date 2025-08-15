@@ -14,7 +14,7 @@ void decompose_component(bd::VG *g, std::size_t component_id, const core::config
   }
 #endif
 
-  pst::Tree st { bd::compute_spanning_tree(*g) };
+  pst::Tree st = pst::Tree::from_bd(*g);
   delete g;
 
   ptu::tree_meta tm = ptu::gen_tree_meta(st);

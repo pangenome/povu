@@ -4,9 +4,12 @@
 #include <fstream>
 #include <set>
 #include <sstream>
+#include <string_view>
 #include <thread>
 #include <vector>
 
+
+#include "../../include/graph/spanning_tree.hpp"
 #include "../../include/graph/bidirected.hpp"
 #include "../../include/io/to_vcf.hpp"
 #include "../../include/common/compat.hpp"
@@ -17,6 +20,9 @@
 #include "./common.hpp"
 
 namespace povu::subcommands::call {
+
+constexpr std::string_view MODULE = "povu::subcommands::call";
+
 namespace fs = std::filesystem;
 
 namespace pvt = povu::types::genomics;
