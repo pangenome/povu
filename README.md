@@ -1,6 +1,9 @@
 # povu
 
-A lightweight tool for exploring regions of genomic variation
+[![Build](https://github.com/pangenome/povu/actions/workflows/build_cmake.yml/badge.svg)](https://github.com/pangenome/povu/actions/workflows/build_cmake.yml)
+
+
+A toolkit for exploring regions of genomic variation
 
 ## Table of Contents
 - [Usage and Examples](#usage-and-examples)
