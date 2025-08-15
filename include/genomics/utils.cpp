@@ -6,7 +6,7 @@ namespace povu::genomics::utils {
 // should this be genotyping?
 namespace variants {
 
-  //TODO: replace with walk_t?
+
 // the ref visits of a single vertex. Unlike the ref visits in a walk, this
 // contains the steps that the ref takes in the vertex, sorted by step index
 typedef std::vector<pvt::AS> VtxRefVisits;

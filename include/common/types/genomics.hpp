@@ -128,13 +128,15 @@ class AS {
   pt::idx_t step_idx_; // TODO: rename to locus_?
   pgt::or_e o_;
 
-public:
-
   // --------------
   // constructor(s)
   // --------------
-  AS(pt::id_t v_id, pgt::or_e o) :v_id_(v_id), step_idx_(pc::INVALID_IDX), o_(o) {}
-  AS(pt::id_t v_id, pt::idx_t step_idx, pgt::or_e o ) :v_id_(v_id), step_idx_(step_idx), o_(o) {}
+  AS(pt::id_t v_id, pt::idx_t step_idx, pgt::or_e o) : v_id_(v_id), step_idx_(step_idx), o_(o) {}
+
+public:
+  // -----------------
+  // factory method(s)
+  // -----------------
 
   static AS given_ref_info(pt::id_t v_id, const pbd::RefInfo &ref_info) {
     return AS(v_id, ref_info.get_locus(), ref_info.get_strand());
@@ -177,7 +179,6 @@ public:
   // --------------
   AW() : steps_() {}
   AW(pt::idx_t w_idx) : steps_(), walk_idx_(w_idx) {}
-  AW(pt::id_t id, pgt::or_e o) : steps_(std::vector<AS>{AS{id, o}}) {}
   AW(AS s) : steps_(std::vector<AS>{s}) {}
 
 
