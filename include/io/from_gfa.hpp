@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-#include "../../include/common/types/compat.hpp"
+#include "../../include/common/compat.hpp"
 //#include "../../include/common/types/types.hpp"
 #include "../../app/cli/app.hpp"
 #include "../../include/common/utils.hpp"

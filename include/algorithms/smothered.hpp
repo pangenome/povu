@@ -17,7 +17,7 @@
 #include <vector>
 
 #include "../common/tree_utils.hpp"
-#include "../common/types/compat.hpp"
+#include "../common/compat.hpp"
 #include "../common/utils.hpp"
 #include "../graph/spanning_tree.hpp"
 #include "../graph/tree.hpp"

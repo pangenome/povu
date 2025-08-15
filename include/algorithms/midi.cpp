@@ -51,9 +51,9 @@ pvst::MidiBubble gen_midi_bub(const pvtr::Tree &pvst, const std::vector<pt::idx_
   };
 
   pgt::id_or_t g;
-  pt::idx_t g_pvst_idx;
+  pt::idx_t g_pvst_idx {pc::INVALID_IDX};
   pgt::id_or_t s;
-  pt::idx_t s_pvst_idx;
+  pt::idx_t s_pvst_idx {pc::INVALID_IDX};
 
   pvst::Concealed f_cn_v = get_cn(fst);
   if ((f_cn_v.get_sl_type() == pvst::sl_type_e::ai_branch) || (f_cn_v.get_sl_type() == pvst::sl_type_e::ai_trunk)) {

@@ -12,7 +12,7 @@ void do_info(const core::config &app_config) {
 
   bd::VG *g = povu::subcommands::common::get_vg(app_config);
 
-  std::vector<bd::VG *> components = bd::componetize(*g);
+  std::vector<bd::VG *> components = bd::VG::componetize(*g);
 
   delete g;
 

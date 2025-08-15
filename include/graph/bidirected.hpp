@@ -18,21 +18,21 @@
 #include <vector>
 
 #include "../../app/cli/app.hpp" // for core::config TODO: find a proper place for the app config
+#include "../common/compat.hpp"
+#include "../common/types/constants.hpp"
+#include "../common/types/graph.hpp"
 #include "../common/utils.hpp"
-#include "./spanning_tree.hpp"
-#include "../common/types/compat.hpp"
 
 namespace povu::bidirected {
 inline constexpr std::string_view MODULE = "povu::bidirected";
 
 namespace pu = povu::utils;
-namespace pst = povu::spanning_tree;
 namespace pt = povu::types;
 namespace pc = povu::constants;
 using namespace povu::types::graph;
 namespace pgt = povu::types::graph;
 
-// TODO: coem up with clear definitions for:
+// TODO: come up with clear definitions for:
 // haplotype, ref, contig, path, etc.
 class RefInfo {
   pt::id_t ref_id_;
@@ -134,7 +134,8 @@ public:
   // constructor(s)
   // --------------
   VariationGraph(pt::idx_t vtx_count, pt::idx_t edge_count, bool inc_refs);
-
+  // return a vector of connected components as VG objects
+  static std::vector<VariationGraph *> componetize(const VariationGraph &g);
 
   // ---------
   // getter(s)
@@ -179,15 +180,5 @@ public:
 };
 
 typedef VariationGraph VG;
-
-std::vector<VG *> componetize(const VG &g);
-
-pst::Tree compute_spanning_tree(const VG &g);
-
-/**
-  * @brief Get the paths between the flubble start and end
- */
-//void populate_walks(const VG &g, pvt::RoV &r, pt::idx_t max_steps);
-
 } // namespace povu::bidirected
 #endif

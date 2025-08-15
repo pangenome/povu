@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "../../app/cli/app.hpp"
-#include "../common/types/compat.hpp"
+#include "../common/compat.hpp"
 #include "../graph/tree.hpp"
 #include "./common.hpp"
 

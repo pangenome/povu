@@ -14,7 +14,7 @@
 #include <vector>
 
 #include "../graph/spanning_tree.hpp"
-#include "./types/compat.hpp"
+#include "./compat.hpp"
 
 namespace povu::tree_utils {
 inline constexpr std::string_view MODULE = "povu::tree_utils";

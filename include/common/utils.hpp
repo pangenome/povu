@@ -11,7 +11,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "./types/compat.hpp"
+#include "./compat.hpp"
 
 namespace povu::utils {
 
@@ -22,19 +22,6 @@ std::string reverse_complement(const std::string &sequence);
  */
 bool is_numeric_string(const std::string &s);
 
-
-/**
- * @brief Concatenates a vector of strings with a given character
- */
-// template <typename T> std::string concat_with(const T& v, char delim) {
-//   if (v.empty()) { return ""; }
-
-//   std::string s {};
-//   for (auto x: v) {
-//     s = s + x + delim;
-//   }
-//   return s.substr(0, s.length()-1);
-// }
 
 template <typename Container> std::string concat_with(const Container &v, char delim) {
   std::ostringstream oss;

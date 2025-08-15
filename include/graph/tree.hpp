@@ -18,7 +18,7 @@
 
 #include "../common/types/pvst.hpp"
 #include "../common/types/constants.hpp"
-#include "../common/types/compat.hpp"
+#include "../common/compat.hpp"
 
 // generic tree implementation
 namespace povu::tree {

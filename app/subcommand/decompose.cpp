@@ -14,7 +14,7 @@ void decompose_component(bd::VG *g, std::size_t component_id, const core::config
   }
 #endif
 
-  pst::Tree st { bd::compute_spanning_tree(*g) };
+  pst::Tree st = pst::Tree::from_bd(*g);
   delete g;
 
   ptu::tree_meta tm = ptu::gen_tree_meta(st);
@@ -31,7 +31,7 @@ void decompose_component(bd::VG *g, std::size_t component_id, const core::config
   }
 #endif
 
-  if (app_config.find_hubbles()) {
+  if (false && app_config.find_hubbles()) {
     povu::concealed::find_concealed(st, flubble_tree, tm);
     povu::midi::find_midi(st, flubble_tree, tm);
     povu::smothered::find_smothered(st, flubble_tree, tm);
@@ -61,7 +61,7 @@ void do_decompose(const core::config &app_config) {
   bd::VG *g = get_vg(app_config);
 
   if (ll > 1) std::cerr << pv_cmp::format("{} Finding components\n", fn_name);
-  std::vector<bd::VG *> components = bd::componetize(*g);
+  std::vector<bd::VG *> components = bd::VG::componetize(*g);
 
   delete g;
 
