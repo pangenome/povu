@@ -168,13 +168,6 @@ pvtr::Tree read_pvst(const std::string &fp) {
       file_v_idx_to_pvst_idx[id] = v_idx;
       break;
     }
-    case pc::PVST_MIDI_SYMBOL: {
-      auto [g, s] = str_to_id_or_t(pvst_label);
-      pvst::MidiBubble v(g, s);
-      v_idx = pvst.add_vertex(v);
-      file_v_idx_to_pvst_idx[id] = v_idx;
-      break;
-    }
     case pc::PVST_FLUBBLE_SYMBOL: {
       auto [a, z] = str_to_id_or_t(pvst_label);
       pvst::Flubble v(pvst::vt_e::flubble, a, z);
@@ -196,22 +189,31 @@ pvtr::Tree read_pvst(const std::string &fp) {
       file_v_idx_to_pvst_idx[id] = v_idx;
       break;
     }
-    case pc::PVST_CONCEALED_SYMBOL: {
-      auto [f, s] = str_to_id_or_t(pvst_label);
-      pvst::Concealed v(f, s);
-      v_idx = pvst.add_vertex(v);
-      file_v_idx_to_pvst_idx[id] = v_idx;
+      // case pc::PVST_MIDI_SYMBOL: {
+      //   auto [g, s] = str_to_id_or_t(pvst_label);
+      //   pvst::MidiBubble v(g, s);
+      //   v_idx = pvst.add_vertex(v);
+      //   file_v_idx_to_pvst_idx[id] = v_idx;
+      //   break;
+      // }
+      // case pc::PVST_CONCEALED_SYMBOL: {
+      //   auto [f, s] = str_to_id_or_t(pvst_label);
+      //   pvst::Concealed v(f, s);
+      //   v_idx = pvst.add_vertex(v);
+      //   file_v_idx_to_pvst_idx[id] = v_idx;
+      //   break;
+      // }
+      // case pc::PVST_SMOTHERED_SYMBOL: {
+      //   auto [f, s] = str_to_id_or_t(pvst_label);
+      //   pvst::Smothered v(f, s);
+      //   v_idx = pvst.add_vertex(v);
+      //   file_v_idx_to_pvst_idx[id] = v_idx;
+      //   break;
+      // }
+    default:
       break;
     }
-    case pc::PVST_SMOTHERED_SYMBOL: {
-      auto [f, s] = str_to_id_or_t(pvst_label);
-      pvst::Smothered v(f, s);
-      v_idx = pvst.add_vertex(v);
-      file_v_idx_to_pvst_idx[id] = v_idx;
-      break;
-    }
-    }
-    
+
     if (v_idx != pc::INVALID_IDX) {
       line_idx_to_pvst_idx[line_idx] = v_idx;
     }

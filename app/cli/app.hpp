@@ -183,7 +183,7 @@ struct config {
         pu::print_with_comma(std::cerr, this->path_prefixes, ',');
         std::cerr << std::endl;
       }
-      
+
       std::cerr << spc << "Reference paths (" << this->reference_paths.size() << "): ";
       pu::print_with_comma(std::cerr, this->reference_paths, ',');
       std::cerr << std::endl;

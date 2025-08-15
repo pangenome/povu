@@ -97,7 +97,7 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
 void deconstruct_handler(args::Subparser &parser, core::config& app_config) {
   args::Group arguments("arguments");
   args::Flag hairpins(parser, "hairpins", "Find hairpins in the variation graph", {'h', "hairpins"});
-  args::Flag hubbles(parser, "hubbles", "Find hubbles in the variation graph", {'s', "hubbles"});
+  //args::Flag hubbles(parser, "hubbles", "Find hubbles in the variation graph", {'s', "hubbles"});
   args::ValueFlag<std::string> input_gfa(parser, "gfa", "path to input gfa [required]", {'i', "input-gfa"}, args::Options::Required);
   args::ValueFlag<std::string> output_dir(parser, "output_dir", "Output directory [default: .]", {'o', "output-dir"});
 
@@ -108,9 +108,9 @@ void deconstruct_handler(args::Subparser &parser, core::config& app_config) {
     app_config.set_hairpins(true);
   }
 
-  if (hubbles) {
-    app_config.set_hubbles(true);
-  }
+  // if (hubbles) {
+  //   app_config.set_hubbles(true);
+  // }
 
   // input gfa is already a c_str
   app_config.set_input_gfa(args::get(input_gfa));

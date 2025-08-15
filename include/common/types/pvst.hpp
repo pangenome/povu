@@ -190,8 +190,8 @@ private:
 
 public:
   // ——— constructors ———
-  Concealed(pgt::id_or_t fl_b, pgt::id_or_t cn_b)
-      : VertexBase(pc::INVALID_IDX, vt_e::slubble), fl_b_(fl_b), cn_b_(cn_b) {}
+  //Concealed(pgt::id_or_t fl_b, pgt::id_or_t cn_b)
+  //  : VertexBase(pc::INVALID_IDX, vt_e::slubble), fl_b_(fl_b), cn_b_(cn_b) {}
 
   Concealed(pgt::id_or_t fl_b, pgt::id_or_t cn_b, bounds_t bounds,
             pt::idx_t fl_idx, sl_type_e sl_type, pt::idx_t sl_st_idx)
@@ -243,8 +243,8 @@ class Smothered : public VertexBase {
 public:
 
   // ——— constructors ———
-  Smothered(pgt::id_or_t cn_b, pgt::id_or_t sm_b)
-      : VertexBase(pc::INVALID_IDX, vt_e::smothered), cn_b_(cn_b), sm_b_(sm_b) {}
+  // Smothered(pgt::id_or_t cn_b, pgt::id_or_t sm_b)
+  //     : VertexBase(pc::INVALID_IDX, vt_e::smothered), cn_b_(cn_b), sm_b_(sm_b) {}
 
   Smothered(pgt::id_or_t cn_b, pgt::id_or_t sm_b, pt::idx_t cn_idx,
             bool cn_b_is_ans, pt::idx_t sm_st_idx, cn_type_e sm_type, bounds_t bounds)
@@ -290,11 +290,10 @@ class MidiBubble : public VertexBase {
 public:
 
   // ——— constructors ———
-  MidiBubble(pgt::id_or_t g, pgt::id_or_t s)
-      : VertexBase(pc::INVALID_IDX, vt_e::midi), g_(g), s_(s) {}
+  // MidiBubble(pgt::id_or_t g, pgt::id_or_t s)
+  //     : VertexBase(pc::INVALID_IDX, vt_e::midi), g_(g), s_(s) {}
 
-  MidiBubble(pt::idx_t g_cn_idx, pgt::id_or_t g, pt::idx_t s_cn_idx,
-             pgt::id_or_t s)
+  MidiBubble(pt::idx_t g_cn_idx, pgt::id_or_t g, pt::idx_t s_cn_idx, pgt::id_or_t s)
       : VertexBase(pc::INVALID_IDX, vt_e::midi), g_cn_idx_(g_cn_idx),
         s_cn_idx_(s_cn_idx), g_(g), s_(s) {}
 
