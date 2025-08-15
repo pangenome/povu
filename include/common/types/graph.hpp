@@ -8,9 +8,10 @@
 #include <vector>
 #include <algorithm>
 
-#include "./compat.hpp"
 #include "./core.hpp"
+#include "../compat.hpp"
 #include "../utils.hpp"
+
 
 namespace povu::types::graph {
 namespace pt = povu::types;
@@ -147,7 +148,6 @@ std::string as_str() const {
   s += this->start_.as_str();
   s += this->end_.as_str();
   return s;
-  //return pv_cmp::format("{}{}", this->start_.as_str(), this->end_.as_str());
 }
 };
 

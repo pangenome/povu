@@ -12,7 +12,7 @@
 #include "./pvst.hpp"
 #include "./graph.hpp"
 #include "./core.hpp"
-#include "./compat.hpp"
+#include "../compat.hpp"
 #include "../../graph/bidirected.hpp"
 
 

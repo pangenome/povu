@@ -10,16 +10,17 @@
 #include <utility>
 #include <vector>
 
-#include "../graph/bidirected.hpp"
-#include "../common/types/pvst.hpp"
+#include "../common/compat.hpp"
 #include "../common/types/core.hpp"
-#include "../common/types/graph.hpp"
-#include "../common/types/compat.hpp"
 #include "../common/types/genomics.hpp"
-
+#include "../common/types/graph.hpp"
+#include "../common/types/pvst.hpp"
+#include "../common/log.hpp"
+#include "../graph/bidirected.hpp"
 
 namespace povu::genomics::utils {
 inline constexpr std::string_view MODULE = "povu::genomics::utils";
+
 
 using namespace povu::types::graph;
 namespace pt = povu::types;

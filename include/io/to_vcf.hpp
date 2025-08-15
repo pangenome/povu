@@ -5,7 +5,7 @@
 #include <fstream> // std::ofstream
 #include <vector>
 
-#include "../../include/common/types/compat.hpp"
+#include "../../include/common/compat.hpp"
 #include "../../include/common/types/genomics.hpp"
 #include "../../include/common/types/graph.hpp"
 #include "../../include/common/utils.hpp"

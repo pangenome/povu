@@ -12,9 +12,10 @@
 #include <fmt/color.h>
 
 #include "../../app/cli/app.hpp"
-#include "../../include/common/types/compat.hpp"
+#include "../../include/common/compat.hpp"
 #include "../../include/graph/tree.hpp"
 #include "./common.hpp"
+#include "../../include/common/log.hpp"
 
 namespace povu::io::from_pvst {
 constexpr std::string_view MODULE = "povu::io::from_pvst";

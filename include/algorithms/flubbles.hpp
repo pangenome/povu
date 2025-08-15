@@ -17,7 +17,7 @@
 
 #include "../../app/cli/app.hpp"
 #include "../common/tree_utils.hpp"
-#include "../common/types/compat.hpp"
+#include "../common/compat.hpp"
 #include "../graph/spanning_tree.hpp"
 #include "../graph/tree.hpp"
 

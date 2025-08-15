@@ -20,7 +20,7 @@
 #include "../../app/cli/app.hpp" // for core::config TODO: find a proper place for the app config
 #include "../common/utils.hpp"
 #include "./spanning_tree.hpp"
-#include "../common/types/compat.hpp"
+#include "../common/compat.hpp"
 
 namespace povu::bidirected {
 inline constexpr std::string_view MODULE = "povu::bidirected";

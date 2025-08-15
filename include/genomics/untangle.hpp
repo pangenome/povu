@@ -9,7 +9,7 @@
 
 #include "../../app/cli/app.hpp"
 #include "../common/types/genomics.hpp"
-#include "../common/types/compat.hpp"
+#include "../common/compat.hpp"
 #include "../graph/bidirected.hpp"
 #include "../align/align.hpp"
 #include "../common/types/pvst.hpp"

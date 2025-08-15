@@ -6,7 +6,7 @@
 #include "./core.hpp"
 #include "./constants.hpp"
 #include "./graph.hpp"
-#include "./compat.hpp"
+#include "../compat.hpp"
 
 /* === PVST pangenome variation structure tree === */
 
