@@ -17,6 +17,21 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
+# === Build Configuration Options ===
+
+# Optional testing toggle.
+# Enable with -DPOVU_ENABLE_TESTING=ON
+# This will build and run tests using GoogleTest.
+option(POVU_ENABLE_TESTING "Build and run tests" OFF)
+
+# Optional static build toggle.
+# Enable with: -DBUILD_STATIC=ON
+# This forces fully static linking for portable binaries (primarily Linux).
+option(BUILD_STATIC
+  "Build a fully static executable (including libstdc++, libgcc, glibc, etc.)"
+  OFF
+)
+
 # === Build Type Defaults ===
 # Default to Release if user hasn't set a build type
 # Can be overridden via -DCMAKE_BUILD_TYPE=Debug
@@ -30,15 +45,9 @@ endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 
+
 # === Platform & Toolchain Configuration ===
 #
-# Optional static build toggle.
-# Enable with: -DBUILD_STATIC=ON
-# This forces fully static linking for portable binaries (primarily Linux).
-option(BUILD_STATIC
-  "Build a fully static executable (including libstdc++, libgcc, glibc, etc.)"
-  OFF
-)
 
 if(BUILD_STATIC)
   # Use static libraries where possible
@@ -270,3 +279,23 @@ add_custom_command(TARGET povu
   POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:povu> ../${BINARY_DIR}/
 )
+
+# === Tests ===
+
+
+if (POVU_ENABLE_TESTING)
+  include(FetchContent)
+  FetchContent_Declare(
+    googletest
+    URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
+  )
+  # For Windows: Prevent overriding the parent project's compiler/linker settings
+  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
+  FetchContent_MakeAvailable(googletest)
+
+  enable_testing()
+
+  # You would add your actual tests here, e.g.:
+  add_subdirectory(tests)
+endif()
