@@ -1,6 +1,8 @@
 # povu
 
-[![Build](https://github.com/pangenome/povu/actions/workflows/build_cmake.yml/badge.svg)](https://github.com/pangenome/povu/actions/workflows/build_cmake.yml)
+
+[![Build Test Status (CMake)](https://github.com/pangenome/povu/actions/workflows/build_cmake.yml/badge.svg?label=build)](https://github.com/pangenome/povu/actions/workflows/build_cmake.yml)
+[![Test Status](https://github.com/pangenome/povu/actions/workflows/test.yml/badge.svg?label=tests)](https://github.com/pangenome/povu/actions/workflows/test.yml)
 
 
 A toolkit for exploring regions of genomic variation
@@ -115,6 +117,25 @@ To compile povu with debug symbols and address sanitizer:
 
 ```bash
 cmake -DCMAKE_BUILD_TYPE=Debug -DUSE_SANITIZER=address -H. -Bbuild && cmake --build build -- -j 3
+```
+
+Running tests
+
+1. Configure the build with testing enabled:
+
+```
+cmake -Bbuild -DPOVU_ENABLE_TESTING=ON -DCMAKE_BUILD_TYPE=Debug
+```
+
+2. Build the project:
+```
+cmake --build build
+```
+
+3. Run tests with CTest
+
+```
+ctest --test-dir build
 ```
 
 ## Name

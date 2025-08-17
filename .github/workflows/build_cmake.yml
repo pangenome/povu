@@ -15,6 +15,8 @@ jobs:
       matrix:
         build_type: [Release, Debug]
 
+    name: Build ${{ matrix.build_type }}
+
     env:
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
 
@@ -33,7 +35,3 @@ jobs:
         run: |
           cmake --build ${{ github.workspace }}/build --config ${{ env.CMAKE_BUILD_TYPE }}
 
-      # Uncomment and adjust when you're ready to run tests
-      # - name: Test
-      #   working-directory: ${{ github.workspace }}/build
-      #   run: ctest -C ${{ env.CMAKE_BUILD_TYPE }}
