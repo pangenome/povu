@@ -14,7 +14,6 @@
 
 
 namespace povu::types::graph {
-namespace pt = povu::types;
 namespace pu = povu::utils;
 
 // should this be renamed to clr_e or color_e?

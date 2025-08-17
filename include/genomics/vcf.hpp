@@ -13,7 +13,6 @@
 #include "../graph/bidirected.hpp"
 
 namespace povu::genomics::vcf {
-namespace pt = povu::types;
 namespace bd = povu::bidirected;
 namespace pvt = povu::types::genomics;
 namespace pgt = povu::types::graph;

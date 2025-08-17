@@ -26,7 +26,6 @@
 namespace povu::parallel {
 inline constexpr std::string_view MODULE = "povu::parallel";
 
-namespace pt = povu::types;
 namespace pvtr = povu::tree;
 namespace pc = povu::constants;
 namespace ptu = povu::tree_utils;

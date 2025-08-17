@@ -27,7 +27,6 @@ namespace povu::bidirected {
 inline constexpr std::string_view MODULE = "povu::bidirected";
 
 namespace pu = povu::utils;
-namespace pt = povu::types;
 namespace pc = povu::constants;
 using namespace povu::types::graph;
 namespace pgt = povu::types::graph;

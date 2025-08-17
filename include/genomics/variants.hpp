@@ -16,7 +16,6 @@ namespace pgu = povu::genomics::utils;
 namespace bd = povu::bidirected;
 namespace pvt = povu::types::genomics;
 namespace pgv = povu::genomics::vcf;
-namespace pt = povu::types;
 namespace pvtr = povu::tree;
 namespace pvst = povu::types::pvst;
 

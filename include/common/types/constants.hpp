@@ -8,7 +8,6 @@
 #include "./core.hpp"
 
 namespace povu::constants {
-namespace pt = povu::types;
 
 // colors
 const std::string GRAY{"gray"};

@@ -23,7 +23,6 @@ inline constexpr std::string_view MODULE = "povu::genomics::utils";
 
 
 using namespace povu::types::graph;
-namespace pt = povu::types;
 namespace bd = povu::bidirected;
 namespace pvt = povu::types::genomics;
 

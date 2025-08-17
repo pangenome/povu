@@ -27,7 +27,6 @@ namespace pgt = povu::types::graph;
 namespace pvst = povu::types::pvst;
 namespace pc = povu::constants;
 namespace pu = povu::utils;
-namespace pt = povu::types;
 
 pvtr::Tree read_pvst(const std::string &fp);
 

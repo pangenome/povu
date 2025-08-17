@@ -28,11 +28,9 @@ inline constexpr std::string_view MODULE = "povu::misc";
 namespace pgt = povu::types::graph;
 namespace pc = povu::constants;
 namespace pvtr = povu::tree;
-namespace pt = povu::types;
 namespace pst = povu::spanning_tree;
 namespace pvst = povu::types::pvst;
 namespace pc = povu::constants;
-namespace pt = povu::types;
 namespace pvtr = povu::tree;
 namespace ptu = povu::tree_utils;
 

@@ -8,7 +8,6 @@
 
 namespace povu::subcommands::common {
 namespace bd = povu::bidirected;
-namespace pt = povu::types;
 
 /* ------ common (or utility) functions ------- */
 bd::VG *get_vg(const core::config &app_config);

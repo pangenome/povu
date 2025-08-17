@@ -12,9 +12,7 @@
 
 namespace povu::types::pvst {
 namespace pc = povu::constants;
-namespace pt = povu::types;
 namespace pgt = povu::types::graph;
-  //namespace bd = povu::bidirected;
 
 // short for VertexType
 enum class vt_e {
@@ -78,17 +76,17 @@ traversal_params_t null_tp();
 
 /* an abstract class for vertices  */
 class VertexBase {
-  povu::types::id_t idx_; // idx of the vertex in the vst
+  pt::id_t idx_; // idx of the vertex in the vst
   pt::idx_t height_; // height of the vertex in the tree
   vt_e type_;
 
 public:
   // ——— constructors ———
-  VertexBase(povu::types::id_t idx, vt_e type)
+  VertexBase(pt::id_t idx, vt_e type)
     : idx_(idx), height_(pc::INVALID_IDX), type_(type) {}
 
   // ——— getters ———
-  povu::types::id_t get_idx() const { return this->idx_; }
+  pt::id_t get_idx() const { return this->idx_; }
   vt_e get_type() const { return this->type_; }
   pt::idx_t get_height() const { return this->height_; }
 
@@ -99,7 +97,7 @@ public:
   virtual ~VertexBase() = default;
 
   // ——— setters ———
-  void set_idx(povu::types::id_t idx) { this->idx_ = idx; }
+  void set_idx(pt::id_t idx) { this->idx_ = idx; }
   void set_type(vt_e type) { this->type_ = type; }
   void set_height(pt::idx_t height) { this->height_ = height; }
 };

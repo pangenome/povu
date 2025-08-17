@@ -27,7 +27,6 @@ namespace fs = std::filesystem;
 
 namespace pvt = povu::types::genomics;
 namespace pg = povu::variants;
-namespace pt = povu::types;
 namespace bd = povu::bidirected;
 namespace pgt = povu::types::graph;
 namespace pst = povu::spanning_tree;
