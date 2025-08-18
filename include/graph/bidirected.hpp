@@ -180,4 +180,8 @@ public:
 
 typedef VariationGraph VG;
 } // namespace povu::bidirected
+
+// NOLINTNEXTLINE(misc-unused-alias-decls)
+namespace bd = povu::bidirected;
+
 #endif

@@ -2,6 +2,15 @@
 
 namespace povu::io::to_pvst {
 
+inline void write_header_line(std::ofstream &bub_file) noexcept {
+  bub_file << constants::PVST_HEADER_SYMBOL
+           << pc::COL_SEP << pc::PVST_VERSION
+           << pc::COL_SEP << pc::NO_VALUE
+           << pc::COL_SEP << pc::NO_VALUE
+           << pc::COL_SEP << pc::NO_VALUE
+           << "\n";
+}
+
 void write_pvst(const pvtr::Tree &bt, const std::string &base_name, const core::config &app_config) {
   // TODO: combine and pass as single arg
   std::string bub_file_name = pv_cmp::format("{}/{}.pvst", std::string{app_config.get_output_dir()}, base_name); // file path and name
@@ -14,8 +23,7 @@ void write_pvst(const pvtr::Tree &bt, const std::string &base_name, const core::
 
   // writer header line
   // ------------------
-  bub_file << constants::PVST_HEADER_SYMBOL << pc::COL_SEP << pc::PVST_VERSION
-           << pc::COL_SEP << "." << pc::COL_SEP << "." << "\n";
+  write_header_line(bub_file);
 
   // write the rest of the PVST
   // --------------------------
@@ -25,8 +33,8 @@ void write_pvst(const pvtr::Tree &bt, const std::string &base_name, const core::
 
     // line identifier
     {
-    switch (v.get_type()) {
-      case pvst::vt_e::slubble:
+    switch (v.get_fam()) {
+      case pvst::vt_e::concealed:
         bub_file << pc::PVST_CONCEALED_SYMBOL << pc::COL_SEP;
         break;
       case pvst::vt_e::flubble:
@@ -61,12 +69,24 @@ void write_pvst(const pvtr::Tree &bt, const std::string &base_name, const core::
 
     // children
     if (bt.is_leaf(i)) {
-      bub_file << pc::NO_VALUE << "\n";
+      bub_file << pc::NO_VALUE;
     }
     else {
       pu::print_with_comma(bub_file, bt.get_children(i), ',');
-      bub_file << "\n";
     }
+
+    bub_file << pc::COL_SEP;
+
+    // route
+    if (std::optional<pvst::route_params_t> rp = v.get_route_params(); rp) {
+      const auto& [_, __, rt] = *rp;
+      bub_file << to_str(rt);
+    }
+    else {
+      bub_file << pc::NO_VALUE;
+    }
+
+    bub_file << "\n";
   }
 
   bub_file.close();

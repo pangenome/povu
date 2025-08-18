@@ -54,7 +54,7 @@ bool is_desc(const pst::Tree &st, pt::idx_t a, pt::idx_t d) {
 }
 
 pvst::Concealed gen_ai_slubble(const pst::Tree &st, pt::idx_t ai_st_v_idx,
-                               src_lca_t tb, pvst::sl_type_e t, pt::idx_t fl_v_idx) {
+                               src_lca_t tb, pvst::cl_e t, pt::idx_t fl_v_idx) {
   const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   auto [be_src_v_idx, sl_st_idx]= tb;
@@ -68,7 +68,7 @@ pvst::Concealed gen_ai_slubble(const pst::Tree &st, pt::idx_t ai_st_v_idx,
   // compute g
   pt::idx_t sl_id = st.get_vertex(sl_st_idx).g_v_id();
   pgt::or_e sl_o;
-  if (t == pvst::sl_type_e::ai_trunk) {
+  if (t == pvst::cl_e::ai_trunk) {
     if (st.get_parent_edge(sl_st_idx).get_color() == pgt::color_e::black) {
       sl_o = st.get_vertex(sl_st_idx).type() == pgt::v_type_e::r ? pgt::or_e::forward : pgt::or_e::reverse;
     }
@@ -76,7 +76,7 @@ pvst::Concealed gen_ai_slubble(const pst::Tree &st, pt::idx_t ai_st_v_idx,
       sl_o = st.get_vertex(sl_st_idx).type() == pgt::v_type_e::r ? pgt::or_e::reverse : pgt::or_e::forward;
     }
   }
-  else if (t == pvst::sl_type_e::ai_branch) {
+  else if (t == pvst::cl_e::ai_branch) {
     if (st.get_parent_edge(sl_st_idx).get_color() == pgt::color_e::black) {
       sl_o = st.get_vertex(sl_st_idx).type() == pgt::v_type_e::r ? pgt::or_e::reverse : pgt::or_e::forward;
     } else { // has a black child
@@ -103,7 +103,7 @@ pvst::Concealed gen_ai_slubble(const pst::Tree &st, pt::idx_t ai_st_v_idx,
   }
 
   pvst::bounds_t bounds;
-  if (t == pvst::sl_type_e::ai_trunk) {
+  if (t == pvst::cl_e::ai_trunk) {
     bounds = is_desc(st, ai_st_v_idx, be_src_v_idx)
                  ? pvst::bounds_t{ai_st_v_idx, be_src_v_idx}
                  : pvst::bounds_t{be_src_v_idx, ai_st_v_idx};
@@ -111,11 +111,12 @@ pvst::Concealed gen_ai_slubble(const pst::Tree &st, pt::idx_t ai_st_v_idx,
   else {
     bounds = { sl_st_idx, pc::INVALID_IDX };
   }
-  return pvst::Concealed(a, g, bounds, fl_v_idx, t, sl_st_idx);
+
+  return pvst::Concealed::create(a, g, bounds, fl_v_idx, t, sl_st_idx, pvst::rt_e::e2s);
 }
 
 pvst::Concealed gen_zi_slubble(const pst::Tree &st, pt::idx_t zi_st_v_idx,
-                            pt::idx_t sl_st_idx, pvst::sl_type_e t,
+                            pt::idx_t sl_st_idx, pvst::cl_e t,
                             pt::idx_t fl_v_idx) {
   const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
@@ -152,7 +153,7 @@ pvst::Concealed gen_zi_slubble(const pst::Tree &st, pt::idx_t zi_st_v_idx,
     ? pvst::bounds_t{zi_st_v_idx, sl_st_idx}
     : pvst::bounds_t{sl_st_idx, zi_st_v_idx};
 
-  return pvst::Concealed(z, s, bounds, fl_v_idx, t, sl_st_idx);
+  return pvst::Concealed::create(z, s, bounds, fl_v_idx, t, sl_st_idx, pvst::rt_e::s2e);
 }
 
 
@@ -526,7 +527,7 @@ void with_ai(const pst::Tree &st, const ptu::tree_meta &tm,
 
   src_lca_t tb = ai_trunk(st, tm, m, n, ii_v_idx, ji_v_idx);
   if (tb.lca != pc::INVALID_IDX) {
-    pvst::Concealed sl = gen_ai_slubble(st, ii_v_idx, tb, pvst::sl_type_e::ai_trunk, fl_v_idx);
+    pvst::Concealed sl = gen_ai_slubble(st, ii_v_idx, tb, pvst::cl_e::ai_trunk, fl_v_idx);
     res.push_back(sl);
     //std::cerr << "trunk sl: " << sl.as_str() << "\n";
   }
@@ -536,7 +537,7 @@ void with_ai(const pst::Tree &st, const ptu::tree_meta &tm,
   //std::cerr << "branch sls:\n";
   for (auto b : bb) {
     src_lca_t tb_ {pc::INVALID_IDX, b}; // TODO: [A] fix the inv idx
-    pvst::Concealed sl = gen_ai_slubble(st, ii_v_idx, tb_, pvst::sl_type_e::ai_branch, fl_v_idx);
+    pvst::Concealed sl = gen_ai_slubble(st, ii_v_idx, tb_, pvst::cl_e::ai_branch, fl_v_idx);
     res.push_back(sl);
     //std::cerr << sl.as_str() << ", ";
   }
@@ -839,14 +840,14 @@ void with_ji(const pst::Tree &st, const ptu::tree_meta &tm,
 
   pt::idx_t tb = ji_trunk(st, tm, m, n, ii_v_idx, ji_v_idx);
   if (tb != pc::INVALID_IDX) {
-    pvst::Concealed sl = gen_zi_slubble(st, ji_v_idx, tb, pvst::sl_type_e::zi_trunk, ft_v_idx);
+    pvst::Concealed sl = gen_zi_slubble(st, ji_v_idx, tb, pvst::cl_e::zi_trunk, ft_v_idx);
     res.push_back(sl);
   }
 
   std::vector<pt::idx_t> bb; // branch boundaries
   ji_branches(st, tm, ii_v_idx, ji_v_idx, bb, n);
   for (auto b : bb) {
-    pvst::Concealed sl = gen_zi_slubble(st, ji_v_idx, b, pvst::sl_type_e::zi_branch, ft_v_idx);
+    pvst::Concealed sl = gen_zi_slubble(st, ji_v_idx, b, pvst::cl_e::zi_branch, ft_v_idx);
     res.push_back(sl);
   }
 }
@@ -855,11 +856,12 @@ void with_ji(const pst::Tree &st, const ptu::tree_meta &tm,
 
 namespace update_pvst {
 
-inline bool is_nestable(pvtr::Tree &pvst, pt::idx_t v_idx ) {
+[[nodiscard]] inline bool is_nestable(pvtr::Tree &pvst, pt::idx_t v_idx ) noexcept {
   const pvst::VertexBase &v = pvst.get_vertex(v_idx);
-  return (v.get_type() == pvst::vt_e::flubble ||
-          v.get_type() == pvst::vt_e::tiny ||
-          v.get_type() == pvst::vt_e::parallel);
+  return pvst::to_clan(v.get_fam()).value() == pvst::vc_e::fl_like;
+  // return (v.get_type() == pvst::vt_e::flubble ||
+  //                                    v.get_type() == pvst::vt_e::tiny ||
+  //                                    v.get_type() == pvst::vt_e::parallel);
 }
 
 /*
@@ -965,10 +967,10 @@ void add_conc_ai(const pst::Tree &st, pvtr::Tree &vst, const ptu::tree_meta &tm,
     if (!is_leaf) {
       // TODO: why not const vector ref?
       std::vector<pt::idx_t> ch = vst.get_children(fl_v_idx);
-      if (sl.get_sl_type() == pvst::sl_type_e::ai_trunk) {
+      if (sl.get_sl_type() == pvst::cl_e::ai_trunk) {
         nest_trunk_ai(st, vst, tm, sl_st_idx, fl_v_idx, sl_v_idx, ch);
       }
-      else if (sl.get_sl_type() == pvst::sl_type_e::ai_branch) {
+      else if (sl.get_sl_type() == pvst::cl_e::ai_branch) {
         nest_branch_ai(st, vst, tm, sl_st_idx, fl_v_idx, sl_v_idx, ai, ch);
       }
       else {
@@ -1056,10 +1058,10 @@ void add_conc_zi(const pst::Tree &st, const fl_sls &slubbles,
       // TODO: why not const vector ref?
       std::vector<pt::idx_t> ch = vst.get_children(fl_v_idx);
 
-      if (sl.get_sl_type() == pvst::sl_type_e::zi_trunk) {
+      if (sl.get_sl_type() == pvst::cl_e::zi_trunk) {
         nest_trunk_zi(st, vst, slubbles, fl_v_idx, sl_v_idx, zi, ch);
       }
-      else if (sl.get_sl_type() == pvst::sl_type_e::ai_branch) {
+      else if (sl.get_sl_type() == pvst::cl_e::ai_branch) {
         nest_branch_zi(st, vst, sl_st_idx, fl_v_idx, sl_v_idx, ch);
       }
       else {
@@ -1102,7 +1104,7 @@ void find_concealed(const pst::Tree &st, pvtr::Tree &ft, const ptu::tree_meta &t
 
     pvst::VertexBase &pvst_v = ft.get_vertex_mut(ft_v_idx);
 
-    if (pvst_v.get_type() != pvst::vt_e::flubble) {
+    if (pvst_v.get_fam() != pvst::vt_e::flubble) {
       continue;
     }
 
@@ -1128,12 +1130,6 @@ void find_concealed(const pst::Tree &st, pvtr::Tree &ft, const ptu::tree_meta &t
     ai::with_ai(st, tm, slubbles.ii_adj, m, n, ai, zi, ft_v_idx);
     zi::with_ji(st, tm, slubbles.ji_adj, m, n, ai, zi, ft_v_idx);
 
-    if (ft_v.as_str() == ">1354>1361") {
-      std::cerr << "fl: " << ft_v.as_str() << "\n";
-      std::cerr << "ai: " << ai << " zi: " << zi << "\n";
-
-      //exit(1);
-    }
 
     if (slubbles.size() > 0) {
 

@@ -157,7 +157,6 @@ ADD_LIBRARY(povulib
 
   # common
   ${INCLUDE_DIR}/common/types/graph.cpp
-  ${INCLUDE_DIR}/common/types/pvst.cpp
   ${INCLUDE_DIR}/common/utils.cpp
   ${INCLUDE_DIR}/common/tree_utils.cpp
 

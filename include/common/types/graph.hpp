@@ -8,10 +8,11 @@
 #include <vector>
 #include <algorithm>
 
+
 #include "./core.hpp"
 #include "../compat.hpp"
 #include "../utils.hpp"
-
+//#include "./constants.hpp"
 
 namespace povu::types::graph {
 namespace pu = povu::utils;
@@ -109,6 +110,8 @@ std::ostream& operator<<(std::ostream& os, const id_or_t& x);
 bool operator!=(const id_or_t & lhs, const id_or_t& rhs);
 bool operator==(const id_or_t & lhs, const id_or_t& rhs);
 bool operator<(const id_or_t& lhs, const id_or_t& rhs);
+
+
 
 // a walk is a sequence of vertices also a path
 typedef std::vector<id_or_t> walk;
@@ -326,5 +329,8 @@ public:
 };
 
 } // namespace povu::graph_types
+
+// NOLINTNEXTLINE(misc-unused-alias-decls)
+namespace ptg = povu::types::graph;
 
 #endif

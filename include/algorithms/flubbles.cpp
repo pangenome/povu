@@ -1,24 +1,29 @@
 #include "./flubbles.hpp"
-#include <cassert>
-#include <utility>
-#include <vector>
+
 
 namespace povu::flubbles {
 
-pvst::Flubble gen_fl(pt::id_t start_id, pgt::or_e start_or, pt::id_t end_id,
-                               pgt::or_e end_or, pt::idx_t ai, pt::idx_t zi) {
-  std::string fn_name = pv_cmp::format("[povu::algorithms::flubble_tree::{}]", __func__);
 
-  auto [a_g_id, a_or, z_g_id, z_or] =
-      (start_or == pgt::or_e::reverse && end_or == pgt::or_e::reverse)
-          ? std::make_tuple(end_id, pgt::or_e::forward, start_id, pgt::or_e::forward)
-          : std::make_tuple(start_id, start_or, end_id, end_or);
 
-  pgt::id_or_t a{a_g_id, a_or};
-  pgt::id_or_t z{z_g_id, z_or};
+[[nodiscard]] constexpr pvst::endpoints normalize_endpoints(pt::id_t s_id,
+                                                            pgt::or_e s_or,
+                                                            pt::id_t e_id,
+                                                            pgt::or_e e_or) noexcept {
+  if (s_or == pgt::or_e::reverse && e_or == pgt::or_e::reverse) {
+    return {{e_id, pgt::or_e::forward}, {s_id, pgt::or_e::forward}};
+  }
+  else {
+    return {{s_id, s_or}, {e_id, e_or}};
+  }
+}
 
-  return pvst::Flubble(a, z, ai, zi);
-  //return pvst::Vertex::make_flubble(a, z, ai, zi);
+[[nodiscard]] inline pvst::Flubble gen_fl(pt::id_t s_id, pgt::or_e s_or,
+                                          pt::id_t e_id, pgt::or_e e_or,
+                                          pt::idx_t ai, pt::idx_t zi) noexcept {
+
+  const auto [a, z] = normalize_endpoints(s_id, s_or, e_id, e_or);
+
+  return pvst::Flubble::create(a, z, ai, zi);
 }
 
 /**

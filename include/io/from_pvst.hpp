@@ -13,6 +13,7 @@
 
 #include "../../app/cli/app.hpp"
 #include "../../include/common/compat.hpp"
+#include "../../include/common/utils.hpp"
 #include "../../include/graph/tree.hpp"
 #include "./common.hpp"
 #include "../../include/common/log.hpp"

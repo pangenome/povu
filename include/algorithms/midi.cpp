@@ -24,7 +24,7 @@ void add_midi(const ptu::tree_meta &tm,
       for (pt::idx_t c_v_idx : ch) {
         const pvst::VertexBase &c_v = pvst.get_vertex(c_v_idx);
 
-        if (c_v.get_type() != pvst::vt_e::flubble) {
+        if (c_v.get_fam() != pvst::vt_e::flubble) {
           continue;
         }
 
@@ -56,7 +56,7 @@ pvst::MidiBubble gen_midi_bub(const pvtr::Tree &pvst, const std::vector<pt::idx_
   pt::idx_t s_pvst_idx {pc::INVALID_IDX};
 
   pvst::Concealed f_cn_v = get_cn(fst);
-  if ((f_cn_v.get_sl_type() == pvst::sl_type_e::ai_branch) || (f_cn_v.get_sl_type() == pvst::sl_type_e::ai_trunk)) {
+  if ((f_cn_v.get_sl_type() == pvst::cl_e::ai_branch) || (f_cn_v.get_sl_type() == pvst::cl_e::ai_trunk)) {
     // is g
     g = f_cn_v.get_cn_b();
     g_pvst_idx = fst;
@@ -67,7 +67,7 @@ pvst::MidiBubble gen_midi_bub(const pvtr::Tree &pvst, const std::vector<pt::idx_
   }
 
   pvst::Concealed snd_cn_v = get_cn(snd);
-  if ((snd_cn_v.get_sl_type() == pvst::sl_type_e::ai_branch) || (snd_cn_v.get_sl_type() == pvst::sl_type_e::ai_trunk)) {
+  if ((snd_cn_v.get_sl_type() == pvst::cl_e::ai_branch) || (snd_cn_v.get_sl_type() == pvst::cl_e::ai_trunk)) {
     // is g
     g = snd_cn_v.get_cn_b();
     g_pvst_idx = snd;
@@ -76,7 +76,7 @@ pvst::MidiBubble gen_midi_bub(const pvtr::Tree &pvst, const std::vector<pt::idx_
     s_pvst_idx = snd;
   }
 
-  return pvst::MidiBubble(g_pvst_idx, g, s_pvst_idx, s);
+  return pvst::MidiBubble::create(g_pvst_idx, g, s_pvst_idx, s, pvst::route_e::s2e);
 }
 
 // find midibubbles in the flubble
@@ -153,14 +153,14 @@ void find_midi(const pst::Tree &st, pvtr::Tree &pvst, const ptu::tree_meta &tm) 
   for (pt::idx_t ft_v_idx{}; ft_v_idx < pvst.vtx_count(); ft_v_idx++) {
      const pvst::VertexBase &pvst_v = pvst.get_vertex(ft_v_idx);
 
-     if (pvst_v.get_type() != pvst::vt_e::flubble) {
+     if (pvst_v.get_fam() != pvst::vt_e::flubble) {
        continue;
      }
 
      std::vector<pt::idx_t> c_bubs; // the concealed bubbles
      for (auto c_v_idx_pvst :  pvst.get_children(ft_v_idx)) {
        const pvst::VertexBase &c_v = pvst.get_vertex(c_v_idx_pvst);
-       if (c_v.get_type() == pvst::vt_e::slubble) {
+       if (c_v.get_fam() == pvst::vt_e::concealed) {
          c_bubs.push_back(c_v_idx_pvst);
        }
      }

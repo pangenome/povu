@@ -71,7 +71,7 @@ void gen_rov_ref_walks(const bd::VG &g, const pvt::RoV &rov, std::vector<pvt::Ex
   }
 
 
-  //{ 
+  //{
   //   std::cerr << fn_name
   //             << " " << pvst_v_ptr->as_str()
   //             << " ref count " << ref_walks.get_ref_ids().size()
@@ -106,12 +106,15 @@ void gen_rov_ref_walks(const bd::VG &g, const pvt::RoV &rov, std::vector<pvt::Ex
 bool is_fl_leaf(const pvtr::Tree &pvst, pt::idx_t pvst_v_idx) noexcept {
   const pvst::VertexBase *pvst_v_ptr = pvst.get_vertex_const_ptr(pvst_v_idx);
 
-  if (!pvst::is_fl_like(pvst_v_ptr->get_type())) {
+  // we assume that the vertex has a clan
+  pvst::vf_e prt_fam = pvst_v_ptr->get_fam();
+  if (pvst::to_clan(prt_fam).value() != pvst::vc_e::fl_like) {
     return false; // not a flubble
   }
 
   for (pt::idx_t v_idx : pvst.get_children(pvst_v_idx)) {
-    if (pvst::is_fl_like(pvst.get_vertex_const_ptr(v_idx)->get_type())) {
+    pvst::vf_e c_fam = pvst.get_vertex_const_ptr(v_idx)->get_fam();
+    if (pvst::to_clan(c_fam) == pvst::vc_e::fl_like) {
       return false;
     }
    }
@@ -135,9 +138,11 @@ std::vector<pvt::RoV> gen_rov(const std::vector<pvtr::Tree> &pvsts, const bd::VG
       // call variants on the leaves only
       const pvst::VertexBase *pvst_v_ptr = pvst.get_vertex_const_ptr(pvst_v_idx);
 
-      pvst::traversal_params_t p = pvst_v_ptr->get_traversal_params();
+      if (!pvst_v_ptr->get_route_params().has_value()) {
+        continue;
+      }
 
-      if (p.traversable && (is_fl_leaf(pvst, pvst_v_idx) )) {
+      if (is_fl_leaf(pvst, pvst_v_idx)) {
         pvt::RoV r { pvst_v_ptr };
 
         // get the set of walks for the RoV
