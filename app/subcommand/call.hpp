@@ -34,7 +34,7 @@ namespace pc = povu::constants;
 namespace pvtr = povu::tree;
 namespace pic = povu::io::common;
 namespace piv = povu::io::to_vcf;
-namespace pcs = povu::subcommands::common;
+
 
 void read_pvsts(const core::config &app_config, std::vector<pvtr::Tree> &pvsts);
 pt::status_t get_refs(core::config &app_config);

@@ -100,7 +100,6 @@ struct id_or_t {
   pt::id_t v_id; // TODO change type and name to id to pt::id_t
   or_e orientation;
 
-
   std::string as_str() const {
     return pv_cmp::format("{}{}", or_to_str(this->orientation) , this->v_id);
   }

@@ -53,7 +53,7 @@ std::string today() {
     return dateTimeStream.str();
 }
 
-void report_time(std::ostream& os, std::string fn_name, std::string action, std::chrono::duration<double> period) {
+void report_time(std::ostream& os, const std::string &fn_name, const std::string &action, std::chrono::duration<double> period) {
   os << pv_cmp::format("{} INFO Time spent by {}: {:.2f} sec\n", fn_name, action, period.count());
 }
 
