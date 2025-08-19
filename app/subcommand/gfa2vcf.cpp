@@ -28,7 +28,7 @@ void do_gfa2vcf(const core::config &app_config) {
 
   // Create a config for decompose with the temp directory
   core::config decompose_config = app_config;
-  decompose_config.set_task(core::task_e::deconstruct);
+  decompose_config.set_task(core::task_e::decompose);
   decompose_config.set_output_dir(temp_dir_str);
 
   // Run decompose

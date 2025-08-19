@@ -2,6 +2,7 @@
 #define CORE_HPP
 
 #include <cstdint>
+#include <ostream>
 #include <string>
 #include <unistd.h>
 #include <vector>
@@ -23,19 +24,32 @@ namespace pu = povu::utils;
 
 // rename to task_e
 enum class task_e {
-  call,        // call variants
-  deconstruct, // deconstruct a graph
-  gfa2vcf,     // convert GFA directly to VCF
-  info,        // print graph information
-  unset        // unset
+  call,      // call variants
+  decompose, // deconstruct a graph
+  gfa2vcf,   // convert GFA directly to VCF
+  info,      // print graph information
+  unset      // unset
 };
+inline const char *to_str(task_e t) {
+  switch (t) {
+  case task_e::call: return "call";
+  case task_e::decompose: return "decompose";
+  case task_e::gfa2vcf: return "gfa2vcf";
+  case task_e::info: return "info";
+  default: return "unset";
+  }
+}
+
+inline std::ostream&operator<<(std::ostream& os, const task_e& t) {
+  return os << to_str(t);
+}
 
 // rename to input_format_e
 enum class input_format_e {
   file_path,
   params,  // CLI params
   unset // unset
-};
+  };
 std::ostream& operator<<(std::ostream& os, const task_e& t);
 
 enum class subgraph_category {
@@ -51,7 +65,7 @@ struct config {
   task_e task;
 
   bool inc_hairpins_;
-  bool find_hubbles_;
+  bool find_subflubbles_;
   std::string input_gfa;
   std::filesystem::path forest_dir; //directory containing the flb files
   std::string chrom; // TODO: remove or use
@@ -85,7 +99,7 @@ struct config {
   config()
       : task(task_e::unset),
         inc_hairpins_(false),
-        find_hubbles_(false),
+        find_subflubbles_(false),
         forest_dir("."),
         chrom(""), // default is empty string
         output_dir("."), // default is current directory
@@ -105,7 +119,7 @@ struct config {
   // getter(s)
   // ---------
   bool inc_hairpins() const { return this->inc_hairpins_; }
-  bool find_hubbles() const { return this->find_hubbles_; }
+  bool find_subflubbles() const { return this->find_subflubbles_; }
   std::string get_input_gfa() const { return this->input_gfa; }
   std::filesystem::path get_forest_dir() const { return this->forest_dir; }
   std::filesystem::path get_output_dir() const { return this->output_dir; }
@@ -129,7 +143,7 @@ struct config {
   // ---------
   // as it os from the user not the handlegraph stuff
   void set_hairpins(bool b) { this->inc_hairpins_ = b; }
-  void set_hubbles(bool b) { this->find_hubbles_ = b; }
+  void set_subflubbles(bool b) { this->find_subflubbles_ = b; }
   void set_chrom(std::string&& s) { this->chrom = s; }
   void set_print_tips(bool b) { this->print_tips_ = b; }
   void set_inc_vtx_labels(bool b) { this->inc_vtx_labels_ = b; }
@@ -189,12 +203,12 @@ struct config {
       std::cerr << std::endl;
 
     }
-    else if (this->get_task() == task_e::deconstruct) {
+    else if (this->get_task() == task_e::decompose) {
 #ifdef DEBUG
       std::cerr << spc << "print dot: " << (this->print_dot() ? "yes" : "no") << "\n";
 #endif
       std::cerr << spc << "print hairpins: " << (this->inc_hairpins_ ? "yes" : "no") << "\n";
-      std::cerr << spc << "find hubbles: " << (this->find_hubbles_ ? "yes" : "no") << "\n";
+      std::cerr << spc << "find subflubbles: " << (this->find_subflubbles() ? "yes" : "no") << "\n";
     }
     else if (this->get_task() == task_e::info) {
       //

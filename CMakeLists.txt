@@ -187,7 +187,6 @@ ADD_LIBRARY(povulib
 set(SOURCE_FILES
   # cli
   ${SRC_DIR}/cli/cli.cpp
-  ${SRC_DIR}/cli/app.cpp
 
   # subcommand
   ${SRC_DIR}/subcommand/common.cpp

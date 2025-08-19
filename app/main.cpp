@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
   if (app_config.verbosity()) { app_config.dbg_print(); }
 
   switch (app_config.get_task()) {
-  case core::task_e::deconstruct:
+  case core::task_e::decompose:
     pv::decompose::do_decompose(app_config);
     break;
   case core::task_e::call:
