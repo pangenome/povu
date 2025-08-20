@@ -1,5 +1,5 @@
-#ifndef POVU_GRAPH_UTILS_HPP
-#define POVU_GRAPH_UTILS_HPP
+#ifndef POVU_GENOMICS_GRAPH_HPP
+#define POVU_GENOMICS_GRAPH_HPP
 
 #include <algorithm>
 #include <deque>
@@ -25,7 +25,18 @@ namespace pvt = povu::types::genomics;
 namespace pvst = povu::types::pvst;
 namespace pgt = povu::types::graph;
 
+// Maximum number of steps to take from flubble start to end
+const pt::idx_t MAX_FLUBBLE_STEPS{20};
+
+// direction for traversing a vertex in a bidirected graph
+enum class dir_e { in, out };
+
+const dir_e IN = dir_e::in;
+const dir_e OUT = dir_e::out;
+
+typedef pgt::id_or_t idx_or_t; // specifically for idx instead of id
+
 void find_walks(const bd::VG &g, pvt::RoV &rov);
 } // namespace povu::genomics::graph
 
-#endif
+#endif // POVU_GENOMICS_GRAPH_HPP

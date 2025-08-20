@@ -1,23 +1,7 @@
 #include "./graph.hpp"
+#include <utility>
 
 namespace povu::genomics::graph {
-
-
-
-
-// Maximum number of steps to take from flubble start to end
-const pt::idx_t MAX_FLUBBLE_STEPS{20};
-
-// direction for traversing a vertex in a bidirected graph
-enum class dir_e {
-  in,
-  out
-};
-
-const dir_e IN = dir_e::in;
-const dir_e OUT = dir_e::out;
-
-typedef pgt::id_or_t idx_or_t; // specifically for idx instead of id
 
 /**
   *@brief get the edges of a vertex end
@@ -75,16 +59,25 @@ inline pgt::or_e get_or(pgt::v_end_e side, dir_e d) {
 /**
  * @brief the stack is a unique path from s to t
  */
-pvt::walk_t walk_from_stack(const bd::VG &g, const std::deque<idx_or_t> &dq) {
-  const std::string fn_name = pv_cmp::format("[povu::bidirected::{}]", __func__);
-
-  //pvt::AW w;
+pvt::walk_t walk_from_stack(const bd::VG &g, const std::deque<idx_or_t> &dq,
+                            pvst::route_e route) {
   pvt::walk_t w;
-  for (auto it = dq.begin(); it != dq.end(); ++it) {
-    auto [v_idx, o] = *it;
-    pgt::id_or_t s {g.v_idx_to_id(v_idx), o};
-    // pvt::AS s{g.v_idx_to_id(v_idx), o};
+  auto append_w = [&](idx_or_t it) {
+    auto [v_idx, o] = it;
+    pgt::id_or_t s{g.v_idx_to_id(v_idx), o};
     w.push_back(s);
+  };
+
+  switch (route) {
+  case pvst::route_e::s2e:
+    for (auto &&it : dq) append_w(it);
+    break;
+  case pvst::route_e::e2s:
+    for (auto it = dq.crbegin(); it != dq.crend(); ++it) append_w(*it);
+    break;
+  default:
+    ERR("Unsupported route type: {}\n", static_cast<int>(route));
+    std::exit(1);
   }
 
   return w;
@@ -113,7 +106,7 @@ void comp_walks_s2e(const bd::VG &g, idx_or_t s, idx_or_t t,
     curr = dq.back();
 
     if (curr == t) {
-      walks.push_back(walk_from_stack(g, dq));
+      walks.push_back(walk_from_stack(g, dq, pvst::route_e::s2e));
       dq.pop_back(); // we are done with this path up to this point
       continue; // we are done with that path
     }
@@ -171,24 +164,21 @@ void comp_walks_s2e(const bd::VG &g, idx_or_t s, idx_or_t t,
 void comp_walks_e2s(const bd::VG &g, idx_or_t s, idx_or_t t,
                     std::vector<pvt::walk_t> &walks, const std::string_view &rov_label) {
 
-  std::cerr << FN() << " " << rov_label << "\n";
-  return;
-
   std::deque<idx_or_t> dq;
 
   // the key is a vertex and the value is a set of vertices that have been seen
   // from that vertex
   std::map<pgt::id_or_t, std::set<idx_or_t>> seen_;
 
-  idx_or_t curr = s;
+  idx_or_t curr = t;
   dq.push_back(curr);
 
   while (!dq.empty()) {
     // get the incoming vertices based on orientation
     curr = dq.back();
 
-    if (curr == t) {
-      walks.push_back(walk_from_stack(g, dq));
+    if (curr == s) {
+      walks.push_back(walk_from_stack(g, dq, pvst::route_e::e2s));
       dq.pop_back(); // we are done with this path up to this point
       continue; // we are done with that path
     }
@@ -203,14 +193,14 @@ void comp_walks_e2s(const bd::VG &g, idx_or_t s, idx_or_t t,
     // if we have explored all neighbours of the current vertex
     bool is_explored {true};
 
-    pgt::v_end_e ve = get_v_end(o, OUT);
+    pgt::v_end_e ve = get_v_end(o, IN);
     const bd::Vertex &v = g.get_vertex_by_idx(v_idx);
     const std::set<pt::idx_t> &nbr_edges = edges_at_end(v, ve);
 
     for (pt::idx_t e_idx : nbr_edges) {
       const bd::Edge &e = g.get_edge(e_idx);
       auto [side, alt_idx] = e.get_other_vtx(v_idx, ve);
-      idx_or_t nbr {alt_idx, get_or(side, IN)};
+      idx_or_t nbr {alt_idx, get_or(side, OUT)};
 
       if(pv_cmp::contains(seen_[curr], nbr)) {
         continue;
