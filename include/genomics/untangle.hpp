@@ -15,7 +15,7 @@
 #include "../common/types/pvst.hpp"
 
 
-namespace povu::untangle {
+namespace povu::genomics::untangle {
 namespace pgt = povu::types::graph;
 namespace pvt = povu::types::genomics;
 namespace bd = povu::bidirected;

@@ -321,7 +321,7 @@ src_lca_t ai_trunk(const pst::Tree &st, const ptu::tree_meta &tm, pt::idx_t m,
 
   const std::vector<pt::idx_t> &depth = tm.depth;
 
-  bool dbg = (ai == 1664 && zi == 1669) ? true : false;
+  //bool dbg = (ai == 1664 && zi == 1669) ? true : false;
 
   if (n == pc::INVALID_IDX || m == pc::INVALID_IDX || depth[m] > depth[n]) {
     return INVALID_SRC_LCA;
@@ -331,16 +331,16 @@ src_lca_t ai_trunk(const pst::Tree &st, const ptu::tree_meta &tm, pt::idx_t m,
   auto ell_brackets = [&](pt::idx_t l) -> bool {
     for (pt::idx_t be_idx : tm.get_brackets(l)) {
       const pst::BackEdge &be = st.get_be(be_idx);
-      pt::idx_t br_src_v_idx = be.get_src();
+      //pt::idx_t br_src_v_idx = be.get_src();
       pt::idx_t br_tgt_v_idx = be.get_tgt();
 
       bool is_tgt_ai_or_above = depth[br_tgt_v_idx] <= depth[ai];
       //bool is_src_branch_vtx = is_desc(st, zi, br_src_v_idx);
       //bool is_src_btwn_m_zi = is_btwn(st, br_src_v_idx, m, zi);
 
-      if(dbg) {
-        std::cerr << fn_name << " tgt <= ai " << is_tgt_ai_or_above <<  " tgt " << br_tgt_v_idx << " src" << br_src_v_idx << "\n";
-      }
+      // if(dbg) {
+      //   std::cerr << fn_name << " tgt <= ai " << is_tgt_ai_or_above <<  " tgt " << br_tgt_v_idx << " src" << br_src_v_idx << "\n";
+      // }
 
       if (!is_tgt_ai_or_above ) {
         return false;
@@ -392,34 +392,34 @@ src_lca_t ai_trunk(const pst::Tree &st, const ptu::tree_meta &tm, pt::idx_t m,
 
 
 
-    if (dbg) {
-      std::cerr << " l " << l << " ai " << ai << "\n";
+    // if (dbg) {
+    //   std::cerr << " l " << l << " ai " << ai << "\n";
 
-      std::cerr << fn_name << " ell br " << ell_brackets(l) << "\n";
+    //   std::cerr << fn_name << " ell br " << ell_brackets(l) << "\n";
 
-      pt::idx_t v = l;
-      //std::cerr << fn_name << " trunk\n";
+    //   pt::idx_t v = l;
+    //   //std::cerr << fn_name << " trunk\n";
 
-      // all brackets are from below zi
+    //   // all brackets are from below zi
 
-      while(dbg && v >= ai) {
-        std::cerr << "\t " << st.get_vertex(v).g_v_id() << ", ";
-        // print children
-        std::cerr << "[ ";
-        for (pt::idx_t c_v_idx : st.get_children(v)) {
-          std::cerr << st.get_vertex(c_v_idx).g_v_id() << ", ";
-        }
-        std::cerr << "] \t";
+    //   while(dbg && v >= ai) {
+    //     std::cerr << "\t " << st.get_vertex(v).g_v_id() << ", ";
+    //     // print children
+    //     std::cerr << "[ ";
+    //     for (pt::idx_t c_v_idx : st.get_children(v)) {
+    //       std::cerr << st.get_vertex(c_v_idx).g_v_id() << ", ";
+    //     }
+    //     std::cerr << "] \t";
 
-        // print IBE
-        std::cerr << "IBE: (";
-        for(auto src : st.get_ibe_src_v_idxs(v)){
-          std::cerr << st.get_vertex(src).g_v_id() << ", ";
-        }
-        std::cerr << ")\n";
-        v = st.get_parent_v_idx(v);
-      }
-    }
+    //     // print IBE
+    //     std::cerr << "IBE: (";
+    //     for(auto src : st.get_ibe_src_v_idxs(v)){
+    //       std::cerr << st.get_vertex(src).g_v_id() << ", ";
+    //     }
+    //     std::cerr << ")\n";
+    //     v = st.get_parent_v_idx(v);
+    //   }
+    // }
 
 
 

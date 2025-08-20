@@ -1,6 +1,6 @@
 #include "./untangle.hpp"
 
-namespace povu::untangle {
+namespace povu::genomics::untangle {
 
 inline std::vector<pt::up_t<pt::id_t>> compute_pairs(pvt::Exp rt) {
   std::set<pt::id_t> ref_ids = rt.get_ref_ids();

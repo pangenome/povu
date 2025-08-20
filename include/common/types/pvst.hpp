@@ -343,7 +343,6 @@ public:
     return Concealed(fl_b, cn_b, bounds, fl_idx, loc, loc_idx, rt);
   }
 
-
   static Concealed parse(const route_params_t &rp) {
     pt::idx_t fl_idx{pc::INVALID_IDX};
     pvst::cl_e loc{cl_e::undefined};

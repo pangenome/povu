@@ -1,7 +1,7 @@
-#include "./variants.hpp"
+#include "./genomics.hpp"
 
 
-namespace povu::variants {
+namespace povu::genomics {
 
 /**
  * Remove walks that are prefixes of other walks in the same Itn
@@ -43,7 +43,7 @@ void gen_rov_ref_walks(const bd::VG &g, const pvt::RoV &rov, std::vector<pvt::Ex
   // a walk is a single traversal bounded by start to the end of an RoV
   for (pt::idx_t w_idx{}; w_idx < rov.walk_count(); w_idx++) {
     const pvt::walk_t &w = walks[w_idx];
-    pgu::variants::comp_itineraries(g, w, w_idx, ref_walks);
+    povu::genomics::allele::comp_itineraries(g, w, w_idx, ref_walks);
   }
 
   for (pt::idx_t ref_id : ref_walks.get_ref_ids()) {
@@ -131,25 +131,33 @@ std::vector<pvt::RoV> gen_rov(const std::vector<pvtr::Tree> &pvsts, const bd::VG
   std::vector<pvt::RoV> rs;
   rs.reserve(pvsts.size());
 
+  // true when the vertex is a flubble leaf or a leaf in the pvst
+  auto should_call = [&](const pvtr::Tree &pvst, const pvst::VertexBase *pvst_v_ptr,
+                     pt::idx_t pvst_v_idx) -> bool {
+    if (std::optional<pvst::route_params_t> opt_rp = pvst_v_ptr->get_route_params()) {
+      return is_fl_leaf(pvst, pvst_v_idx) || pvst.is_leaf(pvst_v_idx);
+    }
+    return false;
+  };
+
   for (const pvtr::Tree &pvst : pvsts) { // for each pvst
     // loop through each tree
 
     for (pt::idx_t pvst_v_idx{}; pvst_v_idx < pvst.vtx_count(); pvst_v_idx++) {
-      // call variants on the leaves only
       const pvst::VertexBase *pvst_v_ptr = pvst.get_vertex_const_ptr(pvst_v_idx);
-
-      if (!pvst_v_ptr->get_route_params().has_value()) {
-        continue;
-      }
-
-      if (is_fl_leaf(pvst, pvst_v_idx)) {
-        pvt::RoV r { pvst_v_ptr };
+      if (should_call(pvst, pvst_v_ptr, pvst_v_idx)) {
+        pvt::RoV r{pvst_v_ptr};
 
         // get the set of walks for the RoV
-        pgu::graph::find_walks(g, r);
+        povu::genomics::graph::find_walks(g, r);
+
+        if (r.get_walks().size() == 0) {
+          // no walks found, skip this RoV
+          continue;
+        }
 
         rs.push_back(std::move(r));
-      }
+        }
     }
   }
 

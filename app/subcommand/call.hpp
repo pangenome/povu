@@ -13,7 +13,7 @@
 #include "../../include/graph/bidirected.hpp"
 #include "../../include/io/to_vcf.hpp"
 #include "../../include/common/compat.hpp"
-#include "../../include/genomics/variants.hpp"
+#include "../../include/genomics/genomics.hpp"
 #include "../cli/app.hpp"
 #include "../cli/cli.hpp"
 #include "../../include/io/from_pvst.hpp"
@@ -26,7 +26,7 @@ constexpr std::string_view MODULE = "povu::subcommands::call";
 namespace fs = std::filesystem;
 
 namespace pvt = povu::types::genomics;
-namespace pg = povu::variants;
+namespace pg = povu::genomics;
 namespace bd = povu::bidirected;
 namespace pgt = povu::types::graph;
 namespace pst = povu::spanning_tree;

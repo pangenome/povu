@@ -18,27 +18,14 @@
 #include "../common/log.hpp"
 #include "../graph/bidirected.hpp"
 
-namespace povu::genomics::utils {
-inline constexpr std::string_view MODULE = "povu::genomics::utils";
+namespace povu::genomics::graph {
+inline constexpr std::string_view MODULE = "povu::genomics::graph";
 
-
-using namespace povu::types::graph;
-namespace bd = povu::bidirected;
 namespace pvt = povu::types::genomics;
-
 namespace pvst = povu::types::pvst;
-namespace pc = povu::constants;
 namespace pgt = povu::types::graph;
 
-
-namespace variants {
-void comp_itineraries(const bd::VG &g, const pvt::walk_t &w, pt::idx_t w_idx, pvt::Exp &rw);
-} // namespace variants
-
-namespace graph {
 void find_walks(const bd::VG &g, pvt::RoV &rov);
-} // namespace graph
-
-} // namespace povu::genomics::utils
+} // namespace povu::genomics::graph
 
 #endif

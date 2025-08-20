@@ -13,13 +13,13 @@
 #include "../graph/bidirected.hpp"
 
 namespace povu::genomics::vcf {
+inline constexpr std::string_view MODULE = "povu::genomics::vcf";
+
 namespace bd = povu::bidirected;
 namespace pvt = povu::types::genomics;
 namespace pgt = povu::types::graph;
 namespace pvst = povu::types::pvst;
 
-
-inline constexpr std::string_view MODULE = "povu::genomics::vcf";
 
 pvt::VcfRecIdx gen_vcf_records(const bd::VG &g, const std::vector<pvt::Exp> &ref_walks);
 

@@ -217,7 +217,7 @@ int cli(int argc, char **argv, core::config& app_config) {
                        [&](args::Subparser &parser) { decompose_handler(parser, app_config); });
   args::Command call(commands, "call", "Generate a VCF from regions of variation",
                        [&](args::Subparser &parser) { call_handler(parser, app_config); });
-  args::Command info(commands, "info", "Print graph information [use 1 thread for meaningful results]",
+  args::Command info(commands, "info", "Print graph information [uses 1 thread]",
                      [&](args::Subparser &parser) { info_handler(parser, app_config); });
 
   args::Group arguments(p, "arguments", args::Group::Validators::DontCare, args::Options::Global);
