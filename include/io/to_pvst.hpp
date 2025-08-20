@@ -21,7 +21,6 @@ namespace pgt = povu::types::graph;
 namespace pvst = povu::types::pvst;
 namespace pc = povu::constants;
 namespace pu = povu::utils;
-namespace pt = povu::types;
 
 void write_pvst(const pvtr::Tree &bt, const std::string &base_name, const core::config &app_config);
 

@@ -111,7 +111,7 @@ void do_call(core::config &app_config) {
   // read graph & refs
   std::thread t1([&] {
     get_refs(app_config);
-    g = pcs::get_vg(app_config);
+    g = povu::subcommands::common::get_vg(app_config);
   });
 
   // read PVST
@@ -121,10 +121,10 @@ void do_call(core::config &app_config) {
   t2.join();
 
 #ifdef DEBUG
-  if (true) {
+  if (app_config.verbosity() > 1) {
     g->summary(false);
-    std::cerr << "flubble count = " << pvsts.size() << "\n";
-    std::cerr << "reference count = " << app_config.get_reference_paths().size() << "\n";
+    INFO("flubble count: {}", pvsts.size());
+    INFO("reference count: {}", app_config.get_reference_paths().size());
   }
 #endif
 

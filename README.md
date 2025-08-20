@@ -1,6 +1,7 @@
 # povu
 
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Build Test Status (CMake)](https://github.com/pangenome/povu/actions/workflows/build_cmake.yml/badge.svg?label=build)](https://github.com/pangenome/povu/actions/workflows/build_cmake.yml)
 [![Test Status](https://github.com/pangenome/povu/actions/workflows/test.yml/badge.svg?label=tests)](https://github.com/pangenome/povu/actions/workflows/test.yml)
 

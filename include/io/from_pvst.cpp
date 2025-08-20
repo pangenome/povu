@@ -22,6 +22,19 @@ std::size_t get_file_size(const std::string& fp) {
   return end-begin;
 }
 
+void check_pvst_version_support(const std::string &fp, const std::string &pvst_version) {
+  std::vector<std::string> supported_versions{"0.0.3"};
+
+  if (std::find(supported_versions.begin(), supported_versions.end(), pvst_version) == supported_versions.end()) {
+    ERR("Unsupported PVST version in file {}, got {}. Supported versions are: {}.",
+        fp, pvst_version, pu::concat_with(supported_versions, ','));
+
+    std::exit(1);
+  }
+
+  return;
+}
+
 // Split on commas, trim whitespace, parse each token as an integer.
 // Ignores empty tokens (e.g. a trailing comma).
 std::vector<pt::idx_t> split_numbers(std::string_view s) {
@@ -115,9 +128,16 @@ void fp_to_vector (const std::string& fp, std::vector<std::string>* v) {
   v->shrink_to_fit();
 }
 
-pvtr::Tree read_pvst(const std::string &fp) {
-  std::string fn_name = pv_cmp::format("[povu::main::{}]", __func__);
+pvst::route_params_t tokens_to_route_params(const std::vector<std::string> &tokens) {
+  const std::string &pvst_label = tokens[2];
+  auto [l, r] = str_to_id_or_t(pvst_label);
 
+  const char route_char = tokens[4][0];
+  pvst::route_e route = route_char == 'L' ? pvst::route_e::s2e : pvst::route_e::e2s;
+  return pvst::route_params_t { l, r, route };
+}
+
+pvtr::Tree read_pvst(const std::string &fp) {
   pvtr::Tree pvst;
 
   // lines in the PVST
@@ -132,22 +152,19 @@ pvtr::Tree read_pvst(const std::string &fp) {
   // map file vertex index to pvst vertex index
   std::map<pt::idx_t, pt::idx_t> file_v_idx_to_pvst_idx;
 
-  // number of columns in a .pvst file
-  const std::size_t PVST_COLS {4};
-
   for (pt::idx_t line_idx {} ; line_idx < lines.size(); line_idx++) {
     const std::string &line = lines[line_idx];
 
     pu::split(line, pc::COL_SEP, &tokens);
 
-    if (tokens.size() != PVST_COLS) {
+    if (tokens.size() != pc::EXPECTED_PVST_COL_NUMS) {
       std::stringstream err_msg;
       err_msg << "invalid number of columns. "
-                << "File " << fp
-                << ", line " << line_idx
-                << ". Expected " << PVST_COLS
-                << ", got " << tokens.size()
-                << '\n';
+              << "File " << fp
+              << ", line " << line_idx
+              << ". Expected " << pc::EXPECTED_PVST_COL_NUMS
+              << ", got " << tokens.size()
+              << '\n';
       ERR("{}", err_msg.str());
       std::exit(1);
     }
@@ -158,7 +175,7 @@ pvtr::Tree read_pvst(const std::string &fp) {
     pt::idx_t id = std::stoul(tokens[1]);
 
     pt::idx_t v_idx{pc::INVALID_IDX};
-    const std::string &pvst_label = tokens[2];
+    //const std::string &pvst_label = tokens[2];
 
     switch (typ) {
     case pc::PVST_DUMMY_SYMBOL: {
@@ -169,49 +186,55 @@ pvtr::Tree read_pvst(const std::string &fp) {
       break;
     }
     case pc::PVST_FLUBBLE_SYMBOL: {
-      auto [a, z] = str_to_id_or_t(pvst_label);
-      pvst::Flubble v(pvst::vt_e::flubble, a, z);
+      auto rp = tokens_to_route_params(tokens);
+      pvst::Flubble v = pvst::Flubble::parse(pvst::vf_e::flubble, rp);
       v_idx = pvst.add_vertex(v);
       file_v_idx_to_pvst_idx[id] = v_idx;
       break;
     }
     case pc::PVST_TINY_SYMBOL: {
-      auto [a, z] = str_to_id_or_t(pvst_label);
-      pvst::Flubble v(pvst::vt_e::tiny, a, z);
+      auto rp = tokens_to_route_params(tokens);
+      pvst::Flubble v = pvst::Flubble::parse(pvst::vf_e::tiny, rp);
       v_idx = pvst.add_vertex(v);
       file_v_idx_to_pvst_idx[id] = v_idx;
       break;
     }
     case pc::PVST_OVERLAP_SYMBOL: {
-      auto [a, z] = str_to_id_or_t(pvst_label);
-      pvst::Flubble v(pvst::vt_e::parallel, a, z);
+      auto rp = tokens_to_route_params(tokens);
+      pvst::Flubble v = pvst::Flubble::parse(pvst::vf_e::parallel, rp);
       v_idx = pvst.add_vertex(v);
       file_v_idx_to_pvst_idx[id] = v_idx;
       break;
     }
-      // case pc::PVST_MIDI_SYMBOL: {
-      //   auto [g, s] = str_to_id_or_t(pvst_label);
-      //   pvst::MidiBubble v(g, s);
-      //   v_idx = pvst.add_vertex(v);
-      //   file_v_idx_to_pvst_idx[id] = v_idx;
-      //   break;
-      // }
-      // case pc::PVST_CONCEALED_SYMBOL: {
-      //   auto [f, s] = str_to_id_or_t(pvst_label);
-      //   pvst::Concealed v(f, s);
-      //   v_idx = pvst.add_vertex(v);
-      //   file_v_idx_to_pvst_idx[id] = v_idx;
-      //   break;
-      // }
-      // case pc::PVST_SMOTHERED_SYMBOL: {
-      //   auto [f, s] = str_to_id_or_t(pvst_label);
-      //   pvst::Smothered v(f, s);
-      //   v_idx = pvst.add_vertex(v);
-      //   file_v_idx_to_pvst_idx[id] = v_idx;
-      //   break;
-      // }
-    default:
+    case pc::PVST_MIDI_SYMBOL: {
+      auto rp = tokens_to_route_params(tokens);
+      pvst::MidiBubble v = pvst::MidiBubble::parse(rp);
+      v_idx = pvst.add_vertex(v);
+      file_v_idx_to_pvst_idx[id] = v_idx;
       break;
+    }
+    case pc::PVST_CONCEALED_SYMBOL: {
+      auto rp = tokens_to_route_params(tokens);
+      pvst::Concealed v = pvst::Concealed::parse(rp);
+      v_idx = pvst.add_vertex(v);
+      file_v_idx_to_pvst_idx[id] = v_idx;
+      break;
+    }
+    case pc::PVST_SMOTHERED_SYMBOL: {
+      auto rp = tokens_to_route_params(tokens);
+      pvst::Smothered v = pvst::Smothered::parse(rp);
+      v_idx = pvst.add_vertex(v);
+      file_v_idx_to_pvst_idx[id] = v_idx;
+      break;
+    }
+    case pc::PVST_HEADER_SYMBOL: {
+      check_pvst_version_support(fp, tokens[1]); // may cause the prog to exit
+      break;
+    }
+    default:{
+      ERR("Unknown vertex type in PVST file {}: L:{}", fp, line_idx+1);
+      break;
+    }
     }
 
     if (v_idx != pc::INVALID_IDX) {
@@ -220,7 +243,6 @@ pvtr::Tree read_pvst(const std::string &fp) {
 
     tokens.clear();
   }
-
 
   for (pt::idx_t line_idx{}; line_idx < lines.size(); line_idx++) {
     tokens.clear();

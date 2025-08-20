@@ -20,7 +20,6 @@ namespace povu::spanning_tree {
 
 using namespace povu::types::graph;
 namespace pgt = povu::types::graph;
-namespace pt = povu::types;
 namespace bd = povu::bidirected;
 namespace pc = povu::constants;
 using namespace povu::bracket_list;

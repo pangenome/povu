@@ -8,7 +8,6 @@
 
 namespace povu::subcommands::info {
 namespace bd = povu::bidirected;
-namespace pt = povu::types;
 
 void do_info(const core::config &app_config);
 }

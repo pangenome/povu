@@ -7,7 +7,7 @@
 #include <tuple>
 #include <algorithm>
 
-namespace povu::types {
+namespace povu::types::core {
 
 typedef std::chrono::high_resolution_clock Time; // C++ timer
 
@@ -77,5 +77,7 @@ template <typename T>
 using up_t = unordered_pair<T>;
 } // namespace povu::types
 
+// NOLINTNEXTLINE(misc-unused-alias-decls)
+namespace pt = povu::types::core;
 
 #endif

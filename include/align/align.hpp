@@ -10,7 +10,6 @@
 namespace povu::align {
 inline constexpr std::string_view MODULE = "povu::align";
 
-namespace pt = povu::types;
 namespace pc = povu::constants;
 namespace pvt = povu::types::genomics;
 namespace pgt = povu::types::graph;

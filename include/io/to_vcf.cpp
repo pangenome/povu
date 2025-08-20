@@ -343,7 +343,9 @@ void write_vcfs(const pvt::VcfRecIdx &vcf_recs, const bd::VG &g, const core::con
       std::string vcf_fp = pv_cmp::format("{}/{}.vcf", out_dir, ref_name);
       std::ofstream os(vcf_fp);
       write_vcf(g, ref_id, ref_name, gtd, recs, os);
-      std::cerr << "wrote " << vcf_fp << "\n";
+      if (app_config.verbosity() > 0) {
+        SUCCESS("wrote {}", vcf_fp);
+      }
     }
   }
 

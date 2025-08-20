@@ -5,10 +5,11 @@
 #include "../../include/graph/bidirected.hpp"
 #include "../cli/app.hpp"
 #include "../../include/io/from_gfa.hpp"
+#include "../../include/common/log.hpp"
+
 
 namespace povu::subcommands::common {
-namespace bd = povu::bidirected;
-namespace pt = povu::types;
+inline constexpr std::string_view MODULE = "povu::subcommands::common";
 
 /* ------ common (or utility) functions ------- */
 bd::VG *get_vg(const core::config &app_config);

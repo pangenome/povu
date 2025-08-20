@@ -18,7 +18,6 @@ namespace pvt = povu::types::genomics;
 namespace bd = povu::bidirected;
 namespace pu = povu::utils;
 namespace pgt = povu::types::graph;
-namespace pt = povu::types;
 
 void write_vcfs(const pvt::VcfRecIdx &vcf_recs, const bd::VG &g, const core::config &app_config);
 void write_combined_vcf_to_stdout(const pvt::VcfRecIdx &vcf_recs, const bd::VG &g, const core::config &app_config);

@@ -157,16 +157,15 @@ ADD_LIBRARY(povulib
 
   # common
   ${INCLUDE_DIR}/common/types/graph.cpp
-  ${INCLUDE_DIR}/common/types/pvst.cpp
   ${INCLUDE_DIR}/common/utils.cpp
   ${INCLUDE_DIR}/common/tree_utils.cpp
 
-
   # genomics
-  ${INCLUDE_DIR}/genomics/untangle.cpp
-  ${INCLUDE_DIR}/genomics/variants.cpp
   ${INCLUDE_DIR}/genomics/vcf.cpp
-  ${INCLUDE_DIR}/genomics/utils.cpp
+  ${INCLUDE_DIR}/genomics/graph.cpp
+  ${INCLUDE_DIR}/genomics/allele.cpp
+  ${INCLUDE_DIR}/genomics/untangle.cpp
+  ${INCLUDE_DIR}/genomics/genomics.cpp
 
   # graph
   ${INCLUDE_DIR}/graph/bidirected.cpp
@@ -187,7 +186,6 @@ ADD_LIBRARY(povulib
 set(SOURCE_FILES
   # cli
   ${SRC_DIR}/cli/cli.cpp
-  ${SRC_DIR}/cli/app.cpp
 
   # subcommand
   ${SRC_DIR}/subcommand/common.cpp

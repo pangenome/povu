@@ -18,7 +18,6 @@
 
 namespace povu::types::genomics {
 namespace pgt = povu::types::graph;
-namespace pt = povu::types;
 namespace pc = povu::constants;
 namespace pvst = povu::types::pvst;
 namespace pbd = povu::bidirected;

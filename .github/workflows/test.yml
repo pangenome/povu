@@ -43,4 +43,5 @@ jobs:
       - name: Test
         # working-directory: ${{ github.workspace }}/build
         run: |
-          ctest --test-dir ${{ github.workspace }}/build
+          ctest --verbose --test-dir ${{ github.workspace }}/build --outputon-failure
+

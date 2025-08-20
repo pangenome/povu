@@ -86,7 +86,7 @@ void find_tiny(const pst::Tree &st, pvtr::Tree &ft, const ptu::tree_meta &tm) {
 
     pvst::VertexBase &pvst_v = ft.get_vertex_mut(ft_v_idx);
 
-    if (pvst_v.get_type() != pvst::vt_e::flubble) {
+    if (pvst_v.get_fam() != pvst::vt_e::flubble) {
       continue;
     }
 

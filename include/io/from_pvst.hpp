@@ -13,6 +13,7 @@
 
 #include "../../app/cli/app.hpp"
 #include "../../include/common/compat.hpp"
+#include "../../include/common/utils.hpp"
 #include "../../include/graph/tree.hpp"
 #include "./common.hpp"
 #include "../../include/common/log.hpp"
@@ -27,7 +28,6 @@ namespace pgt = povu::types::graph;
 namespace pvst = povu::types::pvst;
 namespace pc = povu::constants;
 namespace pu = povu::utils;
-namespace pt = povu::types;
 
 pvtr::Tree read_pvst(const std::string &fp);
 

@@ -690,11 +690,11 @@ void Tree::print_dot(std::ostream &os) {
     BackEdge be = this->get_backedge_given_id(f);
     std::string class_ = be.get_class() == INVALID_CLS ? "" : std::to_string(be.get_class());
 
-    std::string color = [&]() -> std::string {
+    std::string_view color = [&]() -> std::string_view {
       switch (be.type()) {
-      case be_type_e::capping_back_edge: return pc::RED;
+      case be_type_e::capping_back_edge:     return pc::RED;
       case be_type_e::simplifying_back_edge: return pc::BLUE;
-      default: return pc::GRAY; // "Normal" backedge
+      default:                               return pc::GRAY; // "Normal" backedge
       }
     }();
 

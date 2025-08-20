@@ -1,4 +1,5 @@
 #include "./smothered.hpp"
+#include <optional>
 
 
 namespace povu::smothered {
@@ -87,11 +88,11 @@ void trunk(const pst::Tree &st, const pvtr::Tree &pvst, const pvst::Concealed &f
       pgt::id_or_t g = ft_v.get_cn_b();
       if (tm.get_brackets(src).empty()) {
         pgt::id_or_t e = comp_e(tgt);
-        res.push_back(pvst::Smothered(g, e, cn_pvst_v_idx, false, tgt, pvst::cn_type_e::g, bounds));
+        res.push_back(pvst::Smothered::create(g, e, cn_pvst_v_idx, false, tgt, pvst::cb_e::g, bounds, pvst::rt_e::s2e));
       }
       else {
         pgt::id_or_t e = comp_e(src);
-        res.push_back(pvst::Smothered(g, e, cn_pvst_v_idx, true, src, pvst::cn_type_e::g, bounds));
+        res.push_back(pvst::Smothered::create(g, e, cn_pvst_v_idx, true, src, pvst::cb_e::g, bounds, pvst::rt_e::s2e));
       }
     }
   }
@@ -140,7 +141,7 @@ void branch(const pst::Tree &st, const pvtr::Tree &pvst,
           pgt::id_or_t g = ft_v.get_cn_b();
           pvst::bounds_t bounds = compute_bounds(st, sl_st_idx, src);
 
-          res.push_back(pvst::Smothered(g, e, cn_pvst_v_idx, true, src, pvst::cn_type_e::g, bounds));
+          res.push_back(pvst::Smothered::create(g, e, cn_pvst_v_idx, true, src, pvst::cb_e::g, bounds, pvst::rt_e::s2e));
           continue;
         }
       }
@@ -209,7 +210,7 @@ void trunk(const pst::Tree &st, const pvtr::Tree &pvst,
       pgt::id_or_t s = ft_v.get_cn_b();
       pvst::bounds_t bounds = {lca, src};
 
-      res.push_back(pvst::Smothered(s, w, cn_pvst_v_idx, false, src, pvst::cn_type_e::s, bounds));
+      res.push_back(pvst::Smothered::create(s, w, cn_pvst_v_idx, false, src, pvst::cb_e::s, bounds, pvst::rt_e::e2s));
     }
   }
 }
@@ -237,7 +238,7 @@ void branch(const pst::Tree &st, const pvtr::Tree &pvst,
       pgt::id_or_t s = ft_v.get_cn_b();
       pvst::bounds_t bounds = compute_bounds(st, src_, sl_st_idx);
 
-      res.push_back(pvst::Smothered(s, w, cn_pvst_v_idx, true, src_, pvst::cn_type_e::s, bounds));
+      res.push_back(pvst::Smothered::create(s, w, cn_pvst_v_idx, true, src_, pvst::cb_e::s, bounds, pvst::rt_e::e2s));
     }
 
     for (auto tgt_ : st.get_obe_tgt_v_idxs(src_v_idx)) {
@@ -249,49 +250,40 @@ void branch(const pst::Tree &st, const pvtr::Tree &pvst,
       pgt::id_or_t s = ft_v.get_cn_b();
       pvst::bounds_t bounds = compute_bounds(st, tgt_, sl_st_idx);
 
-      res.push_back(pvst::Smothered(s, w, cn_pvst_v_idx, false, tgt_, pvst::cn_type_e::s, bounds));
+      res.push_back(pvst::Smothered::create(s, w, cn_pvst_v_idx, false, tgt_, pvst::cb_e::s, bounds, pvst::rt_e::e2s));
     }
   }
 }
 
 } // namespace s
 
-void nest(const pst::Tree &st, pvtr::Tree &pvst, pt::idx_t cn_pvst_v_idx,
-          pt::idx_t smo_pvst_v_idx) {
-  const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
+[[nodiscard]] inline std::optional<pvst::bounds_t>
+maybe_bounds(const pvst::VertexBase &v) noexcept {
+  if (auto f = dynamic_cast<const pvst::Flubble *>(&v))
+    return f->get_bounds();
+  if (auto c = dynamic_cast<const pvst::Concealed *>(&v))
+    return c->get_bounds();
+  return std::nullopt;
+}
 
-  const pvst::Smothered &smo_v = static_cast<const pvst::Smothered &>(pvst.get_vertex(smo_pvst_v_idx));
 
-  std::vector<pt::idx_t> ch = pvst.get_children(cn_pvst_v_idx);
-  for (pt::idx_t c_v_idx : ch) {
-    pvst::VertexBase &pvst_v = pvst.get_vertex_mut(c_v_idx);
-    pvst::bounds_t bounds = {pc::INVALID_IDX, pc::INVALID_IDX};
 
-    std::cerr << fn_name << " " << pvst_v.as_str() << "\n";
+void nest(const pst::Tree &st, pvtr::Tree &pvst, pt::idx_t cn_pvst_v_idx, pt::idx_t smo_pvst_v_idx) {
 
-    switch (pvst_v.get_type()) {
-    case pvst::vt_e::flubble:
-    case pvst::vt_e::tiny:
-    case pvst::vt_e::parallel:
-      bounds = static_cast<const pvst::Flubble &>(pvst_v).get_bounds();
-      break;
-    case pvst::vt_e::slubble: // concealed
-      bounds = static_cast<const pvst::Concealed &>(pvst_v).get_bounds();
-      break;
-    default:
-      break;
-    }
+  const pvst::Smothered &smo_v =
+    static_cast<const pvst::Smothered &>(pvst.get_vertex(smo_pvst_v_idx));
 
-    if (bounds.upper == pc::INVALID_IDX || bounds.lower == pc::INVALID_IDX) {
-      continue;
-    }
+  for (pt::idx_t c_v_idx : pvst.get_children(cn_pvst_v_idx)) {
 
-    if (is_nesting(st, smo_v.get_bounds(), bounds)) {
+    const pvst::VertexBase &pvst_v = pvst.get_vertex(c_v_idx);
+
+    if (auto b = maybe_bounds(pvst_v); b && is_nesting(st, smo_v.get_bounds(), *b)) {
       pvst.del_edge(cn_pvst_v_idx, c_v_idx);
       pvst.add_edge(smo_pvst_v_idx, c_v_idx);
     }
   }
 }
+
 
 void add_smothered(const pst::Tree &st, pvtr::Tree &pvst, const std::vector<fl_sls> &al_smo) {
   const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
@@ -329,7 +321,7 @@ void find_smothered(const pst::Tree &st, pvtr::Tree &ft, const ptu::tree_meta &t
   for (pt::idx_t ft_v_idx{}; ft_v_idx < ft.vtx_count(); ft_v_idx++) {
      const pvst::VertexBase &pvst_v = ft.get_vertex(ft_v_idx);
 
-     if (pvst_v.get_type() != pvst::vt_e::slubble) {
+     if (pvst_v.get_fam() != pvst::vf_e::concealed) {
        continue;
      }
 
@@ -337,16 +329,16 @@ void find_smothered(const pst::Tree &st, pvtr::Tree &ft, const ptu::tree_meta &t
 
      fl_sls smo {ft_v_idx};
      switch (cn_v.get_sl_type()) {
-     case pvst::sl_type_e::ai_trunk:
+     case pvst::cl_e::ai_trunk:
        g::trunk(st, pvst, cn_v, ft_v_idx, tm, smo.g_adj);
        break;
-     case pvst::sl_type_e::ai_branch:
+     case pvst::cl_e::ai_branch:
        g::branch(st, pvst, cn_v, ft_v_idx, tm, smo.g_adj);
        break;
-     case pvst::sl_type_e::zi_trunk:
+     case pvst::cl_e::zi_trunk:
        s::trunk(st, pvst, cn_v, ft_v_idx, tm, smo.s_adj);
        break;
-     case pvst::sl_type_e::zi_branch:
+     case pvst::cl_e::zi_branch:
        s::branch(st, pvst, cn_v, ft_v_idx, smo.s_adj);
        break;
      default:

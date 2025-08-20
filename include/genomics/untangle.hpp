@@ -15,11 +15,10 @@
 #include "../common/types/pvst.hpp"
 
 
-namespace povu::untangle {
+namespace povu::genomics::untangle {
 namespace pgt = povu::types::graph;
 namespace pvt = povu::types::genomics;
 namespace bd = povu::bidirected;
-namespace pt = povu::types;
 namespace pc = povu::constants;
 namespace pa = povu::align;
 namespace pvst = povu::types::pvst;

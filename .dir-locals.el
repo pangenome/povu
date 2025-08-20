@@ -1,0 +1,8 @@
+((nil . ((projectile-project-compilation-cmd . "cmake -Bbuild -DPOVU_ENABLE_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -S. && cmake --build build")
+         (projectile-project-run-cmd . "./bin/povu")
+         (projectile-project-test-cmd . "ctest --verbose --test-dir build --output-on-failure")
+         (eval . (setq cmake-ide-build-dir (expand-file-name "build" (projectile-project-root))))
+         (eval . (setq cmake-ide-project-dir (projectile-project-root)))
+         ; (eval . (setq cmake-ide-flags-c++ '("-Wall" "-Wextra" "-Wpedantic" "-std=c++20")))
+         ; (eval . (setq cmake-ide-flags-c '("-Wall" "-Wextra" "-Wpedantic" "-std=c23")))
+         (eval . (setq cmake-ide-cmake-opts "-DCMAKE_BUILD_TYPE=Debug -DUSE_SANITIZER=address -DCMAKE_EXPORT_COMPILE_COMMANDS=ON")))))

@@ -122,8 +122,7 @@ bool is_del(const pvt::AW &aw, const pgt::walk &bounds) {
 pvt::var_type_e det_var_type(const pvst::VertexBase *pvst_vtx,
                              const pvt::AW &ref_aw, const pvt::AW &alt_aw) {
 
-  // const pvst::VertexBase *pvst_vtx = exp.get_pvst_vtx_const_ptr();
-  const pvst::traversal_params_t &tp = pvst_vtx->get_traversal_params();
+  pvst::route_params_t tp = *pvst_vtx->get_route_params();
   pgt::id_or_t alpha = tp.start;
   pgt::id_or_t omega = tp.end;
 

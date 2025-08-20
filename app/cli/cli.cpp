@@ -94,23 +94,23 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
 }
 
 
-void deconstruct_handler(args::Subparser &parser, core::config& app_config) {
+void decompose_handler(args::Subparser &parser, core::config& app_config) {
   args::Group arguments("arguments");
   args::Flag hairpins(parser, "hairpins", "Find hairpins in the variation graph", {'h', "hairpins"});
-  //args::Flag hubbles(parser, "hubbles", "Find hubbles in the variation graph", {'s', "hubbles"});
+  args::Flag subflubbles(parser, "subfubbles", "Find subflubbles in the variation graph", {'s', "subflubbles"});
   args::ValueFlag<std::string> input_gfa(parser, "gfa", "path to input gfa [required]", {'i', "input-gfa"}, args::Options::Required);
   args::ValueFlag<std::string> output_dir(parser, "output_dir", "Output directory [default: .]", {'o', "output-dir"});
 
   parser.Parse();
-  app_config.set_task(core::task_e::deconstruct);
+  app_config.set_task(core::task_e::decompose);
 
   if (hairpins) {
     app_config.set_hairpins(true);
   }
 
-  // if (hubbles) {
-  //   app_config.set_hubbles(true);
-  // }
+   if (subflubbles) {
+     app_config.set_subflubbles(true);
+   }
 
   // input gfa is already a c_str
   app_config.set_input_gfa(args::get(input_gfa));
@@ -141,7 +141,7 @@ void gfa2vcf_handler(args::Subparser &parser, core::config& app_config) {
   }
 
   if (hubbles) {
-    app_config.set_hubbles(true);
+    app_config.set_subflubbles(true);
   }
 
   if (chrom) {
@@ -214,10 +214,10 @@ int cli(int argc, char **argv, core::config& app_config) {
   args::Command gfa2vcf(commands, "gfa2vcf", "Convert GFA to VCF (decompose + call)",
                        [&](args::Subparser &parser) { gfa2vcf_handler(parser, app_config); });
   args::Command decompose(commands, "decompose", "Find regions of variation",
-                       [&](args::Subparser &parser) { deconstruct_handler(parser, app_config); });
+                       [&](args::Subparser &parser) { decompose_handler(parser, app_config); });
   args::Command call(commands, "call", "Generate a VCF from regions of variation",
                        [&](args::Subparser &parser) { call_handler(parser, app_config); });
-  args::Command info(commands, "info", "Print graph information [use 1 thread for meaningful results]",
+  args::Command info(commands, "info", "Print graph information [uses 1 thread]",
                      [&](args::Subparser &parser) { info_handler(parser, app_config); });
 
   args::Group arguments(p, "arguments", args::Group::Validators::DontCare, args::Options::Global);

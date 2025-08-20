@@ -31,7 +31,7 @@ void decompose_component(bd::VG *g, std::size_t component_id, const core::config
   }
 #endif
 
-  if (false && app_config.find_hubbles()) {
+  if (app_config.find_subflubbles()) {
     povu::concealed::find_concealed(st, flubble_tree, tm);
     povu::midi::find_midi(st, flubble_tree, tm);
     povu::smothered::find_smothered(st, flubble_tree, tm);
