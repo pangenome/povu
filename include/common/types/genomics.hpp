@@ -321,7 +321,7 @@ public:
   // --------------
   // constructor(s)
   // --------------
-
+  Exp() : ref_itns_(), pvst_vtx(nullptr), is_tangled_(false) {}
   Exp(const pvst::VertexBase *v) : ref_itns_(), pvst_vtx(v), is_tangled_(false) {}
 
   // ---------

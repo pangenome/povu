@@ -6,8 +6,6 @@
 #include <functional> // for std::reference_wrapper
 #include <future>
 #include <optional>
-
-
 #include <set>
 #include <stack>
 #include <string>
@@ -40,7 +38,7 @@ public:
   // --------------
   // factory method(s)
   // --------------
-  static WalkRefIdx from_walk(bd::VG &g, const pvt::walk_t &w) {
+  static WalkRefIdx from_walk(const bd::VG &g, const pvt::walk_t &w) {
     WalkRefIdx wr_idx;
     for (const auto &[v_id, _] : w) {
       const bd::VtxRefIdx &vr_idx = g.get_vtx_ref_idx(v_id);
@@ -81,7 +79,7 @@ public:
   }
 };
 
-void comp_itineraries(bd::VG &g, const pvt::walk_t &w, pt::idx_t w_idx, pvt::Exp &rw);
+void comp_itineraries(const bd::VG &g, const pvt::walk_t &w, pt::idx_t w_idx, pvt::Exp &rw);
 
 } // namespace povu::genomics::alele
 

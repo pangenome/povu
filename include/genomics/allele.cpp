@@ -29,7 +29,7 @@ pt::idx_t get_vtx_len(const bd::VG &g, const pvt::step_t &s) {
  * @return              The minimum locus found according to the rules above,
  *                      or `pc::MAX_IDX` if no locus exceeds the threshold.
  */
-pt::idx_t find_min_locus(bd::VG &g, pt::id_t ref_id,
+pt::idx_t find_min_locus(const bd::VG &g, pt::id_t ref_id,
                          const WalkRefIdx &wri, const pvt::walk_t &w,
                          std::optional<pt::idx_t> opt_start_after) {
   bool globally = !opt_start_after.has_value();
@@ -48,7 +48,7 @@ pt::idx_t find_min_locus(bd::VG &g, pt::id_t ref_id,
   return min_locus;
 }
 
-pt::idx_t comp_loop_no(bd::VG &g, pt::id_t ref_id, const WalkRefIdx &wri,
+pt::idx_t comp_loop_no(const bd::VG &g, pt::id_t ref_id, const WalkRefIdx &wri,
                        const pvt::walk_t &w) {
   // the number of times the ref is seen in the walk
   // this is also the step with the max ref visits
@@ -64,7 +64,7 @@ return loop_no;
 /**
  * @brief compute min_locus and loop_no
  */
-std::pair<pt::idx_t, pt::idx_t> comp_ref_visit_bounds(bd::VG &g,
+std::pair<pt::idx_t, pt::idx_t> comp_ref_visit_bounds(const bd::VG &g,
                                                       pt::id_t ref_id,
                                                       const WalkRefIdx &wri,
                                                       const pvt::walk_t &w) {
@@ -88,7 +88,7 @@ std::pair<pt::idx_t, pt::idx_t> comp_ref_visit_bounds(bd::VG &g,
  *
  * The itinerary is a collection of allele walks for each ref in the walk.
  */
-void comp_itineraries(bd::VG &g, const pvt::walk_t &w, pt::idx_t w_idx, pvt::Exp &rw) {
+void comp_itineraries(const bd::VG &g, const pvt::walk_t &w, pt::idx_t w_idx, pvt::Exp &rw) {
   // a map of ref_id to itinerary
   std::map<pt::id_t, pvt::Itn> &ref_map = rw.get_ref_itns_mut();
 

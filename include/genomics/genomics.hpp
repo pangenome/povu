@@ -9,6 +9,8 @@
 #include "./graph.hpp"
 #include "./untangle.hpp"
 #include "./vcf.hpp"
+#include "../common/utils.hpp"
+#include "../common/log.hpp"
 
 namespace povu::genomics {
 inline constexpr std::string_view MODULE = "povu::variants";
@@ -19,8 +21,6 @@ namespace pvt = povu::types::genomics;
 namespace pgv = povu::genomics::vcf;
 namespace pvtr = povu::tree;
 namespace pvst = povu::types::pvst;
-
-
 
 pvt::VcfRecIdx gen_vcf_rec_map(const std::vector<pvtr::Tree> &pvsts, bd::VG &g);
 

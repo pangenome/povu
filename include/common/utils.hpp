@@ -1,17 +1,30 @@
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
+#include <atomic>
 #include <chrono>
+#include <condition_variable>
+#include <cstddef>
 #include <ctime>
+#include <functional>
+#include <future>
 #include <iomanip>
 #include <iostream>
 #include <iterator>
+#include <mutex>
+#include <queue>
 #include <sstream>
 #include <string>
+#include <sys/types.h>
+#include <thread>
+#include <type_traits>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "./compat.hpp"
+#include "./types/core.hpp"
+
 
 namespace povu::utils {
 
@@ -141,5 +154,114 @@ std::pair<std::size_t, std::size_t> frm_bidirected_idx(std::size_t bd_idx, bool 
  */
 void split(const std::string &line, char sep, std::vector<std::string>* tokens);
 
+
+class ThreadPool {
+public:
+  explicit ThreadPool(std::size_t threads = std::thread::hardware_concurrency())
+      : stop_(false) {
+    if (threads == 0) threads = 1;
+    workers_.reserve(threads);
+    for (std::size_t i = 0; i < threads; ++i) {
+      workers_.emplace_back([this] {
+        for (;;) {
+          Task task;
+          { // wait for work or shutdown
+            std::unique_lock<std::mutex> lk(mx_);
+            cv_.wait(lk, [this] { return stop_ || !q_.empty(); });
+            if (stop_ && q_.empty()) return;
+            task = std::move(q_.front());
+            q_.pop();
+          }
+          task(); // run outside the lock
+        }
+      });
+    }
+  }
+
+  // Non-copyable, movable if you like (omitted here for brevity)
+  ThreadPool(const ThreadPool&) = delete;
+  ThreadPool& operator=(const ThreadPool&) = delete;
+
+  ~ThreadPool() {
+    { std::lock_guard<std::mutex> lk(mx_); stop_ = true; }
+    cv_.notify_all();
+    for (auto& t : workers_) t.join();
+  }
+
+  template <class F, class... Args>
+  auto enqueue(F&& f, Args&&... args)
+      -> std::future<std::invoke_result_t<F, Args...>> {
+    using R = std::invoke_result_t<F, Args...>;
+    auto task_ptr = std::make_shared<std::packaged_task<R()>>(
+        std::bind(std::forward<F>(f), std::forward<Args>(args)...));
+    std::future<R> fut = task_ptr->get_future();
+    {
+      std::lock_guard<std::mutex> lk(mx_);
+      if (stop_) throw std::runtime_error("ThreadPool stopped");
+      q_.emplace([task_ptr] { (*task_ptr)(); });
+    }
+    cv_.notify_one();
+    return fut;
+  }
+
+  std::size_t size() const noexcept { return workers_.size(); }
+
+private:
+  using Task = std::function<void()>;
+  std::vector<std::thread> workers_;
+  std::queue<Task> q_;
+  std::mutex mx_;
+  std::condition_variable cv_;
+  bool stop_;
+};
+
+
+/**
+ * Divide the number of components into chunks for each thread
+ * @param tc: (thread_count) number of threads to use
+ * @param ic: (item_count) number of items to process
+ */
+//std::pair<uint32_t, uint32_t>
+pt::op_t<u_int32_t> compute_thread_allocation(std::size_t requested_threads,
+                                              std::size_t item_count);
+
+// Parallel for over [0, N) using the pool (dynamic, fine-grained).
+template <class F>
+void parallel_for(ThreadPool &pool, std::size_t N, F &&body,
+                  std::size_t block = 0) {
+  if (N == 0)
+    return;
+  const std::size_t T = std::max<std::size_t>(1, pool.size());
+
+  if (block == 0) {
+    // Heuristic: 8–64 tasks per thread
+    block = std::max<std::size_t>(1, N / (T * 16));
+  }
+
+  std::atomic<std::size_t> next{0};
+  std::vector<std::future<void>> fs;
+  fs.reserve(T);
+
+  for (std::size_t t = 0; t < T; ++t) {
+    fs.emplace_back(pool.enqueue([&, block] {
+      for (;;) {
+        const std::size_t start =
+            next.fetch_add(block, std::memory_order_relaxed);
+        if (start >= N)
+          break;
+        const std::size_t end = std::min(start + block, N);
+        for (std::size_t i = start; i < end; ++i)
+          body(i);
+      }
+    }));
+  }
+  for (auto &f : fs)
+    f.get(); // propagate exceptions
+}
+
 } // namespace povu::utils
+
+
+// NOLINTNEXTLINE(misc-unused-alias-decls)
+namespace pu = povu::utils;
 #endif

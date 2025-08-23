@@ -208,19 +208,7 @@ class VariationGraph {
   pgt::Refs refs_;
   std::set<pgt::side_n_id_t> tips_; // the set of side and id of the tips
 
-  void gen_vtx_ref_idx(pt::id_t v_id) {
-    if (!this->has_refs_) {
-      ERR("graph has no refs\n");
-      exit(1);
-    }
-    if (pv_cmp::contains(this->v_ref_idx_, v_id)) {
-      return;
-    }
-    const Vertex &v = this->get_vertex_by_id(v_id);
-    std::vector<RefInfo> v_ref_data = v.get_refs();
-    VtxRefIdx vr_idx = VtxRefIdx::from_ref_info(v_ref_data);
-    this->v_ref_idx_.emplace(v_id, std::move(vr_idx));
-  }
+
 
 public:
   // --------------
@@ -259,7 +247,7 @@ public:
   const std::set<pt::id_t> &get_shared_samples(pt::id_t ref_id) const;
   pt::id_t ref_id_count() const;
   bool has_refs() const;
-  const VtxRefIdx &get_vtx_ref_idx(pt::id_t v_id);
+  const VtxRefIdx &get_vtx_ref_idx(pt::id_t v_id) const;
 
   // ---------
   // setter(s)
@@ -271,6 +259,8 @@ public:
   pt::idx_t add_edge(pt::id_t v1_id, pgt::v_end_e v1_end, pt::id_t v2_id, pgt::v_end_e v2_end);
   pt::id_t add_ref(const std::string &label, char delim);
   void shrink_to_fit();
+
+  void gen_vtx_ref_idx(pt::id_t v_id);
 
   // other
   void summary(bool print_tips) const;

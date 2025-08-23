@@ -5,8 +5,11 @@ namespace  povu::subcommands::common {
  * Read the input gfa into a bidirected variation graph
  */
 bd::VG *get_vg(const core::config &app_config) {
+#ifdef DEBUG
   std::chrono::duration<double> timeRefRead;
   auto t0 = pt::Time::now();
+#endif
+
   bd::VG *g = povu::io::from_gfa::to_bd(app_config);
 
 #ifdef DEBUG

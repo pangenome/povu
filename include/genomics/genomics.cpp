@@ -1,4 +1,5 @@
 #include "./genomics.hpp"
+#include <vector>
 
 
 namespace povu::genomics {
@@ -32,7 +33,11 @@ void remove_prefix_walks(pvt::Itn &itn) {
 /**
  * Associate walks in an RoV with references
  */
-void gen_rov_ref_walks(bd::VG &g, const pvt::RoV &rov, std::vector<pvt::Exp> &ref_walks_vec) {
+pvt::Exp comp_expeditions(const bd::VG &g, const pvt::RoV &rov) {
+#ifdef DEBUG
+  std::chrono::duration<double> timeRefRead;
+  auto t0 = pt::Time::now();
+#endif
 
   const std::vector<pvt::walk_t> &walks = rov.get_walks();
   const pvst::VertexBase *pvst_v_ptr = rov.get_pvst_vtx();
@@ -46,9 +51,28 @@ void gen_rov_ref_walks(bd::VG &g, const pvt::RoV &rov, std::vector<pvt::Exp> &re
     povu::genomics::allele::comp_itineraries(g, w, w_idx, ref_walks);
   }
 
+
+#ifdef DEBUG
+  if (true) {
+    timeRefRead = pt::Time::now() - t0;
+    INFO("ROV {}", rov.as_str());
+    INFO("ref count in exp {} walk count {}", ref_walks.ref_count(), rov.walk_count());
+    INFO("Time spent finding walks in itns {:.2f} sec", timeRefRead.count());
+    t0 = pt::Time::now();
+  }
+#endif
+
   for (pt::idx_t ref_id : ref_walks.get_ref_ids()) {
     remove_prefix_walks(ref_walks.get_itn_mut(ref_id));
   }
+
+#ifdef DEBUG
+  if (true) {
+    timeRefRead = pt::Time::now() - t0;
+    INFO("Time spent removing prefixes {:.2f} sec", timeRefRead.count());
+    t0 = pt::Time::now();
+  }
+#endif
 
   for (const pt::idx_t ref_id : ref_walks.get_ref_ids()) {
     if (ref_walks.get_itn(ref_id).at_count() > 1) {
@@ -66,38 +90,83 @@ void gen_rov_ref_walks(bd::VG &g, const pvt::RoV &rov, std::vector<pvt::Exp> &re
     }
   }
 
+#ifdef DEBUG
+  if (true) {
+    timeRefRead = pt::Time::now() - t0;
+    INFO("Time spent bla {:.2f} sec", timeRefRead.count());
+    t0 = pt::Time::now();
+  }
+#endif
+
   if (ref_walks.is_tangled()) {
     put::untangle_ref_walks(ref_walks);
   }
 
+#ifdef DEBUG
+  if (true) {
+    timeRefRead = pt::Time::now() - t0;
+    INFO("Time spent untangling {:.2f} sec", timeRefRead.count());
+    t0 = pt::Time::now();
+  }
+#endif
 
-  //{
-  //   std::cerr << fn_name
-  //             << " " << pvst_v_ptr->as_str()
-  //             << " ref count " << ref_walks.get_ref_ids().size()
-  //             << "\n";
-
-  //   for (pt::idx_t ref_id : ref_walks.get_ref_ids()) {
-  //     std::cerr << fn_name << " " << g.get_ref_label(ref_id) << "\n";
-
-  //     auto itn = ref_walks.get_itn(ref_id);
-  //     for (pt::idx_t i{}; i < itn.at_count(); ++i) {
-  //       const pvt::AW &aw = itn.get_at(i);
-  //       std::cerr << " aw: " << aw.as_str() << "\n";
-  //       std::cerr << " ref count " << aw.get_ref_ids().size() << "\n";
-  //     }
-  //   }
-  // }
-
-  //  if (pvst_v_ptr->as_str() == ">11>13") {
-  //    exit(1);
-  //  }
-
-  ref_walks_vec.push_back(std::move(ref_walks));
-
-  return;
+  return ref_walks;
 }
 
+// std::vector<pvt::Exp> do_ref_walks(const bd::VG &g, const std::vector<pvt::RoV> &all_rovs) {
+//   std::vector<pvt::Exp> all_exp(all_rovs.size());
+//   //all_exp.reserve(all_rovs.size());
+
+//   std::size_t thread_count = 16; // default
+//   auto [num_threads, chunk_size] = pu::compute_thread_allocation(thread_count, all_rovs.size());
+
+
+//   INFO("Using {} threads to compute reference walks for {} RoVs", num_threads, all_rovs.size());
+
+//   std::vector<std::thread> threads(num_threads);
+//   std::size_t start, end;
+//   for (unsigned int thread_idx{}; thread_idx < num_threads; ++thread_idx) {
+//     start = thread_idx * chunk_size;
+//     end = (thread_idx == num_threads - 1) ? all_rovs.size() : (thread_idx + 1) * chunk_size;
+
+//     INFO("Thread {} processing RoVs from {} to {}", thread_idx, start, end);
+
+//     threads[thread_idx] = std::thread([&, start, end]() {
+//           for (std::size_t i{start}; i < end; i++) {
+//             const pvt::RoV &r = all_rovs[i];
+//             pvt::Exp rov_rws = comp_expeditions(g, r);
+//             all_exp[i] = std::move(rov_rws);
+//             //all_ref_walks.push_back(std::move(rov_rws));
+//           }
+//         });
+//   }
+
+//   // Wait for all threads to finish
+//   for (auto &thread : threads) {
+//     thread.join();
+//   }
+
+//   return all_exp;
+// }
+
+// Assuming bd::VG is thread-safe for concurrent read-only access,
+// and gen_rov_ref_walks(g, r) returns pvt::Exp.
+std::vector<pvt::Exp> do_ref_walks_pool(const bd::VG &g,
+                                        const std::vector<pvt::RoV> &all_rovs,
+                                        pu::ThreadPool &pool) {
+  const std::size_t N = all_rovs.size();
+  std::vector<pvt::Exp> out(N);
+  if (N == 0) {
+    return out;
+  }
+
+  parallel_for(pool, N, [&](std::size_t i) {
+    INFO("Processing RoV {}/{}", i + 1, N);
+    out[i] = comp_expeditions(g, all_rovs[i]); // disjoint writes → no locks
+  });
+
+  return out;
+}
 
 /**
  * Check if a vertex in the pvst is a flubble leaf
@@ -164,18 +233,72 @@ std::vector<pvt::RoV> gen_rov(const std::vector<pvtr::Tree> &pvsts, const bd::VG
   return rs;
 }
 
+void gen_ref_idxs(bd::VG &g, const std::vector<pvt::RoV> &all_rovs) {
+  for (const pvt::RoV &r : all_rovs) {
+    const std::vector<pvt::walk_t> &walks = r.get_walks();
+    for (const pvt::walk_t& w : walks) {
+      for (const auto &[v_id, _] : w) {
+        g.gen_vtx_ref_idx(v_id);
+      }
+    }
+  }
+}
 pvt::VcfRecIdx gen_vcf_rec_map(const std::vector<pvtr::Tree> &pvsts, bd::VG &g) {
-
+#ifdef DEBUG
+  std::chrono::duration<double> timeRefRead;
+  auto t0 = pt::Time::now();
+#endif
   std::vector<pvt::RoV> all_rovs = gen_rov(pvsts, g);
 
-  std::vector<pvt::Exp> all_ref_walks;
-  all_ref_walks.reserve(all_rovs.size());
-  for (const pvt::RoV &r : all_rovs) {
-    gen_rov_ref_walks(g, r, all_ref_walks);
+#ifdef DEBUG
+  if (true) {
+    timeRefRead = pt::Time::now() - t0;
+    INFO("Time spent finding walks in RoVs {:.2f} sec", timeRefRead.count());
+    t0 = pt::Time::now();
   }
+#endif
+  gen_ref_idxs(g, all_rovs);
 
-  pvt::VcfRecIdx rs = pgv::gen_vcf_records(g, all_ref_walks);
+
+
+#ifdef DEBUG
+  if (true) {
+    timeRefRead = pt::Time::now() - t0;
+    INFO("Time spent gen idxs {:.2f} sec", timeRefRead.count());
+    t0 = pt::Time::now();
+  }
+#endif
+
+  const std::size_t thread_count = 16; // default
+  pu::ThreadPool pool(thread_count); // default thread count
+  std::vector<pvt::Exp> all_ref_walks_ = do_ref_walks_pool(g, all_rovs, pool);
+  //std::vector<pvt::Exp> all_ref_walks;
+  // for (const pvt::RoV &r : all_rovs) {
+  //   pvt::Exp rov_rws = gen_rov_ref_walks(g, r);
+  //   all_ref_walks.push_back(std::move(rov_rws));
+  // }
+  //
+  //   gen_rov_ref_walks(g, r, all_ref_walks);
+  // }
+
+#ifdef DEBUG
+      if (true) {
+    timeRefRead = pt::Time::now() - t0;
+    INFO("Time spent computing walks {:.2f} sec", timeRefRead.count());
+    t0 = pt::Time::now();
+  }
+#endif
+
+  pvt::VcfRecIdx rs = pgv::gen_vcf_records(g, all_ref_walks_);
+
+#ifdef DEBUG
+  if (true) {
+    timeRefRead = pt::Time::now() - t0;
+    INFO("Time gen VCFs {:.2f} sec", timeRefRead.count());
+    t0 = pt::Time::now();
+  }
+#endif
 
   return rs;
-}
+  }
 } // namespace povu::genomics
