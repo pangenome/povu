@@ -22,7 +22,7 @@ namespace pvst = povu::types::pvst;
 
 
 
-pvt::VcfRecIdx gen_vcf_rec_map(const std::vector<pvtr::Tree> &pvsts, const bd::VG &g);
+pvt::VcfRecIdx gen_vcf_rec_map(const std::vector<pvtr::Tree> &pvsts, bd::VG &g);
 
 } // namespace povu::genomics
 

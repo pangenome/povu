@@ -85,11 +85,9 @@ void Vertex::add_ref(pt::idx_t ref_id, pgt::or_e strand, pt::idx_t locus) {
   this->refs_.push_back(RefInfo(ref_id, strand, locus));
 }
 
-
-/*
-  Graph
-  -----
- */
+// ============================================================
+//      Variation Graph
+// ============================================================
 
 
 // --------------
@@ -149,6 +147,13 @@ pgt::Ref &VG::get_ref_by_id_mut(pt::id_t ref_id) {
 
 pt::id_t VG::get_ref_id(const std::string &ref_label) const {
   return this->refs_.get_ref_id(ref_label);
+}
+
+const VtxRefIdx &VG::get_vtx_ref_idx(pt::id_t v_id) {
+  if (pv_cmp::contains(this->v_ref_idx_, v_id) == false) {
+    gen_vtx_ref_idx(v_id);
+  }
+  return this->v_ref_idx_.at(v_id);
 }
 
 // ---------
@@ -261,7 +266,6 @@ graph G {
   os << "}" << std::endl;
 }
 
-// TODO: make this static factory fn
 // does not handle refs, should it?
 std::vector<VG *> VG::componetize(const povu::bidirected::VG &g) {
 

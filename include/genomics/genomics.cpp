@@ -32,7 +32,7 @@ void remove_prefix_walks(pvt::Itn &itn) {
 /**
  * Associate walks in an RoV with references
  */
-void gen_rov_ref_walks(const bd::VG &g, const pvt::RoV &rov, std::vector<pvt::Exp> &ref_walks_vec) {
+void gen_rov_ref_walks(bd::VG &g, const pvt::RoV &rov, std::vector<pvt::Exp> &ref_walks_vec) {
 
   const std::vector<pvt::walk_t> &walks = rov.get_walks();
   const pvst::VertexBase *pvst_v_ptr = rov.get_pvst_vtx();
@@ -164,7 +164,7 @@ std::vector<pvt::RoV> gen_rov(const std::vector<pvtr::Tree> &pvsts, const bd::VG
   return rs;
 }
 
-pvt::VcfRecIdx gen_vcf_rec_map(const std::vector<pvtr::Tree> &pvsts, const bd::VG &g) {
+pvt::VcfRecIdx gen_vcf_rec_map(const std::vector<pvtr::Tree> &pvsts, bd::VG &g) {
 
   std::vector<pvt::RoV> all_rovs = gen_rov(pvsts, g);
 

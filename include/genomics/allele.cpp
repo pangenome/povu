@@ -29,30 +29,33 @@ pt::idx_t get_vtx_len(const bd::VG &g, const pvt::step_t &s) {
  * @return              The minimum locus found according to the rules above,
  *                      or `pc::MAX_IDX` if no locus exceeds the threshold.
  */
-pt::idx_t find_min_locus(pt::id_t ref_id, const WalkRefIdx &wri,
-                         const pvt::walk_t &w,
+pt::idx_t find_min_locus(bd::VG &g, pt::id_t ref_id,
+                         const WalkRefIdx &wri, const pvt::walk_t &w,
                          std::optional<pt::idx_t> opt_start_after) {
   bool globally = !opt_start_after.has_value();
   pt::idx_t threshold = globally ? pc::INVALID_IDX : *opt_start_after;
   pt::idx_t min_locus{pc::MAX_IDX};
 
-  for (const auto &step : w) {
-    if (auto opt_min = wri.get_min_locus(step.v_id, ref_id)) {
+  for (const auto &[v_id, _] : w) {
+    const bd::VtxRefIdx &vr_idx = g.get_vtx_ref_idx(v_id);
+    if (auto opt_min = wri.get_min_locus(vr_idx, ref_id)) {
       if (globally || *opt_min > threshold) {
         min_locus = std::min(min_locus, *opt_min);
       }
-
     }
   }
-return min_locus;
+
+  return min_locus;
 }
 
-pt::idx_t comp_loop_no(pt::id_t ref_id, const WalkRefIdx &wri, const pvt::walk_t &w) {
+pt::idx_t comp_loop_no(bd::VG &g, pt::id_t ref_id, const WalkRefIdx &wri,
+                       const pvt::walk_t &w) {
   // the number of times the ref is seen in the walk
   // this is also the step with the max ref visits
   pt::idx_t loop_no{0};
-  for (const auto &step : w) {
-    loop_no = std::max(loop_no, wri.loop_count(step.v_id, ref_id));
+  for (const auto &[v_id, _] : w) {
+    const bd::VtxRefIdx &vr_idx = g.get_vtx_ref_idx(v_id);
+    loop_no = std::max(loop_no, wri.loop_count(vr_idx, ref_id));
   }
 
 return loop_no;
@@ -61,13 +64,15 @@ return loop_no;
 /**
  * @brief compute min_locus and loop_no
  */
-std::pair<pt::idx_t, pt::idx_t>
-comp_ref_visit_bounds(pt::id_t ref_id, const WalkRefIdx &wri, const pvt::walk_t &w) {
+std::pair<pt::idx_t, pt::idx_t> comp_ref_visit_bounds(bd::VG &g,
+                                                      pt::id_t ref_id,
+                                                      const WalkRefIdx &wri,
+                                                      const pvt::walk_t &w) {
   auto min_future = std::async(
-    std::launch::async, [&]() { return find_min_locus(ref_id, wri, w, std::nullopt); });
+    std::launch::async, [&]() { return find_min_locus(g, ref_id, wri, w, std::nullopt); });
 
   auto loop_future = std::async(
-    std::launch::async, [&]() { return comp_loop_no(ref_id, wri, w); });
+    std::launch::async, [&]() { return comp_loop_no(g, ref_id, wri, w); });
 
   pt::idx_t min_locus = min_future.get();
   pt::idx_t loop_no = loop_future.get();
@@ -83,7 +88,7 @@ comp_ref_visit_bounds(pt::id_t ref_id, const WalkRefIdx &wri, const pvt::walk_t 
  *
  * The itinerary is a collection of allele walks for each ref in the walk.
  */
-void comp_itineraries(const bd::VG &g, const pvt::walk_t &w, pt::idx_t w_idx, pvt::Exp &rw) {
+void comp_itineraries(bd::VG &g, const pvt::walk_t &w, pt::idx_t w_idx, pvt::Exp &rw) {
   // a map of ref_id to itinerary
   std::map<pt::id_t, pvt::Itn> &ref_map = rw.get_ref_itns_mut();
 
@@ -91,7 +96,7 @@ void comp_itineraries(const bd::VG &g, const pvt::walk_t &w, pt::idx_t w_idx, pv
 
   for (pt::id_t ref_id : wri.get_ref_ids()) { // for each ref in the walk
 
-    auto [curr_locus, loop_count] = comp_ref_visit_bounds(ref_id, wri, w);
+    auto [curr_locus, loop_count] = comp_ref_visit_bounds(g, ref_id, wri, w);
 
     for (pt::idx_t loop_no{}; loop_no < loop_count; loop_no++) {
       pvt::AW allele_walk{w_idx};
@@ -105,7 +110,7 @@ void comp_itineraries(const bd::VG &g, const pvt::walk_t &w, pt::idx_t w_idx, pv
         const pvt::step_t &step = w[step_idx];
         pt::idx_t v_id = step.v_id;
 
-        const VtxRefIdx &v_ref_registry = wri.get_vtx_ref_idx(v_id);
+        const bd::VtxRefIdx &v_ref_registry = g.get_vtx_ref_idx(v_id);
 
         if (v_ref_registry.has_locus(ref_id, curr_locus)) {
           {
@@ -136,7 +141,7 @@ void comp_itineraries(const bd::VG &g, const pvt::walk_t &w, pt::idx_t w_idx, pv
       // find curr locus for next loop
       // the next loop must start at the first step in the walk
       if (loop_no + 1 < loop_count) {
-        pt::idx_t nxt_curr = find_min_locus(ref_id, wri, w, curr_locus);
+        pt::idx_t nxt_curr = find_min_locus(g, ref_id, wri, w, curr_locus);
         if (nxt_curr == pc::INVALID_IDX) {
           break;
         }

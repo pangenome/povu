@@ -22,6 +22,8 @@
 #include "../common/types/constants.hpp"
 #include "../common/types/graph.hpp"
 #include "../common/utils.hpp"
+#include "../common/log.hpp"
+
 
 namespace povu::bidirected {
 inline constexpr std::string_view MODULE = "povu::bidirected";
@@ -52,6 +54,83 @@ public:
   pt::idx_t get_locus() const;
 };
 
+
+class VtxRefIdx {
+  // the set of ref ids that are present in the vertex
+  std::set<pt::idx_t> refs_;
+  std::set<pt::idx_t> loci_;
+
+  // ref id to the index of the ref in the RefInfo vector
+  std::map<pt::id_t, std::set<pt::idx_t>> ref_id_to_ref_info_idx_;
+  // key is the ref id and value is a map of locus to the index of the ref in
+  // the RefInfo vector
+  std::map<pt::id_t, std::map<pt::idx_t, pt::idx_t>> ref_id_to_locus_idx_;
+
+  // map of ref id to the set of loci where the ref is present in the vertex
+  std::map<pt::id_t, std::set<pt::idx_t>> ref_id_to_loci_;
+
+  // --------------
+  // constructor(s)
+  // --------------
+
+  VtxRefIdx(){}
+
+public :
+  // --------------
+  // factory method(s)
+  // --------------
+
+  static VtxRefIdx from_ref_info(std::vector<RefInfo> &v_ref_data) {
+    VtxRefIdx vr_idx;
+    for (pt::idx_t i = 0; i < v_ref_data.size(); ++i) {
+      const RefInfo &ref = v_ref_data[i];
+      pt::id_t ref_id = ref.get_ref_id();
+      pt::idx_t locus = ref.get_locus();
+
+      vr_idx.ref_id_to_ref_info_idx_[ref_id].insert(i);
+      vr_idx.ref_id_to_locus_idx_[ref_id][locus] = i;
+      vr_idx.ref_id_to_loci_[ref_id].insert(locus);
+      vr_idx.refs_.insert(ref_id);
+      vr_idx.loci_.insert(locus);
+    }
+    return vr_idx;
+  }
+
+  // --------------
+  // getter(s)
+  // --------------
+  bool has_locus(pt::id_t ref_id, pt::idx_t qry_locus) const {
+    if (!pv_cmp::contains(this->refs_, ref_id)) {
+      return false;
+    }
+    const std::set<pt::idx_t> &loci_set = this->ref_id_to_loci_.at(ref_id);
+    return pv_cmp::contains(loci_set, qry_locus);
+  }
+
+  pt::idx_t get_ref_data_idx(pt::id_t ref_id, pt::idx_t qry_locus) const {
+    if (!pv_cmp::contains(this->ref_id_to_locus_idx_, ref_id)) {
+      return pc::INVALID_IDX;
+    }
+    if (!pv_cmp::contains(this->ref_id_to_locus_idx_.at(ref_id), qry_locus)) {
+      return pc::INVALID_IDX;
+    }
+    return this->ref_id_to_locus_idx_.at(ref_id).at(qry_locus);
+  }
+
+  const std::set<pt::idx_t> &get_ref_ids() const { return this->refs_; }
+
+  std::optional<std::reference_wrapper<const std::set<pt::idx_t>>>
+  get_ref_loci(pt::id_t ref_id) const {
+    if (!pv_cmp::contains(this->ref_id_to_loci_, ref_id)) {
+      return std::nullopt;
+    }
+    if (this->ref_id_to_loci_.at(ref_id).empty()) {
+      ERR("no loci for ref {} in vertex\n", ref_id);
+      exit(1);
+    }
+    return this->ref_id_to_loci_.at(ref_id);
+  }
+};
 
 
 // undirected edge
@@ -122,17 +201,36 @@ class VariationGraph {
   std::vector<Vertex> vertices;
   std::vector<Edge> edges;
   pu::TwoWayMap<std::size_t, std::size_t> v_id_to_idx_; // TODO: reserve size
-  //std::map<id_t, std::string> refs_; // a map of ref ids to names
-  //std::map<id_t, pgt::RefInfo> ref_info_; // a map of ref ids to ref info
+
+
+  std::map<pt::id_t, VtxRefIdx> v_ref_idx_; // v_id to VtxRefIdx
   bool has_refs_;
   pgt::Refs refs_;
   std::set<pgt::side_n_id_t> tips_; // the set of side and id of the tips
+
+  void gen_vtx_ref_idx(pt::id_t v_id) {
+    if (!this->has_refs_) {
+      ERR("graph has no refs\n");
+      exit(1);
+    }
+    if (pv_cmp::contains(this->v_ref_idx_, v_id)) {
+      return;
+    }
+    const Vertex &v = this->get_vertex_by_id(v_id);
+    std::vector<RefInfo> v_ref_data = v.get_refs();
+    VtxRefIdx vr_idx = VtxRefIdx::from_ref_info(v_ref_data);
+    this->v_ref_idx_.emplace(v_id, std::move(vr_idx));
+  }
 
 public:
   // --------------
   // constructor(s)
   // --------------
   VariationGraph(pt::idx_t vtx_count, pt::idx_t edge_count, bool inc_refs);
+
+  // -----------------
+  // factory method(s)
+  // -----------------
   // return a vector of connected components as VG objects
   static std::vector<VariationGraph *> componetize(const VariationGraph &g);
 
@@ -161,6 +259,7 @@ public:
   const std::set<pt::id_t> &get_shared_samples(pt::id_t ref_id) const;
   pt::id_t ref_id_count() const;
   bool has_refs() const;
+  const VtxRefIdx &get_vtx_ref_idx(pt::id_t v_id);
 
   // ---------
   // setter(s)
