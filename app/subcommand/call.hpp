@@ -25,7 +25,8 @@ constexpr std::string_view MODULE = "povu::subcommands::call";
 
 namespace fs = std::filesystem;
 
-namespace pvt = povu::types::genomics;
+
+namespace pgv = povu::genomics::vcf;
 namespace pg = povu::genomics;
 namespace bd = povu::bidirected;
 namespace pgt = povu::types::graph;

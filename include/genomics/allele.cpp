@@ -3,7 +3,7 @@
 namespace povu::genomics::allele {
 
 
-pt::idx_t get_vtx_len(const bd::VG &g, const pvt::step_t &s) {
+pt::idx_t get_vtx_len(const bd::VG &g, const pgt::step_t &s) {
   const bd::Vertex &v = g.get_vertex_by_id(s.v_id);
   return v.get_label().length();
 }
@@ -30,7 +30,7 @@ pt::idx_t get_vtx_len(const bd::VG &g, const pvt::step_t &s) {
  *                      or `pc::MAX_IDX` if no locus exceeds the threshold.
  */
 pt::idx_t find_min_locus(const bd::VG &g, pt::id_t ref_id,
-                         const WalkRefIdx &wri, const pvt::walk_t &w,
+                         const WalkRefIdx &wri, const pgt::walk_t &w,
                          std::optional<pt::idx_t> opt_start_after) {
   bool globally = !opt_start_after.has_value();
   pt::idx_t threshold = globally ? pc::INVALID_IDX : *opt_start_after;
@@ -49,7 +49,7 @@ pt::idx_t find_min_locus(const bd::VG &g, pt::id_t ref_id,
 }
 
 pt::idx_t comp_loop_no(const bd::VG &g, pt::id_t ref_id, const WalkRefIdx &wri,
-                       const pvt::walk_t &w) {
+                       const pgt::walk_t &w) {
   // the number of times the ref is seen in the walk
   // this is also the step with the max ref visits
   pt::idx_t loop_no{0};
@@ -67,7 +67,7 @@ return loop_no;
 std::pair<pt::idx_t, pt::idx_t> comp_ref_visit_bounds(const bd::VG &g,
                                                       pt::id_t ref_id,
                                                       const WalkRefIdx &wri,
-                                                      const pvt::walk_t &w) {
+                                                      const pgt::walk_t &w) {
   auto min_future = std::async(
     std::launch::async, [&]() { return find_min_locus(g, ref_id, wri, w, std::nullopt); });
 
@@ -80,6 +80,67 @@ std::pair<pt::idx_t, pt::idx_t> comp_ref_visit_bounds(const bd::VG &g,
   return {min_locus, loop_no};
 }
 
+Itn foo(const bd::VG &g, pt::id_t ref_id, pt::idx_t w_idx,
+             const pgt::walk_t &w, const WalkRefIdx &wri, pt::idx_t &curr_locus,
+             pt::idx_t &loop_count) {
+  Itn itn;
+
+  for (pt::idx_t loop_no{}; loop_no < loop_count; loop_no++) {
+    AW allele_walk{w_idx};
+
+    bool is_ref_cont{false}; // is the ref continuous in the walk?
+
+    for (pt::idx_t step_idx{}; step_idx < w.size(); ++step_idx) {
+
+      is_ref_cont = false; // reset for each step
+
+      const pgt::step_t &step = w[step_idx];
+      pt::idx_t v_id = step.v_id;
+
+      const bd::VtxRefIdx &v_ref_registry = g.get_vtx_ref_idx(v_id);
+
+      if (v_ref_registry.has_locus(ref_id, curr_locus)) {
+        {
+          const bd::Vertex &v = g.get_vertex_by_id(v_id);
+          std::vector<bd::RefInfo> v_ref_data = v.get_refs();
+
+          pt::idx_t ref_data_idx =
+              v_ref_registry.get_ref_data_idx(ref_id, curr_locus);
+          auto allele_step =
+              AS::given_ref_info(v_id, v_ref_data[ref_data_idx]);
+          allele_walk.append_step(allele_step);
+        }
+
+        curr_locus += get_vtx_len(g, step);
+        is_ref_cont = true; // we have a step for this ref in the walk
+      }
+
+      // we have reached a step that is not continuous with the previous
+      // steps for this ref, so we should break out of the loop
+      if (!is_ref_cont) {
+        break;
+      }
+    }
+
+    if (allele_walk.step_count() > 1) {
+      //pvt::Itn &itn = ref_map[ref_id];
+      itn.append_at(std::move(allele_walk));
+    }
+
+    // find curr locus for next loop
+    // the next loop must start at the first step in the walk
+    if (loop_no + 1 < loop_count) {
+      pt::idx_t nxt_curr = find_min_locus(g, ref_id, wri, w, curr_locus);
+      if (nxt_curr == pc::INVALID_IDX) {
+        break;
+      }
+      curr_locus = nxt_curr;
+    }
+  }
+
+  return itn;
+}
+
 /**
  * @brief compute itineraries for a walk
  *
@@ -88,9 +149,9 @@ std::pair<pt::idx_t, pt::idx_t> comp_ref_visit_bounds(const bd::VG &g,
  *
  * The itinerary is a collection of allele walks for each ref in the walk.
  */
-void comp_itineraries(const bd::VG &g, const pvt::walk_t &w, pt::idx_t w_idx, pvt::Exp &rw) {
+void comp_itineraries(const bd::VG &g, const pgt::walk_t &w, pt::idx_t w_idx, Exp &rw) {
   // a map of ref_id to itinerary
-  std::map<pt::id_t, pvt::Itn> &ref_map = rw.get_ref_itns_mut();
+  std::map<pt::id_t, Itn> &ref_map = rw.get_ref_itns_mut();
 
   WalkRefIdx wri = WalkRefIdx::from_walk(g, w);
 
@@ -98,56 +159,7 @@ void comp_itineraries(const bd::VG &g, const pvt::walk_t &w, pt::idx_t w_idx, pv
 
     auto [curr_locus, loop_count] = comp_ref_visit_bounds(g, ref_id, wri, w);
 
-    for (pt::idx_t loop_no{}; loop_no < loop_count; loop_no++) {
-      pvt::AW allele_walk{w_idx};
 
-      bool is_ref_cont{false}; // is the ref continuous in the walk?
-
-      for (pt::idx_t step_idx{}; step_idx < w.size(); ++step_idx) {
-
-        is_ref_cont = false; // reset for each step
-
-        const pvt::step_t &step = w[step_idx];
-        pt::idx_t v_id = step.v_id;
-
-        const bd::VtxRefIdx &v_ref_registry = g.get_vtx_ref_idx(v_id);
-
-        if (v_ref_registry.has_locus(ref_id, curr_locus)) {
-          {
-            const bd::Vertex &v = g.get_vertex_by_id(v_id);
-            std::vector<bd::RefInfo> v_ref_data = v.get_refs();
-
-            pt::idx_t ref_data_idx = v_ref_registry.get_ref_data_idx(ref_id, curr_locus);
-            auto allele_step = pvt::AS::given_ref_info(v_id, v_ref_data[ref_data_idx]);
-            allele_walk.append_step(allele_step);
-          }
-
-          curr_locus += get_vtx_len(g, step);
-          is_ref_cont = true; // we have a step for this ref in the walk
-        }
-
-        // we have reached a step that is not continuous with the previous
-        // steps for this ref, so we should break out of the loop
-        if (!is_ref_cont) {
-          break;
-        }
-      }
-
-      if (allele_walk.step_count() > 1) {
-        pvt::Itn &itn = ref_map[ref_id];
-        itn.append_at(std::move(allele_walk));
-      }
-
-      // find curr locus for next loop
-      // the next loop must start at the first step in the walk
-      if (loop_no + 1 < loop_count) {
-        pt::idx_t nxt_curr = find_min_locus(g, ref_id, wri, w, curr_locus);
-        if (nxt_curr == pc::INVALID_IDX) {
-          break;
-        }
-        curr_locus = nxt_curr;
-      }
-    }
   }
 
   return;

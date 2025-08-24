@@ -21,9 +21,10 @@ namespace pvt = povu::types::genomics;
 namespace pgv = povu::genomics::vcf;
 namespace pvtr = povu::tree;
 namespace pvst = povu::types::pvst;
+namespace pga = povu::genomics::allele;
+namespace pgg = povu::genomics::graph;
 
-pvt::VcfRecIdx gen_vcf_rec_map(const std::vector<pvtr::Tree> &pvsts, bd::VG &g);
-
+pgv::VcfRecIdx gen_vcf_rec_map(const std::vector<pvtr::Tree> &pvsts, bd::VG &g);
 } // namespace povu::genomics
 
 #endif

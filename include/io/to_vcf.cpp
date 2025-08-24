@@ -1,6 +1,6 @@
 #include "./to_vcf.hpp"
 #include <algorithm>
-#include <cmath>
+
 #include <set>
 #include <sstream>
 #include <string>
@@ -40,7 +40,7 @@ inline void write_combined_header(const std::vector<std::pair<std::string, pt::i
   write_header(contigs, os);
 }
 
-inline void write_col_header(pvt::genotype_data_t gtd, std::ostream &os) {
+inline void write_col_header(pgv::genotype_data_t gtd, std::ostream &os) {
   os << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t";
   for (std::size_t i = 0; i < gtd.genotype_cols.size(); ++i) {
     os << gtd.genotype_cols[i];
@@ -54,9 +54,9 @@ inline void write_col_header(pvt::genotype_data_t gtd, std::ostream &os) {
 
 // ns and the genotype columns are generated from the genotype data
 std::pair<pt::idx_t, std::string> gen_genotype_cols(const bd::VG &g,
-                                                    const pvt::genotype_data_t &gtd,
-                                                    const pvt::AW &ref_aw,
-                                                    const std::vector<pvt::AW> &alt_aws) {
+                                                    const pgv::genotype_data_t &gtd,
+                                                    const pga::AW &ref_aw,
+                                                    const std::vector<pga::AW> &alt_aws) {
   std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   typedef std::vector<std::string> gt_col;
@@ -89,7 +89,7 @@ std::pair<pt::idx_t, std::string> gen_genotype_cols(const bd::VG &g,
 
   for (pt::idx_t alt_w_idx{}; alt_w_idx < alt_aws.size(); alt_w_idx++) {
 
-    const pvt::AW &alt_w = alt_aws[alt_w_idx];
+    const pga::AW &alt_w = alt_aws[alt_w_idx];
     for (pt::id_t alt_hap_id : alt_w.get_ref_ids()){
 
       pt::idx_t alt_hap_col_idx = gtd.ref_id_to_col_idx.at(alt_hap_id);
@@ -130,17 +130,17 @@ std::pair<pt::idx_t, std::string> gen_genotype_cols(const bd::VG &g,
 }
 
 
-void write_vcf_rec(const bd::VG &g, const pvt::genotype_data_t &gtd,
-                     const pvt::VcfRec &r, const std::string &chrom,
+void write_vcf_rec(const bd::VG &g, const pgv::genotype_data_t &gtd,
+                     const pgv::VcfRec &r, const std::string &chrom,
                      std::ostream &os) {
     std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
 
     const std::string qual = "60";
     const std::string filter = "PASS";
-    pvt::var_type_e var_typ = r.get_var_type();
+    pgv::var_type_e var_typ = r.get_var_type();
 
-    auto get_label = [&](const pvt::AS &s) -> std::string {
+    auto get_label = [&](const pga::AS &s) -> std::string {
       if (s.get_o() == pgt::or_e::forward) {
         return g.get_vertex_by_id(s.get_v_id()).get_label();
       } else {
@@ -148,13 +148,13 @@ void write_vcf_rec(const bd::VG &g, const pvt::genotype_data_t &gtd,
       }
     };
 
-    auto at_to_dna_str = [&](const pvt::AW &at) -> std::string {
+    auto at_to_dna_str = [&](const pga::AW &at) -> std::string {
       std::string at_str = "";
 
       // 1) Anchor base for deletions & insertions
       switch (var_typ) {
-      case pvt::var_type_e::del:
-      case pvt::var_type_e::ins: {
+      case pgv::var_type_e::del:
+      case pgv::var_type_e::ins: {
         // grab the first step’s label, take its last character
         auto lbl = get_label(at.get_step(0));
         at_str.push_back(lbl.back());
@@ -168,7 +168,7 @@ void write_vcf_rec(const bd::VG &g, const pvt::genotype_data_t &gtd,
       //    steps [1 .. step_count()-2], inclusive
 
       for (pt::idx_t step_idx{1}; step_idx < at.step_count() - 1; ++step_idx) {
-        const pvt::AS &s = at.get_step(step_idx);
+        const pga::AS &s = at.get_step(step_idx);
         at_str += get_label(s);
       }
 
@@ -176,7 +176,7 @@ void write_vcf_rec(const bd::VG &g, const pvt::genotype_data_t &gtd,
       return at_str.empty() ? std::string{"."} : at_str;
     };
 
-    auto ats_to_dna_str = [&](const std::vector<pvt::AW> &allele_walks) -> std::string {
+    auto ats_to_dna_str = [&](const std::vector<pga::AW> &allele_walks) -> std::string {
       std::string allele_walks_str = "";
       for (std::size_t w_idx{}; w_idx < allele_walks.size(); ++w_idx) {
 
@@ -191,7 +191,7 @@ void write_vcf_rec(const bd::VG &g, const pvt::genotype_data_t &gtd,
       return allele_walks_str;
     };
 
-    auto at_as_str = [](const pvt::AW &at) -> std::string {
+    auto at_as_str = [](const pga::AW &at) -> std::string {
       std::string str;
 
       for (auto &s : at.get_steps()) {
@@ -202,7 +202,7 @@ void write_vcf_rec(const bd::VG &g, const pvt::genotype_data_t &gtd,
       return str;
     };
 
-    auto ats_as_str = [&](const std::vector<pvt::AW> &ats) -> std::string {
+    auto ats_as_str = [&](const std::vector<pga::AW> &ats) -> std::string {
       std::string str;
       // add a comma between ats
       for (std::size_t i{}; i < ats.size(); ++i) {
@@ -226,7 +226,7 @@ void write_vcf_rec(const bd::VG &g, const pvt::genotype_data_t &gtd,
     };
 
     // Total number of called alleles (ref + alt), across all samples
-    auto comp_AN = [](const pvt::AW &ref_aw, const std::vector<pvt::AW> &alt_aws) -> pt::idx_t {
+    auto comp_AN = [](const pga::AW &ref_aw, const std::vector<pga::AW> &alt_aws) -> pt::idx_t {
       pt::idx_t sum {};
       sum = ref_aw.get_ref_ids().size();
       for (const auto &aw : alt_aws) {
@@ -235,7 +235,7 @@ void write_vcf_rec(const bd::VG &g, const pvt::genotype_data_t &gtd,
       return sum;
     };
 
-    auto comp_AC = [](const std::vector<pvt::AW> &alt_aws) -> std::vector<pt::idx_t> {
+    auto comp_AC = [](const std::vector<pga::AW> &alt_aws) -> std::vector<pt::idx_t> {
       std::vector<pt::idx_t> res;
       for (const auto &aw : alt_aws) {
         res.push_back(aw.get_ref_ids().size());
@@ -253,7 +253,7 @@ void write_vcf_rec(const bd::VG &g, const pvt::genotype_data_t &gtd,
       return res;
     };
 
-    pt::idx_t pos = var_typ == pvt::var_type_e::del || var_typ == pvt::var_type_e::ins
+    pt::idx_t pos = var_typ == pgv::var_type_e::del || var_typ == pgv::var_type_e::ins
       ? r.get_pos() - 1 : r.get_pos();
 
     // Both ref_dna and alt_dna are plain std::string values over the DNA letters {A, C, G, T}.
@@ -281,13 +281,13 @@ void write_vcf_rec(const bd::VG &g, const pvt::genotype_data_t &gtd,
                << ";AN=" << an_str
                << ";NS=" << ns_str
                << ";AT=" << at_str
-               << ";VARTYPE=" << pvt::to_string_view(var_typ)
+               << ";VARTYPE=" << pgv::to_string_view(var_typ)
                << ";TANGLED=" << (r.is_tangled() ? "T" : "F")
                << ";LV=" << (r.get_height() - 1);
 
     // std::string info_field_ = pv_cmp::format(
     //     "AC={},AF={},AN={},NS={},AT={},VARTYPE={},TANGLED={}", ac_str, af_str, an_str, ns_str,
-    //     fmt_field(r), pvt::to_string_view(var_typ), r.is_tangled() ? "T" : "F");
+    //     fmt_field(r), pgv::to_string_view(var_typ), r.is_tangled() ? "T" : "F");
 
     os << chrom
        << "\t" << pos
@@ -303,23 +303,23 @@ void write_vcf_rec(const bd::VG &g, const pvt::genotype_data_t &gtd,
   }
 
 void write_vcf(const bd::VG &g, pt::id_t ref_id, const std::string &chrom,
-               const pvt::genotype_data_t &gtd, std::vector<pvt::VcfRec> recs,
+               const pgv::genotype_data_t &gtd, std::vector<pgv::VcfRec> recs,
                std::ostream &os) {
     std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
     write_single_header(chrom, g.get_ref_by_id(ref_id).get_length(), os);
     write_col_header(gtd, os);
-    for (const pvt::VcfRec &r : recs) {
+    for (const pgv::VcfRec &r : recs) {
       write_vcf_rec(g, gtd, r, chrom, os);
     }
 
     return;
   }
 
-void write_vcfs(const pvt::VcfRecIdx &vcf_recs, const bd::VG &g, const core::config &app_config) {
+void write_vcfs(const pgv::VcfRecIdx &vcf_recs, const bd::VG &g, const core::config &app_config) {
   std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
-  const pvt::genotype_data_t &gtd = vcf_recs.get_genotype_data();
+  const pgv::genotype_data_t &gtd = vcf_recs.get_genotype_data();
   const std::vector<std::string> &ref_paths = app_config.get_reference_paths();
 
   auto is_in_ref_paths = [&](const std::string &ref_name) -> bool {
@@ -352,10 +352,10 @@ void write_vcfs(const pvt::VcfRecIdx &vcf_recs, const bd::VG &g, const core::con
   return;
 }
 
-void write_combined_vcf_to_stdout(const pvt::VcfRecIdx &vcf_recs, const bd::VG &g, const core::config &app_config) {
+void write_combined_vcf_to_stdout(const pgv::VcfRecIdx &vcf_recs, const bd::VG &g, const core::config &app_config) {
   std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
-  const pvt::genotype_data_t &gtd = vcf_recs.get_genotype_data();
+  const pgv::genotype_data_t &gtd = vcf_recs.get_genotype_data();
   const std::vector<std::string> &ref_paths = app_config.get_reference_paths();
 
   auto is_in_ref_paths = [&](const std::string &ref_name) -> bool {
@@ -381,7 +381,7 @@ void write_combined_vcf_to_stdout(const pvt::VcfRecIdx &vcf_recs, const bd::VG &
     if (!is_in_ref_paths(ref_name)) {
       continue;
     }
-    for (const pvt::VcfRec &r : recs) {
+    for (const pgv::VcfRec &r : recs) {
       write_vcf_rec(g, gtd, r, ref_name, std::cout);
     }
   }

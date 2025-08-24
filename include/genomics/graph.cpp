@@ -1,5 +1,5 @@
 #include "./graph.hpp"
-#include <utility>
+
 
 namespace povu::genomics::graph {
 
@@ -59,9 +59,9 @@ inline pgt::or_e get_or(pgt::v_end_e side, dir_e d) {
 /**
  * @brief the stack is a unique path from s to t
  */
-pvt::walk_t walk_from_stack(const bd::VG &g, const std::deque<idx_or_t> &dq,
+pgt::walk_t walk_from_stack(const bd::VG &g, const std::deque<idx_or_t> &dq,
                             pvst::route_e route) {
-  pvt::walk_t w;
+  pgt::walk_t w;
   auto append_w = [&](idx_or_t it) {
     auto [v_idx, o] = it;
     pgt::id_or_t s{g.v_idx_to_id(v_idx), o};
@@ -89,7 +89,7 @@ pvt::walk_t walk_from_stack(const bd::VG &g, const std::deque<idx_or_t> &dq,
 // Runs in O((V+E)·(P+1)) time where P = number of paths found.
 // when a vertex has been explored we unblock its neighbours and the current vertex
 void comp_walks(const bd::VG &g, pvst::route_e route, idx_or_t src, idx_or_t snk,
-                std::vector<pvt::walk_t> &walks, const std::string_view &rov_label) {
+                std::vector<pgt::walk_t> &walks, const std::string_view &rov_label) {
 
   // default is source to sink
   dir_e ve_dir = OUT;
@@ -170,7 +170,7 @@ void comp_walks(const bd::VG &g, pvst::route_e route, idx_or_t src, idx_or_t snk
   return;
 }
 
-void find_walks(const bd::VG &g, pvt::RoV &rov) {
+void find_walks(const bd::VG &g, RoV &rov) {
   // Assume route parameters are already set.
   // Use structured bindings to unpack the pvst::route_params_t object.
   auto [l, r, route] = *rov.get_pvst_vtx()->get_route_params();

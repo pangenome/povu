@@ -114,8 +114,11 @@ bool operator<(const id_or_t& lhs, const id_or_t& rhs);
 
 
 // a walk is a sequence of vertices also a path
-typedef std::vector<id_or_t> walk;
+//typedef std::vector<id_or_t> walk;
 
+// TODO: move to graph types
+typedef id_or_t step_t;
+typedef std::vector<id_or_t> walk_t;
 
 struct flubble {
   id_or_t start_;
