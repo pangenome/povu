@@ -4,7 +4,7 @@
 #include <iostream>
 #include <vector>
 
-#include "../common/types/genomics.hpp"
+
 #include "../common/compat.hpp"
 #include "../genomics/allele.hpp"
 
@@ -12,7 +12,6 @@ namespace povu::align {
 inline constexpr std::string_view MODULE = "povu::align";
 
 namespace pc = povu::constants;
-namespace pvt = povu::types::genomics;
 namespace pgt = povu::types::graph;
 namespace pga = povu::genomics::allele;
 

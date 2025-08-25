@@ -7,6 +7,7 @@
 #include <iostream>
 #include <iterator>
 #include <map>
+#include <optional>
 #include <ostream>
 #include <queue>
 #include <set>
@@ -119,16 +120,43 @@ public :
 
   const std::set<pt::idx_t> &get_ref_ids() const { return this->refs_; }
 
-  std::optional<std::reference_wrapper<const std::set<pt::idx_t>>>
-  get_ref_loci(pt::id_t ref_id) const {
+  const std::set<pt::idx_t> &get_ref_loci(pt::id_t ref_id) const {
     if (!pv_cmp::contains(this->ref_id_to_loci_, ref_id)) {
-      return std::nullopt;
+      ERR("ref id {} not found in vertex\n", ref_id);
+      exit(1);
     }
     if (this->ref_id_to_loci_.at(ref_id).empty()) {
       ERR("no loci for ref {} in vertex\n", ref_id);
       exit(1);
     }
     return this->ref_id_to_loci_.at(ref_id);
+  }
+
+  // works with 0 because we assume indexes are 1 indexed
+  // the min must be > threshold
+  std::optional<pt::idx_t> get_min_locus(pt::id_t ref_id, std::optional<pt::idx_t> opt_start_after) const {
+    if (!pv_cmp::contains(this->refs_, ref_id)) {
+      return std::nullopt;
+    }
+    if (this->ref_id_to_loci_.at(ref_id).empty()) {
+      ERR("no loci for ref {} in vertex\n", ref_id);
+      exit(1);
+    }
+
+    pt::idx_t threshold = opt_start_after.value_or(0);
+    for (pt::idx_t locus : this->ref_id_to_loci_.at(ref_id)) {
+      if (locus > threshold) {
+        return locus;
+      }
+    }
+    return std::nullopt;
+  }
+
+  pt::idx_t loop_count(pt::id_t ref_id) const {
+    if (!pv_cmp::contains(this->refs_, ref_id)) {
+      return 0;
+    }
+    return this->ref_id_to_loci_.at(ref_id).size();
   }
 };
 

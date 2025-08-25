@@ -154,6 +154,7 @@ std::pair<std::size_t, std::size_t> frm_bidirected_idx(std::size_t bd_idx, bool 
  */
 void split(const std::string &line, char sep, std::vector<std::string>* tokens);
 
+inline thread_local bool tp_in_worker = false;
 
 class ThreadPool {
 public:
@@ -163,6 +164,7 @@ public:
     workers_.reserve(threads);
     for (std::size_t i = 0; i < threads; ++i) {
       workers_.emplace_back([this] {
+        tp_in_worker = true;
         for (;;) {
           Task task;
           { // wait for work or shutdown
@@ -216,48 +218,51 @@ private:
 };
 
 
+// Assisted nested parallel-for: caller participates; helpers = T or T-1 if already inside pool
+template <class F>
+void parallel_for_assisted(ThreadPool& pool, std::size_t N, F&& body, std::size_t block = 0) {
+  if (N == 0) return;
+
+  const std::size_t T = std::max<std::size_t>(1, pool.size());
+  if (block == 0) block = std::max<std::size_t>(1, N / (T * 16));
+
+  std::atomic<std::size_t> next{0};
+
+  // If already running inside a pool worker, keep one worker "free": spawn T-1 helpers.
+  const std::size_t helpers = tp_in_worker ? (T > 1 ? T - 1 : 0) : T;
+
+  std::vector<std::future<void>> fs;
+  fs.reserve(helpers);
+  for (std::size_t h = 0; h < helpers; ++h) {
+    fs.emplace_back(pool.enqueue([&, block] {
+      for (;;) {
+        const std::size_t start = next.fetch_add(block, std::memory_order_relaxed);
+        if (start >= N) break;
+        const std::size_t end = std::min(start + block, N);
+        for (std::size_t i = start; i < end; ++i) body(i);
+      }
+    }));
+  }
+
+  // Caller helps execute the same loop (crucial for nested calls).
+  for (;;) {
+    const std::size_t start = next.fetch_add(block, std::memory_order_relaxed);
+    if (start >= N) break;
+    const std::size_t end = std::min(start + block, N);
+    for (std::size_t i = start; i < end; ++i) body(i);
+  }
+
+  for (auto& f : fs) f.get(); // rethrow exceptions
+}
+
 /**
  * Divide the number of components into chunks for each thread
  * @param tc: (thread_count) number of threads to use
  * @param ic: (item_count) number of items to process
  */
-//std::pair<uint32_t, uint32_t>
+// std::pair<uint32_t, uint32_t>
 pt::op_t<u_int32_t> compute_thread_allocation(std::size_t requested_threads,
                                               std::size_t item_count);
-
-// Parallel for over [0, N) using the pool (dynamic, fine-grained).
-template <class F>
-void parallel_for(ThreadPool &pool, std::size_t N, F &&body,
-                  std::size_t block = 0) {
-  if (N == 0)
-    return;
-  const std::size_t T = std::max<std::size_t>(1, pool.size());
-
-  if (block == 0) {
-    // Heuristic: 8–64 tasks per thread
-    block = std::max<std::size_t>(1, N / (T * 16));
-  }
-
-  std::atomic<std::size_t> next{0};
-  std::vector<std::future<void>> fs;
-  fs.reserve(T);
-
-  for (std::size_t t = 0; t < T; ++t) {
-    fs.emplace_back(pool.enqueue([&, block] {
-      for (;;) {
-        const std::size_t start =
-            next.fetch_add(block, std::memory_order_relaxed);
-        if (start >= N)
-          break;
-        const std::size_t end = std::min(start + block, N);
-        for (std::size_t i = start; i < end; ++i)
-          body(i);
-      }
-    }));
-  }
-  for (auto &f : fs)
-    f.get(); // propagate exceptions
-}
 
 } // namespace povu::utils
 

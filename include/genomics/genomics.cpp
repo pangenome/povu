@@ -33,46 +33,20 @@ void remove_prefix_walks(pga::Itn &itn) {
 /**
  * Associate walks in an RoV with references
  */
-pga::Exp comp_expeditions(const bd::VG &g, const pgg::RoV &rov) {
-#ifdef DEBUG
-  std::chrono::duration<double> timeRefRead;
-  auto t0 = pt::Time::now();
-#endif
-
-  const std::vector<pgt::walk_t> &walks = rov.get_walks();
-  const pvst::VertexBase *pvst_v_ptr = rov.get_pvst_vtx();
+pga::Exp exp_frm_rov(const bd::VG &g, const pgg::RoV &rov) {
 
   // create an expedition object for the RoV
-  pga::Exp ref_walks {pvst_v_ptr};
+  const std::vector<pgt::walk_t> &walks = rov.get_walks();
+  const pvst::VertexBase *pvst_v_ptr = rov.get_pvst_vtx();
+  pga::Exp ref_walks{pvst_v_ptr};
 
-  // a walk is a single traversal bounded by start to the end of an RoV
-  for (pt::idx_t w_idx{}; w_idx < rov.walk_count(); w_idx++) {
-    const pgt::walk_t &w = walks[w_idx];
-    povu::genomics::allele::comp_itineraries(g, w, w_idx, ref_walks);
-  }
-
-
-#ifdef DEBUG
-  if (true) {
-    timeRefRead = pt::Time::now() - t0;
-    INFO("ROV {}", rov.as_str());
-    INFO("ref count in exp {} walk count {}", ref_walks.ref_count(), rov.walk_count());
-    INFO("Time spent finding walks in itns {:.2f} sec", timeRefRead.count());
-    t0 = pt::Time::now();
-  }
-#endif
+  // compute the itineraries for each reference in the RoV
+  std::map<pt::id_t, pga::Itn> &ref_map = ref_walks.get_ref_itns_mut();
+  pga::comp_itineraries(g, walks, ref_map);
 
   for (pt::idx_t ref_id : ref_walks.get_ref_ids()) {
     remove_prefix_walks(ref_walks.get_itn_mut(ref_id));
   }
-
-#ifdef DEBUG
-  if (true) {
-    timeRefRead = pt::Time::now() - t0;
-    INFO("Time spent removing prefixes {:.2f} sec", timeRefRead.count());
-    t0 = pt::Time::now();
-  }
-#endif
 
   for (const pt::idx_t ref_id : ref_walks.get_ref_ids()) {
     if (ref_walks.get_itn(ref_id).at_count() > 1) {
@@ -90,82 +64,41 @@ pga::Exp comp_expeditions(const bd::VG &g, const pgg::RoV &rov) {
     }
   }
 
-#ifdef DEBUG
-  if (true) {
-    timeRefRead = pt::Time::now() - t0;
-    INFO("Time spent bla {:.2f} sec", timeRefRead.count());
-    t0 = pt::Time::now();
-  }
-#endif
-
   if (ref_walks.is_tangled()) {
     put::untangle_ref_walks(ref_walks);
   }
 
-#ifdef DEBUG
-  if (true) {
-    timeRefRead = pt::Time::now() - t0;
-    INFO("Time spent untangling {:.2f} sec", timeRefRead.count());
-    t0 = pt::Time::now();
-  }
-#endif
-
   return ref_walks;
 }
 
-// std::vector<pga::Exp> do_ref_walks(const bd::VG &g, const std::vector<pgg::RoV> &all_rovs) {
-//   std::vector<pga::Exp> all_exp(all_rovs.size());
-//   //all_exp.reserve(all_rovs.size());
+std::vector<pga::Exp> comp_expeditions(const bd::VG &g,
+                                       const std::vector<pgg::RoV> &all_rovs,
+                                       std::size_t thread_count) {
+  std::vector<pga::Exp> all_exp(all_rovs.size());
 
-//   std::size_t thread_count = 16; // default
-//   auto [num_threads, chunk_size] = pu::compute_thread_allocation(thread_count, all_rovs.size());
+  //std::size_t thread_count = 16; // default
+  auto [num_threads, chunk_size] = pu::compute_thread_allocation(thread_count, all_rovs.size());
 
+  std::vector<std::thread> threads(num_threads);
+  std::size_t start, end;
+  for (unsigned int thread_idx{}; thread_idx < num_threads; ++thread_idx) {
+    start = thread_idx * chunk_size;
+    end = (thread_idx == num_threads - 1) ? all_rovs.size() : (thread_idx + 1) * chunk_size;
 
-//   INFO("Using {} threads to compute reference walks for {} RoVs", num_threads, all_rovs.size());
-
-//   std::vector<std::thread> threads(num_threads);
-//   std::size_t start, end;
-//   for (unsigned int thread_idx{}; thread_idx < num_threads; ++thread_idx) {
-//     start = thread_idx * chunk_size;
-//     end = (thread_idx == num_threads - 1) ? all_rovs.size() : (thread_idx + 1) * chunk_size;
-
-//     INFO("Thread {} processing RoVs from {} to {}", thread_idx, start, end);
-
-//     threads[thread_idx] = std::thread([&, start, end]() {
-//           for (std::size_t i{start}; i < end; i++) {
-//             const pgg::RoV &r = all_rovs[i];
-//             pga::Exp rov_rws = comp_expeditions(g, r);
-//             all_exp[i] = std::move(rov_rws);
-//             //all_ref_walks.push_back(std::move(rov_rws));
-//           }
-//         });
-//   }
-
-//   // Wait for all threads to finish
-//   for (auto &thread : threads) {
-//     thread.join();
-//   }
-
-//   return all_exp;
-// }
-
-// Assuming bd::VG is thread-safe for concurrent read-only access,
-// and gen_rov_ref_walks(g, r) returns pga::Exp.
-std::vector<pga::Exp> do_ref_walks_pool(const bd::VG &g,
-                                        const std::vector<pgg::RoV> &all_rovs,
-                                        pu::ThreadPool &pool) {
-  const std::size_t N = all_rovs.size();
-  std::vector<pga::Exp> out(N);
-  if (N == 0) {
-    return out;
+    threads[thread_idx] = std::thread([&, start, end]() {
+          for (std::size_t i{start}; i < end; i++) {
+            const pgg::RoV &r = all_rovs[i];
+            pga::Exp rov_rws = exp_frm_rov(g, r);
+            all_exp[i] = std::move(rov_rws);
+          }});
   }
 
-  parallel_for(pool, N, [&](std::size_t i) {
-    INFO("Processing RoV {}/{}", i + 1, N);
-    out[i] = comp_expeditions(g, all_rovs[i]); // disjoint writes → no locks
-  });
+  // Wait for all threads to finish
+  for (auto &thread : threads) {
+    thread.join();
+  }
 
-  return out;
+  return all_exp;
 }
 
 /**
@@ -243,61 +176,14 @@ void gen_ref_idxs(bd::VG &g, const std::vector<pgg::RoV> &all_rovs) {
     }
   }
 }
-pgv::VcfRecIdx gen_vcf_rec_map(const std::vector<pvtr::Tree> &pvsts, bd::VG &g) {
-#ifdef DEBUG
-  std::chrono::duration<double> timeRefRead;
-  auto t0 = pt::Time::now();
-#endif
+
+pgv::VcfRecIdx gen_vcf_rec_map(const std::vector<pvtr::Tree> &pvsts, bd::VG &g,
+                               std::size_t thread_count) {
+
   std::vector<pgg::RoV> all_rovs = gen_rov(pvsts, g);
-
-#ifdef DEBUG
-  if (true) {
-    timeRefRead = pt::Time::now() - t0;
-    INFO("Time spent finding walks in RoVs {:.2f} sec", timeRefRead.count());
-    t0 = pt::Time::now();
-  }
-#endif
   gen_ref_idxs(g, all_rovs);
-
-
-
-#ifdef DEBUG
-  if (true) {
-    timeRefRead = pt::Time::now() - t0;
-    INFO("Time spent gen idxs {:.2f} sec", timeRefRead.count());
-    t0 = pt::Time::now();
-  }
-#endif
-
-  const std::size_t thread_count = 16; // default
-  pu::ThreadPool pool(thread_count); // default thread count
-  std::vector<pga::Exp> all_ref_walks_ = do_ref_walks_pool(g, all_rovs, pool);
-  //std::vector<pga::Exp> all_ref_walks;
-  // for (const pgg::RoV &r : all_rovs) {
-  //   pga::Exp rov_rws = gen_rov_ref_walks(g, r);
-  //   all_ref_walks.push_back(std::move(rov_rws));
-  // }
-  //
-  //   gen_rov_ref_walks(g, r, all_ref_walks);
-  // }
-
-#ifdef DEBUG
-      if (true) {
-    timeRefRead = pt::Time::now() - t0;
-    INFO("Time spent computing walks {:.2f} sec", timeRefRead.count());
-    t0 = pt::Time::now();
-  }
-#endif
-
-  pgv::VcfRecIdx rs = pgv::gen_vcf_records(g, all_ref_walks_);
-
-#ifdef DEBUG
-  if (true) {
-    timeRefRead = pt::Time::now() - t0;
-    INFO("Time gen VCFs {:.2f} sec", timeRefRead.count());
-    t0 = pt::Time::now();
-  }
-#endif
+  std::vector<pga::Exp> exps = comp_expeditions(g, all_rovs, thread_count);
+  pgv::VcfRecIdx rs = pgv::gen_vcf_records(g, exps);
 
   return rs;
   }

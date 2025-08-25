@@ -8,7 +8,6 @@
 #include <algorithm>
 
 #include "../../app/cli/app.hpp"
-#include "../common/types/genomics.hpp"
 #include "../common/compat.hpp"
 #include "../graph/bidirected.hpp"
 #include "../align/align.hpp"
@@ -17,7 +16,6 @@
 
 namespace povu::genomics::untangle {
 namespace pgt = povu::types::graph;
-namespace pvt = povu::types::genomics;
 namespace bd = povu::bidirected;
 namespace pc = povu::constants;
 namespace pa = povu::align;

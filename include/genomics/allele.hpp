@@ -15,7 +15,7 @@
 
 #include "../common/compat.hpp"
 #include "../common/types/core.hpp"
-#include "../common/types/genomics.hpp"
+
 #include "../common/types/graph.hpp"
 #include "../common/types/pvst.hpp"
 #include "../common/log.hpp"
@@ -25,7 +25,6 @@ namespace povu::genomics::allele {
 inline constexpr std::string_view MODULE = "povu::genomics::allele";
 
 namespace pgt = povu::types::graph;
-namespace pvt = povu::types::genomics;
 namespace pvst = povu::types::pvst;
 
 /**
@@ -117,7 +116,7 @@ public:
   // ---------
   // setter(s)
   // ---------
-  void append_step(AS s) { this->steps_.emplace_back(s); }
+  void append_step(AS &&s) { this->steps_.emplace_back(s); }
   void add_ref_id(pt::id_t ref_id) { this->ref_ids_.insert(ref_id); }
 };
 
@@ -175,7 +174,7 @@ public:
       throw std::out_of_range("at index out of range");
     }
 
-    this->it_[at_idx].append_step(s);
+    this->it_[at_idx].append_step(std::move(s));
     this->len++;
   }
 
@@ -341,34 +340,10 @@ public:
   // getter(s)
   // --------------
   const std::set<pt::idx_t> &get_ref_ids() const { return this->refs_; }
-
-
-  pt::idx_t loop_count(const bd::VtxRefIdx &vri, pt::id_t ref_id) const {
-    if (!pv_cmp::contains(this->refs_, ref_id)) {
-      return 0;
-    }
-
-    if (auto opt_loci = vri.get_ref_loci(ref_id); opt_loci) {
-      return opt_loci->get().size(); // the set is expected to be non-empty
-    }
-
-    return 0;
-  }
-
-  std::optional<pt::idx_t> get_min_locus(const bd::VtxRefIdx &vri, pt::idx_t ref_id) const {
-    if (!pv_cmp::contains(this->refs_, ref_id)) {
-      return std::nullopt;
-    }
-
-    if (auto opt_loci = vri.get_ref_loci(ref_id); opt_loci) {
-      return *opt_loci->get().begin(); // the set is expected to be non-empty
-    }
-
-    return std::nullopt;
-  }
 };
 
-void comp_itineraries(const bd::VG &g, const pgt::walk_t &w, pt::idx_t w_idx, Exp &rw);
+void comp_itineraries(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
+                      std::map<pt::id_t, Itn> &ref_map);
 
 } // namespace povu::genomics::alele
 

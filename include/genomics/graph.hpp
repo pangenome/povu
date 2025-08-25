@@ -12,7 +12,6 @@
 
 #include "../common/compat.hpp"
 #include "../common/types/core.hpp"
-#include "../common/types/genomics.hpp"
 #include "../common/types/graph.hpp"
 #include "../common/types/pvst.hpp"
 #include "../common/log.hpp"
@@ -21,7 +20,6 @@
 namespace povu::genomics::graph {
 inline constexpr std::string_view MODULE = "povu::genomics::graph";
 
-namespace pvt = povu::types::genomics;
 namespace pvst = povu::types::pvst;
 namespace pgt = povu::types::graph;
 

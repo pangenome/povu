@@ -128,7 +128,7 @@ void do_call(core::config &app_config) {
   }
 #endif
 
-  pgv::VcfRecIdx vcf_recs = pg::gen_vcf_rec_map(pvsts, *g);
+  pgv::VcfRecIdx vcf_recs = pg::gen_vcf_rec_map(pvsts, *g, app_config.thread_count());
   piv::write_vcfs(vcf_recs, *g, app_config);
 
   return;

@@ -28,8 +28,6 @@ namespace povu::subcommands::decompose {
 constexpr std::string_view MODULE = "povu::subcommands::decompose";
 
 namespace fs = std::filesystem;
-
-namespace pvt = povu::types::genomics;
 namespace bd = povu::bidirected;
 namespace pgt = povu::types::graph;
 namespace pst = povu::spanning_tree;
