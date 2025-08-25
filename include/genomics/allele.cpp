@@ -85,6 +85,7 @@ inline std::optional<AW> do_walk(const bd::VG &g, pt::id_t ref_id, pt::idx_t w_i
                           const pgt::walk_t &w, pt::idx_t start_locus) {
   pt::idx_t curr_locus = start_locus;
   AW allele_walk{w_idx};
+
   for (pt::idx_t step_idx{}; step_idx < w.size(); ++step_idx) {
 
     const pgt::step_t &step = w[step_idx];
@@ -101,8 +102,7 @@ inline std::optional<AW> do_walk(const bd::VG &g, pt::id_t ref_id, pt::idx_t w_i
     const bd::Vertex &v = g.get_vertex_by_id(v_id);
     const std::vector<bd::RefInfo> &v_ref_data = v.get_refs();
 
-    pt::idx_t ref_data_idx =
-        v_ref_registry.get_ref_data_idx(ref_id, curr_locus);
+    pt::idx_t ref_data_idx = v_ref_registry.get_ref_data_idx(ref_id, curr_locus);
     auto allele_step = AS::given_ref_info(v_id, v_ref_data[ref_data_idx]);
     allele_walk.append_step(std::move(allele_step));
 
@@ -119,9 +119,8 @@ inline std::optional<AW> do_walk(const bd::VG &g, pt::id_t ref_id, pt::idx_t w_i
 std::vector<AW> handle_walks(const bd::VG &g, pt::id_t ref_id, pt::idx_t w_idx,
                              const pgt::walk_t &w, pt::idx_t start_locus,
                              pt::idx_t loop_count) {
-
   std::vector<AW> aws;
-
+  aws.reserve(loop_count);
   if (std::optional<AW> opt_aw = do_walk(g, ref_id, w_idx, w, start_locus)) {
     aws.push_back(std::move(*opt_aw));
   }
@@ -155,7 +154,7 @@ std::vector<AW> handle_walks(const bd::VG &g, pt::id_t ref_id, pt::idx_t w_idx,
  *
  * The itinerary is a collection of allele walks for each ref in the walk.
  */
-void comp_itineraries(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
+void comp_itineraries_async(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
                       std::map<pt::id_t, Itn> &ref_map) {
 
   std::vector<std::tuple<pt::idx_t, id_t>> tasks;
@@ -175,6 +174,59 @@ void comp_itineraries(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
     }
   }
 
+  // Launch one async job per (w_idx, ref_id) to compute aws
+  std::vector<std::future<std::vector<AW>>> futures;
+  futures.reserve(tasks.size());
+
+  for (auto [w_idx, ref_id] : tasks) {
+    futures.emplace_back(std::async(std::launch::async, [&, w_idx, ref_id] {
+      const auto &w = walks[w_idx];
+      auto [start_locus, loop_count] = comp_ref_visit_bounds(g, ref_id, w);
+      // Do the expensive work off-thread; no shared writes here
+      return handle_walks(g, ref_id, w_idx, w, start_locus, loop_count);
+    }));
+  }
+
+  // Collect results in the same order as `tasks` and append to ref_map on this
+  // thread
+  auto fit = futures.begin();
+  for (auto [w_idx, ref_id] : tasks) {
+    std::vector<AW> aws = (fit++)->get(); // propagates exceptions from the task
+    if (!aws.empty()) {
+      Itn &itn = ref_map[ref_id];
+      for (AW &aw : aws) {
+        itn.append_at(std::move(aw));
+      }
+    }
+  }
+
+
+  return;
+}
+
+
+
+void comp_itineraries_serial(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
+                      std::map<pt::id_t, Itn> &ref_map) {
+
+  std::vector<std::tuple<pt::idx_t, id_t>> tasks;
+  for (pt::idx_t w_idx = 0; w_idx < walks.size(); ++w_idx) {
+    const pgt::walk_t &w = walks[w_idx];
+    std::set<pt::id_t> ref_ids;
+
+    for (const pgt::step_t &s : w) {
+      auto v_id = s.v_id;
+      const bd::VtxRefIdx &vr_idx = g.get_vtx_ref_idx(v_id);
+      const std::set<pt::idx_t> step_ref_ids = vr_idx.get_ref_ids();
+      ref_ids.insert(step_ref_ids.begin(), step_ref_ids.end());
+    }
+
+   for (pt::id_t ref_id : ref_ids) {
+      tasks.push_back({w_idx, ref_id});
+    }
+  }
+
+
   for (auto [w_idx, ref_id] : tasks) {
     const auto &w = walks[w_idx];
     auto [start_locus, loop_count] = comp_ref_visit_bounds(g, ref_id, w);
@@ -186,6 +238,21 @@ void comp_itineraries(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
         itn.append_at(std::move(aw));
       }
     }
+  }
+
+  return;
+}
+
+
+void comp_itineraries(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
+                      std::map<pt::id_t, Itn> &ref_map) {
+
+  if (walks.size() > 50) {
+    comp_itineraries_async(g, walks, ref_map);
+    return;
+  }
+  else {
+    comp_itineraries_serial(g, walks, ref_map);
   }
 
   return;

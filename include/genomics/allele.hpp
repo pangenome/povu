@@ -85,9 +85,9 @@ public:
   // --------------
   // constructor(s)
   // --------------
-  AW() : steps_() {}
-  AW(pt::idx_t w_idx) : steps_(), walk_idx_(w_idx) {}
-  AW(AS s) : steps_(std::vector<AS>{s}) {}
+  //AW() : steps_() {}
+    AW(pt::idx_t w_idx) : steps_(), walk_idx_(w_idx) {}
+  //AW(AS s) : steps_(std::vector<AS>{s}) {}
 
 
   // ---------
