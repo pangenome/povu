@@ -31,8 +31,7 @@ namespace fs = std::filesystem;
 namespace bd = povu::bidirected;
 namespace pgt = povu::types::graph;
 namespace pst = povu::spanning_tree;
-namespace pvtr = povu::tree;
-
+namespace pvst = povu::pvst;
 namespace pic = povu::io::common;
 namespace ptu = povu::tree_utils;
 namespace pfl = povu::flubbles;

@@ -19,15 +19,14 @@
 #include "../common/tree_utils.hpp"
 #include "../common/compat.hpp"
 #include "../graph/spanning_tree.hpp"
-#include "../graph/tree.hpp"
+#include "../graph/pvst.hpp"
 
 namespace povu::flubbles {
 inline constexpr std::string_view MODULE = "povu::graph::flubble_tree";
 
-namespace pvtr = povu::tree;
 namespace pc = povu::constants;
 namespace ptu = povu::tree_utils;
-namespace pvst = povu::types::pvst;
+namespace pvst = povu::pvst;
 namespace pgt = povu::types::graph;
 namespace pst = povu::spanning_tree;
 
@@ -65,6 +64,6 @@ struct eq_class_stack_t {
  * @brief Generate flubble tree from spanning tree
  *
  */
-pvtr::Tree find_flubbles(pst::Tree &t, const core::config &app_config);
+pvst::Tree find_flubbles(pst::Tree &t, const core::config &app_config);
 } // namespace povu::flubbles
 #endif

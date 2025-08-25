@@ -32,12 +32,12 @@ namespace bd = povu::bidirected;
 namespace pgt = povu::types::graph;
 namespace pst = povu::spanning_tree;
 namespace pc = povu::constants;
-namespace pvtr = povu::tree;
+namespace pvst = povu::pvst;
 namespace pic = povu::io::common;
 namespace piv = povu::io::to_vcf;
 
 
-void read_pvsts(const core::config &app_config, std::vector<pvtr::Tree> &pvsts);
+void read_pvsts(const core::config &app_config, std::vector<pvst::Tree> &pvsts);
 pt::status_t get_refs(core::config &app_config);
 std::vector<std::string> filter_paths_by_prefix(const core::config &app_config);
 void do_call(core::config &app_config);

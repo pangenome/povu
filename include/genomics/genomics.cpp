@@ -104,7 +104,7 @@ std::vector<pga::Exp> comp_expeditions(const bd::VG &g,
  * Check if a vertex in the pvst is a flubble leaf
  * A flubble leaf is a vertex that has no children that are also flubbles
  */
-bool is_fl_leaf(const pvtr::Tree &pvst, pt::idx_t pvst_v_idx) noexcept {
+bool is_fl_leaf(const pvst::Tree &pvst, pt::idx_t pvst_v_idx) noexcept {
   const pvst::VertexBase *pvst_v_ptr = pvst.get_vertex_const_ptr(pvst_v_idx);
 
   // we assume that the vertex has a clan
@@ -127,13 +127,13 @@ bool is_fl_leaf(const pvtr::Tree &pvst, pt::idx_t pvst_v_idx) noexcept {
  * find walks in the graph based on the leaves of the pvst
  * initialize RoVs from flubbles
  */
-std::vector<pgg::RoV> gen_rov(const std::vector<pvtr::Tree> &pvsts, const bd::VG &g) {
+std::vector<pgg::RoV> gen_rov(const std::vector<pvst::Tree> &pvsts, const bd::VG &g) {
   // the set of RoVs to return
   std::vector<pgg::RoV> rs;
   rs.reserve(pvsts.size());
 
   // true when the vertex is a flubble leaf or a leaf in the pvst
-  auto should_call = [&](const pvtr::Tree &pvst, const pvst::VertexBase *pvst_v_ptr,
+  auto should_call = [&](const pvst::Tree &pvst, const pvst::VertexBase *pvst_v_ptr,
                      pt::idx_t pvst_v_idx) -> bool {
     if (std::optional<pvst::route_params_t> opt_rp = pvst_v_ptr->get_route_params()) {
       return is_fl_leaf(pvst, pvst_v_idx) || pvst.is_leaf(pvst_v_idx);
@@ -141,7 +141,7 @@ std::vector<pgg::RoV> gen_rov(const std::vector<pvtr::Tree> &pvsts, const bd::VG
     return false;
   };
 
-  for (const pvtr::Tree &pvst : pvsts) { // for each pvst
+  for (const pvst::Tree &pvst : pvsts) { // for each pvst
     // loop through each tree
 
     for (pt::idx_t pvst_v_idx{}; pvst_v_idx < pvst.vtx_count(); pvst_v_idx++) {
@@ -176,7 +176,7 @@ void gen_ref_idxs(bd::VG &g, const std::vector<pgg::RoV> &all_rovs) {
   }
 }
 
-pgv::VcfRecIdx gen_vcf_rec_map(const std::vector<pvtr::Tree> &pvsts, bd::VG &g,
+pgv::VcfRecIdx gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
                                std::size_t thread_count) {
 
   std::vector<pgg::RoV> all_rovs = gen_rov(pvsts, g);

@@ -75,7 +75,7 @@ bool trunk(const pst::Tree &st, pt::idx_t ai, pt::idx_t zi) {
   return false;
 }
 
-void find_tiny(const pst::Tree &st, pvtr::Tree &ft, const ptu::tree_meta &tm) {
+void find_tiny(const pst::Tree &st, pvst::Tree &ft, const ptu::tree_meta &tm) {
   const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   for (pt::idx_t ft_v_idx{}; ft_v_idx < ft.vtx_count(); ft_v_idx++) {

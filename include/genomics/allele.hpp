@@ -17,7 +17,7 @@
 #include "../common/types/core.hpp"
 
 #include "../common/types/graph.hpp"
-#include "../common/types/pvst.hpp"
+#include "../graph/pvst.hpp"
 #include "../common/log.hpp"
 #include "../graph/bidirected.hpp"
 
@@ -25,7 +25,7 @@ namespace povu::genomics::allele {
 inline constexpr std::string_view MODULE = "povu::genomics::allele";
 
 namespace pgt = povu::types::graph;
-namespace pvst = povu::types::pvst;
+namespace pvst = povu::pvst;
 
 /**
  * Allele or Ref Step

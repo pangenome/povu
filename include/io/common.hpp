@@ -12,7 +12,6 @@
 #include "../../include/common/compat.hpp"
 #include "../../include/common/utils.hpp"
 #include "../../include/graph/bidirected.hpp"
-#include "../../include/graph/tree.hpp"
 
 namespace povu::io::common {
 namespace pgt = povu::types::graph;

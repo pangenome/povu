@@ -240,7 +240,7 @@ bool in_branch(const pst::Tree &st, const ptu::tree_meta &tm, const pvst::Flubbl
 }
 
 
-void find_parallel(const pst::Tree &st, pvtr::Tree &ft, const ptu::tree_meta &tm) {
+void find_parallel(const pst::Tree &st, pvst::Tree &ft, const ptu::tree_meta &tm) {
   const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   for (pt::idx_t ft_v_idx{}; ft_v_idx < ft.vtx_count(); ft_v_idx++) {

@@ -20,21 +20,20 @@
 #include "../common/compat.hpp"
 #include "../common/utils.hpp"
 #include "../graph/spanning_tree.hpp"
-#include "../graph/tree.hpp"
+#include "../graph/pvst.hpp"
 
 
 namespace povu::tiny {
 inline constexpr std::string_view MODULE = "povu::tiny";
 
-namespace pvtr = povu::tree;
 namespace pc = povu::constants;
 namespace ptu = povu::tree_utils;
 namespace pst = povu::spanning_tree;
-namespace pvst = povu::types::pvst;
+namespace pvst = povu::pvst;
 namespace pgt = povu::types::graph;
 
 
-void find_tiny(const pst::Tree &st, pvtr::Tree &pvst, const ptu::tree_meta &tm);
+void find_tiny(const pst::Tree &st, pvst::Tree &pvst, const ptu::tree_meta &tm);
 
 } // namespace povu::parallel
 #endif // PV_TINY_HPP

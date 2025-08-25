@@ -20,21 +20,19 @@
 #include "../common/compat.hpp"
 #include "../common/utils.hpp"
 #include "../graph/spanning_tree.hpp"
-#include "../graph/tree.hpp"
+#include "../graph/pvst.hpp"
 
 namespace povu::midi {
 inline constexpr std::string_view MODULE = "povu::misc";
 
 namespace pgt = povu::types::graph;
 namespace pc = povu::constants;
-namespace pvtr = povu::tree;
 namespace pst = povu::spanning_tree;
-namespace pvst = povu::types::pvst;
+namespace pvst = povu::pvst;
 namespace pc = povu::constants;
-namespace pvtr = povu::tree;
 namespace ptu = povu::tree_utils;
 
-void find_midi(const pst::Tree &st, pvtr::Tree &pvst, const ptu::tree_meta &tm);
+void find_midi(const pst::Tree &st, pvst::Tree &pvst, const ptu::tree_meta &tm);
 } // namespace povu::misc
 
 #endif // PV_MISC_HPP
