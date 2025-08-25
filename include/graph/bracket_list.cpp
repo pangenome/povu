@@ -1,10 +1,6 @@
 #include "./bracket_list.hpp"
-#include <list>
-#include "../common/types/types.hpp"
 
 namespace povu::bracket_list {
-
-using namespace povu::constants;
 
 /*
  * Bracket

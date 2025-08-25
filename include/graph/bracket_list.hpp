@@ -5,8 +5,11 @@
 #include <cstddef>
 #include <unordered_map>
 
+#include "../common/types/constants.hpp"
 
 namespace povu::bracket_list {
+using namespace povu::constants;
+
 class Bracket;
 typedef std::list<Bracket> BracketList;
 
