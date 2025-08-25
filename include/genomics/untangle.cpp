@@ -2,7 +2,7 @@
 
 namespace povu::genomics::untangle {
 
-inline std::vector<pt::up_t<pt::id_t>> compute_pairs(pvt::Exp rt) {
+inline std::vector<pt::up_t<pt::id_t>> compute_pairs(pga::Exp rt) {
   std::set<pt::id_t> ref_ids = rt.get_ref_ids();
 
   std::set<pt::up_t<pt::id_t>> done;
@@ -56,7 +56,7 @@ std::string invert_aln(const std::string &aln) {
  * formerly untangle_flb
  * align the traversals of two refs
  */
-void untangle_ref_walks(pvt::Exp &rt) {
+void untangle_ref_walks(pga::Exp &rt) {
   std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   std::string et;
@@ -72,10 +72,10 @@ void untangle_ref_walks(pvt::Exp &rt) {
         et = invert_aln(rt.get_aln(ref_id2, ref_id1));
       }
       else {
-        const pvt::Itn &itn1 = rt.get_itn(ref_id1);
-        const pvt::Itn &itn2 = rt.get_itn(ref_id2);
+        const pga::Itn &itn1 = rt.get_itn(ref_id1);
+        const pga::Itn &itn2 = rt.get_itn(ref_id2);
 
-        et = pa::align(itn1, itn2, pvt::aln_level_e::at);
+        et = pa::align(itn1, itn2, pa::aln_level_e::at);
       }
 
       rt.add_aln(ref_id1, ref_id2, std::move(et));
@@ -86,8 +86,8 @@ void untangle_ref_walks(pvt::Exp &rt) {
 
   // for (auto [ref_id1, ref_id2] : aln_pairs) {
 
-  //   const pvt::Itn &itn1 = rt.get_itn(ref_id1);
-  //   const pvt::Itn &itn2 = rt.get_itn(ref_id2);
+  //   const pga::Itn &itn1 = rt.get_itn(ref_id1);
+  //   const pga::Itn &itn2 = rt.get_itn(ref_id2);
 
   //   std::string et = pa::align(itn1, itn2, pvt::aln_level_e::at);
 

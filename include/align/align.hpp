@@ -4,15 +4,25 @@
 #include <iostream>
 #include <vector>
 
-#include "../common/types/genomics.hpp"
+
 #include "../common/compat.hpp"
+#include "../genomics/allele.hpp"
 
 namespace povu::align {
 inline constexpr std::string_view MODULE = "povu::align";
 
 namespace pc = povu::constants;
-namespace pvt = povu::types::genomics;
 namespace pgt = povu::types::graph;
+namespace pga = povu::genomics::allele;
+
+/**
+ * used in untangling, the level of alignment
+ */
+
+enum class aln_level_e {
+  step,
+  at // allele traversal
+};
 
 struct aln_scores_t {
   pt::idx_t match;
@@ -56,7 +66,7 @@ public:
   }
 };
 
-std::string align(const pvt::Itn &iw, const pvt::Itn &jw, pvt::aln_level_e level);
+std::string align(const pga::Itn &iw, const pga::Itn &jw, aln_level_e level);
 
 } // namespace povu::align
 

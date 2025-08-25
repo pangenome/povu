@@ -4,7 +4,10 @@ Debug/
 Testing/
 .cache/
 __pycache__/
-test_data/HPRC
+
+# common povu output files
 *.vcf
 *.dot
-*.bub
+*.pvst
+## commonly stores refs
+refs.txt

@@ -85,11 +85,9 @@ void Vertex::add_ref(pt::idx_t ref_id, pgt::or_e strand, pt::idx_t locus) {
   this->refs_.push_back(RefInfo(ref_id, strand, locus));
 }
 
-
-/*
-  Graph
-  -----
- */
+// ============================================================
+//      Variation Graph
+// ============================================================
 
 
 // --------------
@@ -151,6 +149,10 @@ pt::id_t VG::get_ref_id(const std::string &ref_label) const {
   return this->refs_.get_ref_id(ref_label);
 }
 
+const VtxRefIdx &VG::get_vtx_ref_idx(pt::id_t v_id) const {
+  return this->v_ref_idx_.at(v_id);
+}
+
 // ---------
 // setter(s)
 // ---------
@@ -193,6 +195,22 @@ pt::id_t VG::add_ref(const std::string &label, char delim) {
   pt::id_t ref_id = this->refs_.add_ref(label, delim);
 
   return ref_id;
+}
+
+void VG::gen_vtx_ref_idx(pt::id_t v_id) {
+  if (!this->has_refs_) {
+    ERR("graph has no refs\n");
+    exit(1);
+  }
+  if (pv_cmp::contains(this->v_ref_idx_, v_id)) {
+    return;
+  }
+  const Vertex &v = this->get_vertex_by_id(v_id);
+  std::vector<RefInfo> v_ref_data = v.get_refs();
+  VtxRefIdx vr_idx = VtxRefIdx::from_ref_info(v_ref_data);
+  this->v_ref_idx_.emplace(v_id, std::move(vr_idx));
+
+  return;
 }
 
 const std::set<pt::id_t> &VG::get_shared_samples(pt::id_t ref_id) const {
@@ -261,7 +279,6 @@ graph G {
   os << "}" << std::endl;
 }
 
-// TODO: make this static factory fn
 // does not handle refs, should it?
 std::vector<VG *> VG::componetize(const povu::bidirected::VG &g) {
 

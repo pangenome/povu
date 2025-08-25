@@ -6,7 +6,8 @@
 #include <vector>
 
 #include "../../include/common/compat.hpp"
-#include "../../include/common/types/genomics.hpp"
+#include "../../include/genomics/vcf.hpp"
+#include "../../include/genomics/allele.hpp"
 #include "../../include/common/types/graph.hpp"
 #include "../../include/common/utils.hpp"
 #include "../../include/graph/bidirected.hpp"
@@ -14,13 +15,14 @@
 
 namespace povu::io::to_vcf {
 inline constexpr std::string_view MODULE = "povu::io::to_vcf";
-namespace pvt = povu::types::genomics;
+namespace pgv = povu::genomics::vcf;
+namespace pga = povu::genomics::allele;
 namespace bd = povu::bidirected;
 namespace pu = povu::utils;
 namespace pgt = povu::types::graph;
 
-void write_vcfs(const pvt::VcfRecIdx &vcf_recs, const bd::VG &g, const core::config &app_config);
-void write_combined_vcf_to_stdout(const pvt::VcfRecIdx &vcf_recs, const bd::VG &g, const core::config &app_config);
+void write_vcfs(const pgv::VcfRecIdx &vcf_recs, const bd::VG &g, const core::config &app_config);
+void write_combined_vcf_to_stdout(const pgv::VcfRecIdx &vcf_recs, const bd::VG &g, const core::config &app_config);
 } // namespace povu::io::vcf
 
 
