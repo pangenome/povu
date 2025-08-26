@@ -24,7 +24,7 @@
 #include "../common/types/graph.hpp"
 #include "../common/utils.hpp"
 #include "../common/log.hpp"
-
+#include "./ref.hpp"
 
 namespace povu::bidirected {
 inline constexpr std::string_view MODULE = "povu::bidirected";
@@ -233,7 +233,7 @@ class VariationGraph {
 
   std::map<pt::id_t, VtxRefIdx> v_ref_idx_; // v_id to VtxRefIdx
   bool has_refs_;
-  pgt::Refs refs_;
+  pgr::Refs refs_;
   std::set<pgt::side_n_id_t> tips_; // the set of side and id of the tips
 
 
@@ -268,10 +268,9 @@ public:
 
   // ref
   const std::string &get_ref_label(pt::id_t ref_id) const;
-  const pgt::Ref &get_ref_by_id(pt::id_t ref_id) const;
-  pgt::Ref &get_ref_by_id_mut(pt::id_t ref_id);
+  const pgr::Ref &get_ref_by_id(pt::id_t ref_id) const;
+  pgr::Ref &get_ref_by_id_mut(pt::id_t ref_id);
   pt::id_t get_ref_id(const std::string &ref_label) const;
-  //const std::map<id_t, std::string>& get_refs() const;
   const std::set<pt::id_t> &get_shared_samples(pt::id_t ref_id) const;
   pt::id_t ref_id_count() const;
   bool has_refs() const;

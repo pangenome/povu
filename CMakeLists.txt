@@ -168,6 +168,7 @@ ADD_LIBRARY(povulib
   ${INCLUDE_DIR}/genomics/genomics.cpp
 
   # graph
+  ${INCLUDE_DIR}/graph/ref.cpp
   ${INCLUDE_DIR}/graph/bidirected.cpp
   ${INCLUDE_DIR}/graph/bracket_list.cpp
   ${INCLUDE_DIR}/graph/spanning_tree.cpp

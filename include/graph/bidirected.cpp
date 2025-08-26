@@ -101,7 +101,7 @@ VariationGraph::VariationGraph(pt::idx_t v_count, pt::idx_t e_count, bool inc_re
   this->has_refs_ = false;
   if (inc_refs) {
     this->has_refs_ = true;
-    this->refs_ = Refs();
+    this->refs_ = pgr::Refs();
   }
 }
 
@@ -137,11 +137,11 @@ const std::string &VG::get_ref_label(pt::id_t ref_id) const {
   return this->refs_.get_ref_label(ref_id);
 }
 
-const pgt::Ref &VG::get_ref_by_id(pt::id_t ref_id) const {
+const pgr::Ref &VG::get_ref_by_id(pt::id_t ref_id) const {
   return this->refs_.get_ref(ref_id);
 }
 
-pgt::Ref &VG::get_ref_by_id_mut(pt::id_t ref_id) {
+pgr::Ref &VG::get_ref_by_id_mut(pt::id_t ref_id) {
   return this->refs_.get_ref_mut(ref_id);
 }
 
@@ -191,7 +191,6 @@ pt::idx_t VG::add_edge(pt::id_t v1_id, pgt::v_end_e v1_end, pt::id_t v2_id, pgt:
 }
 
 pt::id_t VG::add_ref(const std::string &label, char delim) {
-  std::string fn_name{pv_cmp::format("[{}::VG::{}]", MODULE, __func__)};
   pt::id_t ref_id = this->refs_.add_ref(label, delim);
 
   return ref_id;
