@@ -202,7 +202,7 @@ void compute_eq_class_stack(const pst::Tree &st, std::vector<oic_t> &stack) {
     const pst::Edge &e = st.get_parent_edge(v_idx);
     pt::idx_t pe = st.get_vertex(v_idx).get_parent_e_idx();
 
-    if (e.get_color() == pgt::color::black) {
+    if (e.get_color() == pgt::color_e::black) {
       pgt::or_e o = st.get_vertex(v_idx).type() == pgt::v_type_e::r ? pgt::or_e::forward : pgt::or_e::reverse;
       mini_stack.push_front({o, st.get_vertex(v_idx).g_v_id(), pe, e.get_class()});
     }

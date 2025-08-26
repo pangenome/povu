@@ -8,7 +8,7 @@
 #include <sys/types.h>
 
 #include "./core.hpp"
-#include "./graph.hpp"
+#include "../../graph/types.hpp"
 
 
 namespace povu::constants {

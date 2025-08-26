@@ -8,7 +8,7 @@
 #include "../../include/common/compat.hpp"
 #include "../../include/genomics/vcf.hpp"
 #include "../../include/genomics/allele.hpp"
-#include "../../include/common/types/graph.hpp"
+#include "../../include/graph/types.hpp"
 #include "../../include/common/utils.hpp"
 #include "../../include/graph/bidirected.hpp"
 #include "../../app/cli/app.hpp"

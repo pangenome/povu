@@ -10,7 +10,7 @@
 #include "../common/compat.hpp"
 #include "../common/log.hpp"
 #include "../common/types/constants.hpp"
-#include "../common/types/graph.hpp"
+#include "./types.hpp"
 
 /* === PVST pangenome variation structure tree === */
 

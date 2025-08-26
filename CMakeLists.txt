@@ -156,7 +156,6 @@ ADD_LIBRARY(povulib
   ${INCLUDE_DIR}/align/align.cpp
 
   # common
-  ${INCLUDE_DIR}/common/types/graph.cpp
   ${INCLUDE_DIR}/common/utils.cpp
   ${INCLUDE_DIR}/common/tree_utils.cpp
 
@@ -168,6 +167,7 @@ ADD_LIBRARY(povulib
   ${INCLUDE_DIR}/genomics/genomics.cpp
 
   # graph
+  ${INCLUDE_DIR}/graph/types.cpp
   ${INCLUDE_DIR}/graph/ref.cpp
   ${INCLUDE_DIR}/graph/bidirected.cpp
   ${INCLUDE_DIR}/graph/bracket_list.cpp

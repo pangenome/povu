@@ -12,7 +12,7 @@
 
 #include "../common/compat.hpp"
 #include "../common/types/constants.hpp"
-#include "../common/types/graph.hpp"
+#include "./types.hpp"
 #include "./bracket_list.hpp"
 #include "./bidirected.hpp"
 
@@ -68,7 +68,7 @@ class BackEdge {
 
 public:
   // TODO: remove the default color
-  BackEdge(pt::id_t id, pt::idx_t src, pt::idx_t tgt, be_type_e t, color c);
+  BackEdge(pt::id_t id, pt::idx_t src, pt::idx_t tgt, be_type_e t, color_e c);
 
   /* getters */
   pt::id_t id() const;

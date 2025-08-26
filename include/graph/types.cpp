@@ -1,53 +1,48 @@
-#include "./graph.hpp"
+#include "./types.hpp"
 
 namespace povu::types::graph {
 
-std::ostream& operator<<(std::ostream& os, const v_type_e& vt) {
+std::string_view to_str(v_type_e vt) {
   switch (vt) {
   case v_type_e::l:
-    os << "+";
-    break;
+    return "+";
   case v_type_e::r:
-    os << "-";
-    break;
+    return "-";
+  case v_type_e::dummy:
+    return "*";
   default:
-    os << "*";
-    break;
+    return "?";
   }
+};
 
-  return os;
+std::ostream& operator<<(std::ostream& os, const v_type_e& vt) {
+  return os << to_str(vt);
 }
 
 /*
  * v_end_e
  * ---------
  */
-std::ostream& operator<<(std::ostream& os, const v_end_e& ve) {
-  switch (ve) {
-  case v_end_e::l:
-  os << "+";
-  break;
-  case v_end_e::r:
-  os << "-";
-  break;
-  }
-
-  return os;
+std::string_view to_str(v_end_e ve) {
+  return ve == v_end_e::l ? "+" : "-";
+}
+std::ostream &operator<<(std::ostream &os, const v_end_e &ve) {
+  return os << to_str(ve);
 }
 
-std::ostream& operator<<(std::ostream& os, const color& c) {
-  switch (c) {
-  case color::gray:
-    os << "gray";
-    break;
-  case color::black:
-    os << "black";
-    break;
+std::string_view to_str(color_e ve) {
+  switch (ve) {
+  case color_e::gray:
+    return "gray";
+  case color_e::black:
+    return "black";
   default:
-    os << "unknown";
-    break;
+    return "unknown";
   }
-  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const color_e& c) {
+  return os << to_str(c);
 }
 
 
@@ -80,22 +75,15 @@ side_n_id_t side_n_id_t::complement() const {
  * Orientation
  * ------------
  */
-// >> and << might be better than + and -
-std::ostream& operator<<(std::ostream& os, const or_e& o) {
-  switch (o) {
-  case or_e::forward:
-  os << ">";
-  break;
-  case or_e::reverse:
-  os << "<";
-  break;
-  }
 
-  return os;
-}
-std::string or_to_str (or_e o) {
+std::string_view to_str (or_e o) {
   return o == or_e::forward ? ">" : "<";
 };
+
+// >> and << might be better than + and -
+std::ostream &operator<<(std::ostream &os, const or_e &o) {
+  return os << to_str(o);
+}
 
 /*
  * id and orientation

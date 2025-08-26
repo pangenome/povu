@@ -3,21 +3,21 @@
 
 #include <iostream>
 #include <string>
+#include <string_view>
 #include <vector>
 
-#include "./core.hpp"
-#include "../compat.hpp"
+#include "../common/types/core.hpp"
+#include "../common/compat.hpp"
 
 
 namespace povu::types::graph {
 
-
 // should this be renamed to clr_e or color_e?
-enum class color {
+enum class color_e {
   gray,
   black
 };
-typedef color color_e;
+std::string_view to_str(color_e ve);
 std::ostream& operator<<(std::ostream& os, const color_e& c);
 
 // Eq class and node id
@@ -41,6 +41,7 @@ enum class v_end_e {
   l,
   r
 };
+std::string_view to_str(v_end_e ve);
 std::ostream& operator<<(std::ostream& os, const v_end_e& vt);
 constexpr v_end_e complement(v_end_e s) {
   return s == v_end_e::l ? v_end_e::r : v_end_e::l;
@@ -56,7 +57,7 @@ enum class v_type_e {
     dummy
 };
 std::ostream& operator<<(std::ostream& os, const v_type_e& vt);
-
+std::string_view to_str(v_type_e vt);
 
 struct side_n_id_t {
   v_end_e v_end;
@@ -72,12 +73,9 @@ std::ostream& operator<<(std::ostream& os, const side_n_id_t& x);
 typedef side_n_id_t side_n_idx_t; // to use when the id is an index
 
 
-enum class or_e {
-  forward,
-  reverse
-};
+enum class or_e { forward, reverse };
+std::string_view to_str (or_e o);
 std::ostream& operator<<(std::ostream& os, const or_e& o);
-std::string or_to_str (or_e o);
 
 
 struct id_or_t {
@@ -85,7 +83,7 @@ struct id_or_t {
   or_e orientation;
 
   std::string as_str() const {
-    return pv_cmp::format("{}{}", or_to_str(this->orientation) , this->v_id);
+    return pv_cmp::format("{}{}", to_str(this->orientation) , this->v_id);
   }
 };
 
