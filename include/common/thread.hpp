@@ -14,7 +14,6 @@
 #include <type_traits>
 #include <utility>
 
-
 #include "./compat.hpp"
 #include "./types/core.hpp"
 

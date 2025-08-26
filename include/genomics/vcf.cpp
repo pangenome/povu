@@ -109,15 +109,6 @@ genotype_data_t comp_gt(const bd::VG &g) {
 
   std::set<pt::id_t> handled;
 
-  // auto get_col_name = [&](pt::id_t ref_id) -> std::string {
-  //   return g.get_ref_by_id(ref_id).get_col_name();
-  //   // const pgt::Ref &r = g.get_ref_by_id(ref_id);
-  //   // return r.has_pansn_data() ? r.get_sample_name() : r.get_label();
-
-  // };
-
-  //pt::idx_t cols_count {};
-
   for (pt::id_t ref_id = 0; ref_id < g.ref_id_count(); ++ref_id) {
     if (pv_cmp::contains(handled, ref_id)) {
       continue;
@@ -125,12 +116,9 @@ genotype_data_t comp_gt(const bd::VG &g) {
 
     handled.insert(ref_id);
 
-
     const std::set<pt::id_t> &sample_refs =  g.get_shared_samples(ref_id);
 
     std::string col_name = g.get_ref_by_id(ref_id).get_col_name();
-
-    //std::cerr << ref_id  << " sample count: " << sample_refs.size() << "\n";
 
     if (sample_refs.empty()) {
       // throw an exeption
