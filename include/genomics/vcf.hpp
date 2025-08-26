@@ -18,7 +18,7 @@ inline constexpr std::string_view MODULE = "povu::genomics::vcf";
 
 namespace bd = povu::bidirected;
 namespace pgt = povu::types::graph;
-namespace pvst = povu::types::pvst;
+namespace pvst = povu::pvst;
 namespace pga = povu::genomics::allele;
 
 enum class var_type_e {

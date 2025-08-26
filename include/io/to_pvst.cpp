@@ -11,7 +11,7 @@ inline void write_header_line(std::ofstream &bub_file) noexcept {
            << "\n";
 }
 
-void write_pvst(const pvtr::Tree &bt, const std::string &base_name, const core::config &app_config) {
+void write_pvst(const pvst::Tree &bt, const std::string &base_name, const core::config &app_config) {
   // TODO: combine and pass as single arg
   std::string bub_file_name = pv_cmp::format("{}/{}.pvst", std::string{app_config.get_output_dir()}, base_name); // file path and name
   std::ofstream bub_file(bub_file_name);

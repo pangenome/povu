@@ -63,7 +63,7 @@ std::pair<pt::idx_t, pt::idx_t> compute_ai_zi(const pst::Tree &st,
 /**
   * @brief
  */
-void add_flubbles(const pst::Tree &st, const eq_class_stack_t &ecs, pvtr::Tree &vst) {
+void add_flubbles(const pst::Tree &st, const eq_class_stack_t &ecs, pvst::Tree &vst) {
   std::string fn_name = pv_cmp::format("[povu::algorithms::flubble_tree::{}]", __func__);
 
   const auto &[stack_, next_seen] = ecs;
@@ -433,7 +433,7 @@ void simple_cycle_equiv(pst::Tree &t, const core::config &app_config) {
 
 }
 
-pvtr::Tree find_flubbles(pst::Tree &st, const core::config &app_config) {
+pvst::Tree find_flubbles(pst::Tree &st, const core::config &app_config) {
   std::string fn_name = pv_cmp::format("[povu::algorithms::{}]", __func__);
 
   simple_cycle_equiv(st, app_config);
@@ -445,7 +445,7 @@ pvtr::Tree find_flubbles(pst::Tree &st, const core::config &app_config) {
   }
 
   // create the pvst and add the root vertex
-  pvtr::Tree pvst;
+  pvst::Tree pvst;
   {
     pvst::Dummy root_v;
     pt::idx_t root_v_idx = pvst.add_vertex(root_v);

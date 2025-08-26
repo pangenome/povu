@@ -6,7 +6,7 @@ namespace povu::subcommands::call {
 /**
  * loop through the .pvst files and read them
  */
-void read_pvsts(const core::config &app_config, std::vector<pvtr::Tree> &pvsts) {
+void read_pvsts(const core::config &app_config, std::vector<pvst::Tree> &pvsts) {
   std::string fn_name = pv_cmp::format("[povu::subcommands::{}]", __func__);
 
   // get the list of files in the forest dir that end in .pvst
@@ -20,7 +20,7 @@ void read_pvsts(const core::config &app_config, std::vector<pvtr::Tree> &pvsts) 
   // TODO: [c] parallelise
   // loop through the .pvst files and read them
   for (std::size_t i{}; i < fps.size(); i++) {
-    pvtr::Tree pvst = povu::io::from_pvst::read_pvst(fps[i].string());
+    pvst::Tree pvst = povu::io::from_pvst::read_pvst(fps[i].string());
     pvst.comp_heights();
     pvsts.push_back(std::move(pvst));
   }
@@ -105,7 +105,7 @@ void do_call(core::config &app_config) {
   // parallel read for the graph, flubbles and references
   // ----------------------------------------------------
   bd::VG *g { nullptr };
-  std::vector<pvtr::Tree> pvsts;
+  std::vector<pvst::Tree> pvsts;
   pt::status_t _;
 
   // read graph & refs

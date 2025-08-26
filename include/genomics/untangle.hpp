@@ -11,7 +11,7 @@
 #include "../common/compat.hpp"
 #include "../graph/bidirected.hpp"
 #include "../align/align.hpp"
-#include "../common/types/pvst.hpp"
+#include "../graph/pvst.hpp"
 #include "./allele.hpp"
 
 namespace povu::genomics::untangle {
@@ -19,7 +19,7 @@ namespace pgt = povu::types::graph;
 namespace bd = povu::bidirected;
 namespace pc = povu::constants;
 namespace pa = povu::align;
-namespace pvst = povu::types::pvst;
+namespace pvst = povu::pvst;
 namespace pga = povu::genomics::allele;
 
 

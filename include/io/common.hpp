@@ -12,7 +12,6 @@
 #include "../../include/common/compat.hpp"
 #include "../../include/common/utils.hpp"
 #include "../../include/graph/bidirected.hpp"
-#include "../../include/graph/tree.hpp"
 
 namespace povu::io::common {
 namespace pgt = povu::types::graph;
@@ -29,7 +28,6 @@ namespace fs = std::filesystem;
  */
 std::vector<fs::path> get_files(const std::string& dir_path, const std::string& ext);
 
-void write_txt(const std::vector<pgt::flubble>& flubbles, const std::string& base_name, const core::config& app_config);
 
 void read_lines_to_vec_str(const std::string &fp, std::vector<std::string> *v);
 

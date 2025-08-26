@@ -10,19 +10,18 @@
 
 #include "../../app/cli/app.hpp"
 #include "../common/compat.hpp"
-#include "../graph/tree.hpp"
+#include "../graph/pvst.hpp"
 #include "./common.hpp"
 
 namespace povu::io::to_pvst {
 using povu::types::graph::id_n_cls;
 using povu::types::graph::id_or_t;
-namespace pvtr = povu::tree;
 namespace pgt = povu::types::graph;
-namespace pvst = povu::types::pvst;
+namespace pvst = povu::pvst;
 namespace pc = povu::constants;
 namespace pu = povu::utils;
 
-void write_pvst(const pvtr::Tree &bt, const std::string &base_name, const core::config &app_config);
+void write_pvst(const pvst::Tree &bt, const std::string &base_name, const core::config &app_config);
 
 } // namespace povu::io::pvst
 

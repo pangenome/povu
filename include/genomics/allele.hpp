@@ -16,8 +16,9 @@
 #include "../common/compat.hpp"
 #include "../common/types/core.hpp"
 
+#include "../common/thread.hpp"
 #include "../common/types/graph.hpp"
-#include "../common/types/pvst.hpp"
+#include "../graph/pvst.hpp"
 #include "../common/log.hpp"
 #include "../graph/bidirected.hpp"
 
@@ -25,7 +26,7 @@ namespace povu::genomics::allele {
 inline constexpr std::string_view MODULE = "povu::genomics::allele";
 
 namespace pgt = povu::types::graph;
-namespace pvst = povu::types::pvst;
+namespace pvst = povu::pvst;
 
 /**
  * Allele or Ref Step
@@ -85,9 +86,9 @@ public:
   // --------------
   // constructor(s)
   // --------------
-  AW() : steps_() {}
-  AW(pt::idx_t w_idx) : steps_(), walk_idx_(w_idx) {}
-  AW(AS s) : steps_(std::vector<AS>{s}) {}
+  //AW() : steps_() {}
+    AW(pt::idx_t w_idx) : steps_(), walk_idx_(w_idx) {}
+  //AW(AS s) : steps_(std::vector<AS>{s}) {}
 
 
   // ---------
@@ -343,7 +344,7 @@ public:
 };
 
 void comp_itineraries(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
-                      std::map<pt::id_t, Itn> &ref_map);
+                      std::map<pt::id_t, Itn> &ref_map, povu::thread::thread_pool &pool);
 
 } // namespace povu::genomics::alele
 

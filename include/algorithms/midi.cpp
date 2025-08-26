@@ -6,7 +6,7 @@ namespace povu::midi {
 // add midi bubbles to the PVST
 void add_midi(const ptu::tree_meta &tm,
               std::map<pt::idx_t, std::vector<pvst::MidiBubble>> &midis,
-              pvtr::Tree &pvst) {
+              pvst::Tree &pvst) {
   const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   const std::vector<pt::idx_t> &depth = tm.depth;
@@ -40,7 +40,7 @@ void add_midi(const ptu::tree_meta &tm,
   }
 }
 
-pvst::MidiBubble gen_midi_bub(const pvtr::Tree &pvst, const std::vector<pt::idx_t> &c_bubs) {
+pvst::MidiBubble gen_midi_bub(const pvst::Tree &pvst, const std::vector<pt::idx_t> &c_bubs) {
   pt::idx_t fst = c_bubs[0]; // first
   pt::idx_t snd = c_bubs[1]; // second
 
@@ -81,7 +81,7 @@ pvst::MidiBubble gen_midi_bub(const pvtr::Tree &pvst, const std::vector<pt::idx_
 
 // find midibubbles in the flubble
 std::vector<pvst::MidiBubble> handle_fl(const pst::Tree &st,
-                                        const pvtr::Tree &pvst,
+                                        const pvst::Tree &pvst,
                                         const pvst::Flubble &fl_v,
                                         const std::vector<pt::idx_t> &c_bubs) {
 
@@ -146,7 +146,7 @@ std::vector<pvst::MidiBubble> handle_fl(const pst::Tree &st,
   return res;
 }
 
-void find_midi(const pst::Tree &st, pvtr::Tree &pvst, const ptu::tree_meta &tm) {
+void find_midi(const pst::Tree &st, pvst::Tree &pvst, const ptu::tree_meta &tm) {
   const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   std::map<pt::idx_t, std::vector<pvst::MidiBubble>> x;

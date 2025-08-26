@@ -137,8 +137,8 @@ pvst::route_params_t tokens_to_route_params(const std::vector<std::string> &toke
   return pvst::route_params_t { l, r, route };
 }
 
-pvtr::Tree read_pvst(const std::string &fp) {
-  pvtr::Tree pvst;
+pvst::Tree read_pvst(const std::string &fp) {
+  pvst::Tree pvst;
 
   // lines in the PVST
   std::vector<std::string> lines;

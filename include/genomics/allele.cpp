@@ -85,6 +85,7 @@ inline std::optional<AW> do_walk(const bd::VG &g, pt::id_t ref_id, pt::idx_t w_i
                           const pgt::walk_t &w, pt::idx_t start_locus) {
   pt::idx_t curr_locus = start_locus;
   AW allele_walk{w_idx};
+
   for (pt::idx_t step_idx{}; step_idx < w.size(); ++step_idx) {
 
     const pgt::step_t &step = w[step_idx];
@@ -101,8 +102,7 @@ inline std::optional<AW> do_walk(const bd::VG &g, pt::id_t ref_id, pt::idx_t w_i
     const bd::Vertex &v = g.get_vertex_by_id(v_id);
     const std::vector<bd::RefInfo> &v_ref_data = v.get_refs();
 
-    pt::idx_t ref_data_idx =
-        v_ref_registry.get_ref_data_idx(ref_id, curr_locus);
+    pt::idx_t ref_data_idx = v_ref_registry.get_ref_data_idx(ref_id, curr_locus);
     auto allele_step = AS::given_ref_info(v_id, v_ref_data[ref_data_idx]);
     allele_walk.append_step(std::move(allele_step));
 
@@ -119,9 +119,8 @@ inline std::optional<AW> do_walk(const bd::VG &g, pt::id_t ref_id, pt::idx_t w_i
 std::vector<AW> handle_walks(const bd::VG &g, pt::id_t ref_id, pt::idx_t w_idx,
                              const pgt::walk_t &w, pt::idx_t start_locus,
                              pt::idx_t loop_count) {
-
   std::vector<AW> aws;
-
+  aws.reserve(loop_count);
   if (std::optional<AW> opt_aw = do_walk(g, ref_id, w_idx, w, start_locus)) {
     aws.push_back(std::move(*opt_aw));
   }
@@ -145,7 +144,27 @@ std::vector<AW> handle_walks(const bd::VG &g, pt::id_t ref_id, pt::idx_t w_idx,
   return aws;
 }
 
+std::vector<std::pair<pt::idx_t, id_t>>
+pre_comp_tasks(const bd::VG &g, const std::vector<pgt::walk_t> &walks ) {
+  std::vector<std::pair<pt::idx_t, id_t>> tasks;
+  for (pt::idx_t w_idx = 0; w_idx < walks.size(); ++w_idx) {
+    const pgt::walk_t &w = walks[w_idx];
+    std::set<pt::id_t> ref_ids;
 
+    for (const pgt::step_t &s : w) {
+      auto v_id = s.v_id;
+      const bd::VtxRefIdx &vr_idx = g.get_vtx_ref_idx(v_id);
+      const std::set<pt::idx_t> step_ref_ids = vr_idx.get_ref_ids();
+      ref_ids.insert(step_ref_ids.begin(), step_ref_ids.end());
+    }
+
+    for (pt::id_t ref_id : ref_ids) {
+      tasks.push_back({w_idx, ref_id});
+    }
+  }
+
+  return tasks;
+}
 
 /**
  * @brief compute itineraries for a walk
@@ -155,7 +174,52 @@ std::vector<AW> handle_walks(const bd::VG &g, pt::id_t ref_id, pt::idx_t w_idx,
  *
  * The itinerary is a collection of allele walks for each ref in the walk.
  */
-void comp_itineraries(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
+void comp_itineraries_async(const bd::VG &g,
+                            const std::vector<pgt::walk_t> &walks,
+                            std::map<pt::id_t, Itn> &ref_map,
+                            povu::thread::thread_pool &pool) {
+
+  std::vector<std::pair<pt::idx_t, pt::id_t>> tasks = pre_comp_tasks(g, walks);
+  const std::size_t M = tasks.size();
+
+#ifdef DEBUG
+  auto start = std::chrono::high_resolution_clock::now();
+#endif
+
+  std::vector<std::future<std::vector<AW>>> futs;
+  futs.reserve(M);
+
+  for (auto [w_idx, ref_id] : tasks) {
+    futs.emplace_back(pool.submit([&, w_idx, ref_id]() -> std::vector<AW> {
+      const auto &w = walks[w_idx];
+      auto [start_locus, loop_count] = comp_ref_visit_bounds(g, ref_id, w);
+      return handle_walks(g, ref_id, w_idx, w, start_locus, loop_count);
+    }));
+  }
+
+  // Merge results on this thread (no locks needed)
+  for (std::size_t i = 0; i < M; ++i) {
+    auto aws = futs[i].get(); // rethrows from worker
+    if (aws.empty())
+      continue;
+    auto ref_id = tasks[i].second;
+    Itn &itn = ref_map[ref_id];
+    for (AW &aw : aws)
+      itn.append_at(std::move(aw));
+  }
+
+
+#ifdef DEBUG
+  auto now = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> period = now - start;
+  auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
+  std::cout << "walks " << walks.size() << " time taken " << ms << " ms\n";
+#endif
+
+  return;
+}
+
+void comp_itineraries_serial(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
                       std::map<pt::id_t, Itn> &ref_map) {
 
   std::vector<std::tuple<pt::idx_t, id_t>> tasks;
@@ -175,6 +239,7 @@ void comp_itineraries(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
     }
   }
 
+
   for (auto [w_idx, ref_id] : tasks) {
     const auto &w = walks[w_idx];
     auto [start_locus, loop_count] = comp_ref_visit_bounds(g, ref_id, w);
@@ -191,5 +256,18 @@ void comp_itineraries(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
   return;
 }
 
+void comp_itineraries(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
+                      std::map<pt::id_t, Itn> &ref_map, povu::thread::thread_pool &pool) {
+
+  if (walks.size() > 50) {
+    comp_itineraries_async(g, walks, ref_map, pool);
+    return;
+  }
+  else {
+    comp_itineraries_serial(g, walks, ref_map);
+  }
+
+  return;
+}
 
 } // namespace povu::genomics::allele

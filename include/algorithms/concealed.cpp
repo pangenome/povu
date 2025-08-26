@@ -856,7 +856,7 @@ void with_ji(const pst::Tree &st, const ptu::tree_meta &tm,
 
 namespace update_pvst {
 
-[[nodiscard]] inline bool is_nestable(pvtr::Tree &pvst, pt::idx_t v_idx ) noexcept {
+[[nodiscard]] inline bool is_nestable(pvst::Tree &pvst, pt::idx_t v_idx ) noexcept {
   const pvst::VertexBase &v = pvst.get_vertex(v_idx);
   return pvst::to_clan(v.get_fam()).value() == pvst::vc_e::fl_like;
   // return (v.get_type() == pvst::vt_e::flubble ||
@@ -869,7 +869,7 @@ namespace update_pvst {
   in relation to a
   =================
  */
-void nest_trunk_ai(const pst::Tree &st, pvtr::Tree &vst,
+void nest_trunk_ai(const pst::Tree &st, pvst::Tree &vst,
                    const ptu::tree_meta &tm, pt::idx_t sl_st_idx,
                    pt::idx_t fl_v_idx, pt::idx_t sl_v_idx,
                    std::vector<pt::idx_t> &ch) {
@@ -903,7 +903,7 @@ void nest_trunk_ai(const pst::Tree &st, pvtr::Tree &vst,
 /**
  * @brief the fl lies between ℓ and a bracket of it goes into a_i
  */
-void nest_branch_ai(const pst::Tree &st, pvtr::Tree &vst,
+void nest_branch_ai(const pst::Tree &st, pvst::Tree &vst,
                    const ptu::tree_meta &tm, pt::idx_t sl_st_idx,
                    pt::idx_t fl_v_idx, pt::idx_t sl_v_idx, pt::idx_t ai,
                    std::vector<pt::idx_t> &ch) {
@@ -951,7 +951,7 @@ void nest_branch_ai(const pst::Tree &st, pvtr::Tree &vst,
   }
 }
 
-void add_conc_ai(const pst::Tree &st, pvtr::Tree &vst, const ptu::tree_meta &tm,
+void add_conc_ai(const pst::Tree &st, pvst::Tree &vst, const ptu::tree_meta &tm,
                  pt::idx_t fl_v_idx, const pvst::Flubble &v,
                  const std::vector<pvst::Concealed> &ai_adj, bool is_leaf) {
 
@@ -989,7 +989,7 @@ void add_conc_ai(const pst::Tree &st, pvtr::Tree &vst, const ptu::tree_meta &tm,
 /**
  * @brief if the flubble lies between n and z_i
  */
-void nest_trunk_zi(const pst::Tree &st, pvtr::Tree &vst,
+void nest_trunk_zi(const pst::Tree &st, pvst::Tree &vst,
                    const fl_sls &slubbles, pt::idx_t fl_v_idx,
                    pt::idx_t sl_v_idx, pt::idx_t zi,
                    std::vector<pt::idx_t> &ch) {
@@ -1018,7 +1018,7 @@ void nest_trunk_zi(const pst::Tree &st, pvtr::Tree &vst,
   }
 }
 
-void nest_branch_zi(const pst::Tree &st, pvtr::Tree &vst,
+void nest_branch_zi(const pst::Tree &st, pvst::Tree &vst,
                    pt::idx_t sl_st_idx, pt::idx_t fl_v_idx, pt::idx_t sl_v_idx,
                    std::vector<pt::idx_t> &ch) {
   const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
@@ -1041,7 +1041,7 @@ void nest_branch_zi(const pst::Tree &st, pvtr::Tree &vst,
 }
 
 void add_conc_zi(const pst::Tree &st, const fl_sls &slubbles,
-                 pvtr::Tree &vst,
+                 pvst::Tree &vst,
                  pt::idx_t fl_v_idx, const pvst::Flubble &v,
                  const std::vector<pvst::Concealed> &zi_adj, bool is_leaf) {
   const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
@@ -1081,7 +1081,7 @@ void add_conc_zi(const pst::Tree &st, const fl_sls &slubbles,
 /**
  * @brief update the PVST to add concealed bubbles
 */
-void add_concealed(const pst::Tree &st, pvtr::Tree &vst,
+void add_concealed(const pst::Tree &st, pvst::Tree &vst,
                    const ptu::tree_meta &tm, const fl_sls &slubbles) {
   const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
@@ -1096,7 +1096,7 @@ void add_concealed(const pst::Tree &st, pvtr::Tree &vst,
 }
 } // namespace update_pvst
 
-void find_concealed(const pst::Tree &st, pvtr::Tree &ft, const ptu::tree_meta &tm) {
+void find_concealed(const pst::Tree &st, pvst::Tree &ft, const ptu::tree_meta &tm) {
   const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
 
   std::vector<fl_sls> all_slubbles;

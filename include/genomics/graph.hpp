@@ -13,14 +13,14 @@
 #include "../common/compat.hpp"
 #include "../common/types/core.hpp"
 #include "../common/types/graph.hpp"
-#include "../common/types/pvst.hpp"
+#include "../graph/pvst.hpp"
 #include "../common/log.hpp"
 #include "../graph/bidirected.hpp"
 
 namespace povu::genomics::graph {
 inline constexpr std::string_view MODULE = "povu::genomics::graph";
 
-namespace pvst = povu::types::pvst;
+namespace pvst = povu::pvst;
 namespace pgt = povu::types::graph;
 
 // Maximum number of steps to take from flubble start to end

@@ -14,7 +14,7 @@
 #include "../../app/cli/app.hpp"
 #include "../../include/common/compat.hpp"
 #include "../../include/common/utils.hpp"
-#include "../../include/graph/tree.hpp"
+#include "../../include/graph/pvst.hpp"
 #include "./common.hpp"
 #include "../../include/common/log.hpp"
 
@@ -23,13 +23,12 @@ constexpr std::string_view MODULE = "povu::io::from_pvst";
 
 using povu::types::graph::id_n_cls;
 using povu::types::graph::id_or_t;
-namespace pvtr = povu::tree;
 namespace pgt = povu::types::graph;
-namespace pvst = povu::types::pvst;
+namespace pvst = povu::pvst;
 namespace pc = povu::constants;
 namespace pu = povu::utils;
 
-pvtr::Tree read_pvst(const std::string &fp);
+pvst::Tree read_pvst(const std::string &fp);
 
 
 } // namespace povu::io::pvst
