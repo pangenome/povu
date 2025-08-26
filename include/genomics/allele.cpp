@@ -144,20 +144,9 @@ std::vector<AW> handle_walks(const bd::VG &g, pt::id_t ref_id, pt::idx_t w_idx,
   return aws;
 }
 
-
-
-/**
- * @brief compute itineraries for a walk
- *
- * For each ref in the walk, find the steps that are continuous with the
- * previous steps for that ref and append them to the itinerary.
- *
- * The itinerary is a collection of allele walks for each ref in the walk.
- */
-void comp_itineraries_async(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
-                      std::map<pt::id_t, Itn> &ref_map) {
-
-  std::vector<std::tuple<pt::idx_t, id_t>> tasks;
+std::vector<std::pair<pt::idx_t, id_t>>
+pre_comp_tasks(const bd::VG &g, const std::vector<pgt::walk_t> &walks ) {
+  std::vector<std::pair<pt::idx_t, id_t>> tasks;
   for (pt::idx_t w_idx = 0; w_idx < walks.size(); ++w_idx) {
     const pgt::walk_t &w = walks[w_idx];
     std::set<pt::id_t> ref_ids;
@@ -169,42 +158,66 @@ void comp_itineraries_async(const bd::VG &g, const std::vector<pgt::walk_t> &wal
       ref_ids.insert(step_ref_ids.begin(), step_ref_ids.end());
     }
 
-   for (pt::id_t ref_id : ref_ids) {
+    for (pt::id_t ref_id : ref_ids) {
       tasks.push_back({w_idx, ref_id});
     }
   }
 
-  // Launch one async job per (w_idx, ref_id) to compute aws
-  std::vector<std::future<std::vector<AW>>> futures;
-  futures.reserve(tasks.size());
+  return tasks;
+}
+
+/**
+ * @brief compute itineraries for a walk
+ *
+ * For each ref in the walk, find the steps that are continuous with the
+ * previous steps for that ref and append them to the itinerary.
+ *
+ * The itinerary is a collection of allele walks for each ref in the walk.
+ */
+void comp_itineraries_async(const bd::VG &g,
+                            const std::vector<pgt::walk_t> &walks,
+                            std::map<pt::id_t, Itn> &ref_map,
+                            povu::thread::thread_pool &pool) {
+
+  std::vector<std::pair<pt::idx_t, pt::id_t>> tasks = pre_comp_tasks(g, walks);
+  const std::size_t M = tasks.size();
+
+#ifdef DEBUG
+  auto start = std::chrono::high_resolution_clock::now();
+#endif
+
+  std::vector<std::future<std::vector<AW>>> futs;
+  futs.reserve(M);
 
   for (auto [w_idx, ref_id] : tasks) {
-    futures.emplace_back(std::async(std::launch::async, [&, w_idx, ref_id] {
+    futs.emplace_back(pool.submit([&, w_idx, ref_id]() -> std::vector<AW> {
       const auto &w = walks[w_idx];
       auto [start_locus, loop_count] = comp_ref_visit_bounds(g, ref_id, w);
-      // Do the expensive work off-thread; no shared writes here
       return handle_walks(g, ref_id, w_idx, w, start_locus, loop_count);
     }));
   }
 
-  // Collect results in the same order as `tasks` and append to ref_map on this
-  // thread
-  auto fit = futures.begin();
-  for (auto [w_idx, ref_id] : tasks) {
-    std::vector<AW> aws = (fit++)->get(); // propagates exceptions from the task
-    if (!aws.empty()) {
-      Itn &itn = ref_map[ref_id];
-      for (AW &aw : aws) {
-        itn.append_at(std::move(aw));
-      }
-    }
+  // Merge results on this thread (no locks needed)
+  for (std::size_t i = 0; i < M; ++i) {
+    auto aws = futs[i].get(); // rethrows from worker
+    if (aws.empty())
+      continue;
+    auto ref_id = tasks[i].second;
+    Itn &itn = ref_map[ref_id];
+    for (AW &aw : aws)
+      itn.append_at(std::move(aw));
   }
 
 
+#ifdef DEBUG
+  auto now = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> period = now - start;
+  auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
+  std::cout << "walks " << walks.size() << " time taken " << ms << " ms\n";
+#endif
+
   return;
 }
-
-
 
 void comp_itineraries_serial(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
                       std::map<pt::id_t, Itn> &ref_map) {
@@ -243,12 +256,11 @@ void comp_itineraries_serial(const bd::VG &g, const std::vector<pgt::walk_t> &wa
   return;
 }
 
-
 void comp_itineraries(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
-                      std::map<pt::id_t, Itn> &ref_map) {
+                      std::map<pt::id_t, Itn> &ref_map, povu::thread::thread_pool &pool) {
 
   if (walks.size() > 50) {
-    comp_itineraries_async(g, walks, ref_map);
+    comp_itineraries_async(g, walks, ref_map, pool);
     return;
   }
   else {
@@ -257,6 +269,5 @@ void comp_itineraries(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 
   return;
 }
-
 
 } // namespace povu::genomics::allele

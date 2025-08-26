@@ -1,4 +1,5 @@
 #include "./genomics.hpp"
+#include <vector>
 
 
 namespace povu::genomics {
@@ -32,7 +33,7 @@ void remove_prefix_walks(pga::Itn &itn) {
 /**
  * Associate walks in an RoV with references
  */
-pga::Exp exp_frm_rov(const bd::VG &g, const pgg::RoV &rov) {
+  pga::Exp exp_frm_rov(const bd::VG &g, const pgg::RoV &rov, povu::thread::thread_pool &pool) {
 
   // create an expedition object for the RoV
   const std::vector<pgt::walk_t> &walks = rov.get_walks();
@@ -41,7 +42,7 @@ pga::Exp exp_frm_rov(const bd::VG &g, const pgg::RoV &rov) {
 
   // compute the itineraries for each reference in the RoV
   std::map<pt::id_t, pga::Itn> &ref_map = ref_walks.get_ref_itns_mut();
-  pga::comp_itineraries(g, walks, ref_map);
+  pga::comp_itineraries(g, walks, ref_map, pool);
 
   for (pt::idx_t ref_id : ref_walks.get_ref_ids()) {
     remove_prefix_walks(ref_walks.get_itn_mut(ref_id));
@@ -70,34 +71,48 @@ pga::Exp exp_frm_rov(const bd::VG &g, const pgg::RoV &rov) {
   return ref_walks;
 }
 
-std::vector<pga::Exp> comp_expeditions(const bd::VG &g,
-                                       const std::vector<pgg::RoV> &all_rovs,
-                                       std::size_t thread_count) {
-  std::vector<pga::Exp> all_exp(all_rovs.size());
 
-  //std::size_t thread_count = 16; // default
-  auto [num_threads, chunk_size] = pu::compute_thread_allocation(thread_count, all_rovs.size());
+std::vector<pga::Exp>
+comp_expeditions_work_steal(const bd::VG& g,
+                            const std::vector<pgg::RoV>& all_rovs,
+                            povu::thread::thread_pool& pool,
+                            std::size_t outer_concurrency,
+                            std::size_t reserve_for_inner) {
+    const std::size_t N = all_rovs.size();
+    std::vector<pga::Exp> all_exp(N);
+    if (N == 0) return all_exp;
 
-  std::vector<std::thread> threads(num_threads);
-  std::size_t start, end;
-  for (unsigned int thread_idx{}; thread_idx < num_threads; ++thread_idx) {
-    start = thread_idx * chunk_size;
-    end = (thread_idx == num_threads - 1) ? all_rovs.size() : (thread_idx + 1) * chunk_size;
+    // Choose how many pool workers this call will occupy.
+    // Leave `reserve_for_inner` workers free for inner tasks spawned by exp_frm_rov.
+    const std::size_t pool_sz = pool.size();
+    if (reserve_for_inner >= pool_sz) reserve_for_inner = 0; // best effort
+    std::size_t K =
+        std::max<std::size_t>(1, std::min({outer_concurrency, pool_sz - reserve_for_inner, N}));
 
-    threads[thread_idx] = std::thread([&, start, end]() {
-          for (std::size_t i{start}; i < end; i++) {
-            const pgg::RoV &r = all_rovs[i];
-            pga::Exp rov_rws = exp_frm_rov(g, r);
-            all_exp[i] = std::move(rov_rws);
-          }});
-  }
+    // Global index with optional block size for less atomic contention
+    std::atomic<std::size_t> next{0};
+    const std::size_t block = 64; // tune: 1 for max balance, 32–256 for cheap items
 
-  // Wait for all threads to finish
-  for (auto &thread : threads) {
-    thread.join();
-  }
+    povu::thread::task_group tg(pool);
 
-  return all_exp;
+    // Submit K worker tasks into the pool; each pulls ranges dynamically.
+    for (std::size_t w = 0; w < K; ++w) {
+        tg.run([&]{
+            for (;;) {
+                std::size_t start = next.fetch_add(block, std::memory_order_relaxed);
+                if (start >= N) break;
+                std::size_t end = std::min(start + block, N);
+
+                for (std::size_t i = start; i < end; ++i) {
+                    // Pass the SAME pool down so inner work can run on spare workers
+                    all_exp[i] = exp_frm_rov(g, all_rovs[i], pool);
+                }
+            }
+        });
+    }
+
+    tg.wait(); // wait for all outer workers to finish (rethrows first exception)
+    return all_exp;
 }
 
 /**
@@ -176,12 +191,43 @@ void gen_ref_idxs(bd::VG &g, const std::vector<pgg::RoV> &all_rovs) {
   }
 }
 
+struct ThreadSplit {
+  std::size_t outer;
+  std::size_t inner;
+};
+
+// Prefer inner >> outer; cap outer to a small number (default 2).
+inline ThreadSplit
+split_threads(std::size_t total, std::size_t outer_cap = 2,
+              double outer_ratio = 0.25) // use ≤25% of pool for outer
+{
+  total = std::max<std::size_t>(1, total);
+  if (total == 1)
+    return {1, 0}; // outer runs; inner is serial
+
+  // Suggested outer from ratio, but no more than outer_cap
+  std::size_t suggested_outer = std::max<std::size_t>(
+      1, static_cast<std::size_t>(std::ceil(total * outer_ratio)));
+  std::size_t outer = std::min(outer_cap, suggested_outer);
+
+  // Always leave at least one thread for inner
+  if (outer >= total)
+    outer = total - 1;
+
+  std::size_t inner = total - outer; // guaranteed ≥ 1
+  return {outer, inner};
+}
+
 pgv::VcfRecIdx gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
                                std::size_t thread_count) {
-
+  povu::thread::thread_pool pool(thread_count);
   std::vector<pgg::RoV> all_rovs = gen_rov(pvsts, g);
   gen_ref_idxs(g, all_rovs);
-  std::vector<pga::Exp> exps = comp_expeditions(g, all_rovs, thread_count);
+
+  // decide on thread split
+  auto [outer, inner] = split_threads(pool.size());
+
+  std::vector<pga::Exp> exps = comp_expeditions_work_steal(g, all_rovs, pool, outer, inner);
   pgv::VcfRecIdx rs = pgv::gen_vcf_records(g, exps);
 
   return rs;

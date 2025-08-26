@@ -9,6 +9,8 @@
 #include "./vcf.hpp"
 #include "../common/utils.hpp"
 #include "../common/log.hpp"
+#include "../common/thread.hpp"
+
 
 namespace povu::genomics {
 inline constexpr std::string_view MODULE = "povu::genomics";

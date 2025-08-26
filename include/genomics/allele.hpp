@@ -16,6 +16,7 @@
 #include "../common/compat.hpp"
 #include "../common/types/core.hpp"
 
+#include "../common/thread.hpp"
 #include "../common/types/graph.hpp"
 #include "../graph/pvst.hpp"
 #include "../common/log.hpp"
@@ -343,7 +344,7 @@ public:
 };
 
 void comp_itineraries(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
-                      std::map<pt::id_t, Itn> &ref_map);
+                      std::map<pt::id_t, Itn> &ref_map, povu::thread::thread_pool &pool);
 
 } // namespace povu::genomics::alele
 
