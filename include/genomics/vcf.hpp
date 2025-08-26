@@ -9,7 +9,7 @@
 
 
 #include "../common/compat.hpp"
-#include "../common/types/graph.hpp"
+#include "../graph/types.hpp"
 #include "../graph/bidirected.hpp"
 #include "./allele.hpp"
 

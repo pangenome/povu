@@ -93,7 +93,7 @@ bd::VG *to_bd(const core::config& app_config) {
       }
 
       // set the length of the reference
-      pgt::Ref &ref = vg->get_ref_by_id_mut(curr_ref_id);
+      pgr::Ref &ref = vg->get_ref_by_id_mut(curr_ref_id);
       ref.set_length(path_pos - 1);
     }
   }
@@ -105,8 +105,8 @@ bd::VG *to_bd(const core::config& app_config) {
     const bd::Vertex &v = vg->get_vertex_by_idx(v_idx);
 
     if (v.get_edges_l().empty() && v.get_edges_r().empty()) {
-      if (app_config.verbosity() > 2 ){
-        std::cerr << pv_cmp::format(" {} WARN isolated node {} \n", fn_name, v.id());
+      if (app_config.verbosity() > 2) {
+        WARN("isolated vertex {}", v.id());
       }
       vg->add_tip(v.id(), pgt::v_end_e::l);
     }

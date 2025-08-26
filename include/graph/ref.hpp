@@ -1,106 +1,18 @@
-#ifndef POVU_TYPES_GRAPH_HPP
-#define POVU_TYPES_GRAPH_HPP
+#ifndef POVU_GRAPH_REF_HPP
+#define POVU_GRAPH_REF_HPP
 
 #include <map>
 #include <optional>
 #include <set>
 #include <string>
 #include <vector>
-#include <algorithm>
-
-#include "./core.hpp"
-#include "../compat.hpp"
-#include "../utils.hpp"
 
 
-namespace povu::types::graph {
-namespace pu = povu::utils;
-
-// should this be renamed to clr_e or color_e?
-enum class color {
-  gray,
-  black
-};
-typedef color color_e;
-std::ostream& operator<<(std::ostream& os, const color_e& c);
-
-// Eq class and node id
-struct eq_n_id_t {
-  std::size_t eq_class;
-  std::size_t v_id;
-};
-
-struct id_n_cls {
-  std::size_t id;
-  std::size_t cls;
-};
+#include "../common/core.hpp"
+#include "../common/utils.hpp"
 
 
-/**
-  * l (left) 5' or +
-  * r (right) 3' or -
-  */
-// TODO: replace with struct or class to allow methods like complement
-enum class v_end_e {
-  l,
-  r
-};
-std::ostream& operator<<(std::ostream& os, const v_end_e& vt);
-constexpr v_end_e complement(v_end_e s) {
-  return s == v_end_e::l ? v_end_e::r : v_end_e::l;
-};
-
-/**
- * l (left) 5' or +
- * r (right) 3' or -
- */
-enum class v_type_e {
-    l,
-    r,
-    dummy
-};
-std::ostream& operator<<(std::ostream& os, const v_type_e& vt);
-
-
-struct side_n_id_t {
-  v_end_e v_end;
-  pt::id_t v_idx; // TODO [B] rename v_idx to v_id
-
-  // -------
-  // methods
-  // -------
-  friend bool operator<(const side_n_id_t& lhs, const side_n_id_t& rhs);
-  side_n_id_t complement() const;
-};
-std::ostream& operator<<(std::ostream& os, const side_n_id_t& x);
-typedef side_n_id_t side_n_idx_t; // to use when the id is an index
-
-
-enum class or_e {
-  forward,
-  reverse
-};
-std::ostream& operator<<(std::ostream& os, const or_e& o);
-std::string or_to_str (or_e o);
-
-// TODO: move to povu::types::variation
-struct id_or_t {
-  pt::id_t v_id; // TODO change type and name to id to pt::id_t
-  or_e orientation;
-
-  std::string as_str() const {
-    return pv_cmp::format("{}{}", or_to_str(this->orientation) , this->v_id);
-  }
-};
-
-std::ostream& operator<<(std::ostream& os, const id_or_t& x);
-bool operator!=(const id_or_t & lhs, const id_or_t& rhs);
-bool operator==(const id_or_t & lhs, const id_or_t& rhs);
-bool operator<(const id_or_t& lhs, const id_or_t& rhs);
-
-
-typedef id_or_t step_t;
-typedef std::vector<id_or_t> walk_t;
+namespace povu::graph::ref {
 
 
 struct pan_sn {
@@ -275,9 +187,9 @@ public:
   }
 };
 
-} // namespace povu::graph_types
+} // namespace povu::graph::ref
 
 // NOLINTNEXTLINE(misc-unused-alias-decls)
-namespace ptg = povu::types::graph;
+namespace pgr = povu::graph::ref;
 
-#endif
+#endif // POVU_GRAPH_REF_HPP
