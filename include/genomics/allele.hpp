@@ -14,7 +14,7 @@
 #include <vector>
 
 #include "../common/compat.hpp"
-#include "../common/types/core.hpp"
+#include "../common/core.hpp"
 
 #include "../common/thread.hpp"
 #include "../graph/types.hpp"

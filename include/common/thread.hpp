@@ -15,7 +15,7 @@
 #include <utility>
 
 #include "./compat.hpp"
-#include "./types/core.hpp"
+#include "./core.hpp"
 
 
 namespace povu::thread {

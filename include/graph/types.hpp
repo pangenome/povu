@@ -6,7 +6,7 @@
 #include <string_view>
 #include <vector>
 
-#include "../common/types/core.hpp"
+#include "../common/core.hpp"
 #include "../common/compat.hpp"
 
 

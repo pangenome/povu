@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "../common/compat.hpp"
-#include "../common/types/core.hpp"
+#include "../common/core.hpp"
 #include "../graph/types.hpp"
 #include "../graph/pvst.hpp"
 #include "../common/log.hpp"

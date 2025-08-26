@@ -5,7 +5,7 @@
 #include <cstddef>
 #include <unordered_map>
 
-#include "../common/types/constants.hpp"
+#include "../common/constants.hpp"
 
 namespace povu::bracket_list {
 using namespace povu::constants;

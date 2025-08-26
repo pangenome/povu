@@ -20,7 +20,7 @@
 
 #include "../../app/cli/app.hpp" // for core::config TODO: find a proper place for the app config
 #include "../common/compat.hpp"
-#include "../common/types/constants.hpp"
+#include "../common/constants.hpp"
 #include "./types.hpp"
 #include "../common/utils.hpp"
 #include "../common/log.hpp"

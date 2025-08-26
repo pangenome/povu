@@ -23,7 +23,7 @@
 #include <vector>
 
 #include "./compat.hpp"
-#include "./types/core.hpp"
+#include "./core.hpp"
 
 
 namespace povu::utils {
