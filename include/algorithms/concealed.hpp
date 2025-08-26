@@ -21,7 +21,7 @@
 #include "../graph/spanning_tree.hpp"
 #include "../common/compat.hpp"
 #include "../common/utils.hpp"
-#include "../common/tree_utils.hpp"
+#include "../graph/tree_utils.hpp"
 
 namespace povu::concealed {
 

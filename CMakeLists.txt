@@ -157,7 +157,7 @@ ADD_LIBRARY(povulib
 
   # common
   ${INCLUDE_DIR}/common/utils.cpp
-  ${INCLUDE_DIR}/common/tree_utils.cpp
+
 
   # genomics
   ${INCLUDE_DIR}/genomics/vcf.cpp
@@ -172,7 +172,7 @@ ADD_LIBRARY(povulib
   ${INCLUDE_DIR}/graph/bidirected.cpp
   ${INCLUDE_DIR}/graph/bracket_list.cpp
   ${INCLUDE_DIR}/graph/spanning_tree.cpp
-
+  ${INCLUDE_DIR}/graph/tree_utils.cpp
   # io
   ${INCLUDE_DIR}/io/from_pvst.cpp
   ${INCLUDE_DIR}/io/to_pvst.cpp

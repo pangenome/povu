@@ -14,7 +14,7 @@
 #include "../../include/algorithms/parallel.hpp"
 #include "../../include/algorithms/smothered.hpp"
 #include "../../include/algorithms/tiny.hpp"
-#include "../../include/common/tree_utils.hpp"
+#include "../../include/graph/tree_utils.hpp"
 #include "../../include/common/compat.hpp"
 #include "../../include/graph/bidirected.hpp"
 #include "../../include/graph/spanning_tree.hpp"

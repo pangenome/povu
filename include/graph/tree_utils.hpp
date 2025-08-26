@@ -13,8 +13,8 @@
 #include <unordered_set>
 #include <vector>
 
-#include "../graph/spanning_tree.hpp"
-#include "./compat.hpp"
+#include "./spanning_tree.hpp"
+#include "../common/compat.hpp"
 
 namespace povu::tree_utils {
 inline constexpr std::string_view MODULE = "povu::tree_utils";
