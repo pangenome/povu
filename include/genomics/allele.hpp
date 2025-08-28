@@ -33,35 +33,31 @@ namespace pvst = povu::pvst;
  */
 class AS {
   pt::id_t v_id_;
-  pt::idx_t step_idx_; // TODO: rename to locus_?
+  pt::idx_t locus_; // TODO: rename to locus_?
   pgt::or_e o_;
 
   // --------------
   // constructor(s)
   // --------------
-  AS(pt::id_t v_id, pt::idx_t step_idx, pgt::or_e o)
-    : v_id_(v_id), step_idx_(step_idx), o_(o) {}
+  AS(pt::id_t v_id, pgr::ref_step_t a)
+    : v_id_(v_id), locus_(a.locus_), o_(a.strand_) {}
 
 public:
 
   // -----------------
   // factory method(s)
   // -----------------
-  static AS given_ref_info(pt::id_t v_id, const bd::RefInfo &ref_info) {
-    return AS(v_id, ref_info.get_locus(), ref_info.get_strand());
+  static AS given_ref_info(pt::id_t v_id, pgr::ref_step_t ref_addr) {
+    return AS(v_id, ref_addr);
   }
 
   // ---------
   // getter(s)
   // ---------
-  pt::idx_t get_step_idx() const { return this->step_idx_; }
+  pt::idx_t get_step_idx() const { return this->locus_; }
   pt::id_t get_v_id() const { return this->v_id_; }
   pgt::or_e get_o() const { return this->o_; }
 
-  // ---------
-  // setter(s)
-  // ---------
-  void set_step_idx(pt::idx_t step_idx) { this->step_idx_ = step_idx; }
 };
 
 // implement == operator for AS
@@ -330,8 +326,8 @@ public:
   static WalkRefIdx from_walk(const bd::VG &g, const pgt::walk_t &w) {
     WalkRefIdx wr_idx;
     for (const auto &[v_id, _] : w) {
-      const bd::VtxRefIdx &vr_idx = g.get_vtx_ref_idx(v_id);
-      wr_idx.refs_.insert(vr_idx.get_ref_ids().begin(), vr_idx.get_ref_ids().end());
+      const pgr::VtxRefData &v_ref_data = g.get_vertex_by_id(v_id).get_refs();
+      wr_idx.refs_.insert(v_ref_data.get_ref_ids().begin(), v_ref_data.get_ref_ids().end());
     }
 
     return wr_idx;

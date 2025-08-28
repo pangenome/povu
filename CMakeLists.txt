@@ -179,6 +179,9 @@ ADD_LIBRARY(povulib
   ${INCLUDE_DIR}/io/from_gfa.cpp
   ${INCLUDE_DIR}/io/common.cpp
   ${INCLUDE_DIR}/io/to_vcf.cpp
+
+  # refs
+  ${INCLUDE_DIR}/refs/refs.cpp
 )
 
 # === Command Line Executable Sources ===
@@ -189,7 +192,6 @@ set(SOURCE_FILES
   ${SRC_DIR}/cli/cli.cpp
 
   # subcommand
-  ${SRC_DIR}/subcommand/common.cpp
   ${SRC_DIR}/subcommand/decompose.cpp
   ${SRC_DIR}/subcommand/info.cpp
   ${SRC_DIR}/subcommand/call.cpp
@@ -235,6 +237,15 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(fmt)
 
+# --- indicators (progress bars) ---
+FetchContent_Declare(
+  indicators
+  GIT_REPOSITORY https://github.com/p-ranav/indicators.git
+  GIT_TAG        26d39ad8fb438f5f50fb16427f554045d8431030 # v2.3.0
+)
+FetchContent_MakeAvailable(indicators)
+
+
 
 # --- Silence compiler warnings for dependencies ---
 function(silence_warnings target)
@@ -251,7 +262,7 @@ endfunction()
 silence_warnings(fmt)
 silence_warnings(liteseq)
 silence_warnings(args)
-
+silence_warnings(indicators)
 
 # === Link Dependencies ===
 # Link fmt to povulib (used in the library implementation)
@@ -259,6 +270,7 @@ target_link_libraries(povulib
   PRIVATE
   fmt::fmt
   liteseq     # gfa handling
+  indicators  # progress bars
 )
 
 # Link everything needed for the executable
@@ -268,6 +280,7 @@ target_link_libraries(povu
   liteseq     # gfa handling
   fmt::fmt       # formatting
   taywee::args   # argument parsing
+  indicators     # progress bars
 )
 
 # === Post-Build: Copy Binary to bin/ ===

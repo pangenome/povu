@@ -1,23 +1,9 @@
 #include "./bidirected.hpp"
+#include <string>
+#include <string_view>
 
 namespace povu::bidirected {
 
-// ============================================================
-//      RefInfo
-// ============================================================
-
-// --------------
-// constructor(s)
-// --------------
-RefInfo::RefInfo(pt::id_t ref_id, pgt::or_e strand, pt::idx_t locus)
-    : ref_id_(ref_id), strand_(strand), locus_(locus) {}
-
-// ---------
-// getter(s)
-// ---------
-pt::id_t RefInfo::get_ref_id() const { return ref_id_; }
-pgt::or_e RefInfo::get_strand() const { return strand_; }
-pt::idx_t RefInfo::get_locus() const { return locus_; }
 
 // ============================================================
 //      Edge
@@ -59,8 +45,7 @@ pgt::side_n_idx_t Edge::get_other_vtx(pt::idx_t v_idx, pgt::v_end_e ve) const {
 // constructor(s)
 // --------------
 
-Vertex::Vertex(pt::id_t v_id, const std::string& label) : v_id_{v_id}, label_(label) {}
-
+Vertex::Vertex(pt::id_t v_id, const std::string &label) : v_id_{v_id}, label_(label) {}
 
 // ---------
 // getter(s)
@@ -73,7 +58,7 @@ std::string Vertex::get_rc_label() const {
 }
 const std::set<pt::idx_t>& Vertex::get_edges_l() const { return e_l; }
 const std::set<pt::idx_t>& Vertex::get_edges_r() const { return e_r; }
-const std::vector<RefInfo>& Vertex::get_refs() const { return refs_; }
+const pgr::VtxRefData& Vertex::get_refs() const { return refs_; }
 
 // ---------
 // setter(s)
@@ -82,7 +67,7 @@ const std::vector<RefInfo>& Vertex::get_refs() const { return refs_; }
 void Vertex::add_edge_l(pt::idx_t e_idx) { e_l.insert(e_idx); }
 void Vertex::add_edge_r(pt::idx_t e_idx) { e_r.insert(e_idx); }
 void Vertex::add_ref(pt::idx_t ref_id, pgt::or_e strand, pt::idx_t locus) {
-  this->refs_.push_back(RefInfo(ref_id, strand, locus));
+  this->refs_.add_ref_data(ref_id, strand, locus);
 }
 
 // ============================================================
@@ -94,15 +79,10 @@ void Vertex::add_ref(pt::idx_t ref_id, pgt::or_e strand, pt::idx_t locus) {
 // constructor(s)
 // --------------
 
-VariationGraph::VariationGraph(pt::idx_t v_count, pt::idx_t e_count, bool inc_refs) {
+VariationGraph::VariationGraph(pt::idx_t v_count, pt::idx_t e_count, pt::idx_t ref_count) {
   this->vertices.reserve(v_count);
   this->edges.reserve(e_count);
-
-  this->has_refs_ = false;
-  if (inc_refs) {
-    this->has_refs_ = true;
-    this->refs_ = pgr::Refs();
-  }
+  this->refs_ = pr::Refs(ref_count);
 }
 
 // ---------
@@ -133,25 +113,32 @@ const Vertex& VG::get_vertex_by_id(pt::id_t v_id) const {
 Vertex& VG::get_vertex_mut_by_id(pt::id_t v_id) {
   return vertices[this->v_id_to_idx_.get_value(v_id)];
 }
-const std::string &VG::get_ref_label(pt::id_t ref_id) const {
-  return this->refs_.get_ref_label(ref_id);
+
+const std::string &VG::get_sample_name(pt::id_t ref_id) const {
+  return this->refs_.get_sample_name(ref_id);
 }
 
-const pgr::Ref &VG::get_ref_by_id(pt::id_t ref_id) const {
+const pr::Ref &VG::get_ref_by_id(pt::id_t ref_id) const {
   return this->refs_.get_ref(ref_id);
 }
 
-pgr::Ref &VG::get_ref_by_id_mut(pt::id_t ref_id) {
+pr::Ref &VG::get_ref_by_id_mut(pt::id_t ref_id) {
   return this->refs_.get_ref_mut(ref_id);
 }
 
-pt::id_t VG::get_ref_id(const std::string &ref_label) const {
-  return this->refs_.get_ref_id(ref_label);
+std::optional<pt::id_t> VG::get_ref_id(std::string_view tag) const {
+  return this->refs_.get_ref_id(tag);
 }
 
-const VtxRefIdx &VG::get_vtx_ref_idx(pt::id_t v_id) const {
-  return this->v_ref_idx_.at(v_id);
+std::set<pt::id_t> VG::get_shared_samples(pt::id_t ref_id) const {
+  return this->refs_.get_shared_samples(ref_id);
 }
+
+std::set<pt::id_t> VG::get_refs_in_sample(std::string_view sample_name) const {
+  return this->refs_.get_refs_in_sample(sample_name);
+}
+
+pt::id_t VG::ref_count() const { return this->refs_.ref_count(); }
 
 // ---------
 // setter(s)
@@ -192,34 +179,8 @@ pt::idx_t VG::add_edge(pt::id_t v1_id, pgt::v_end_e v1_end, pt::id_t v2_id, pgt:
 
 pt::id_t VG::add_ref(const std::string &label, char delim) {
   pt::id_t ref_id = this->refs_.add_ref(label, delim);
-
   return ref_id;
 }
-
-void VG::gen_vtx_ref_idx(pt::id_t v_id) {
-  if (!this->has_refs_) {
-    ERR("graph has no refs\n");
-    exit(1);
-  }
-  if (pv_cmp::contains(this->v_ref_idx_, v_id)) {
-    return;
-  }
-  const Vertex &v = this->get_vertex_by_id(v_id);
-  std::vector<RefInfo> v_ref_data = v.get_refs();
-  VtxRefIdx vr_idx = VtxRefIdx::from_ref_info(v_ref_data);
-  this->v_ref_idx_.emplace(v_id, std::move(vr_idx));
-
-  return;
-}
-
-const std::set<pt::id_t> &VG::get_shared_samples(pt::id_t ref_id) const {
-  return this->refs_.get_shared_samples(ref_id);
-}
-
-pt::id_t VG::ref_id_count() const {
-  return this->refs_.ref_id_count();
-}
-
 
 void VG::shrink_to_fit() {
   this->vertices.shrink_to_fit();

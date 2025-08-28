@@ -156,6 +156,7 @@ void split(const std::string &line, char sep, std::vector<std::string>* tokens);
 
 inline thread_local bool tp_in_worker = false;
 
+std::size_t comp_prog(pt::idx_t pos, pt::idx_t total);
 
 } // namespace povu::utils
 

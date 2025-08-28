@@ -23,7 +23,8 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
   args::ValueFlag<std::string> forest_dir(parser, "forest_dir", "dir containing flubble forest [default: .]", {'f', "forest-dir"});
   args::ValueFlag<std::string> output_dir(parser, "output_dir", "Output directory [default: .]", {'o', "output-dir"});
   args::ValueFlag<std::string> ref_list(parser, "ref_list", "path to txt file containing reference haplotypes [optional]", {'r', "ref-list"});
-  args::ValueFlag<std::string> chrom(parser, "chrom", "graph identifier, default is from GFA file. Chrom column in VCF [optional]", {'c', "chrom"});
+  args::ValueFlag<std::size_t> chunk_size(parser, "chunk-size", "Number of RoVs to process at once [default: 100]", {'c', "chunk-size"});
+  args::ValueFlag<std::size_t> queue_length(parser, "queue-length", "Number of chunks to hold in memory at a time [default: 4]", {'q', "queue-len"});
   args::Flag stdout_vcf(parser, "stdout_vcf", "Output single VCF to stdout instead of separate files [default: false]", {"stdout"});
   args::ValueFlagList<std::string> path_prefixes(parser, "path_prefix", "All paths beginning with NAME used as reference (multiple allowed) [optional]", {'P', "path-prefix"});
   args::PositionalList<std::string> refsList(parser, "refs", "list of refs to use as reference haplotypes [optional]");
@@ -43,13 +44,12 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
     app_config.set_output_dir(args::get(output_dir));
   }
 
-  // uses the name of the GFA file
-  if (chrom) {
-    app_config.set_chrom(std::move(args::get(chrom)));
+  if (chunk_size) {
+    app_config.set_chunk_size(args::get(chunk_size));
   }
-  else {
-    std::filesystem::path filePath(app_config.get_input_gfa());
-    app_config.set_chrom(filePath.stem().string());
+
+  if (queue_length) {
+    app_config.set_queue_len(args::get(queue_length));
   }
 
   if (stdout_vcf) {
@@ -125,33 +125,33 @@ void gfa2vcf_handler(args::Subparser &parser, core::config& app_config) {
   args::Group arguments("arguments");
   args::ValueFlag<std::string> input_gfa(parser, "gfa", "path to input gfa [required]", {'i', "input-gfa"}, args::Options::Required);
   args::ValueFlag<std::string> ref_list(parser, "ref_list", "path to txt file containing reference haplotypes [optional]", {'r', "ref-list"});
-  args::ValueFlag<std::string> chrom(parser, "chrom", "graph identifier, default is from GFA file. Chrom column in VCF [optional]", {'c', "chrom"});
   args::Flag hairpins(parser, "hairpins", "Find hairpins in the variation graph", {'h', "hairpins"});
-  args::Flag hubbles(parser, "hubbles", "Find hubbles in the variation graph", {'s', "hubbles"});
+  args::Flag subflubbles(parser, "subflubbles", "Find subflubbles in the variation graph", {'s', "subflubbles"});
   args::ValueFlagList<std::string> path_prefixes(parser, "path_prefix", "All paths beginning with NAME used as reference (multiple allowed) [optional]", {'P', "path-prefix"});
   args::PositionalList<std::string> refsList(parser, "refs", "list of refs to use as reference haplotypes [optional]");
+  args::ValueFlag<std::size_t> chunk_size(parser, "chunk-size", "Number of RoVs to process at once [default: 100]",{'c', "chunk-size"});
+  args::ValueFlag<std::size_t> queue_length(parser, "queue-length", "Number of chunks to hold in memory at a time [default: 4]", {'q', "queue-len"});
 
   parser.Parse();
 
   app_config.set_task(core::task_e::gfa2vcf);
   app_config.set_input_gfa(args::get(input_gfa));
 
+  if (chunk_size) {
+    app_config.set_chunk_size(args::get(chunk_size));
+  }
+
+  if (queue_length) {
+    app_config.set_queue_len(args::get(queue_length));
+  }
+
   if (hairpins) {
     app_config.set_hairpins(true);
   }
 
-  if (hubbles) {
+  if (subflubbles) {
     app_config.set_subflubbles(true);
   }
-
-  if (chrom) {
-    app_config.set_chrom(std::move(args::get(chrom)));
-  }
-  else {
-    std::filesystem::path filePath(app_config.get_input_gfa());
-    app_config.set_chrom(filePath.stem().string());
-  }
-
 
   app_config.set_inc_vtx_labels(true);
   app_config.set_inc_refs(true);
@@ -224,6 +224,7 @@ int cli(int argc, char **argv, core::config& app_config) {
   args::Flag version(arguments, "version", "The current version of povu", {"version"});
   args::ValueFlag<int> verbosity(arguments, "verbosity", "Level of output [default: 0]", {'v', "verbosity"});
   args::ValueFlag<int> thread_count(arguments, "threads", "Number of threads to use [default: 1]", {'t', "threads"});
+  args::Flag progress(arguments, "progress", "Show progress bars", {"progress"});
   args::HelpFlag h(arguments, "help", "help", {'h', "help"});
 
 
@@ -256,6 +257,10 @@ int cli(int argc, char **argv, core::config& app_config) {
 
   if (thread_count) {
     app_config.set_thread_count(args::get(thread_count));
+  }
+
+  if (progress) {
+    app_config.set_progress(true);
   }
 
   //if (no_sort) {

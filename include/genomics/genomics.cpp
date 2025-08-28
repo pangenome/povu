@@ -1,8 +1,11 @@
 #include "./genomics.hpp"
-#include <vector>
-
+#include "indicators/dynamic_progress.hpp"
+#include "vcf.hpp"
+#include <cstddef>
+#include <unordered_set>
 
 namespace povu::genomics {
+
 
 /**
  * Remove walks that are prefixes of other walks in the same Itn
@@ -33,7 +36,7 @@ void remove_prefix_walks(pga::Itn &itn) {
 /**
  * Associate walks in an RoV with references
  */
-  pga::Exp exp_frm_rov(const bd::VG &g, const pgg::RoV &rov, povu::thread::thread_pool &pool) {
+pga::Exp exp_frm_rov(const bd::VG &g, const pgg::RoV &rov, povu::thread::thread_pool &pool) {
 
   // create an expedition object for the RoV
   const std::vector<pgt::walk_t> &walks = rov.get_walks();
@@ -71,48 +74,55 @@ void remove_prefix_walks(pga::Itn &itn) {
   return ref_walks;
 }
 
+std::vector<pga::Exp> comp_expeditions_work_steal(
+    const bd::VG &g, const std::vector<pgg::RoV> &all_rovs, pt::idx_t start,
+    pt::idx_t count, povu::thread::thread_pool &pool,
+    std::size_t outer_concurrency,
+    std::size_t reserve_for_inner
+    ) {
+  const std::size_t base = static_cast<std::size_t>(start);
+  const std::size_t want = static_cast<std::size_t>(count);
 
-std::vector<pga::Exp>
-comp_expeditions_work_steal(const bd::VG& g,
-                            const std::vector<pgg::RoV>& all_rovs,
-                            povu::thread::thread_pool& pool,
-                            std::size_t outer_concurrency,
-                            std::size_t reserve_for_inner) {
-    const std::size_t N = all_rovs.size();
-    std::vector<pga::Exp> all_exp(N);
-    if (N == 0) return all_exp;
+  const std::size_t N = count;
+  std::vector<pga::Exp> all_exp(N);
 
-    // Choose how many pool workers this call will occupy.
-    // Leave `reserve_for_inner` workers free for inner tasks spawned by exp_frm_rov.
-    const std::size_t pool_sz = pool.size();
-    if (reserve_for_inner >= pool_sz) reserve_for_inner = 0; // best effort
-    std::size_t K =
-        std::max<std::size_t>(1, std::min({outer_concurrency, pool_sz - reserve_for_inner, N}));
+  // choose K workers; leave some for inner tasks
+  const std::size_t pool_sz = pool.size();
+  if (reserve_for_inner >= pool_sz)
+    reserve_for_inner = 0;
+  const std::size_t K = std::max<std::size_t>(
+      1, std::min({outer_concurrency, pool_sz - reserve_for_inner, N}));
 
-    // Global index with optional block size for less atomic contention
-    std::atomic<std::size_t> next{0};
-    const std::size_t block = 64; // tune: 1 for max balance, 32–256 for cheap items
+  std::atomic<std::size_t> next{0}; // counts *offsets* within [0, N)
+  const std::size_t block = 64;
 
-    povu::thread::task_group tg(pool);
+  povu::thread::task_group tg(pool);
 
-    // Submit K worker tasks into the pool; each pulls ranges dynamically.
-    for (std::size_t w = 0; w < K; ++w) {
-        tg.run([&]{
-            for (;;) {
-                std::size_t start = next.fetch_add(block, std::memory_order_relaxed);
-                if (start >= N) break;
-                std::size_t end = std::min(start + block, N);
+  for (std::size_t k = 0; k < K; ++k) {
+    tg.run([&, base] {
+      for (;;) {
+        // offset within the chunk
+        const std::size_t off =
+            next.fetch_add(block, std::memory_order_relaxed);
+        if (off >= N)
+          break;
 
-                for (std::size_t i = start; i < end; ++i) {
-                    // Pass the SAME pool down so inner work can run on spare workers
-                    all_exp[i] = exp_frm_rov(g, all_rovs[i], pool);
-                }
-            }
-        });
-    }
+        // global index range [g_begin, g_end)
+        const std::size_t g_begin = base + off;
+        const std::size_t g_end = std::min(g_begin + block, base + N);
 
-    tg.wait(); // wait for all outer workers to finish (rethrows first exception)
-    return all_exp;
+        // fill results; local index = global - base
+        for (std::size_t gi = g_begin; gi < g_end; ++gi) {
+          const std::size_t li = gi - base;
+          all_exp[li] = exp_frm_rov(g, all_rovs[gi], pool);
+        }
+      }
+    });
+  }
+
+  tg.wait(); // rethrows first exception if any
+
+  return all_exp;
 }
 
 /**
@@ -138,11 +148,14 @@ bool is_fl_leaf(const pvst::Tree &pvst, pt::idx_t pvst_v_idx) noexcept {
   return true;
 }
 
+
 /**
  * find walks in the graph based on the leaves of the pvst
  * initialize RoVs from flubbles
  */
-std::vector<pgg::RoV> gen_rov(const std::vector<pvst::Tree> &pvsts, const bd::VG &g) {
+std::vector<pgg::RoV> gen_rov(const std::vector<pvst::Tree> &pvsts,
+                              const bd::VG &g, const core::config &app_config) {
+
   // the set of RoVs to return
   std::vector<pgg::RoV> rs;
   rs.reserve(pvsts.size());
@@ -156,10 +169,31 @@ std::vector<pgg::RoV> gen_rov(const std::vector<pvst::Tree> &pvsts, const bd::VG
     return false;
   };
 
-  for (const pvst::Tree &pvst : pvsts) { // for each pvst
+  // reuse msg buffer for progress bar
+  DynamicProgress<ProgressBar> bars;
+  std::string prog_msg;
+  prog_msg.reserve(128);
+
+  for (pt::idx_t i{}; i < pvsts.size(); i++) { // for each pvst
+    const pvst::Tree &pvst = pvsts[i];
     // loop through each tree
+    const pt::idx_t total = pvst.vtx_count();
+
+    // reset progress bar
+    ProgressBar bar;
+    set_progress_bar_common_opts(&bar);
+    std::size_t bar_idx = bars.push_back(bar);
+    set_progress_bar_common_opts(&bar, pvst.vtx_count());
 
     for (pt::idx_t pvst_v_idx{}; pvst_v_idx < pvst.vtx_count(); pvst_v_idx++) {
+
+      if (app_config.show_progress()) { // update progress bar
+        prog_msg.clear();
+        fmt::format_to(std::back_inserter(prog_msg), "Generating RoVs for PVST {} ({}/{})", i+1, pvst_v_idx + 1, total);
+        bars[bar_idx].set_option(option::PostfixText{prog_msg});
+        bars[bar_idx].set_progress(pvst_v_idx + 1);
+      }
+
       const pvst::VertexBase *pvst_v_ptr = pvst.get_vertex_const_ptr(pvst_v_idx);
       if (should_call(pvst, pvst_v_ptr, pvst_v_idx)) {
         pgg::RoV r{pvst_v_ptr};
@@ -167,28 +201,20 @@ std::vector<pgg::RoV> gen_rov(const std::vector<pvst::Tree> &pvsts, const bd::VG
         // get the set of walks for the RoV
         povu::genomics::graph::find_walks(g, r);
 
-        if (r.get_walks().size() == 0) {
-          // no walks found, skip this RoV
+        if (r.get_walks().size() == 0) { // no walks found, skip this RoV
           continue;
         }
 
         rs.push_back(std::move(r));
-        }
+      }
+
+      if (app_config.show_progress()) {
+        bars[bar_idx].mark_as_completed();
+      }
     }
   }
 
   return rs;
-}
-
-void gen_ref_idxs(bd::VG &g, const std::vector<pgg::RoV> &all_rovs) {
-  for (const pgg::RoV &r : all_rovs) {
-    const std::vector<pgt::walk_t> &walks = r.get_walks();
-    for (const pgt::walk_t& w : walks) {
-      for (const auto &[v_id, _] : w) {
-        g.gen_vtx_ref_idx(v_id);
-      }
-    }
-  }
 }
 
 struct ThreadSplit {
@@ -218,18 +244,54 @@ split_threads(std::size_t total, std::size_t outer_cap = 2,
   return {outer, inner};
 }
 
-pgv::VcfRecIdx gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
-                               std::size_t thread_count) {
+void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
+                     pbq::bounded_queue<pgv::VcfRecIdx> &q,
+                     DynamicProgress<ProgressBar> &prog, std::size_t bar_idx,
+                     std::size_t thread_count, const core::config &app_config) {
+
   povu::thread::thread_pool pool(thread_count);
-  std::vector<pgg::RoV> all_rovs = gen_rov(pvsts, g);
-  gen_ref_idxs(g, all_rovs);
+  std::vector<pgg::RoV> all_rovs = gen_rov(pvsts, g, app_config);
+
+  const std::size_t CHUNK_SIZE = app_config.get_chunk_size();
+  const std::size_t N = all_rovs.size();
+  const std::size_t CHUNK_COUNT = (N + CHUNK_SIZE - 1) / CHUNK_SIZE;
+  std::string prog_msg;
+  prog_msg.reserve(128);
+
+  std::vector<pga::Exp> exps;
+  exps.reserve(CHUNK_SIZE);
 
   // decide on thread split
   auto [outer, inner] = split_threads(pool.size());
 
-  std::vector<pga::Exp> exps = comp_expeditions_work_steal(g, all_rovs, pool, outer, inner);
-  pgv::VcfRecIdx rs = pgv::gen_vcf_records(g, exps);
+  try {
 
-  return rs;
+  for (pt::idx_t base{}; base < all_rovs.size(); base += CHUNK_SIZE) {
+    const pt::idx_t end = std::min(base + CHUNK_SIZE, N);
+    const pt::idx_t count = end - base;
+
+    if (app_config.show_progress()) { // update progress bar
+      prog_msg.clear();
+      pt::idx_t chunk_num = (base / CHUNK_SIZE) + 1;
+      fmt::format_to(std::back_inserter(prog_msg), "Processing Chunk ({}/{})", chunk_num, CHUNK_COUNT);
+      prog[bar_idx].set_option(option::PostfixText{prog_msg});
+      prog[bar_idx].set_progress(pu::comp_prog(chunk_num+1, CHUNK_COUNT));
+    }
+
+    exps = comp_expeditions_work_steal(g, all_rovs, base, count, pool, outer, inner);
+
+    pgv::VcfRecIdx rs = pgv::gen_vcf_records(g, exps);
+    if (!q.push(std::move(rs))) {
+      break; // queue was closed early
+    }
+    exps.clear();
   }
+  }
+  catch (...) {
+    q.close(); // make sure consumers wake up on errors
+    throw;
+  }
+
+  q.close(); // we're done
+}
 } // namespace povu::genomics

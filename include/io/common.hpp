@@ -2,6 +2,7 @@
 #define IO_HPP
 
 #include <cstddef>
+#include <filesystem>
 #include <fstream> // for std::ifstream
 #include <gfa.h>   // from liteseq
 #include <ostream>
@@ -30,6 +31,8 @@ std::vector<fs::path> get_files(const std::string& dir_path, const std::string& 
 
 
 void read_lines_to_vec_str(const std::string &fp, std::vector<std::string> *v);
+
+void create_dir_if_not_exists(const fs::path &out_dir);
 
 }; // namespace io::generic
 

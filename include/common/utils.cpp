@@ -90,5 +90,9 @@ void split(const std::string &line, char sep, std::vector<std::string> *tokens) 
   tokens->push_back(line.substr(start, end));
 }
 
+std::size_t comp_prog(pt::idx_t pos, pt::idx_t total) {
+  double prog = (static_cast<double>(pos) / static_cast<double>(total)) * 100.0;
+  return static_cast<std::size_t>(prog);
+}
 
 } // namespace povu::utils

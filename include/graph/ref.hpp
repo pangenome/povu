@@ -4,186 +4,96 @@
 #include <map>
 #include <optional>
 #include <set>
-#include <string>
-#include <vector>
+#include <string_view>
 
 
 #include "../common/core.hpp"
-#include "../common/utils.hpp"
+#include "./types.hpp"
 
 
 namespace povu::graph::ref {
+inline constexpr std::string_view MODULE = "povu::graph::ref";
 
+namespace ptg = povu::types::graph;
 
-struct pan_sn {
-  std::string sample_name_; // not unique
-  pt::id_t haplotype_id_;   // is unique
-  std::string contig_name_; // is unique contig or scaffold name
+struct ref_step_t {
+  ptg::or_e strand_;
+  pt::idx_t locus_;
+
+  ref_step_t(ptg::or_e strand, pt::idx_t locus) : strand_(strand), locus_(locus) {}
 };
+bool operator==(const ref_step_t &lhs, const ref_step_t &rhs);
+bool operator<(const ref_step_t &lhs, const ref_step_t &rhs);
 
-std::optional<pan_sn> label_to_pan_sn(const std::string &label, char delim);
 
-// applies to a single line in the P line of a GFA file
-
-class Ref {
-  pt::id_t ref_id_;
-  std::string label_; // the entire label in the P line
-
-  pt::idx_t len_; // length of the reference/contig/scaffold
-
-  // PanSN spec
-  bool has_pansn_data_ = false; // true if the label is in the PanSN format
-  pan_sn pansn_data_; // holds the PanSN data if has_pansn_data_ is true
-  // std::string sample_name_; // not unique
-  // pt::id_t haplotype_id_; // is unique
-  // std::string contig_name_; // is unique contig or scaffold name
+class VtxRefData {
+  std::set<pt::id_t> ref_ids_;
+  // key is a  ref id the value is the set of steps the ref makes in the vertex
+  // sorted by locus
+  std::map<pt::id_t, std::set<ref_step_t>> ref_id_to_data_;
 
 public:
-
   // --------------
   // constructor(s)
   // --------------
-
-  static Ref parse_pansn_label(pt::id_t ref_id, const std::string &label, char delim) {
-    Ref info;
-    info.ref_id_ = ref_id;
-    info.label_ = label;
-
-    std::optional<pan_sn> maybe_pansn = label_to_pan_sn(label, delim);
-    if (maybe_pansn.has_value()) {
-      info.has_pansn_data_ = true;
-      info.pansn_data_ = maybe_pansn.value();
-    }
-    else {
-      info.has_pansn_data_ = false;
-    }
-
-    return info;
-  }
+  VtxRefData() = default;
 
   // ---------
   // getter(s)
   // ---------
 
-  pt::id_t id() const {
-    return this->ref_id_;
+  bool has_ref(pt::id_t ref_id) const {
+    return pv_cmp::contains(this->ref_id_to_data_, ref_id);
   }
 
-  bool has_pansn_data() const {
-    return this->has_pansn_data_;
-  }
-
-  const std::string &get_label() const {
-    return this->label_;
-  }
-
-  const std::string &get_sample_name() const {
-    return this->pansn_data_.sample_name_;
-  }
-
-  std::string get_col_name() const {
-    if (this->has_pansn_data_) {
-      return this->pansn_data_.sample_name_;
+  bool has_address(pt::id_t ref_id, ref_step_t a) const {
+    if (!this->has_ref(ref_id)) {
+      return false;
     }
-    else {
-      return this->label_;
+    const std::set<ref_step_t> &data = this->ref_id_to_data_.at(ref_id);
+    return pv_cmp::contains(data, a);
+  }
+
+  const std::set<ref_step_t> &get_ref_data(pt::id_t ref_id) const {
+    return this->ref_id_to_data_.at(ref_id);
+  }
+
+  const std::set<pt::id_t> &get_ref_ids() const {
+    return this->ref_ids_;
+  }
+
+  pt::idx_t loop_count(pt::id_t ref_id) const {
+    if (!this->has_ref(ref_id)) {
+      return 0;
     }
+    return this->get_ref_data(ref_id).size();
   }
 
-  pt::id_t get_haplotype_id() const { return this->pansn_data_.haplotype_id_; }
+  // TODO: should we return the entire step?
+  // works with 0 because we assume indexes are 1 indexed
+  // the min must be > threshold
+  std::optional<pt::idx_t>
+  get_min_locus(pt::id_t ref_id, std::optional<pt::idx_t> opt_start_after) const {
+    if (!pv_cmp::contains(this->ref_ids_, ref_id)) {
+      return std::nullopt;
+    }
 
-  const std::string &get_contig_name() const {
-    return this->pansn_data_.contig_name_;
-  }
-
-  pt::idx_t get_length() const {
-    return this->len_;
+    pt::idx_t threshold = opt_start_after.value_or(0);
+    for (const ref_step_t &a : this->ref_id_to_data_.at(ref_id)) {
+      if (a.locus_ > threshold) {
+        return a.locus_;
+      }
+    }
+    return std::nullopt;
   }
 
   // ---------
   // setter(s)
   // ---------
 
-  void set_length(pt::idx_t len) {
-    this->len_ = len;
-  }
-};
-
-class Refs {
-  std::vector<Ref> refs_;
-
-  // the ref id is the index in the vector and the value is the set of ref ids
-  // which share the sample name with the ref id at that index
-  std::vector<std::set<pt::id_t>> ref_ids_;
-
-  // the string is the sample name and the values are the ref ids which share
-  // a sample name
-  std::map<std::string, std::set<pt::id_t>> sample_to_ref_ids_;
-
-  pu::TwoWayMap<std::string, pt::id_t> label_and_ref_id_;
-
-public:
-
-  // --------------
-  // constructor(s)
-  // --------------
-  Refs() = default;
-
-  // ---------
-  // getter(s)
-  // ---------
-
-  const Ref &get_ref(pt::id_t ref_id) const {
-    return this->refs_.at(ref_id);
-  }
-
-  Ref &get_ref_mut(pt::id_t ref_id) {
-    return this->refs_.at(ref_id);
-  }
-
-  const std::string &get_ref_label(pt::id_t ref_id) const {
-    return this->refs_.at(ref_id).get_label();
-  }
-
-  pt::id_t get_ref_id(const std::string &ref_label) const {
-    return this->label_and_ref_id_.get_value(ref_label);
-  }
-
-  pt::id_t ref_id_count() const {
-    return this->refs_.size();
-  }
-
-  /**
-   * Get the set of ref ids that share the same sample name as the ref id
-   */
-  const std::set<pt::id_t> &get_shared_samples(pt::id_t ref_id) const {
-    return this->ref_ids_.at(ref_id);
-  }
-
-  // ---------
-  // setter(s)
-  // ---------
-
-  pt::id_t add_ref(const std::string &label, char delim) {
-    pt::id_t ref_id = this->refs_.size();
-    Ref ref = Ref::parse_pansn_label(ref_id, label, delim);
-    this->refs_.push_back(ref);
-    this->label_and_ref_id_.insert(label, ref_id);
-
-    const std::string &sample_name = ref.get_col_name();
-
-    this->sample_to_ref_ids_.try_emplace(sample_name, std::set<pt::id_t>{});
-    this->sample_to_ref_ids_[sample_name].insert(ref_id);
-
-    // TODO [B] use already pre computed ref count
-    this->ref_ids_.resize(this->refs_.size());
-
-    // update for all refs
-    for (pt::id_t r_id : this->sample_to_ref_ids_[sample_name]) {
-      this->ref_ids_[r_id] = this->sample_to_ref_ids_[sample_name];
-    }
-
-    return ref_id;
+  void add_ref_data(pt::id_t ref_id, ptg::or_e strand, pt::idx_t locus) {
+    this->ref_id_to_data_[ref_id].insert({strand, locus});
+    this->ref_ids_.insert(ref_id);
   }
 };
 

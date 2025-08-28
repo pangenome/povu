@@ -22,6 +22,7 @@ inline lq::gfa_config gen_lq_conf(const core::config &app_config, std::string &g
 }
 
 
+
 /**
  * Read GFA into a variation graph represented as a bidirected graph
  *
@@ -29,31 +30,81 @@ inline lq::gfa_config gen_lq_conf(const core::config &app_config, std::string &g
  * @param [in] app_config The application configuration
  * @return A VariationGraph object from the GFA file
  */
-bd::VG *to_bd(const core::config& app_config) {
-  std::string fn_name { pv_cmp::format("{}::{}]", MODULE, __func__) };
+bd::VG *to_bd(const core::config &app_config) {
+
+  bool show_prog = app_config.show_progress();
+
+  pv_prog::IndeterminateProgressBar prep_bar;
+  prep_bar.set_option(indicators::option::PostfixText{"Preparing GFA..."});
+  set_progress_bar_ind(&prep_bar);
+
 
   /* initialize a liteseq gfa */
   std::vector<const char *> refs;
   std::string gfa_fp;
   lq::gfa_config conf = gen_lq_conf(app_config, gfa_fp);
-  lq::gfa_props *gfa = lq::gfa_new(&conf);
+  lq::gfa_props *gfa = nullptr;
+  //lq::gfa_props *gfa = lq::gfa_new(&conf);
+  std::thread get_gfa_async([&]() {
+    gfa = lq::gfa_new(&conf);
+    if (show_prog) {
+      prep_bar.set_option(indicators::option::PostfixText{"GFA prepared."});
+      prep_bar.mark_as_completed();
+    }
+  });
+
+  if (show_prog) {
+    while (!prep_bar.is_completed()) {
+      prep_bar.tick();
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+  }
+
+  get_gfa_async.join();
+
 
   pt::idx_t vtx_count = gfa->s_line_count;
   pt::idx_t edge_count = gfa->l_line_count;
   pt::idx_t ref_count = gfa->p_line_count;
 
   /* initialize a povu bidirected graph */
-  bd::VG *vg = new bd::VG(vtx_count, edge_count, app_config.inc_refs());
+  bd::VG *vg = new bd::VG(vtx_count, edge_count, ref_count);
+
+  /* set up progress bars */
+  const std::size_t PROG_BAR_COUNT {3};
+  ProgressBar vtx_bar, edge_bar, ref_bar;
+  {
+    set_progress_bar_common_opts(&vtx_bar, vtx_count);
+    set_progress_bar_common_opts(&edge_bar, edge_count);
+    set_progress_bar_common_opts(&ref_bar, ref_count);
+  }
+  MultiProgress<ProgressBar, PROG_BAR_COUNT> bars(vtx_bar, edge_bar, ref_bar);
+  const size_t VTX_BAR_IDX{0};
+  const size_t EDGE_BAR_IDX{1};
+  const size_t REF_BAR_IDX{2};
 
   /* add vertices */
-  for (size_t i {}; i < vtx_count; ++i) {
+  for (size_t i{}; i < vtx_count; ++i) {
+
+    if (show_prog) { // update progress bar
+      std::string prog_msg = fmt::format("Loading vertices ({}/{})", i + 1, vtx_count);
+      vtx_bar.set_option(indicators::option::PostfixText{prog_msg});
+      bars.set_progress<VTX_BAR_IDX>(static_cast<size_t>(i + 1));
+    }
+
     std::size_t v_id = gfa->v[i].id;
     std::string label = app_config.inc_vtx_labels() ? std::string(gfa->v[i].seq) : std::string();
     vg->add_vertex(v_id, label);
   }
 
   /* add edges */
-  for (std::size_t i {}; i < edge_count; ++i) {
+  for (std::size_t i{}; i < edge_count; ++i) {
+    if (show_prog) { // update progress bar
+      std::string prog_msg = fmt::format("Loading edges ({}/{})", i + 1, edge_count);
+      edge_bar.set_option(indicators::option::PostfixText{prog_msg});
+      bars.set_progress<EDGE_BAR_IDX>(static_cast<size_t>(i + 1));
+    }
+
     std::size_t v1 = gfa->e[i].v1_id;
     pgt::v_end_e v1_end = gfa->e[i].v1_side == lq::vtx_side_e::LEFT ? pgt::v_end_e::l : pgt::v_end_e::r;
 
@@ -67,18 +118,20 @@ bd::VG *to_bd(const core::config& app_config) {
   // TODO: to parallise run in parallel for each vertex
   if (app_config.inc_refs()) {
 
-    //std::cerr << "inc ref\n";
-
     std::size_t path_pos {}; // the position of a base in a reference path
     pt::id_t curr_ref_id {pc::INVALID_ID};
-    for (pt::idx_t ref_idx {}; ref_idx < ref_count; ++ref_idx) {
-      const std::string &label = gfa->refs[ref_idx].name;
+    for (pt::idx_t ref_idx{}; ref_idx < ref_count; ++ref_idx) {
 
-      //std::cerr << "reading ref " << label << "\n";
+      if (show_prog) { // update progress bar
+        std::string prog_msg =fmt::format("Loading references ({}/{})", ref_idx + 1, ref_count);
+        ref_bar.set_option(indicators::option::PostfixText{prog_msg});
+        bars.set_progress<REF_BAR_IDX>(static_cast<size_t>(ref_idx + 1));
+      }
+
+      const std::string &label = gfa->refs[ref_idx].name;
 
       char delim = '#';
       curr_ref_id = vg->add_ref(label, delim);
-      //pt::id_t vg_ref_id = vg->add_ref(label, delim);
       path_pos = 1; // this is 1 indexed
 
       // color each vertex in the path
@@ -93,7 +146,7 @@ bd::VG *to_bd(const core::config& app_config) {
       }
 
       // set the length of the reference
-      pgr::Ref &ref = vg->get_ref_by_id_mut(curr_ref_id);
+      pr::Ref &ref = vg->get_ref_by_id_mut(curr_ref_id);
       ref.set_length(path_pos - 1);
     }
   }
@@ -116,5 +169,4 @@ bd::VG *to_bd(const core::config& app_config) {
 
   return vg;
 }
-
 };

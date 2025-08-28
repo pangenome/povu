@@ -10,7 +10,7 @@ void do_info(const core::config &app_config) {
   // read the input gfa into a bidirected variation graph
   // -----
 
-  bd::VG *g = povu::subcommands::common::get_vg(app_config);
+  bd::VG *g = povu::io::from_gfa::to_bd(app_config);
 
   std::vector<bd::VG *> components = bd::VG::componetize(*g);
 

@@ -1,6 +1,7 @@
 #ifndef CORE_HPP
 #define CORE_HPP
 
+#include <cstddef>
 #include <cstdint>
 #include <ostream>
 #include <string>
@@ -11,8 +12,12 @@
 #include <filesystem>
 
 #include "../../include/common/utils.hpp"
+#include "../../include/common/log.hpp"
+
 
 namespace core {
+constexpr std::string_view MODULE = "povu::app::core";
+
 namespace pu = povu::utils;
 
 
@@ -79,7 +84,11 @@ struct config {
   bool inc_vtx_labels_; // whether to include vertex labels
   bool inc_refs_; // whether to include references/paths
 
+  std::size_t chunk_size_ {100};
+  std::size_t queue_len_ {4};
+
   // general
+  bool prog_ { false }; // show progress bars
   unsigned char verbosity_; // verbosity
   bool print_dot_ { true }; // generate dot format graphs
 
@@ -126,17 +135,20 @@ struct config {
   bool print_tips() const { return this->print_tips_; }
   bool inc_vtx_labels() const { return this->inc_vtx_labels_; }
   bool inc_refs() const { return this->inc_refs_; }
-  const std::string& get_chrom() const { return this->chrom; }
+  std::size_t get_chunk_size() const { return this->chunk_size_; }
+  std::size_t get_queue_len() const { return this->queue_len_; }
   std::vector<std::string> const& get_reference_paths() const { return this->reference_paths; }
   std::vector<std::string> const& get_path_prefixes() const { return this->path_prefixes; }
   input_format_e get_refs_input_fmt() const { return this->ref_input_format; }
   std::vector<std::string>* get_reference_ptr() { return &this->reference_paths; }
-  const std::string& get_references_txt() const { return this->references_txt; }
+  const std::string &get_references_txt() const { return this->references_txt; }
+  bool show_progress() const { return this->prog_; }
   std::size_t verbosity() const { return this->verbosity_; } // can we avoid this being a size_t?
   unsigned int thread_count() const { return this->thread_count_; }
   bool print_dot() const { return this->print_dot_; }
   bool get_stdout_vcf() const { return this->stdout_vcf; }
   task_e get_task() const { return this->task; }
+
 
   // ---------
   // setter(s)
@@ -144,7 +156,8 @@ struct config {
   // as it os from the user not the handlegraph stuff
   void set_hairpins(bool b) { this->inc_hairpins_ = b; }
   void set_subflubbles(bool b) { this->find_subflubbles_ = b; }
-  void set_chrom(std::string&& s) { this->chrom = s; }
+  void set_chunk_size(std::size_t s) { this->chunk_size_ = s; }
+  void set_queue_len(std::size_t l) { this->queue_len_ = l; }
   void set_print_tips(bool b) { this->print_tips_ = b; }
   void set_inc_vtx_labels(bool b) { this->inc_vtx_labels_ = b; }
   void set_inc_refs(bool b) { this->inc_refs_ = b; }
@@ -155,6 +168,7 @@ struct config {
   void set_path_prefixes(std::vector<std::string>&& v) { this->path_prefixes = std::move(v); }
   void set_reference_txt_path(std::string&& s) { this->references_txt = std::move(s); }
   void set_references_txt(std::string s) { this->references_txt = s; }
+  void set_progress(bool b) { this->prog_ = b; }
   void set_verbosity(unsigned char v) { this->verbosity_ = v; }
   void set_thread_count(uint8_t t) { this->thread_count_ = t; }
   void set_print_dot(bool b) { this->print_dot_ = b; }
@@ -172,7 +186,7 @@ struct config {
     const std::string spc = "  "; // could use \t
 
 #ifdef DEBUG
-    std::cerr << "povu is in debug mode" << std::endl;
+    INFO("povu is in debug mode");
 #endif
     std::cerr << "CLI parameters: " << std::endl;
 
