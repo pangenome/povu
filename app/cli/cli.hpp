@@ -1,12 +1,11 @@
 #ifndef PV_CLI_HPP
 #define PV_CLI_HPP
 
+#include <args.hxx> // for command line parsing
+
 #include "./app.hpp"
-#include "../../include/io/common.hpp"
 
 namespace cli {
-namespace pic = povu::io::common;
-
 
 #define FILE_ERROR(name)                                                       \
   {                                                                            \

@@ -35,6 +35,7 @@ std::string reverse_complement(const std::string &sequence);
  */
 bool is_numeric_string(const std::string &s);
 
+bool is_prefix(std::string_view pre, std::string_view txt);
 
 template <typename Container> std::string concat_with(const Container &v, char delim) {
   std::ostringstream oss;

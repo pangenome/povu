@@ -380,11 +380,6 @@ void write_vcfs(const pgv::VcfRecIdx &vcf_recs, const bd::VG &g,
                 VcfOutput &vout, const core::config &app_config) {
 
   const pgv::genotype_data_t &gtd = vcf_recs.get_genotype_data();
-  const std::vector<std::string> &ref_paths = app_config.get_reference_paths();
-
-  auto is_in_ref_paths = [&](const std::string &ref_name) -> bool {
-    return std::find(ref_paths.begin(), ref_paths.end(), ref_name) != ref_paths.end();
-  };
 
   if (app_config.get_stdout_vcf()) {
     // Write to stdout
@@ -398,8 +393,7 @@ void write_vcfs(const pgv::VcfRecIdx &vcf_recs, const bd::VG &g,
       write_vcf(g, ref_id, ref_name, gtd, recs, os);
     }
   }
-  else {
-
+  else { // Write to split files
     for (const auto &[ref_id, recs] : vcf_recs.get_recs()) {
       if (!pv_cmp::contains(vcf_ref_ids, ref_id)) {
         continue;

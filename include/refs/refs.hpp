@@ -8,8 +8,9 @@
 #include <set>
 #include <charconv>
 
-#include "../common/core.hpp"
 #include "../common/constants.hpp"
+#include "../common/core.hpp"
+#include "../common/utils.hpp"
 
 namespace povu::refs {
 inline constexpr std::string_view MODULE = "povu::refs";
@@ -225,15 +226,8 @@ public:
     return std::nullopt;
   }
 
-
-
   // the sample name could also be referred to as a prefix
   std::set<pt::id_t> get_refs_in_sample(std::string_view sample_name) const {
-
-    auto is_prefix = [](std::string_view pre, std::string_view str) -> bool {
-      return str.compare(0, pre.size(), pre) == 0;
-    };
-
     std::set<pt::id_t> in_sample;
     for (pt::id_t ref_id{}; ref_id < this->refs_.size(); ref_id++) {
       const Ref &r = this->refs_[ref_id];
@@ -243,7 +237,7 @@ public:
         if (r.get_sample_name() == sample_name) { in_sample.insert(ref_id);}
         break;
       case ref_format_e::UNDEFINED:
-        if (is_prefix(sample_name, r.get_sample_name())) { in_sample.insert(ref_id); }
+        if (pu::is_prefix(sample_name, r.get_sample_name())) { in_sample.insert(ref_id); }
         break;
       default:
         ;

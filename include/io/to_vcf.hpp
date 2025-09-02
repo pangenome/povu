@@ -8,14 +8,15 @@
 #include <string_view>
 #include <vector>
 
-#include "../../include/common/compat.hpp"
-#include "../../include/genomics/vcf.hpp"
-#include "../../include/genomics/allele.hpp"
-#include "../../include/graph/types.hpp"
-#include "../../include/graph/ref.hpp"
-#include "../../include/common/utils.hpp"
-#include "../../include/graph/bidirected.hpp"
 #include "../../app/cli/app.hpp"
+#include "../../include/common/compat.hpp"
+#include "../../include/common/utils.hpp"
+#include "../../include/genomics/allele.hpp"
+#include "../../include/genomics/vcf.hpp"
+#include "../../include/graph/bidirected.hpp"
+#include "../../include/graph/ref.hpp"
+#include "../../include/graph/types.hpp"
+#include "../common/utils.hpp"
 #include "./common.hpp"
 
 
@@ -84,10 +85,19 @@ public:
       return *combined_;
     }
 
-    if (!pv_cmp::contains(files_, ref_label)) {
-      throw std::runtime_error("Unknown label");
+    if (pv_cmp::contains(files_, ref_label)) {
+      return files_.at(ref_label);
     }
-    return files_.at(ref_label);
+
+    // TODO: [c] handle this before in the caller or at startup
+    // try prefix match
+    for (const auto &[k, _] : files_) {
+      if (pu::is_prefix(k, ref_label)) {
+        return files_.at(k);
+      }
+    }
+
+    throw std::runtime_error("[VcfOutput::stream_for] Unknown label: " + ref_label);
   }
 
   /**
@@ -122,11 +132,6 @@ void init_vcfs(bd::VG &g, const std::vector<std::string> &sample_names, VcfOutpu
 void write_vcfs(const pgv::VcfRecIdx &vcf_recs, const bd::VG &g,
                 std::set<pt::id_t> vcf_ref_ids, VcfOutput &vout,
                 const core::config &app_config);
-
-// void write_combined_vcf_to_stdout(const pgv::VcfRecIdx &vcf_recs,
-//                                   const bd::VG &g,
-//                                   std::set<pt::id_t> vcf_ref_ids,
-//                                   const core::config &app_config);
 } // namespace povu::io::vcf
 
 

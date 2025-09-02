@@ -246,22 +246,24 @@ split_threads(std::size_t total, std::size_t outer_cap = 2,
 
 void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
                      pbq::bounded_queue<pgv::VcfRecIdx> &q,
-                     DynamicProgress<ProgressBar> &prog, std::size_t bar_idx,
-                     std::size_t thread_count, const core::config &app_config) {
+                     DynamicProgress<ProgressBar> &prog, std::size_t prog_idx,
+                     const core::config &app_config) {
 
-  povu::thread::thread_pool pool(thread_count);
   std::vector<pgg::RoV> all_rovs = gen_rov(pvsts, g, app_config);
 
   const std::size_t CHUNK_SIZE = app_config.get_chunk_size();
   const std::size_t N = all_rovs.size();
   const std::size_t CHUNK_COUNT = (N + CHUNK_SIZE - 1) / CHUNK_SIZE;
-  std::string prog_msg;
-  prog_msg.reserve(128);
-
   std::vector<pga::Exp> exps;
   exps.reserve(CHUNK_SIZE);
 
-  // decide on thread split
+  // setup buffer for progress bar messages
+  std::string prog_msg;
+  prog_msg.reserve(128);
+
+  // set up thread pool & decide on thread split
+  std::size_t thread_count = app_config.thread_count();
+  povu::thread::thread_pool pool(thread_count);
   auto [outer, inner] = split_threads(pool.size());
 
   try {
@@ -274,8 +276,8 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
       prog_msg.clear();
       pt::idx_t chunk_num = (base / CHUNK_SIZE) + 1;
       fmt::format_to(std::back_inserter(prog_msg), "Processing Chunk ({}/{})", chunk_num, CHUNK_COUNT);
-      prog[bar_idx].set_option(option::PostfixText{prog_msg});
-      prog[bar_idx].set_progress(pu::comp_prog(chunk_num+1, CHUNK_COUNT));
+      prog[prog_idx].set_option(option::PostfixText{prog_msg});
+      prog[prog_idx].set_progress(pu::comp_prog(chunk_num+1, CHUNK_COUNT));
     }
 
     exps = comp_expeditions_work_steal(g, all_rovs, base, count, pool, outer, inner);

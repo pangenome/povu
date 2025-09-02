@@ -228,9 +228,10 @@ void comp_itineraries_serial(const bd::VG &g, const std::vector<pgt::walk_t> &wa
 }
 
 void comp_itineraries(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
-                      std::map<pt::id_t, Itn> &ref_map, povu::thread::thread_pool &pool) {
+                      std::map<pt::id_t, Itn> &ref_map,
+                      povu::thread::thread_pool &pool) {
 
-  if (walks.size() > 50) {
+  if (walks.size() > 10) {
     comp_itineraries_async(g, walks, ref_map, pool);
   }
   else {

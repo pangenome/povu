@@ -32,6 +32,10 @@ bool is_numeric_string(const std::string &s) {
 #endif
 }
 
+bool is_prefix(std::string_view pre, std::string_view txt) {
+  return txt.compare(0, pre.size(), pre) == 0;
+};
+
 std::string today() {
     // Get the current time
     std::time_t currentTime = std::time(nullptr);

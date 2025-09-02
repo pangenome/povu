@@ -32,8 +32,8 @@ namespace pgg = povu::genomics::graph;
 
 void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
                      pbq::bounded_queue<pgv::VcfRecIdx> &q,
-                     DynamicProgress<ProgressBar> &prog, std::size_t bar_idx,
-                     std::size_t thread_count, const core::config &app_config);
+                     DynamicProgress<ProgressBar> &prog, std::size_t prog_idx,
+                     const core::config &app_config);
 } // namespace povu::genomics
 
 #endif
