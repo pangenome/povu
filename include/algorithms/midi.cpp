@@ -30,6 +30,23 @@ void add_midi(const ptu::tree_meta &tm,
 
         const pvst::Flubble &fl_v = static_cast<const pvst::Flubble &>(c_v);
         auto [fl_upper, fl_lower] = fl_v.get_bounds();
+        
+        // Check for invalid bounds from get_bounds()
+        if (md_upper == pc::INVALID_IDX || md_lower == pc::INVALID_IDX ||
+            fl_upper == pc::INVALID_IDX || fl_lower == pc::INVALID_IDX) {
+          WARN("{} Skipping comparison due to invalid bounds: md_upper={}, md_lower={}, fl_upper={}, fl_lower={}", 
+               fn_name, md_upper, md_lower, fl_upper, fl_lower);
+          continue;
+        }
+        
+        // Check bounds against depth vector size
+        if (md_upper >= depth.size() || md_lower >= depth.size() || 
+            fl_upper >= depth.size() || fl_lower >= depth.size()) {
+          WARN("{} Skipping comparison due to out-of-bounds indices: md_upper={}, md_lower={}, fl_upper={}, fl_lower={}, depth_size={}", 
+               fn_name, md_upper, md_lower, fl_upper, fl_lower, depth.size());
+          continue;
+        }
+        
         if ((depth[md_upper] < depth[fl_upper]) && (depth[md_lower] > depth[fl_lower])) {
           // flubble is nested in the midibubble
           pvst.del_edge(ft_v_idx, c_v_idx);
@@ -41,6 +58,8 @@ void add_midi(const ptu::tree_meta &tm,
 }
 
 pvst::MidiBubble gen_midi_bub(const pvst::Tree &pvst, const std::vector<pt::idx_t> &c_bubs) {
+  const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
+  
   pt::idx_t fst = c_bubs[0]; // first
   pt::idx_t snd = c_bubs[1]; // second
 
@@ -74,6 +93,21 @@ pvst::MidiBubble gen_midi_bub(const pvst::Tree &pvst, const std::vector<pt::idx_
   } else {
     s = snd_cn_v.get_cn_b();
     s_pvst_idx = snd;
+  }
+
+  // Validate indices before creating MidiBubble
+  if (g_pvst_idx == pc::INVALID_IDX || s_pvst_idx == pc::INVALID_IDX) {
+    ERR("{} Invalid MidiBubble indices: g_pvst_idx={}, s_pvst_idx={}, fst={}, snd={}", 
+        fn_name, g_pvst_idx, s_pvst_idx, fst, snd);
+    throw std::runtime_error("Cannot create MidiBubble with invalid indices");
+  }
+
+  // Ensure indices are within reasonable bounds
+  pt::idx_t max_valid_idx = pvst.vtx_count();
+  if (g_pvst_idx >= max_valid_idx || s_pvst_idx >= max_valid_idx) {
+    ERR("{} MidiBubble indices out of bounds: g_pvst_idx={}, s_pvst_idx={}, max_valid={}", 
+        fn_name, g_pvst_idx, s_pvst_idx, max_valid_idx);
+    throw std::runtime_error("MidiBubble indices exceed PVST vertex count");
   }
 
   return pvst::MidiBubble::create(g_pvst_idx, g, s_pvst_idx, s, pvst::route_e::s2e);
@@ -132,14 +166,22 @@ std::vector<pvst::MidiBubble> handle_fl(const pst::Tree &st,
   if (trunk_c_bubs.size() == 2) {
     // found midibubble in trunk
     // gen midibubble
-    res.push_back(gen_midi_bub(pvst, trunk_c_bubs));
+    try {
+      res.push_back(gen_midi_bub(pvst, trunk_c_bubs));
+    } catch (const std::exception &e) {
+      WARN("Failed to generate trunk MidiBubble: {}", e.what());
+    }
   }
 
   for (auto [c_idx, v] : branch_c_bubs) {
     if (v.size() == 2) {
       // found midibubble in branch
       // gen midibubble
-      res.push_back(gen_midi_bub(pvst, v));
+      try {
+        res.push_back(gen_midi_bub(pvst, v));
+      } catch (const std::exception &e) {
+        WARN("Failed to generate branch MidiBubble for c_idx {}: {}", c_idx, e.what());
+      }
     }
   }
 
@@ -171,9 +213,14 @@ void find_midi(const pst::Tree &st, pvst::Tree &pvst, const ptu::tree_meta &tm) 
 
      const pvst::Flubble &fl_v = static_cast<const pvst::Flubble &>(pvst_v);
 
-     std::vector<pvst::MidiBubble> res = handle_fl(st, pvst, fl_v, c_bubs);
-     if (!res.empty()) {
-       x[ft_v_idx] = res;
+     try {
+       std::vector<pvst::MidiBubble> res = handle_fl(st, pvst, fl_v, c_bubs);
+       if (!res.empty()) {
+         x[ft_v_idx] = res;
+       }
+     } catch (const std::exception &e) {
+       WARN("{} Failed to handle flubble {}: {}", fn_name, ft_v_idx, e.what());
+       continue;
      }
   }
 
