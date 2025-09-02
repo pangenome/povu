@@ -477,6 +477,10 @@ public:
   // -----------
   static MidiBubble create(pt::idx_t g_cn_idx, pgt::id_or_t g,
                            pt::idx_t s_cn_idx, pgt::id_or_t s, route_e route) {
+    // Validate indices at creation time
+    if (g_cn_idx == pc::INVALID_IDX || s_cn_idx == pc::INVALID_IDX) {
+      throw std::runtime_error("Cannot create MidiBubble with invalid indices");
+    }
     return MidiBubble(g_cn_idx, g, s_cn_idx, s, route);
   }
 
@@ -491,6 +495,10 @@ static MidiBubble parse(const route_params_t &rp) {
   // getters
   // -------
   bounds_t get_bounds() const {
+    // Safety check - should never happen
+    if (g_cn_idx_ == pc::INVALID_IDX || s_cn_idx_ == pc::INVALID_IDX) {
+      return INVALID_BOUNDS;
+    }
     return bounds_t { std::min(g_cn_idx_, s_cn_idx_), std::max(g_cn_idx_, s_cn_idx_) };
   }
   pgt::id_or_t get_g() const { return this->g_; }
