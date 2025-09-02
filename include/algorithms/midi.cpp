@@ -15,10 +15,17 @@ void add_midi(const ptu::tree_meta &tm,
     std::vector<pt::idx_t> ch = pvst.get_children(ft_v_idx);
 
     for (const pvst::MidiBubble &b : bubs) {
+      auto [md_upper, md_lower] = b.get_bounds(); // get bounds of the midibubble
+
+      // TODO: [A] investigate why this happens
+      if (md_upper == pc::INVALID_IDX || md_lower == pc::INVALID_IDX) {
+        continue;
+      }
+
       pt::idx_t m_v_idx = pvst.add_vertex(b);
       pvst.add_edge(ft_v_idx, m_v_idx);
 
-      auto [md_upper, md_lower] = b.get_bounds(); // get bounds of the midibubble
+
 
       // nest
       for (pt::idx_t c_v_idx : ch) {
@@ -30,23 +37,6 @@ void add_midi(const ptu::tree_meta &tm,
 
         const pvst::Flubble &fl_v = static_cast<const pvst::Flubble &>(c_v);
         auto [fl_upper, fl_lower] = fl_v.get_bounds();
-        
-        // Check for invalid bounds from get_bounds()
-        if (md_upper == pc::INVALID_IDX || md_lower == pc::INVALID_IDX ||
-            fl_upper == pc::INVALID_IDX || fl_lower == pc::INVALID_IDX) {
-          WARN("{} Skipping comparison due to invalid bounds: md_upper={}, md_lower={}, fl_upper={}, fl_lower={}", 
-               fn_name, md_upper, md_lower, fl_upper, fl_lower);
-          continue;
-        }
-        
-        // Check bounds against depth vector size
-        if (md_upper >= depth.size() || md_lower >= depth.size() || 
-            fl_upper >= depth.size() || fl_lower >= depth.size()) {
-          WARN("{} Skipping comparison due to out-of-bounds indices: md_upper={}, md_lower={}, fl_upper={}, fl_lower={}, depth_size={}", 
-               fn_name, md_upper, md_lower, fl_upper, fl_lower, depth.size());
-          continue;
-        }
-        
         if ((depth[md_upper] < depth[fl_upper]) && (depth[md_lower] > depth[fl_lower])) {
           // flubble is nested in the midibubble
           pvst.del_edge(ft_v_idx, c_v_idx);
@@ -59,7 +49,7 @@ void add_midi(const ptu::tree_meta &tm,
 
 pvst::MidiBubble gen_midi_bub(const pvst::Tree &pvst, const std::vector<pt::idx_t> &c_bubs) {
   const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
-  
+
   pt::idx_t fst = c_bubs[0]; // first
   pt::idx_t snd = c_bubs[1]; // second
 
@@ -97,7 +87,7 @@ pvst::MidiBubble gen_midi_bub(const pvst::Tree &pvst, const std::vector<pt::idx_
 
   // Validate indices before creating MidiBubble
   if (g_pvst_idx == pc::INVALID_IDX || s_pvst_idx == pc::INVALID_IDX) {
-    ERR("{} Invalid MidiBubble indices: g_pvst_idx={}, s_pvst_idx={}, fst={}, snd={}", 
+    ERR("{} Invalid MidiBubble indices: g_pvst_idx={}, s_pvst_idx={}, fst={}, snd={}",
         fn_name, g_pvst_idx, s_pvst_idx, fst, snd);
     throw std::runtime_error("Cannot create MidiBubble with invalid indices");
   }
@@ -105,7 +95,7 @@ pvst::MidiBubble gen_midi_bub(const pvst::Tree &pvst, const std::vector<pt::idx_
   // Ensure indices are within reasonable bounds
   pt::idx_t max_valid_idx = pvst.vtx_count();
   if (g_pvst_idx >= max_valid_idx || s_pvst_idx >= max_valid_idx) {
-    ERR("{} MidiBubble indices out of bounds: g_pvst_idx={}, s_pvst_idx={}, max_valid={}", 
+    ERR("{} MidiBubble indices out of bounds: g_pvst_idx={}, s_pvst_idx={}, max_valid={}",
         fn_name, g_pvst_idx, s_pvst_idx, max_valid_idx);
     throw std::runtime_error("MidiBubble indices exceed PVST vertex count");
   }
