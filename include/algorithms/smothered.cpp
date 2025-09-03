@@ -291,7 +291,7 @@ void add_smothered(const pst::Tree &st, pvst::Tree &pvst, const std::vector<fl_s
   for (const fl_sls &smo : al_smo) {
 
      for (const pvst::Smothered &g_adj_v : smo.g_adj) {
-      std::cerr << fn_name << " adding smothered [e,g] vertex: " << g_adj_v.as_str() << "\n";
+       //std::cerr << fn_name << " adding smothered [e,g] vertex: " << g_adj_v.as_str() << "\n";
       // use a ref and move?
 
       pt::idx_t g_adj_v_idx = pvst.add_vertex(g_adj_v);
@@ -300,7 +300,7 @@ void add_smothered(const pst::Tree &st, pvst::Tree &pvst, const std::vector<fl_s
     }
 
     for (const pvst::Smothered &s_adj_v : smo.s_adj) {
-      std::cerr << fn_name << " adding smothered [s,w] vertex: " << s_adj_v.as_str() << "\n";
+      //std::cerr << fn_name << " adding smothered [s,w] vertex: " << s_adj_v.as_str() << "\n";
       // use a ref and move?
       pt::idx_t s_adj_v_idx = pvst.add_vertex(s_adj_v);
       pvst.add_edge(smo.cn_v_idx, s_adj_v_idx);

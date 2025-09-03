@@ -67,9 +67,14 @@ bool trunk(const pst::Tree &st, pt::idx_t ai, pt::idx_t zi) {
     return false;
   }
 
+  // TODO: [A] investigate
+  if (st.get_obe_tgt_v_idxs(zi).empty()) {
+    return false;
+  }
+
 #ifdef DEBUG
-    assert(st.get_obe_tgt_v_idxs(zi).size() == 1);
-    assert(*(st.get_obe_tgt_v_idxs(zi).begin()) == ai);
+  assert(st.get_obe_tgt_v_idxs(zi).size() == 1);
+  assert(*(st.get_obe_tgt_v_idxs(zi).begin()) == ai);
 #endif
 
   return false;
@@ -99,7 +104,7 @@ void find_tiny(const pst::Tree &st, pvst::Tree &ft, const ptu::tree_meta &tm) {
       continue;
     }
 
-     if (trunk(st, ai, zi) || branches(st, tm, ai, zi)) {
+    if (trunk(st, ai, zi) || branches(st, tm, ai, zi)) {
       ft_v.set_type(pvst::vt_e::tiny);
     }
   }
