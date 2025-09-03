@@ -2,8 +2,6 @@
 
 namespace povu::io::common {
 
-
-
 std::vector<fs::path> get_files(const std::string& dir_path, const std::string& ext) {
   if (!fs::exists(dir_path)) {
     std::cerr << "Directory does not exist: " << dir_path << std::endl;
@@ -66,6 +64,15 @@ void fp_to_vector(const std::string &fp, std::vector<std::string> *v) {
   v->reserve(file_size);
   read_lines_to_vec_str(fp, v);
   v->shrink_to_fit();
+}
+
+void create_dir_if_not_exists(const fs::path &out_dir) {
+  if (!fs::exists(out_dir)) {
+    if (!fs::create_directories(out_dir)) {
+      throw std::runtime_error("Failed to create output directory: " +
+                               out_dir.string());
+    }
+  }
 }
 
 } // namespace io::generic

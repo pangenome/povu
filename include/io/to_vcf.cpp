@@ -1,6 +1,8 @@
 #include "./to_vcf.hpp"
 #include <algorithm>
 
+#include <fstream>
+#include <ostream>
 #include <set>
 #include <sstream>
 #include <string>
@@ -9,9 +11,9 @@
 
 namespace povu::io::to_vcf {
 
-inline void write_header(const std::vector<std::pair<std::string, pt::idx_t>> &contigs, std::ostream &os) {
+void write_header_common(std::ostream &os) {
   os << "##fileformat=VCFv4.2\n";
-  os << "##fileDate=" << pu::today() << std::endl;
+  os << pv_cmp::format("##fileDate={}\n", pu::today());
   os << "##source=povu\n";
   os << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
   os << "##INFO=<ID=AC,Number=A,Type=Integer,Description=\"Total number of alternate alleles in called genotypes\">\n";
@@ -21,26 +23,19 @@ inline void write_header(const std::vector<std::pair<std::string, pt::idx_t>> &c
   os << "##INFO=<ID=NS,Number=1,Type=Integer,Description=\"Number of samples with data\">\n";
   os << "##INFO=<ID=VARTYPE,Number=1,Type=String,Description=\"Type of variation: INS (insertion), DEL (deletion), SUB (substitution)\">\n";
   os << "##INFO=<ID=TANGLED,Number=1,Type=String,Description=\"Variant lies in a tangled region of the graph: T or F\">\n";
-  os << "##INFO=<ID=LV,Number=1,Type=Integer,Description=\"Level in the snarl tree (0=top level)\">\n";
+  os << "##INFO=<ID=LV,Number=1,Type=Integer,Description=\"Level in the PVST (0=top level)\">\n";
   os << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
-
-  for (const auto &[chrom, len] : contigs) {
-    os << pv_cmp::format("##contig=<ID={},length={}>\n", chrom, len);
-  }
 
   return;
 }
 
-inline void write_single_header(const std::string &chrom, pt::idx_t len, std::ostream &os) {
-  write_header({{chrom, len}}, os);
+void write_header_contig_line(const pr::Ref &r, std::ostream &os) {
+  os << pv_cmp::format("##contig=<ID={},length={}>\n", r.tag(), r.get_length());
+  return;
 }
 
 
-inline void write_combined_header(const std::vector<std::pair<std::string, pt::idx_t>> &contigs, std::ostream &os) {
-  write_header(contigs, os);
-}
-
-inline void write_col_header(pgv::genotype_data_t gtd, std::ostream &os) {
+void write_col_header(pgv::genotype_data_t gtd, std::ostream &os) {
   os << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t";
   for (std::size_t i = 0; i < gtd.genotype_cols.size(); ++i) {
     os << gtd.genotype_cols[i];
@@ -51,7 +46,70 @@ inline void write_col_header(pgv::genotype_data_t gtd, std::ostream &os) {
   os << "\n";
 }
 
+// TODO: should this be the same across all VCFs?
+povu::genomics::vcf::genotype_data_t comp_gt(const bd::VG &g) {
+  povu::genomics::vcf::genotype_data_t gd;
 
+  std::set<pt::id_t> handled;
+
+  for (pt::id_t ref_id = 0; ref_id < g.ref_count(); ++ref_id) {
+    if (pv_cmp::contains(handled, ref_id)) {
+      continue;
+    }
+
+    handled.insert(ref_id);
+
+    const std::set<pt::id_t> &sample_refs =  g.get_shared_samples(ref_id);
+
+    std::string col_name = g.get_ref_by_id(ref_id).get_sample_name();
+
+    if (sample_refs.empty()) {
+      // throw an exeption
+      ERR("No sample names found for ref_id {}", ref_id);
+      std::exit(EXIT_FAILURE);
+    }
+    else if (sample_refs.size() == 1) {
+      // throw an exeption
+      gd.ref_id_to_col_idx[ref_id] = gd.genotype_cols.size();
+      gd.genotype_cols.push_back(col_name);
+    }
+    else if (sample_refs.size() > 1) {
+      for (pt::id_t ref_id_ : sample_refs) {
+        gd.ref_id_to_col_idx[ref_id_] = gd.genotype_cols.size();
+        handled.insert(ref_id_);
+      }
+      gd.genotype_cols.push_back(col_name);
+    }
+  }
+
+  return gd;
+}
+
+
+void init_vcfs(bd::VG &g, const std::vector<std::string> &sample_names, VcfOutput &vout) {
+
+  vout.for_each_stream([&](std::ostream &os) {
+    write_header_common(os); // write common header lines
+  });
+
+  // add contig lines
+  for (const auto &sample_name : sample_names) {
+    std::ostream &os = vout.stream_for(sample_name);
+    std::set<pt::id_t> ref_ids = g.get_refs_in_sample(sample_name);
+    for (pt::id_t ref_id : ref_ids) {
+      const pr::Ref &ref = g.get_ref_by_id(ref_id);
+      write_header_contig_line(ref, os);
+    }
+  }
+
+  vout.for_each_stream([&](std::ostream &os) {
+    write_col_header(comp_gt(g), os); // write column header
+  });
+
+  vout.flush_all();
+
+  return;
+}
 // ns and the genotype columns are generated from the genotype data
 std::pair<pt::idx_t, std::string> gen_genotype_cols(const bd::VG &g,
                                                     const pgv::genotype_data_t &gtd,
@@ -300,93 +358,52 @@ void write_vcf_rec(const bd::VG &g, const pgv::genotype_data_t &gtd,
        << "\t" << "GT" // TODO: [c] make this a const
        << "\t" << gt_cols
        << "\n";
-  }
+    return;
+}
+
+
 
 void write_vcf(const bd::VG &g, pt::id_t ref_id, const std::string &chrom,
                const pgv::genotype_data_t &gtd, std::vector<pgv::VcfRec> recs,
                std::ostream &os) {
-    std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
-
-    write_single_header(chrom, g.get_ref_by_id(ref_id).get_length(), os);
-    write_col_header(gtd, os);
-    for (const pgv::VcfRec &r : recs) {
-      write_vcf_rec(g, gtd, r, chrom, os);
-    }
-
-    return;
+  for (const pgv::VcfRec &r : recs) {
+    write_vcf_rec(g, gtd, r, chrom, os);
   }
 
-void write_vcfs(const pgv::VcfRecIdx &vcf_recs, const bd::VG &g, const core::config &app_config) {
-  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
+  return;
+}
+
+
+
+void write_vcfs(const pgv::VcfRecIdx &vcf_recs, const bd::VG &g,
+                std::set<pt::id_t> vcf_ref_ids,
+                VcfOutput &vout, const core::config &app_config) {
 
   const pgv::genotype_data_t &gtd = vcf_recs.get_genotype_data();
-  const std::vector<std::string> &ref_paths = app_config.get_reference_paths();
-
-  auto is_in_ref_paths = [&](const std::string &ref_name) -> bool {
-    return std::find(ref_paths.begin(), ref_paths.end(), ref_name) != ref_paths.end();
-  };
 
   if (app_config.get_stdout_vcf()) {
     // Write to stdout
-    write_combined_vcf_to_stdout(vcf_recs, g, app_config);
-  } else {
-    // Write to separate files
-    std::string out_dir = std::string(app_config.get_output_dir());
-
+    std::ostream &os = vout.stream_for("");
+    const pgv::genotype_data_t &gtd = vcf_recs.get_genotype_data();
     for (const auto &[ref_id, recs] : vcf_recs.get_recs()) {
-      std::string ref_name = g.get_ref_label(ref_id);
-
-      if (!is_in_ref_paths(ref_name)) {
+      if (!pv_cmp::contains(vcf_ref_ids, ref_id)) {
         continue;
       }
-
-      std::string vcf_fp = pv_cmp::format("{}/{}.vcf", out_dir, ref_name);
-      std::ofstream os(vcf_fp);
+      const std::string &ref_name = g.get_sample_name(ref_id);
       write_vcf(g, ref_id, ref_name, gtd, recs, os);
-      if (app_config.verbosity() > 0) {
-        SUCCESS("wrote {}", vcf_fp);
+    }
+  }
+  else { // Write to split files
+    for (const auto &[ref_id, recs] : vcf_recs.get_recs()) {
+      if (!pv_cmp::contains(vcf_ref_ids, ref_id)) {
+        continue;
       }
+      std::string sample_name = g.get_sample_name(ref_id);
+      std::ostream &os = vout.stream_for(sample_name);
+      write_vcf(g, ref_id, sample_name, gtd, recs, os);
     }
   }
 
   return;
 }
-
-void write_combined_vcf_to_stdout(const pgv::VcfRecIdx &vcf_recs, const bd::VG &g, const core::config &app_config) {
-  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
-
-  const pgv::genotype_data_t &gtd = vcf_recs.get_genotype_data();
-  const std::vector<std::string> &ref_paths = app_config.get_reference_paths();
-
-  auto is_in_ref_paths = [&](const std::string &ref_name) -> bool {
-    return std::find(ref_paths.begin(), ref_paths.end(), ref_name) != ref_paths.end();
-  };
-
-  // Collect all contigs for combined header
-  std::vector<std::pair<std::string, pt::idx_t>> contigs;
-  for (const auto &[ref_id, recs] : vcf_recs.get_recs()) {
-    std::string ref_name = g.get_ref_label(ref_id);
-    if (is_in_ref_paths(ref_name)) {
-      contigs.emplace_back(ref_name, g.get_ref_by_id(ref_id).get_length());
-    }
-  }
-
-  // Write combined header to stdout
-  write_combined_header(contigs, std::cout);
-  write_col_header(gtd, std::cout);
-
-  // Write all records to stdout
-  for (const auto &[ref_id, recs] : vcf_recs.get_recs()) {
-    std::string ref_name = g.get_ref_label(ref_id);
-    if (!is_in_ref_paths(ref_name)) {
-      continue;
-    }
-    for (const pgv::VcfRec &r : recs) {
-      write_vcf_rec(g, gtd, r, ref_name, std::cout);
-    }
-  }
-
-  return;
-}
-
 } // namespacepovu::io::vcf

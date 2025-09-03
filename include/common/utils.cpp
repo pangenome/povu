@@ -32,6 +32,10 @@ bool is_numeric_string(const std::string &s) {
 #endif
 }
 
+bool is_prefix(std::string_view pre, std::string_view txt) {
+  return txt.compare(0, pre.size(), pre) == 0;
+};
+
 std::string today() {
     // Get the current time
     std::time_t currentTime = std::time(nullptr);
@@ -90,5 +94,9 @@ void split(const std::string &line, char sep, std::vector<std::string> *tokens) 
   tokens->push_back(line.substr(start, end));
 }
 
+std::size_t comp_prog(pt::idx_t pos, pt::idx_t total) {
+  double prog = (static_cast<double>(pos) / static_cast<double>(total)) * 100.0;
+  return static_cast<std::size_t>(prog);
+}
 
 } // namespace povu::utils

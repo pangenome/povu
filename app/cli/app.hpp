@@ -1,6 +1,7 @@
 #ifndef CORE_HPP
 #define CORE_HPP
 
+#include <cstddef>
 #include <cstdint>
 #include <ostream>
 #include <string>
@@ -11,8 +12,12 @@
 #include <filesystem>
 
 #include "../../include/common/utils.hpp"
+#include "../../include/common/log.hpp"
+
 
 namespace core {
+constexpr std::string_view MODULE = "povu::app::core";
+
 namespace pu = povu::utils;
 
 
@@ -49,7 +54,7 @@ enum class input_format_e {
   file_path,
   params,  // CLI params
   unset // unset
-  };
+};
 std::ostream& operator<<(std::ostream& os, const task_e& t);
 
 enum class subgraph_category {
@@ -79,7 +84,11 @@ struct config {
   bool inc_vtx_labels_; // whether to include vertex labels
   bool inc_refs_; // whether to include references/paths
 
+  std::size_t chunk_size_ {100};
+  std::size_t queue_len_ {4};
+
   // general
+  bool prog_ { false }; // show progress bars
   unsigned char verbosity_; // verbosity
   bool print_dot_ { true }; // generate dot format graphs
 
@@ -88,8 +97,7 @@ struct config {
   // references
   std::string references_txt; // the path to the file containing the reference paths
   input_format_e ref_input_format;
-  std::vector<std::string> reference_paths; // or just references
-  std::vector<std::string> path_prefixes; // path prefixes for reference selection
+  std::vector<std::string> ref_name_prefixes_; // path prefixes for reference selection
   bool stdout_vcf; // output single VCF to stdout instead of separate files
 
   // -------------
@@ -110,8 +118,7 @@ struct config {
         thread_count_(1),
         references_txt(""),
         ref_input_format(input_format_e::unset),
-        reference_paths(std::vector<std::string>{}),
-        path_prefixes(std::vector<std::string>{}),
+        ref_name_prefixes_(std::vector<std::string>{}),
         stdout_vcf(false)
     {}
 
@@ -126,17 +133,18 @@ struct config {
   bool print_tips() const { return this->print_tips_; }
   bool inc_vtx_labels() const { return this->inc_vtx_labels_; }
   bool inc_refs() const { return this->inc_refs_; }
-  const std::string& get_chrom() const { return this->chrom; }
-  std::vector<std::string> const& get_reference_paths() const { return this->reference_paths; }
-  std::vector<std::string> const& get_path_prefixes() const { return this->path_prefixes; }
+  std::size_t get_chunk_size() const { return this->chunk_size_; }
+  std::size_t get_queue_len() const { return this->queue_len_; }
+  std::vector<std::string> const& get_ref_name_prefixes() const { return this->ref_name_prefixes_; }
   input_format_e get_refs_input_fmt() const { return this->ref_input_format; }
-  std::vector<std::string>* get_reference_ptr() { return &this->reference_paths; }
-  const std::string& get_references_txt() const { return this->references_txt; }
+  const std::string &get_references_txt() const { return this->references_txt; }
+  bool show_progress() const { return this->prog_; }
   std::size_t verbosity() const { return this->verbosity_; } // can we avoid this being a size_t?
   unsigned int thread_count() const { return this->thread_count_; }
   bool print_dot() const { return this->print_dot_; }
   bool get_stdout_vcf() const { return this->stdout_vcf; }
   task_e get_task() const { return this->task; }
+
 
   // ---------
   // setter(s)
@@ -144,17 +152,17 @@ struct config {
   // as it os from the user not the handlegraph stuff
   void set_hairpins(bool b) { this->inc_hairpins_ = b; }
   void set_subflubbles(bool b) { this->find_subflubbles_ = b; }
-  void set_chrom(std::string&& s) { this->chrom = s; }
+  void set_chunk_size(std::size_t s) { this->chunk_size_ = s; }
+  void set_queue_len(std::size_t l) { this->queue_len_ = l; }
   void set_print_tips(bool b) { this->print_tips_ = b; }
   void set_inc_vtx_labels(bool b) { this->inc_vtx_labels_ = b; }
   void set_inc_refs(bool b) { this->inc_refs_ = b; }
   void set_ref_input_format(input_format_e f) { this->ref_input_format = f; }
-  void add_reference_path(std::string s) { this->reference_paths.push_back(s); }
-  void add_path_prefix(std::string s) { this->path_prefixes.push_back(s); }
-  void set_reference_paths(std::vector<std::string>&& v) { this->reference_paths = std::move(v); }
-  void set_path_prefixes(std::vector<std::string>&& v) { this->path_prefixes = std::move(v); }
+  void add_ref_name_prefix(std::string s) { this->ref_name_prefixes_.push_back(s); }
+  void set_ref_name_prefixes(std::vector<std::string>&& v) { this->ref_name_prefixes_ = std::move(v); }
   void set_reference_txt_path(std::string&& s) { this->references_txt = std::move(s); }
   void set_references_txt(std::string s) { this->references_txt = s; }
+  void set_progress(bool b) { this->prog_ = b; }
   void set_verbosity(unsigned char v) { this->verbosity_ = v; }
   void set_thread_count(uint8_t t) { this->thread_count_ = t; }
   void set_print_dot(bool b) { this->print_dot_ = b; }
@@ -172,7 +180,7 @@ struct config {
     const std::string spc = "  "; // could use \t
 
 #ifdef DEBUG
-    std::cerr << "povu is in debug mode" << std::endl;
+    INFO("povu is in debug mode");
 #endif
     std::cerr << "CLI parameters: " << std::endl;
 
@@ -183,25 +191,18 @@ struct config {
     std::cerr << spc << "input gfa: " << this->input_gfa << std::endl;
     std::cerr << spc << "output dir: " << this->output_dir << std::endl;
 
-    //std::cerr << spc << "chrom: " << this->chrom << std::endl;
-    //std::cerr << spc << "Generate undefined vcf: " << std::boolalpha << this->undefined_vcf << std::endl;
-
     if (this->get_task() == task_e::call) {
       std::cerr << spc << "forest dir: " << this->forest_dir << std::endl;
+
       if (this->ref_input_format == input_format_e::file_path) {
         std::cerr << spc << "Reference paths file: " << this->references_txt << std::endl;
       }
 
-      if (!this->path_prefixes.empty()) {
-        std::cerr << spc << "Path prefixes (" << this->path_prefixes.size() << "): ";
-        pu::print_with_comma(std::cerr, this->path_prefixes, ',');
+      if (!this->ref_name_prefixes_.empty()) {
+        std::cerr << spc << "Ref Path prefixes (" << this->ref_name_prefixes_.size() << "): ";
+        pu::print_with_comma(std::cerr, this->ref_name_prefixes_, ',');
         std::cerr << std::endl;
       }
-
-      std::cerr << spc << "Reference paths (" << this->reference_paths.size() << "): ";
-      pu::print_with_comma(std::cerr, this->reference_paths, ',');
-      std::cerr << std::endl;
-
     }
     else if (this->get_task() == task_e::decompose) {
 #ifdef DEBUG

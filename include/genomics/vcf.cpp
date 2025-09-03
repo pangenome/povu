@@ -102,6 +102,7 @@ var_type_e det_var_type(const pvst::VertexBase *pvst_vtx,
   }
 }
 
+  // TODO: [A] remove, unused
 genotype_data_t comp_gt(const bd::VG &g) {
   std::string fn_name = pv_cmp::format("[{}::{}]", MODULE, __func__);
 
@@ -109,7 +110,7 @@ genotype_data_t comp_gt(const bd::VG &g) {
 
   std::set<pt::id_t> handled;
 
-  for (pt::id_t ref_id = 0; ref_id < g.ref_id_count(); ++ref_id) {
+  for (pt::id_t ref_id = 0; ref_id < g.ref_count(); ++ref_id) {
     if (pv_cmp::contains(handled, ref_id)) {
       continue;
     }
@@ -118,7 +119,7 @@ genotype_data_t comp_gt(const bd::VG &g) {
 
     const std::set<pt::id_t> &sample_refs =  g.get_shared_samples(ref_id);
 
-    std::string col_name = g.get_ref_by_id(ref_id).get_col_name();
+    std::string col_name = g.get_ref_by_id(ref_id).get_sample_name();
 
     if (sample_refs.empty()) {
       // throw an exeption

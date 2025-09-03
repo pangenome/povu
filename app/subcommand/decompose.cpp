@@ -20,8 +20,6 @@ void decompose_component(bd::VG *g, std::size_t component_id, const core::config
   ptu::tree_meta tm = ptu::gen_tree_meta(st);
 
   pvst::Tree flubble_tree = pfl::find_flubbles(st, app_config);
-  povu::tiny::find_tiny(st, flubble_tree, tm);
-  povu::parallel::find_parallel(st, flubble_tree, tm);
 
 #ifdef DEBUG
   if (app_config.verbosity() > 4) {
@@ -32,6 +30,8 @@ void decompose_component(bd::VG *g, std::size_t component_id, const core::config
 #endif
 
   if (app_config.find_subflubbles()) {
+    povu::tiny::find_tiny(st, flubble_tree, tm);
+    povu::parallel::find_parallel(st, flubble_tree, tm);
     povu::concealed::find_concealed(st, flubble_tree, tm);
     povu::midi::find_midi(st, flubble_tree, tm);
     povu::smothered::find_smothered(st, flubble_tree, tm);
@@ -58,7 +58,7 @@ void do_decompose(const core::config &app_config) {
   std::string fn_name = pv_cmp::format("[povu::decompose::{}]", __func__);
   std::size_t ll = app_config.verbosity(); // ll for log level, to avoid long names. good idea?
 
-  bd::VG *g = get_vg(app_config);
+  bd::VG *g = povu::io::from_gfa::to_bd(app_config);
 
   if (ll > 1) std::cerr << pv_cmp::format("{} Finding components\n", fn_name);
   std::vector<bd::VG *> components = bd::VG::componetize(*g);

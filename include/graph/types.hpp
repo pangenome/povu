@@ -92,8 +92,9 @@ bool operator!=(const id_or_t & lhs, const id_or_t& rhs);
 bool operator==(const id_or_t & lhs, const id_or_t& rhs);
 bool operator<(const id_or_t& lhs, const id_or_t& rhs);
 
-typedef id_or_t step_t;
+typedef id_or_t step_t; // TODO: rename to graph_step_t
 typedef std::vector<id_or_t> walk_t;
+
 
 
 } // namespace povu::graph_types

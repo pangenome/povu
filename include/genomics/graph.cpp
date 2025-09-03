@@ -3,6 +3,11 @@
 
 namespace povu::genomics::graph {
 
+std::string_view to_str(dir_e d) {
+  return d == dir_e::in ? "in" : "out";
+}
+auto format_as(dir_e d) { return to_str(d); }
+
 /**
   *@brief get the edges of a vertex end
   *
@@ -104,6 +109,12 @@ void comp_walks(const bd::VG &g, pvst::route_e route, idx_or_t src, idx_or_t snk
     end = src;
   }
 
+  bool dbg = rov_label == ">22612>22615" ? true : false;
+  dbg = false;
+
+  if (dbg)
+    INFO("Finding walks for {} from {} to {} route: {}", rov_label, start.as_str(), end.as_str(), pvst::to_str(route));
+
   std::deque<idx_or_t> dq;
 
   // the key is a vertex and the value is a set of vertices that have been seen
@@ -113,9 +124,14 @@ void comp_walks(const bd::VG &g, pvst::route_e route, idx_or_t src, idx_or_t snk
   idx_or_t curr = start;
   dq.push_back(curr);
 
+  pt::idx_t unblock_counter {};
+
   while (!dq.empty()) {
     // get the incoming vertices based on orientation
     curr = dq.back();
+
+    if (dbg)
+      INFO("curr {}", g.v_idx_to_id(curr.v_id));
 
     if (curr == end) {
       walks.push_back(walk_from_stack(g, dq, route));
@@ -124,7 +140,12 @@ void comp_walks(const bd::VG &g, pvst::route_e route, idx_or_t src, idx_or_t snk
     }
 
     if (dq.size() > MAX_FLUBBLE_STEPS) {
-      WARN("max steps reached for {}\n", rov_label);
+      //WARN("max steps reached for {}\n", rov_label);
+      return;
+    }
+
+    if (unblock_counter > 1000) {
+      //WARN("unblock counter too high for {}\n", rov_label);
       return;
     }
 
@@ -132,8 +153,6 @@ void comp_walks(const bd::VG &g, pvst::route_e route, idx_or_t src, idx_or_t snk
 
     // if we have explored all neighbours of the current vertex
     bool is_explored{true};
-
-
 
     pgt::v_end_e ve = get_v_end(o, ve_dir);
     const bd::Vertex &v = g.get_vertex_by_idx(v_idx);
@@ -156,11 +175,19 @@ void comp_walks(const bd::VG &g, pvst::route_e route, idx_or_t src, idx_or_t snk
 
     if (is_explored) {
       // unblock all in the stack up to and including the current vertex
+      unblock_counter++;
       for (auto it = dq.rbegin(); it != dq.rend(); ++it) {
+        if (dbg)
+          INFO("unblocking {}", g.v_idx_to_id(it->v_id));
         seen_[*it].clear();
         if (*it == curr) {
           break;
         }
+      }
+
+      if (dbg) {
+        INFO("unblocking {}", g.v_idx_to_id(curr.v_id));
+        INFO("\n");
       }
 
       dq.pop_back(); // we are done with this path up to this point

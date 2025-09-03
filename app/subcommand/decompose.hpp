@@ -14,15 +14,15 @@
 #include "../../include/algorithms/parallel.hpp"
 #include "../../include/algorithms/smothered.hpp"
 #include "../../include/algorithms/tiny.hpp"
-#include "../../include/common/tree_utils.hpp"
 #include "../../include/common/compat.hpp"
 #include "../../include/graph/bidirected.hpp"
 #include "../../include/graph/spanning_tree.hpp"
+#include "../../include/graph/tree_utils.hpp"
+#include "../../include/io/from_gfa.hpp"
 #include "../../include/io/to_pvst.hpp"
 #include "../../include/io/to_vcf.hpp"
 #include "../cli/app.hpp"
 #include "../cli/cli.hpp"
-#include "./common.hpp"
 
 namespace povu::subcommands::decompose {
 constexpr std::string_view MODULE = "povu::subcommands::decompose";
@@ -35,8 +35,6 @@ namespace pvst = povu::pvst;
 namespace pic = povu::io::common;
 namespace ptu = povu::tree_utils;
 namespace pfl = povu::flubbles;
-
-using namespace povu::subcommands::common;
 
 void do_decompose(const core::config &app_config);
 }

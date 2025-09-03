@@ -28,9 +28,10 @@ const pt::idx_t MAX_FLUBBLE_STEPS{20};
 
 // direction for traversing a vertex in a bidirected graph
 enum class dir_e { in, out };
-
+std::string_view to_str(dir_e d);
 const dir_e IN = dir_e::in;
 const dir_e OUT = dir_e::out;
+auto format_as(dir_e d);
 
 typedef pgt::id_or_t idx_or_t; // specifically for idx instead of id
 

@@ -1,36 +1,89 @@
-#include <cstddef>
-#include <cstdlib>
-#include <functional>
-#include <fstream>
-#include <filesystem>
-#include <iostream>
-#include <iterator>
-#include <string>
-#include <unordered_map>
-
-#include <args.hxx> // for command line parsing
-
 #include "./cli.hpp"
-#include "app.hpp"
+
 
 namespace cli {
 
-// TODO: rename ref_list to refs
+struct decomopose_opts {
+  args::Group decompose;
+  args::Flag hairpins;
+  args::Flag subflubbles;
+
+  explicit decomopose_opts(args::Subparser& p)
+    : decompose(p, "Decompose options", args::Group::Validators::DontCare),
+      hairpins(decompose, "hairpins", "Find hairpins in the variation graph [default: false]", {'h', "hairpins"}),
+      subflubbles(decompose, "subfubbles", "Find subflubbles in the variation graph [default: false]", {'s', "subflubbles"}) {}
+};
+
+struct streaming_opts {
+  args::Group streaming;
+  args::ValueFlag<std::size_t> chunk_size;
+  args::ValueFlag<std::size_t> queue_length;
+
+  explicit streaming_opts(args::Subparser& p)
+    : streaming(p, "Streaming options", args::Group::Validators::DontCare),
+      chunk_size(streaming, "chunk_size", "Number of variants to process in each chunk [default: 100]", {'c', "chunk-size"}),
+      queue_length(streaming, "queue_length", "Number of chunks to buffer [default: 4]", {'q', "queue-length"}) {}
+
+};
+
+struct output_opts {
+  args::Group outsel;
+  args::ValueFlag<std::string> output_dir;
+  args::Flag stdout_vcf;
+
+  explicit output_opts(args::Subparser& p)
+    : outsel(p, "Output destination (choose exactly one)", args::Group::Validators::Xor),
+      output_dir(outsel, "output_dir", "Output directory [default: .]", {'o', "output-dir"}),
+      stdout_vcf(outsel, "stdout_vcf", "Output single VCF to stdout instead of separate files [default: false]", {"stdout"}) {}
+};
+
+// Holds the three "reference source" options and enforces XOR.
+struct reference_opts {
+  args::Group refsel;
+  args::ValueFlag<std::string> prefix_list;
+  args::ValueFlagList<std::string> path_prefixes;
+  args::PositionalList<std::string> refs_positional;
+
+  /* One of ref_list, path_prefixes, or list of references must be set—never
+   * multiple, and never none */
+  explicit reference_opts(args::Subparser& p)
+    : refsel(p, "Reference source (choose exactly one)", args::Group::Validators::Xor),
+      prefix_list(refsel, "prefix_list", "path to file containing reference name prefixes [optional]", {'r', "prefix-list"}),
+      path_prefixes(refsel, "path_prefix", "All paths beginning with NAME used as reference (multiple allowed) [optional]", {'P', "path-prefix"}),
+      refs_positional(refsel, "refs","list of refs to use as reference haplotypes [optional]") {}
+};
+
+void populate_ref_ops(reference_opts &ref_opts, core::config &app_config) {
+  if (ref_opts.prefix_list) {
+    app_config.set_ref_input_format(core::input_format_e::file_path);
+    app_config.set_reference_txt_path(std::move(args::get(ref_opts.prefix_list)));
+    return;
+  }
+
+  app_config.set_ref_input_format(core::input_format_e::params);
+  auto prefixes = ref_opts.path_prefixes ? args::get(ref_opts.path_prefixes)
+                                         : args::get(ref_opts.refs_positional);
+
+  for (auto &&p : prefixes) {
+    app_config.add_ref_name_prefix(p);
+  }
+}
 
 void call_handler(args::Subparser &parser, core::config& app_config) {
   args::Group arguments("arguments");
   args::ValueFlag<std::string> input_gfa(parser, "gfa", "path to input gfa [required]", {'i', "input-gfa"}, args::Options::Required);
   args::ValueFlag<std::string> forest_dir(parser, "forest_dir", "dir containing flubble forest [default: .]", {'f', "forest-dir"});
-  args::ValueFlag<std::string> output_dir(parser, "output_dir", "Output directory [default: .]", {'o', "output-dir"});
-  args::ValueFlag<std::string> ref_list(parser, "ref_list", "path to txt file containing reference haplotypes [optional]", {'r', "ref-list"});
-  args::ValueFlag<std::string> chrom(parser, "chrom", "graph identifier, default is from GFA file. Chrom column in VCF [optional]", {'c', "chrom"});
-  args::Flag stdout_vcf(parser, "stdout_vcf", "Output single VCF to stdout instead of separate files [default: false]", {"stdout"});
-  args::ValueFlagList<std::string> path_prefixes(parser, "path_prefix", "All paths beginning with NAME used as reference (multiple allowed) [optional]", {'P', "path-prefix"});
-  args::PositionalList<std::string> refsList(parser, "refs", "list of refs to use as reference haplotypes [optional]");
+  streaming_opts stream_opts(parser);
+  output_opts out_opts(parser);
+  reference_opts ref_opts(parser);
 
   parser.Parse();
 
   app_config.set_task(core::task_e::call);
+
+  // set mandatory call opts for graph
+  app_config.set_inc_vtx_labels(true);
+  app_config.set_inc_refs(true);
 
   // input gfa is already a c_str
   app_config.set_input_gfa(args::get(input_gfa));
@@ -39,160 +92,82 @@ void call_handler(args::Subparser &parser, core::config& app_config) {
     app_config.set_forest_dir(args::get(forest_dir));
   }
 
-  if (output_dir) {
-    app_config.set_output_dir(args::get(output_dir));
-  }
-
-  // uses the name of the GFA file
-  if (chrom) {
-    app_config.set_chrom(std::move(args::get(chrom)));
-  }
-  else {
-    std::filesystem::path filePath(app_config.get_input_gfa());
-    app_config.set_chrom(filePath.stem().string());
-  }
-
-  if (stdout_vcf) {
-    app_config.set_stdout_vcf(true);
-  }
-
-  /* set graph properties */
-  app_config.set_inc_vtx_labels(true);
-  app_config.set_inc_refs(true);
-
-  /* One of ref_list, path_prefixes, or list of references must be set—never multiple, and never none */
-  int ref_options_set = 0;
-  if (ref_list) ref_options_set++;
-  if (path_prefixes) ref_options_set++;
-  if (std::begin(refsList) != std::end(refsList)) ref_options_set++;
-
-  if (ref_options_set == 0) {
-    std::cerr << "[cli::call_handler] Error: need one of: ref_list, path_prefix, or positional refs" << std::endl;
-    std::exit(1);
-  }
-  else if (ref_options_set > 1) {
-    std::cerr << "[cli::call_handler] Error: cannot set multiple reference options (ref_list, path_prefix, positional refs)" << std::endl;
-    std::exit(1);
-  }
-  else if (ref_list) {
-    app_config.set_ref_input_format(core::input_format_e::file_path);
-    app_config.set_reference_txt_path(std::move(args::get(ref_list)));
-  }
-  else if (path_prefixes) {
-    app_config.set_ref_input_format(core::input_format_e::params);
-    for (auto &&prefix : args::get(path_prefixes)) {
-      app_config.add_path_prefix(prefix);
+  {  // output options
+    if (out_opts.output_dir) {
+      app_config.set_output_dir(args::get(out_opts.output_dir));
+    }
+    else if (out_opts.stdout_vcf) {
+      app_config.set_stdout_vcf(true);
     }
   }
-  else { // we already made sure that the list of refs is not empty
-    app_config.set_ref_input_format(core::input_format_e::params);
-    // TODO: set this in the call subcommand
-    for (auto &&path : refsList) {
-      app_config.add_reference_path(path);
+
+  { // streaming options
+    if (stream_opts.chunk_size) {
+      app_config.set_chunk_size(args::get(stream_opts.chunk_size));
+    }
+
+    if (stream_opts.queue_length) {
+      app_config.set_queue_len(args::get(stream_opts.queue_length));
     }
   }
+
+  // ref handling
+  populate_ref_ops(ref_opts, app_config);
 }
-
-
-void decompose_handler(args::Subparser &parser, core::config& app_config) {
-  args::Group arguments("arguments");
-  args::Flag hairpins(parser, "hairpins", "Find hairpins in the variation graph", {'h', "hairpins"});
-  args::Flag subflubbles(parser, "subfubbles", "Find subflubbles in the variation graph", {'s', "subflubbles"});
-  args::ValueFlag<std::string> input_gfa(parser, "gfa", "path to input gfa [required]", {'i', "input-gfa"}, args::Options::Required);
-  args::ValueFlag<std::string> output_dir(parser, "output_dir", "Output directory [default: .]", {'o', "output-dir"});
-
-  parser.Parse();
-  app_config.set_task(core::task_e::decompose);
-
-  if (hairpins) {
-    app_config.set_hairpins(true);
-  }
-
-   if (subflubbles) {
-     app_config.set_subflubbles(true);
-   }
-
-  // input gfa is already a c_str
-  app_config.set_input_gfa(args::get(input_gfa));
-
-  if (output_dir) {
-    app_config.set_output_dir(args::get(output_dir));
-  }
-}
-
 
 void gfa2vcf_handler(args::Subparser &parser, core::config& app_config) {
   args::Group arguments("arguments");
   args::ValueFlag<std::string> input_gfa(parser, "gfa", "path to input gfa [required]", {'i', "input-gfa"}, args::Options::Required);
-  args::ValueFlag<std::string> ref_list(parser, "ref_list", "path to txt file containing reference haplotypes [optional]", {'r', "ref-list"});
-  args::ValueFlag<std::string> chrom(parser, "chrom", "graph identifier, default is from GFA file. Chrom column in VCF [optional]", {'c', "chrom"});
-  args::Flag hairpins(parser, "hairpins", "Find hairpins in the variation graph", {'h', "hairpins"});
-  args::Flag hubbles(parser, "hubbles", "Find hubbles in the variation graph", {'s', "hubbles"});
-  args::ValueFlagList<std::string> path_prefixes(parser, "path_prefix", "All paths beginning with NAME used as reference (multiple allowed) [optional]", {'P', "path-prefix"});
-  args::PositionalList<std::string> refsList(parser, "refs", "list of refs to use as reference haplotypes [optional]");
+  decomopose_opts decomp_opts(parser);
+  streaming_opts stream_opts(parser);
+  output_opts out_opts(parser);
+  reference_opts ref_opts(parser);
 
   parser.Parse();
+
+  // set mandatory call opts for graph
+  app_config.set_inc_vtx_labels(true);
+  app_config.set_inc_refs(true);
 
   app_config.set_task(core::task_e::gfa2vcf);
   app_config.set_input_gfa(args::get(input_gfa));
 
-  if (hairpins) {
-    app_config.set_hairpins(true);
-  }
+  { // set decompose options
+    if (decomp_opts.hairpins) {
+      app_config.set_hairpins(true);
+    }
 
-  if (hubbles) {
-    app_config.set_subflubbles(true);
-  }
-
-  if (chrom) {
-    app_config.set_chrom(std::move(args::get(chrom)));
-  }
-  else {
-    std::filesystem::path filePath(app_config.get_input_gfa());
-    app_config.set_chrom(filePath.stem().string());
-  }
-
-
-  app_config.set_inc_vtx_labels(true);
-  app_config.set_inc_refs(true);
-
-  int ref_options_set = 0;
-  if (ref_list) ref_options_set++;
-  if (path_prefixes) ref_options_set++;
-  if (std::begin(refsList) != std::end(refsList)) ref_options_set++;
-
-  if (ref_options_set == 0) {
-    std::cerr << "[cli::gfa2vcf_handler] Error: need one of: ref_list, path_prefix, or positional refs" << std::endl;
-    std::exit(1);
-  }
-  else if (ref_options_set > 1) {
-    std::cerr << "[cli::gfa2vcf_handler] Error: cannot set multiple reference options (ref_list, path_prefix, positional refs)" << std::endl;
-    std::exit(1);
-  }
-  else if (ref_list) {
-    app_config.set_ref_input_format(core::input_format_e::file_path);
-    app_config.set_reference_txt_path(std::move(args::get(ref_list)));
-  }
-  else if (path_prefixes) {
-    app_config.set_ref_input_format(core::input_format_e::params);
-    for (auto &&prefix : args::get(path_prefixes)) {
-      app_config.add_path_prefix(prefix);
+    if (decomp_opts.subflubbles) {
+      app_config.set_subflubbles(true);
     }
   }
-  else {
-    app_config.set_ref_input_format(core::input_format_e::params);
-    for (auto &&path : refsList) {
-      app_config.add_reference_path(path);
+
+  { // output options
+    if (out_opts.output_dir) {
+      app_config.set_output_dir(args::get(out_opts.output_dir));
+    } else if (out_opts.stdout_vcf) {
+      app_config.set_stdout_vcf(true);
     }
   }
+
+  { // streaming options
+    if (stream_opts.chunk_size) {
+      app_config.set_chunk_size(args::get(stream_opts.chunk_size));
+    }
+
+    if (stream_opts.queue_length) {
+      app_config.set_queue_len(args::get(stream_opts.queue_length));
+    }
+  }
+
+  // ref handling
+  populate_ref_ops(ref_opts, app_config);
 }
-
 
 void info_handler(args::Subparser &parser, core::config& app_config) {
   args::Group arguments("arguments");
   args::ValueFlag<std::string> input_gfa(parser, "gfa", "path to input gfa [required]", {'i', "input-gfa"}, args::Options::Required);
   args::Flag tips(parser, "tips", "print the tips", {'t', "print_tips"});
-
 
   parser.Parse();
   app_config.set_task(core::task_e::info);
@@ -205,6 +180,32 @@ void info_handler(args::Subparser &parser, core::config& app_config) {
   app_config.set_input_gfa(args::get(input_gfa));
 }
 
+void decompose_handler(args::Subparser &parser, core::config &app_config) {
+  args::Group arguments("arguments");
+  args::ValueFlag<std::string> input_gfa(parser, "gfa", "path to input gfa [required]", {'i', "input-gfa"},args::Options::Required);
+  args::ValueFlag<std::string> output_dir(parser, "output_dir", "Output directory [default: .]", {'o', "output-dir"});
+  decomopose_opts decomp_opts(parser);
+
+  parser.Parse();
+  app_config.set_task(core::task_e::decompose);
+
+  { // set decompose options
+    if (decomp_opts.hairpins) {
+      app_config.set_hairpins(true);
+    }
+
+    if (decomp_opts.subflubbles) {
+      app_config.set_subflubbles(true);
+    }
+  }
+
+  // input gfa is already a c_str
+  app_config.set_input_gfa(args::get(input_gfa));
+
+  if (output_dir) {
+    app_config.set_output_dir(args::get(output_dir));
+  }
+}
 
 int cli(int argc, char **argv, core::config& app_config) {
 
@@ -224,8 +225,8 @@ int cli(int argc, char **argv, core::config& app_config) {
   args::Flag version(arguments, "version", "The current version of povu", {"version"});
   args::ValueFlag<int> verbosity(arguments, "verbosity", "Level of output [default: 0]", {'v', "verbosity"});
   args::ValueFlag<int> thread_count(arguments, "threads", "Number of threads to use [default: 1]", {'t', "threads"});
+  args::Flag progress(arguments, "progress", "Show progress bars", {"progress"});
   args::HelpFlag h(arguments, "help", "help", {'h', "help"});
-
 
   try {
     p.ParseCLI(argc, argv);
@@ -243,12 +244,8 @@ int cli(int argc, char **argv, core::config& app_config) {
 
   if (version) {
     std::cout << VERSION << std::endl;
-    std::exit(0);
+    std::exit(EXIT_SUCCESS);
   }
-
-  //if (pvst_path) {
-  //  app_config.set_pvst_path(args::get(pvst_path));
-  //}
 
   if (args::get(verbosity)) {
     app_config.set_verbosity(args::get(verbosity));
@@ -258,12 +255,10 @@ int cli(int argc, char **argv, core::config& app_config) {
     app_config.set_thread_count(args::get(thread_count));
   }
 
-  //if (no_sort) {
-  //  app_config.set_sort(false);
-  //}
+  if (progress) {
+    app_config.set_progress(true);
+  }
 
   return 0;
 }
-
-
 } // namespace cli

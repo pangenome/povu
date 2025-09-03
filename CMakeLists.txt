@@ -157,7 +157,7 @@ ADD_LIBRARY(povulib
 
   # common
   ${INCLUDE_DIR}/common/utils.cpp
-  ${INCLUDE_DIR}/common/tree_utils.cpp
+
 
   # genomics
   ${INCLUDE_DIR}/genomics/vcf.cpp
@@ -172,13 +172,16 @@ ADD_LIBRARY(povulib
   ${INCLUDE_DIR}/graph/bidirected.cpp
   ${INCLUDE_DIR}/graph/bracket_list.cpp
   ${INCLUDE_DIR}/graph/spanning_tree.cpp
-
+  ${INCLUDE_DIR}/graph/tree_utils.cpp
   # io
   ${INCLUDE_DIR}/io/from_pvst.cpp
   ${INCLUDE_DIR}/io/to_pvst.cpp
   ${INCLUDE_DIR}/io/from_gfa.cpp
   ${INCLUDE_DIR}/io/common.cpp
   ${INCLUDE_DIR}/io/to_vcf.cpp
+
+  # refs
+  ${INCLUDE_DIR}/refs/refs.cpp
 )
 
 # === Command Line Executable Sources ===
@@ -189,7 +192,6 @@ set(SOURCE_FILES
   ${SRC_DIR}/cli/cli.cpp
 
   # subcommand
-  ${SRC_DIR}/subcommand/common.cpp
   ${SRC_DIR}/subcommand/decompose.cpp
   ${SRC_DIR}/subcommand/info.cpp
   ${SRC_DIR}/subcommand/call.cpp
@@ -235,6 +237,15 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(fmt)
 
+# --- indicators (progress bars) ---
+FetchContent_Declare(
+  indicators
+  GIT_REPOSITORY https://github.com/p-ranav/indicators.git
+  GIT_TAG        26d39ad8fb438f5f50fb16427f554045d8431030 # v2.3.0
+)
+FetchContent_MakeAvailable(indicators)
+
+
 
 # --- Silence compiler warnings for dependencies ---
 function(silence_warnings target)
@@ -251,7 +262,7 @@ endfunction()
 silence_warnings(fmt)
 silence_warnings(liteseq)
 silence_warnings(args)
-
+silence_warnings(indicators)
 
 # === Link Dependencies ===
 # Link fmt to povulib (used in the library implementation)
@@ -259,15 +270,17 @@ target_link_libraries(povulib
   PRIVATE
   fmt::fmt
   liteseq     # gfa handling
+  indicators  # progress bars
 )
 
 # Link everything needed for the executable
 target_link_libraries(povu
   PRIVATE
-  povulib        # internal library
-  liteseq     # gfa handling
-  fmt::fmt       # formatting
-  taywee::args   # argument parsing
+  povulib      # internal library
+  liteseq      # gfa handling
+  fmt::fmt     # formatting
+  taywee::args # argument parsing
+  indicators   # progress bars
 )
 
 # === Post-Build: Copy Binary to bin/ ===
@@ -283,18 +296,17 @@ add_custom_command(TARGET povu
 
 
 if (POVU_ENABLE_TESTING)
-  include(FetchContent)
+  set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
+  set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+  # For Windows: Prevent overriding the parent project's compiler/linker settings
+  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
   FetchContent_Declare(
     googletest
     URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
   )
-  # For Windows: Prevent overriding the parent project's compiler/linker settings
-  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-
   FetchContent_MakeAvailable(googletest)
 
   enable_testing()
-
-  # You would add your actual tests here, e.g.:
   add_subdirectory(tests)
 endif()

@@ -3,8 +3,8 @@
 
 #include "../../include/common/compat.hpp"
 #include "../../include/graph/bidirected.hpp"
+#include "../../include/io/from_gfa.hpp"
 #include "../cli/app.hpp"
-#include "./common.hpp"
 
 namespace povu::subcommands::info {
 namespace bd = povu::bidirected;

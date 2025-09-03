@@ -35,6 +35,7 @@ std::string reverse_complement(const std::string &sequence);
  */
 bool is_numeric_string(const std::string &s);
 
+bool is_prefix(std::string_view pre, std::string_view txt);
 
 template <typename Container> std::string concat_with(const Container &v, char delim) {
   std::ostringstream oss;
@@ -156,6 +157,7 @@ void split(const std::string &line, char sep, std::vector<std::string>* tokens);
 
 inline thread_local bool tp_in_worker = false;
 
+std::size_t comp_prog(pt::idx_t pos, pt::idx_t total);
 
 } // namespace povu::utils
 

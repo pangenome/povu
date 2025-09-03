@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include "./subcommand/call.hpp"
 #include "./subcommand/decompose.hpp"
 #include "./subcommand/gfa2vcf.hpp"
