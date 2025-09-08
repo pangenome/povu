@@ -389,8 +389,8 @@ void write_vcfs(const pgv::VcfRecIdx &vcf_recs, const bd::VG &g,
       if (!pv_cmp::contains(vcf_ref_ids, ref_id)) {
         continue;
       }
-      const std::string &ref_name = g.get_sample_name(ref_id);
-      write_vcf(g, ref_id, ref_name, gtd, recs, os);
+      const std::string &ref_tag = g.get_ref_by_id(ref_id).tag();
+      write_vcf(g, ref_id, ref_tag, gtd, recs, os);
     }
   }
   else { // Write to split files
@@ -399,8 +399,9 @@ void write_vcfs(const pgv::VcfRecIdx &vcf_recs, const bd::VG &g,
         continue;
       }
       std::string sample_name = g.get_sample_name(ref_id);
+      const std::string &ref_tag = g.get_ref_by_id(ref_id).tag();
       std::ostream &os = vout.stream_for(sample_name);
-      write_vcf(g, ref_id, sample_name, gtd, recs, os);
+      write_vcf(g, ref_id, ref_tag, gtd, recs, os);
     }
   }
 
