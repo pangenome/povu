@@ -394,7 +394,8 @@ public:
   void print_dot(std::ostream &os);
 };
 
-} // namespace spanning_tree
+} // namespace povu::spanning_tree
 
-
+// NOLINTNEXTLINE(misc-unused-alias-decls)
+namespace pst = povu::spanning_tree;
 #endif

@@ -95,7 +95,20 @@ bool operator<(const id_or_t& lhs, const id_or_t& rhs);
 typedef id_or_t step_t; // TODO: rename to graph_step_t
 typedef std::vector<id_or_t> walk_t;
 
+std::string to_string(const walk_t &w);
 
+struct ref_step_t {
+  pt::id_t v_id;
+  or_e orientation;
+  // locus of the start
+  pt::idx_t locus; // position in the reference (aka step index)
+
+  std::string as_str() const {
+    return pv_cmp::format("{}{}@{}", to_str(this->orientation) , this->v_id, this->locus);
+  }
+};
+
+typedef std::vector<ref_step_t> ref_walk_t;
 
 } // namespace povu::graph_types
 

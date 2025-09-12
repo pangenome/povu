@@ -58,7 +58,6 @@ std::string Vertex::get_rc_label() const {
 }
 const std::set<pt::idx_t>& Vertex::get_edges_l() const { return e_l; }
 const std::set<pt::idx_t>& Vertex::get_edges_r() const { return e_r; }
-const pgr::VtxRefData& Vertex::get_refs() const { return refs_; }
 
 // ---------
 // setter(s)
@@ -66,9 +65,6 @@ const pgr::VtxRefData& Vertex::get_refs() const { return refs_; }
 
 void Vertex::add_edge_l(pt::idx_t e_idx) { e_l.insert(e_idx); }
 void Vertex::add_edge_r(pt::idx_t e_idx) { e_r.insert(e_idx); }
-void Vertex::add_ref(pt::idx_t ref_id, pgt::or_e strand, pt::idx_t locus) {
-  this->refs_.add_ref_data(ref_id, strand, locus);
-}
 
 // ============================================================
 //      Variation Graph
@@ -79,10 +75,15 @@ void Vertex::add_ref(pt::idx_t ref_id, pgt::or_e strand, pt::idx_t locus) {
 // constructor(s)
 // --------------
 
-VariationGraph::VariationGraph(pt::idx_t v_count, pt::idx_t e_count, pt::idx_t ref_count) {
+VariationGraph::VariationGraph(pt::idx_t v_count, pt::idx_t e_count, pt::idx_t ref_count): refs_(refs::Refs(ref_count)) {
   this->vertices.reserve(v_count);
   this->edges.reserve(e_count);
-  this->refs_ = pr::Refs(ref_count);
+  //this->refs_ = pr::Refs(ref_count);
+  this->vertex_to_step_matrix_.resize(v_count);
+  for (auto &vec : this->vertex_to_step_matrix_) {
+    vec.resize(ref_count);
+  }
+  this->ref_matrix_.resize(ref_count);
 }
 
 // ---------
@@ -140,10 +141,35 @@ std::set<pt::id_t> VG::get_refs_in_sample(std::string_view sample_name) const {
 
 pt::id_t VG::ref_count() const { return this->refs_.ref_count(); }
 
+const pgt::ref_walk_t &VG::get_ref_vec(pt::id_t ref_id) const {
+  return this->ref_matrix_.at(ref_id);
+}
+
+pgt::ref_walk_t &VG::get_ref_vec_mut(pt::id_t ref_id) {
+  return this->ref_matrix_.at(ref_id);
+}
+
+pt::idx_t VG::get_ref_count() const { return this->ref_matrix_.size(); }
+
+const std::vector<pt::idx_t> &VG::get_vertex_ref_idxs(pt::idx_t v_idx, pt::id_t ref_id) const {
+  return this->vertex_to_step_matrix_.at(v_idx).at(ref_id);
+}
+
+const std::vector<std::string> &VG::get_genotype_col_names() const {
+  return this->refs_.get_genotype_col_names();
+}
+
+std::vector<std::vector<std::string>> VG::get_blank_genotype_cols() const {
+  return this->refs_.get_blank_genotype_cols();
+}
+
+const pt::op_t<pt::idx_t> &VG::get_ref_gt_col_idx(pt::id_t ref_id) const {
+  return this->refs_.get_ref_gt_col_idx(ref_id);
+}
+
 // ---------
 // setter(s)
 // ---------
-
 void VG::add_tip(pt::id_t v_id, pgt::v_end_e end) {
   this->tips_.insert(pgt::side_n_id_t{end, v_id});
 }
@@ -180,6 +206,20 @@ pt::idx_t VG::add_edge(pt::id_t v1_id, pgt::v_end_e v1_end, pt::id_t v2_id, pgt:
 pt::id_t VG::add_ref(const std::string &label, char delim) {
   pt::id_t ref_id = this->refs_.add_ref(label, delim);
   return ref_id;
+}
+
+void VG::set_vtx_ref_idx(pt::id_t v_id, pt::id_t ref_id, pt::idx_t step_idx) {
+  pt::idx_t v_idx = this->v_id_to_idx_.get_value(v_id);
+  std::vector<pt::idx_t> &s = this->vertex_to_step_matrix_[v_idx][ref_id];
+  // insert in sorted order of step idx
+  auto it = std::lower_bound(s.begin(), s.end(), step_idx);
+  if (it == s.end() || *it != step_idx) { // avoid duplicates
+    s.insert(it, step_idx);
+  }
+}
+
+void VG::gen_genotype_metadata() {
+  this->refs_.gen_genotype_metadata();
 }
 
 void VG::shrink_to_fit() {

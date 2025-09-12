@@ -158,7 +158,6 @@ ADD_LIBRARY(povulib
   # common
   ${INCLUDE_DIR}/common/utils.cpp
 
-
   # genomics
   ${INCLUDE_DIR}/genomics/vcf.cpp
   ${INCLUDE_DIR}/genomics/graph.cpp
@@ -168,20 +167,17 @@ ADD_LIBRARY(povulib
 
   # graph
   ${INCLUDE_DIR}/graph/types.cpp
-  ${INCLUDE_DIR}/graph/ref.cpp
   ${INCLUDE_DIR}/graph/bidirected.cpp
   ${INCLUDE_DIR}/graph/bracket_list.cpp
   ${INCLUDE_DIR}/graph/spanning_tree.cpp
   ${INCLUDE_DIR}/graph/tree_utils.cpp
+
   # io
   ${INCLUDE_DIR}/io/from_pvst.cpp
   ${INCLUDE_DIR}/io/to_pvst.cpp
   ${INCLUDE_DIR}/io/from_gfa.cpp
   ${INCLUDE_DIR}/io/common.cpp
   ${INCLUDE_DIR}/io/to_vcf.cpp
-
-  # refs
-  ${INCLUDE_DIR}/refs/refs.cpp
 )
 
 # === Command Line Executable Sources ===

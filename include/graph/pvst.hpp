@@ -695,3 +695,6 @@ public:
 } // namespace povu::pvst
 
 #endif
+
+// NOLINTNEXTLINE(misc-unused-alias-decls)
+namespace pvst = povu::pvst;

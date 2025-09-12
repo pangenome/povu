@@ -14,7 +14,6 @@
 #include "../../include/genomics/allele.hpp"
 #include "../../include/genomics/vcf.hpp"
 #include "../../include/graph/bidirected.hpp"
-#include "../../include/graph/ref.hpp"
 #include "../../include/graph/types.hpp"
 #include "../common/utils.hpp"
 #include "./common.hpp"
@@ -129,10 +128,9 @@ public:
 };
 
 void init_vcfs(bd::VG &g, const std::vector<std::string> &sample_names, VcfOutput &vout);
-void write_vcfs(const pgv::VcfRecIdx &vcf_recs, const bd::VG &g,
-                std::set<pt::id_t> vcf_ref_ids, VcfOutput &vout,
+void write_vcfs(pgv::VcfRecIdx &vcf_recs, const bd::VG &g,
+                const std::set<pt::id_t> &vcf_ref_ids, VcfOutput &vout,
                 const core::config &app_config);
 } // namespace povu::io::vcf
-
 
 #endif // PV_IO_VCF_HPP

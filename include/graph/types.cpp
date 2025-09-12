@@ -114,7 +114,13 @@ bool operator==(const id_or_t & lhs, const id_or_t& rhs) {
     return lhs.v_id == rhs.v_id && lhs.orientation == rhs.orientation;
 }
 
+std::string to_string(const walk_t &w) {
+  std::string res;
+  for (const id_or_t &s : w) {
+    res += s.as_str();
+  }
 
-
+  return res;
+}
 
 } // namespace povu::graph_types
