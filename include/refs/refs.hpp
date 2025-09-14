@@ -7,10 +7,12 @@
 #include <variant>
 #include <set>
 #include <charconv>
+#include <map>
 
 #include "../common/constants.hpp"
 #include "../common/core.hpp"
 #include "../common/utils.hpp"
+#include "../common/log.hpp"
 
 namespace povu::refs {
 inline constexpr std::string_view MODULE = "povu::refs";
@@ -189,19 +191,40 @@ public:
 class Refs {
   std::vector<Ref> refs_;
 
+  /* genotype data */
+
+  // TODO: in C++20 or greater, use a constexpr instead of const
+  inline static const std::string BLANK_GT_VALUE = ".";
+
+  std::vector<std::vector<std::string>> blank_genotype_cols;
+
+  // std::map<pt::id_t, pt::idx_t> ref_id_to_col_idx;
+  //  ref id to two dimensional col idx
+  std::map<pt::idx_t, pt::op_t<pt::idx_t>> ref_id_to_col_idx;
+
+  // TODO: [remove] we don't need to store this
+  // the size is the number of columns in the genotype data
+  // string contains the sample name or label
+  std::vector<std::string> genotype_col_names;
+
+  // make default constructor private
   Refs() = default;
 
 public:
   // --------------
   // constructor(s)
   // --------------
-  Refs (pt::idx_t initial_capacity) {
-    this->refs_.reserve(initial_capacity);
+  Refs (pt::idx_t capacity) {
+    this->refs_.reserve(capacity);
   }
 
   // ---------
   // getter(s)
   // ---------
+
+  pt::id_t ref_count() const {
+    return static_cast<pt::id_t>(this->refs_.size());
+  }
 
   const Ref &get_ref(pt::id_t ref_id) const {
     return this->refs_.at(ref_id);
@@ -252,6 +275,18 @@ public:
     return this->get_refs_in_sample(r.get_sample_name());
   }
 
+  const std::vector<std::string> &get_genotype_col_names() const {
+    return this->genotype_col_names;
+  }
+
+  const std::vector<std::vector<std::string>> &get_blank_genotype_cols() const {
+    return this->blank_genotype_cols;
+  }
+
+  const pt::op_t<pt::idx_t> &get_ref_gt_col_idx(pt::id_t ref_id) const {
+    return this->ref_id_to_col_idx.at(ref_id);
+  }
+
   // ---------
   // setter(s)
   // ---------
@@ -263,10 +298,48 @@ public:
     return ref_id;
   }
 
-  pt::id_t ref_count() const {
-    return static_cast<pt::id_t>(this->refs_.size());
+  void gen_genotype_metadata() {
+    std::set<pt::id_t> handled;
+
+    for (pt::id_t ref_id = 0; ref_id < this->ref_count(); ++ref_id) {
+      if (pv_cmp::contains(handled, ref_id)) {
+        continue;
+      }
+
+      handled.insert(ref_id);
+
+      const std::set<pt::id_t> &sample_refs =  this->get_shared_samples(ref_id);
+
+      std::string col_name = this->get_ref(ref_id).get_sample_name();
+
+      if (sample_refs.empty()) {
+        // throw an exeption
+        ERR("No sample names found for ref_id {}", ref_id);
+        std::exit(EXIT_FAILURE);
+      }
+      else if (sample_refs.size() == 1) {
+        this->blank_genotype_cols.push_back(std::vector<std::string>{BLANK_GT_VALUE});
+        pt::op_t<pt::idx_t> x { static_cast<pt::idx_t>(this->genotype_col_names.size()), 0};
+        this->ref_id_to_col_idx[ref_id] = x;
+        this->genotype_col_names.push_back(col_name);
+      }
+      else if (sample_refs.size() > 1) {
+        pt::idx_t col_idx = this->genotype_col_names.size();
+        pt::idx_t col_col_idx {};
+
+        this->blank_genotype_cols.push_back(std::vector<std::string>(sample_refs.size(), BLANK_GT_VALUE));
+
+        for(pt::id_t ref_id_ : sample_refs) {
+          pt::op_t<pt::idx_t> x{ col_idx, col_col_idx++};
+          this->ref_id_to_col_idx[ref_id_] = x;
+          handled.insert(ref_id_);
+        }
+        this->genotype_col_names.push_back(col_name);
+      }
+    }
   }
 };
+
 
 }; // namespace povu::refs::pansn
 

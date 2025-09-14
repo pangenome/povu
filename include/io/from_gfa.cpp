@@ -118,8 +118,11 @@ bd::VG *to_bd(const core::config &app_config) {
   // TODO: to parallise run in parallel for each vertex
   if (app_config.inc_refs()) {
 
-    std::size_t path_pos {}; // the position of a base in a reference path
-    pt::id_t curr_ref_id {pc::INVALID_ID};
+    pt::idx_t path_pos {}; // the position of a base in a reference path
+    pt::id_t curr_ref_id{pc::INVALID_ID};
+
+    // TODO: [C] set up ref names independently?
+
     for (pt::idx_t ref_idx{}; ref_idx < ref_count; ++ref_idx) {
 
       if (show_prog) { // update progress bar
@@ -134,14 +137,21 @@ bd::VG *to_bd(const core::config &app_config) {
       curr_ref_id = vg->add_ref(label, delim);
       path_pos = 1; // this is 1 indexed
 
+      pgt::ref_walk_t &ref_vector = vg->get_ref_vec_mut(curr_ref_id);
+      ref_vector.reserve(gfa->refs[ref_idx].step_count);
+
       // color each vertex in the path
       for (pt::idx_t step_idx{}; step_idx < gfa->refs[ref_idx].step_count; ++step_idx) {
         pt::id_t v_id = gfa->refs[ref_idx].steps[step_idx].v_id;
         lq::strand_e s = gfa->refs[ref_idx].steps[step_idx].s;
         pgt::or_e o = (s == lq::strand_e::FORWARD) ? pgt::or_e::forward : pgt::or_e::reverse;
 
+        // add step to the reference walk
+        pt::idx_t idx_in_ref_vec = static_cast<pt::idx_t>(ref_vector.size());
+        ref_vector.emplace_back(pgt::ref_step_t{v_id, o, path_pos});
+        vg->set_vtx_ref_idx(v_id, curr_ref_id, idx_in_ref_vec);
+
         bd::Vertex& v = vg->get_vertex_mut_by_id(v_id);
-        v.add_ref(curr_ref_id, o, path_pos);
         path_pos += v.get_label().length();
       }
 
@@ -149,6 +159,8 @@ bd::VG *to_bd(const core::config &app_config) {
       pr::Ref &ref = vg->get_ref_by_id_mut(curr_ref_id);
       ref.set_length(path_pos - 1);
     }
+
+    vg->gen_genotype_metadata();
   }
 
   gfa_free(gfa); // very important free the gfa props

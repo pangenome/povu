@@ -35,6 +35,7 @@ auto format_as(dir_e d);
 
 typedef pgt::id_or_t idx_or_t; // specifically for idx instead of id
 
+
 /**
  * a collection of walks within a region of variation from start to end
  */
@@ -43,10 +44,26 @@ class RoV {
   const pvst::VertexBase *pvst_vtx;
 
 public:
+ // print when RoV is moved
+ RoV(RoV &&other) noexcept
+      : walks_(std::move(other.walks_)), pvst_vtx(other.pvst_vtx) {
+    other.pvst_vtx = nullptr;
+    //INFO("Moved RoV {}", this->as_str());
+ }
+
+
+ RoV(const RoV &other) = delete; // disable copy constructor
+ RoV &operator=(const RoV &other) = delete; // disable copy assignment
+ RoV &operator=(RoV &&other) noexcept = delete; // disable move assignment
+ ~RoV() {
+    if (this->pvst_vtx != nullptr) {
+      // INFO("Destroyed RoV {}", this->as_str());
+    }
+ }
+
   // --------------
   // constructor(s)
   // --------------
-
   RoV(const pvst::VertexBase *v) : walks_(), pvst_vtx(v) {}
 
   // ---------
@@ -62,7 +79,7 @@ public:
   // setter(s)
   // ---------
 
-  void set_walks(std::vector<pgt::walk_t> &&walks) { this->walks_ = walks; }
+  void set_walks(std::vector<pgt::walk_t> &&walks) { this->walks_ = std::move(walks); }
 
   // --------
   // other(s)

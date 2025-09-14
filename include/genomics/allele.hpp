@@ -12,6 +12,7 @@
 #include <sys/types.h>
 #include <utility>
 #include <vector>
+#include <valarray>
 
 #include "../common/compat.hpp"
 #include "../common/core.hpp"
@@ -21,6 +22,8 @@
 #include "../graph/pvst.hpp"
 #include "../common/log.hpp"
 #include "../graph/bidirected.hpp"
+#include "./graph.hpp"
+
 
 namespace povu::genomics::allele {
 inline constexpr std::string_view MODULE = "povu::genomics::allele";
@@ -28,95 +31,42 @@ inline constexpr std::string_view MODULE = "povu::genomics::allele";
 namespace pgt = povu::types::graph;
 namespace pvst = povu::pvst;
 
-/**
- * Allele or Ref Step
- */
-class AS {
-  pt::id_t v_id_;
-  pt::idx_t locus_; // TODO: rename to locus_?
-  pgt::or_e o_;
+struct allele_slice_t {
+  const pgt::walk_t *walk;
+  pt::idx_t walk_idx;
+  pt::idx_t walk_start_idx;
 
-  // --------------
-  // constructor(s)
-  // --------------
-  AS(pt::id_t v_id, pgr::ref_step_t a)
-    : v_id_(v_id), locus_(a.locus_), o_(a.strand_) {}
+  const pgt::ref_walk_t *ref_walk;
+  pt::idx_t ref_idx;
+  pt::idx_t ref_start_idx;
 
-public:
+  pt::idx_t len; // total step count in the itinerary
 
-  // -----------------
-  // factory method(s)
-  // -----------------
-  static AS given_ref_info(pt::id_t v_id, pgr::ref_step_t ref_addr) {
-    return AS(v_id, ref_addr);
+  // ---------
+  // getter(s)
+  // ---------
+  pt::idx_t step_count() const { return this->len; }
+
+  bd::id_or_t get_walk_step(pt::idx_t idx) const {
+    return this->walk->at(idx);
   }
 
-  // ---------
-  // getter(s)
-  // ---------
-  pt::idx_t get_step_idx() const { return this->locus_; }
-  pt::id_t get_v_id() const { return this->v_id_; }
-  pgt::or_e get_o() const { return this->o_; }
+  bd::id_or_t get_step(pt::idx_t idx) const {
+    auto [v_id, o_, _] = this->ref_walk->at(idx);
+    return {v_id, o_};
+  }
 
-};
-
-// implement == operator for AS
-inline bool operator==(const AS &lhs, const AS &rhs) {
-  return lhs.get_v_id() == rhs.get_v_id() &&
-         lhs.get_step_idx() == rhs.get_step_idx() &&
-         lhs.get_o() == rhs.get_o();
-}
-
-/**
- * Ref walk or Allele Walk
- * allele walk---a walk taken by a reference
- * an uninterrupted ordered sequence of steps bound by the start end of a RoV
- */
-class AW {
-  std::vector<AS> steps_;
-  pt::idx_t walk_idx_;
-  std::set<pt::id_t> ref_ids_; // set of ref ids that take this walk
-
-public:
-
-  // --------------
-  // constructor(s)
-  // --------------
-  //AW() : steps_() {}
-    AW(pt::idx_t w_idx) : steps_(), walk_idx_(w_idx) {}
-  //AW(AS s) : steps_(std::vector<AS>{s}) {}
-
-
-  // ---------
-  // getter(s)
-  // ---------
-  pt::idx_t step_count() const { return this->steps_.size(); }
-  const std::vector<AS> &get_steps() const { return this->steps_; }
-  std::vector<AS> &get_steps_mut() { return this->steps_; }
-  const AS &get_step(pt::idx_t idx) const { return this->steps_[idx]; }
-  // TODO: use fmt format for user defined types
-  // https://fmt.dev/11.1/api/#udt
   std::string as_str() const {
-    std::string res;
-    for (const AS &s : this->steps_) {
-      // TODO: [C] [PERF] replace with format_to?
-      // TODO: use some kind of string formatting for pgt::orientation
-      res += pv_cmp::format("{}{}", s.get_o() == pgt::or_e::forward ? ">" : "<", s.get_v_id());
+    std::string s;
+    pt::idx_t ref_step_idx = this->ref_start_idx;
+    pt::idx_t end = this->ref_start_idx + this->len;
+    for (ref_step_idx; ref_step_idx < end; ++ref_step_idx) {
+      s += this->get_step(ref_step_idx).as_str();
     }
-    return res;
+    return s;
   }
-  bool empty() const noexcept { return this->step_count() == 0; }
-  pt::idx_t get_walk_idx() const { return this->walk_idx_; }
-  const std::set<pt::id_t> &get_ref_ids() const { return this->ref_ids_; }
 
-
-  // ---------
-  // setter(s)
-  // ---------
-  void append_step(AS &&s) { this->steps_.emplace_back(s); }
-  void add_ref_id(pt::id_t ref_id) { this->ref_ids_.insert(ref_id); }
 };
-
 
 /**
  * Ref Itinerary or just Itinerary
@@ -124,79 +74,26 @@ public:
  * sequence of looped walks in a RoV for a given ref
  * useful for repeats
  */
-class Itn {
-  std::vector<AW> it_;
-  pt::idx_t len; // total step count in the itinerary
-
-public:
+struct itn_t {
+  std::vector<allele_slice_t> it_;
 
   // --------------
   // constructor(s)
   // --------------
-  Itn() : it_(), len(0) {}
+  itn_t() : it_() {}
 
   // ---------
   // getter(s)
   // ---------
   pt::idx_t at_count() const { return this->it_.size(); }
-  pt::idx_t step_count() const { return this->len; }
-
-  const std::vector<AW> &get_ats() const { return this->it_; }
-  std::vector<AW> &get_ats_mut() { return this->it_; }
-
-  const AW &get_at(pt::idx_t at_idx) const { return this->it_[at_idx]; }
-  AW &get_at_mut(pt::idx_t at_idx) { return this->it_[at_idx]; }
-
-  const AS &get_step(pt::idx_t idx) const {
-    pt::idx_t i = 0;
-    for (const AW &w : this->it_) {
-      if (i + w.step_count() > idx) {
-        return w.get_steps()[idx - i];
-      }
-      i += w.step_count();
-    }
-    throw std::out_of_range("step index out of range");
-  }
+  const std::vector<allele_slice_t> &get_ats() const { return this->it_; }
+  const allele_slice_t &get_at(pt::idx_t at_idx) const { return this->it_[at_idx]; }
 
   // ---------
   // setter(s)
   // ---------
-  void append_at(AW &&w) {
-    this->it_.emplace_back(w);
-    this->len += w.step_count();
-  }
-
-  void append_step(pt::idx_t at_idx, AS s) {
-    if (at_idx >= this->at_count()) {
-      throw std::out_of_range("at index out of range");
-    }
-
-    this->it_[at_idx].append_step(std::move(s));
-    this->len++;
-  }
-
-  void remove_at(pt::idx_t at_idx) {
-    if (at_idx >= this->at_count()) {
-      throw std::out_of_range("at index out of range");
-    }
-
-    this->len -= this->it_[at_idx].step_count();
-    this->it_.erase(this->it_.begin() + at_idx);
-  }
-
-  // If you delete the highest indices first, the lower-indexed ones never
-  // shift:
-  void remove_aws(const std::set<pt::idx_t> &to_remove) {
-    // walk the set in reverse (largest index → smallest)
-    for (auto it = to_remove.rbegin(); it != to_remove.rend(); ++it) {
-      pt::idx_t aw_idx = *it;
-      if (aw_idx >= this->at_count())
-        throw std::out_of_range("…");
-
-      // now it's safe to use aw_idx directly:
-      this->len -= this->it_[aw_idx].step_count();
-      this->it_.erase(this->it_.begin() + aw_idx);
-    }
+  void append_at(allele_slice_t &&s) {
+    this->it_.emplace_back(std::move(s));
   }
 };
 
@@ -208,26 +105,49 @@ public:
  * map of ref_id to the itn of the ref in a RoV
  */
 class Exp {
+  // pointer to the RoV from which the expedition is made
+  const povu::genomics::graph::RoV *rov_;
+
   // map of ref_id to the itinerary (set of walks) of the ref in a RoV
   // when tangled, a ref can have multiple walks in a RoV
-  std::map<pt::id_t, Itn> ref_itns_;
+  std::map<pt::id_t, itn_t> ref_itns_;
+
+  // walk idx to ref idxs that take the walk
+  std::map<pt::idx_t, std::set<pt::idx_t>> walk_idx_to_ref_idxs_;
 
   // alignment between two refs
   std::map<pt::op_t<pt::id_t>, std::string> aln_;
 
-  const pvst::VertexBase *pvst_vtx;
-
   // is true when tangling exists.
   // tangling exists when a walk traverses an RoV more than once
-  bool is_tangled_;
+  bool is_tangled_ { false };
 
 public:
+  // ---------------------
+  // public constructor(s)
+  // ---------------------
 
-  // --------------
-  // constructor(s)
-  // --------------
-  Exp() : ref_itns_(), pvst_vtx(nullptr), is_tangled_(false) {}
-  Exp(const pvst::VertexBase *v) : ref_itns_(), pvst_vtx(v), is_tangled_(false) {}
+  Exp() : rov_(nullptr), ref_itns_(), walk_idx_to_ref_idxs_(), aln_(),
+        is_tangled_(false) {}
+
+  Exp(const povu::genomics::graph::RoV *rov)
+      : rov_(rov), ref_itns_(), walk_idx_to_ref_idxs_(), aln_(),
+        is_tangled_(false) {
+    if (this->rov_ == nullptr) {
+      ERR("RoV pointer is null");
+      std::exit(EXIT_FAILURE);
+    }
+  }
+
+  // disable copy constructor
+  Exp(const Exp &other) = delete;
+  Exp &operator=(const Exp &other) = delete;
+
+  // move constructor
+  Exp(Exp &&other) noexcept = default;
+  Exp &operator=(Exp &&other) noexcept = default;
+
+  ~Exp() = default;
 
   // ---------
   // getter(s)
@@ -236,12 +156,10 @@ public:
   pt::idx_t ref_count() const { return this->ref_itns_.size(); }
 
   const pvst::VertexBase* get_pvst_vtx_const_ptr() const {
-    return this->pvst_vtx;
+    return this->rov_->get_pvst_vtx();
   }
 
-  std::string id() const {
-    return this->pvst_vtx->as_str();
-  }
+  std::string id() const { return this->rov_->as_str(); }
 
   std::set<pt::id_t> get_ref_ids() const {
     std::set<pt::id_t> ref_ids;
@@ -251,19 +169,33 @@ public:
     return ref_ids;
   }
 
-  const Itn &get_itn(pt::id_t ref_id) const {
+  const itn_t &get_itn(pt::id_t ref_id) const {
     return this->ref_itns_.at(ref_id);
   }
 
-  Itn &get_itn_mut(pt::id_t ref_id) {
-    return this->ref_itns_.at(ref_id);
+  itn_t &get_itn_mut(pt::id_t ref_id) { return this->ref_itns_.at(ref_id); }
+
+  const povu::genomics::graph::RoV *get_rov() const {
+    return this->rov_;
   }
 
-  const std::map<pt::id_t, Itn> &get_ref_itns() const {
+  pt::idx_t walk_count() const {
+    return this->rov_->walk_count();
+  }
+
+  std::map<pt::idx_t, std::set<pt::idx_t>> &get_walk_to_ref_idxs_mut() {
+    return this->walk_idx_to_ref_idxs_;
+  }
+
+  const std::set<pt::idx_t> &get_ref_idxs_for_walk(const pt::idx_t walk_idx) const {
+    return this->walk_idx_to_ref_idxs_.at(walk_idx);
+  }
+
+  const std::map<pt::id_t, itn_t> &get_ref_itns() const {
     return this->ref_itns_;
   }
 
-  std::map<pt::id_t, Itn> &get_ref_itns_mut() {
+  std::map<pt::id_t, itn_t> &get_ref_itns_mut() {
     return this->ref_itns_;
   }
 
@@ -284,23 +216,6 @@ public:
   // ---------
   // setter(s)
   // ---------
-
-  void add_itn(id_t ref_id, Itn &&itn) {
-    if (this->ref_itns_.find(ref_id) == this->ref_itns_.end()) {
-      this->ref_itns_[ref_id] = std::move(itn);
-    }
-    else {
-      Itn &itn_ = this->ref_itns_[ref_id];
-      for (auto &w : itn.get_ats_mut()) {
-        itn_.append_at(std::move(w));
-      }
-    }
-  }
-
-  void replace_itn(pt::id_t ref_id, Itn &&itn) {
-    this->ref_itns_[ref_id] = std::move(itn);
-  }
-
   void add_aln(pt::id_t ref_id1, pt::id_t ref_id2 , std::string &&aln) {
     this->aln_[pt::op_t<pt::id_t>{ref_id1, ref_id2}] = aln;
   }
@@ -310,37 +225,7 @@ public:
   }
 };
 
-
-class WalkRefIdx {
-  std::set<pt::idx_t> refs_;
-
-  // --------------
-  // constructor(s)
-  // --------------
-  WalkRefIdx() {}
-
-public:
-  // --------------
-  // factory method(s)
-  // --------------
-  static WalkRefIdx from_walk(const bd::VG &g, const pgt::walk_t &w) {
-    WalkRefIdx wr_idx;
-    for (const auto &[v_id, _] : w) {
-      const pgr::VtxRefData &v_ref_data = g.get_vertex_by_id(v_id).get_refs();
-      wr_idx.refs_.insert(v_ref_data.get_ref_ids().begin(), v_ref_data.get_ref_ids().end());
-    }
-
-    return wr_idx;
-  }
-
-  // --------------
-  // getter(s)
-  // --------------
-  const std::set<pt::idx_t> &get_ref_ids() const { return this->refs_; }
-};
-
-void comp_itineraries(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
-                      std::map<pt::id_t, Itn> &ref_map, povu::thread::thread_pool &pool);
+void comp_itineraries(const bd::VG &g, Exp &exp);
 
 } // namespace povu::genomics::alele
 

@@ -2,7 +2,7 @@
 
 namespace povu::genomics::untangle {
 
-inline std::vector<pt::up_t<pt::id_t>> compute_pairs(pga::Exp rt) {
+inline std::vector<pt::up_t<pt::id_t>> compute_pairs(const pga::Exp &rt) {
   std::set<pt::id_t> ref_ids = rt.get_ref_ids();
 
   std::set<pt::up_t<pt::id_t>> done;
@@ -72,8 +72,8 @@ void untangle_ref_walks(pga::Exp &rt) {
         et = invert_aln(rt.get_aln(ref_id2, ref_id1));
       }
       else {
-        const pga::Itn &itn1 = rt.get_itn(ref_id1);
-        const pga::Itn &itn2 = rt.get_itn(ref_id2);
+        const pga::itn_t &itn1 = rt.get_itn(ref_id1);
+        const pga::itn_t &itn2 = rt.get_itn(ref_id2);
 
         et = pa::align(itn1, itn2, pa::aln_level_e::at);
       }

@@ -19,23 +19,18 @@
 #include <unordered_set>
 #include <vector>
 
-
 #include "../common/compat.hpp"
 #include "../common/constants.hpp"
 #include "./types.hpp"
 #include "../common/utils.hpp"
 #include "../common/log.hpp"
 #include "../refs/refs.hpp"
-#include "./ref.hpp"
 
 namespace povu::bidirected {
 inline constexpr std::string_view MODULE = "povu::bidirected";
 
-namespace pu = povu::utils;
-namespace pc = povu::constants;
 using namespace povu::types::graph;
 namespace pgt = povu::types::graph;
-
 
 // undirected edge
 // stores the index of the vertex in the graph not the id
@@ -64,7 +59,6 @@ public:
   pgt::side_n_idx_t get_other_vtx(pt::idx_t v_id) const; // if you don't care for self loops
 };
 
-
 class Vertex {
   pt::id_t v_id_; // this is the sequence name in the GFA file. Maybe Should support strings.
   std::string label_; // or sequence
@@ -72,9 +66,6 @@ class Vertex {
   // indexes to the edge vector in Graph
   std::set<pt::idx_t> e_l;
   std::set<pt::idx_t> e_r;
-
-  // references (also colors)
-  pgr::VtxRefData refs_;
 
 public:
   // --------------
@@ -90,22 +81,22 @@ public:
   std::string get_rc_label() const; // reverse complement of the label
   const std::set<pt::idx_t>& get_edges_l() const;
   const std::set<pt::idx_t>& get_edges_r() const;
-  const pgr::VtxRefData& get_refs() const;
 
   // ---------
   // setter(s)
   // ---------
   void add_edge_l(pt::idx_t e_idx);
   void add_edge_r(pt::idx_t e_idx);
-  void add_ref(pt::id_t ref_id, pgt::or_e strand, pt::idx_t locus);
 };
-
 
 class VariationGraph {
   std::vector<Vertex> vertices;
   std::vector<Edge> edges;
   pu::TwoWayMap<std::size_t, std::size_t> v_id_to_idx_; // TODO: reserve size
 
+  // i is the vertex index, j is the ref index
+  std::vector<std::vector<std::vector<pt::idx_t>>> vertex_to_step_matrix_;
+  std::vector<pgt::ref_walk_t> ref_matrix_;
   pr::Refs refs_ = pr::Refs(0); // has no refs by default
   std::set<pgt::side_n_id_t> tips_; // the set of side and id of the tips
 
@@ -150,8 +141,13 @@ public:
   std::set<pt::id_t> get_shared_samples(pt::id_t ref_id) const;
   // sometimes the sample name is referred to as a prefix
   std::set<pt::id_t> get_refs_in_sample(std::string_view sample_name) const;
-
-
+  const pgt::ref_walk_t &get_ref_vec(pt::id_t ref_id) const;
+  pgt::ref_walk_t &get_ref_vec_mut(pt::id_t ref_id);
+  pt::idx_t get_ref_count() const;
+  const std::vector<pt::idx_t> &get_vertex_ref_idxs(pt::idx_t v_idx, pt::id_t ref_id) const;
+  const std::vector<std::string> &get_genotype_col_names() const;
+  std::vector<std::vector<std::string>> get_blank_genotype_cols() const;
+  const pt::op_t<pt::idx_t> &get_ref_gt_col_idx(pt::id_t ref_id) const;
 
   // ---------
   // setter(s)
@@ -163,7 +159,8 @@ public:
   pt::idx_t add_edge(pt::id_t v1_id, pgt::v_end_e v1_end, pt::id_t v2_id, pgt::v_end_e v2_end);
   pt::id_t add_ref(const std::string &label, char delim);
   void shrink_to_fit();
-
+  void set_vtx_ref_idx(pt::id_t v_id, pt::id_t ref_id, pt::idx_t step_idx);
+  void gen_genotype_metadata();
 
   // -----
   // other
@@ -176,7 +173,6 @@ typedef VariationGraph VG;
 } // namespace povu::bidirected
 
 // NOLINTNEXTLINE(misc-unused-alias-decls)
-
 namespace bd = povu::bidirected;
 
 #endif

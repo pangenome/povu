@@ -12,38 +12,14 @@ inline pt::idx_t min(pt::idx_t a, pt::idx_t b, pt::idx_t c) {
   return std::min(a, std::min(b, c));
 }
 
-inline match_res_t eq_step(const pga::Itn &a, pt::idx_t a_idx,
-                           const pga::Itn &b, pt::idx_t b_idx) {
-
-  if (a_idx >= a.step_count() || b_idx >= b.step_count()) {
-    std::cerr << "Index out of bounds\n";
-    exit(1);
-  }
-
-  // TODO: [c] add an == operator to pga::AS
-  auto is_match = [](const pga::AS &a_, const pga::AS &b_) {
-    return a_.get_v_id() == b_.get_v_id() && a_.get_o() == b_.get_o();
-  };
-
-
-  const pga::AS &a_step = a.get_step(a_idx);
-  const pga::AS b_step = b.get_step(b_idx);
-
-
-  if (is_match(a_step, b_step)) {
-    return {1, 1, true};
-  }
-
-  return {1, 1, false};
-}
 
 /*for RoV inc by the length of the walk*/
-inline match_res_t eq_at(const pga::Itn &a, pt::idx_t a_idx,
-                          const pga::Itn &b, pt::idx_t b_idx) {
+inline match_res_t eq_at(const pga::itn_t &a, pt::idx_t a_idx,
+                         const pga::itn_t &b, pt::idx_t b_idx) {
 
   // if any of the steps is not a match in the ROV then it is not a match
-  const pga::AW &a_at = a.get_at(a_idx);
-  const pga::AW &b_at = b.get_at(b_idx);
+  const pga::allele_slice_t &a_at = a.get_at(a_idx);
+  const pga::allele_slice_t &b_at = b.get_at(b_idx);
 
 
   pt::idx_t a_jmp = a_at.step_count();
@@ -53,18 +29,9 @@ inline match_res_t eq_at(const pga::Itn &a, pt::idx_t a_idx,
     return {1, 1, false};
   }
 
-  // TODO:
-  //   - also compare loop no
-  //   - this is duplicated
-  //   - add an == operator to pga::AS
-  auto is_match = [](const pga::AS &a_, const pga::AS &b_) {
-    return a_.get_v_id() == b_.get_v_id() && a_.get_o() == b_.get_o();
-  };
-
-  // check for the order as well
-
-  for (pt::idx_t i {}; i < a_jmp; i++) {
-    if (!is_match(a_at.get_step(i), b_at.get_step(i))) {
+  // TODO: also compare loop no?
+  for (pt::idx_t i{}; i < a_jmp; i++) {
+    if (a_at.get_walk_step(i) != b_at.get_walk_step(i)) {
       return {1, 1, false};
     }
   }
@@ -72,10 +39,10 @@ inline match_res_t eq_at(const pga::Itn &a, pt::idx_t a_idx,
   return {1, 1, true};
 }
 
-aln_result_t global_align(const pga::Itn &str1, pt::idx_t str1_len,
-                          const pga::Itn &str2, pt::idx_t str2_len,
+aln_result_t global_align(const pga::itn_t &str1, pt::idx_t str1_len,
+                          const pga::itn_t &str2, pt::idx_t str2_len,
                           const aln_scores_t &scores,
-                          match_res_t (*eq)(const pga::Itn &, pt::idx_t, const pga::Itn &, pt::idx_t)) {
+                          match_res_t (*eq)(const pga::itn_t &, pt::idx_t, const pga::itn_t &, pt::idx_t)) {
   // Define the scoring parameters
   const pt::idx_t a = scores.match;
   const pt::idx_t x = scores.mismatch;
@@ -221,12 +188,12 @@ aln_result_t global_align(const pga::Itn &str1, pt::idx_t str1_len,
   return {aln_score, et};
 }
 
-std::string align(const pga::Itn &i_itn, const pga::Itn &j_itn, aln_level_e level) {
+std::string align(const pga::itn_t &i_itn, const pga::itn_t &j_itn, aln_level_e level) {
 
   struct aln_args {
     pt::idx_t i_len;
     pt::idx_t j_len;
-    match_res_t (*eq)(const pga::Itn &, pt::idx_t, const pga::Itn &, pt::idx_t);
+    match_res_t (*eq)(const pga::itn_t &, pt::idx_t, const pga::itn_t &, pt::idx_t);
     aln_scores_t scores;
     aln_level_e level;
   };
@@ -239,17 +206,9 @@ std::string align(const pga::Itn &i_itn, const pga::Itn &j_itn, aln_level_e leve
                       eq_at,
                       {0, 1, 2, 1},
                       aln_level_e::at};
-
-    case aln_level_e::step:
-      return aln_args{i_itn.step_count(),
-                      j_itn.step_count(),
-                      eq_step,
-                      {0, 1, 4, 1},
-                      aln_level_e::step};
     default:
-      std::string msg = pv_cmp::format("[{}::{}] Invalid alignment level: {}",
-                                    MODULE, __func__, static_cast<int>(level));
-      throw std::invalid_argument(msg);
+      ERR("invalid alignment level {}", static_cast<int>(level));
+      std::exit(1);
     }
   })();
 

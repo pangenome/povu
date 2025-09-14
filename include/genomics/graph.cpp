@@ -69,8 +69,7 @@ pgt::walk_t walk_from_stack(const bd::VG &g, const std::deque<idx_or_t> &dq,
   pgt::walk_t w;
   auto append_w = [&](idx_or_t it) {
     auto [v_idx, o] = it;
-    pgt::id_or_t s{g.v_idx_to_id(v_idx), o};
-    w.push_back(s);
+    w.push_back({g.v_idx_to_id(v_idx), o});
   };
 
   switch (route) {
@@ -84,6 +83,8 @@ pgt::walk_t walk_from_stack(const bd::VG &g, const std::deque<idx_or_t> &dq,
     ERR("Unsupported route type: {}\n", static_cast<int>(route));
     std::exit(1);
   }
+
+
 
   return w;
 }
@@ -109,11 +110,6 @@ void comp_walks(const bd::VG &g, pvst::route_e route, idx_or_t src, idx_or_t snk
     end = src;
   }
 
-  bool dbg = rov_label == ">22612>22615" ? true : false;
-  dbg = false;
-
-  if (dbg)
-    INFO("Finding walks for {} from {} to {} route: {}", rov_label, start.as_str(), end.as_str(), pvst::to_str(route));
 
   std::deque<idx_or_t> dq;
 
@@ -130,9 +126,6 @@ void comp_walks(const bd::VG &g, pvst::route_e route, idx_or_t src, idx_or_t snk
     // get the incoming vertices based on orientation
     curr = dq.back();
 
-    if (dbg)
-      INFO("curr {}", g.v_idx_to_id(curr.v_id));
-
     if (curr == end) {
       walks.push_back(walk_from_stack(g, dq, route));
       dq.pop_back(); // we are done with this path up to this point
@@ -140,12 +133,12 @@ void comp_walks(const bd::VG &g, pvst::route_e route, idx_or_t src, idx_or_t snk
     }
 
     if (dq.size() > MAX_FLUBBLE_STEPS) {
-      //WARN("max steps reached for {}\n", rov_label);
+      WARN("max steps reached for {}\n", rov_label);
       return;
     }
 
     if (unblock_counter > 1000) {
-      //WARN("unblock counter too high for {}\n", rov_label);
+      WARN("unblock counter too high for {}\n", rov_label);
       return;
     }
 
@@ -177,17 +170,10 @@ void comp_walks(const bd::VG &g, pvst::route_e route, idx_or_t src, idx_or_t snk
       // unblock all in the stack up to and including the current vertex
       unblock_counter++;
       for (auto it = dq.rbegin(); it != dq.rend(); ++it) {
-        if (dbg)
-          INFO("unblocking {}", g.v_idx_to_id(it->v_id));
         seen_[*it].clear();
         if (*it == curr) {
           break;
         }
-      }
-
-      if (dbg) {
-        INFO("unblocking {}", g.v_idx_to_id(curr.v_id));
-        INFO("\n");
       }
 
       dq.pop_back(); // we are done with this path up to this point

@@ -103,7 +103,7 @@ void do_call(core::config &app_config) {
   // start producer in its own thread
   std::thread producer([&] {
     try {
-      pg::gen_vcf_rec_map(pvsts, *g, q, bars, chunks_prog_bar_idx, app_config);
+      pg::gen_vcf_rec_map(pvsts, *g, vcf_ref_ids, q, bars, chunks_prog_bar_idx, app_config);
     } catch (...) {
       q.close(); // make sure consumers wake up on errors
       throw;

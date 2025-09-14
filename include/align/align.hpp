@@ -5,7 +5,7 @@
 #include <vector>
 
 
-#include "../common/compat.hpp"
+#include "../common/log.hpp"
 #include "../genomics/allele.hpp"
 
 namespace povu::align {
@@ -66,7 +66,7 @@ public:
   }
 };
 
-std::string align(const pga::Itn &iw, const pga::Itn &jw, aln_level_e level);
+std::string align(const pga::itn_t &iw, const pga::itn_t &jw, aln_level_e level);
 
 } // namespace povu::align
 

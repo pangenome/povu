@@ -15,6 +15,12 @@ typedef u_int32_t id_t;
 typedef u_int32_t idx_t;
 typedef int8_t status_t; // return status of a fn
 
+struct slice_t {
+  idx_t start;
+  idx_t len;
+
+  slice_t(idx_t start, idx_t len) : start{start}, len{len} {}
+};
 
 class Config {
   unsigned int requested_threads_ {1};
@@ -33,31 +39,12 @@ public:
 };
 
 /**
- * ordered pair similar to std::pair but with same type on both sides for less typing
+ * an ordered pair type similar to std::pair but with same type on both sides for less typing
  */
-template <typename T> struct Pair {
-  T first;
-  T second;
-
-  // --------------------
-  // Comparison operators
-  // --------------------
-
-  friend bool operator<(const Pair &lhs, const Pair &rhs) {
-    return std::tie(lhs.first, lhs.second) < std::tie(rhs.first, rhs.second);
-  }
-
-  friend bool operator==(const Pair &lhs, const Pair &rhs) {
-    return std::tie(lhs.first, lhs.second) == std::tie(rhs.first, rhs.second);
-  }
-
-  friend bool operator>(const Pair &lhs, const Pair &rhs) {
-    return rhs < lhs;
-  }
-};
-
 template<typename T>
-using op_t = Pair<T>;
+using op_t = std::pair<T, T>;
+
+
 
 /**
  * unordered pair with same type on both sides

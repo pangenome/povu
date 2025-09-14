@@ -6,236 +6,167 @@
 #include <thread>
 #include <unordered_set>
 #include <vector>
+#include <valarray>
+
 
 namespace povu::genomics::allele {
 
 
-pt::idx_t get_vtx_len(const bd::VG &g, const pgt::step_t &s) {
-  const bd::Vertex &v = g.get_vertex_by_id(s.v_id);
-  return v.get_label().length();
-}
+bool is_contained(std::vector<pt::slice_t> ref_slices, pt::slice_t ref_slice) {
+  for (const pt::slice_t &s : ref_slices) {
 
-/**
- * Find the minimum locus for a given reference in a walk.
- *
- * The function searches through the walk steps for the smallest locus
- * associated with `ref_id` according to the data in `wri`.
- *
- * Behavior:
- *  - If `opt_start_after` is not provided, the function returns the global
- *    minimum locus across all steps.
- *  - If `opt_start_after` has a value, the function returns the smallest
- *    locus that is strictly greater than `*opt_start_after`. If no such locus
- *    exists, `pc::MAX_IDX` is returned.
- *
- * @param ref_id        The reference ID to search for.
- * @param wri           The WalkRefIdx providing locus information for vertices.
- * @param w             The walk (sequence of steps) to search through.
- * @param opt_start_after Optional threshold value: only loci greater than this
- *                        will be considered. If std::nullopt, returns global min.
- * @return              The minimum locus found according to the rules above,
- *                      or `pc::MAX_IDX` if no locus exceeds the threshold.
- */
-pt::idx_t find_min_locus(const bd::VG &g, pt::id_t ref_id, const pgt::walk_t &w,
-                         std::optional<pt::idx_t> opt_start_after) {
-  pt::idx_t min_locus{pc::MAX_IDX};
-
-  for (const auto &[v_id, _] : w) {
-    const pgr::VtxRefData &v_ref_data = g.get_vertex_by_id(v_id).get_refs();
-    //const bd::VtxRefIdx &vr_idx = g.get_vtx_ref_idx(v_id);
-    if (auto opt_min = v_ref_data.get_min_locus(ref_id, opt_start_after)) {
-      min_locus = std::min(min_locus, *opt_min);
+    // check if is prefix
+    if (s.start == ref_slice.start && s.len > ref_slice.len) {
+      return true;
     }
+
+    // check if is suffix
+    if (s.start < ref_slice.start && s.start + s.len == ref_slice.start + ref_slice.len) {
+      return true;
+    }
+
+    // check if is contained
+    if (s.start > ref_slice.start && s.start + s.len < ref_slice.start + ref_slice.len) {
+      return true;
+    }
+
+    // if (s.start <= ref_slice.start && s.start + s.len >= ref_slice.start + ref_slice.len) {
+    //   return false;
+    // }
   }
 
-  return min_locus;
+  return false;
 }
 
+pt::idx_t is_valid(const pgt::ref_walk_t &ref_w, pt::idx_t ref_w_start_idx,
+                   const pgt::walk_t &w, pt::idx_t w_start_idx, pt::idx_t len) {
+  pt::idx_t valid_len{0};
 
-pt::idx_t comp_loop_no(const bd::VG &g, pt::id_t ref_id, const pgt::walk_t &w) {
-  // the number of times the ref is seen in the walk
-  // this is also the step with the max ref visits
-  pt::idx_t max_loop_no{0};
-  for (const auto &[v_id, _] : w) {
-    const pgr::VtxRefData &v_ref_data = g.get_vertex_by_id(v_id).get_refs();
-    pt::idx_t times = v_ref_data.loop_count(ref_id);
-    max_loop_no = std::max(max_loop_no, v_ref_data.loop_count(ref_id));
-  }
+  for (pt::idx_t i{}; i < len; i++) {
+    pt::idx_t ref_w_idx = ref_w_start_idx + i;
+    pt::idx_t graph_w_idx = w_start_idx + i;
 
-return max_loop_no;
-}
+    auto [ref_v_id, ref_o, _] = ref_w[ref_w_idx];
+    auto [w_v_id, w_o] = w[graph_w_idx];
 
-/**
- * @brief compute min_locus and loop_no
- */
-std::pair<pt::idx_t, pt::idx_t> comp_ref_visit_bounds(const bd::VG &g,
-                                                      pt::id_t ref_id,
-                                                      const pgt::walk_t &w) {
-  auto min_future = std::async(
-    std::launch::async, [&]() { return find_min_locus(g, ref_id, w, std::nullopt); });
-
-  auto loop_future = std::async(
-    std::launch::async, [&]() { return comp_loop_no(g, ref_id, w); });
-
-  pt::idx_t min_locus = min_future.get();
-  pt::idx_t loop_no = loop_future.get();
-
-  return {min_locus, loop_no};
-}
-
-inline std::optional<AW> do_walk(const bd::VG &g, pt::id_t ref_id, pt::idx_t w_idx,
-                          const pgt::walk_t &w, pt::idx_t start_locus) {
-  pt::idx_t curr_locus = start_locus;
-  AW allele_walk{w_idx};
-
-  for (pt::idx_t step_idx{}; step_idx < w.size(); ++step_idx) {
-
-    const pgt::step_t &step = w[step_idx];
-    auto [v_id, o] = step;
-
-    const bd::Vertex v = g.get_vertex_by_id(v_id);
-    const pgr::VtxRefData &ref_data = v.get_refs();
-
-    pgr::ref_step_t ref_addr = {o, curr_locus};
-    if (!ref_data.has_address(ref_id, ref_addr)) {
-      // we have reached a step that is not continuous with the previous
-      // steps for this ref, so we should break out of the loop
+    if (ref_v_id != w_v_id || ref_o != w_o) {
       break;
     }
 
-    auto allele_step = AS::given_ref_info(v_id, ref_addr);
-    allele_walk.append_step(std::move(allele_step));
-
-    curr_locus += v.get_label().length();
+    valid_len++;
   }
 
-  if (allele_walk.step_count() <= 1) {
-    return std::nullopt;
-  }
-
-  return allele_walk;
-};
-
-std::vector<AW> handle_walks(const bd::VG &g, pt::id_t ref_id, pt::idx_t w_idx,
-                             const pgt::walk_t &w, pt::idx_t start_locus,
-                             pt::idx_t loop_count) {
-  std::vector<AW> aws;
-  aws.reserve(loop_count);
-  if (std::optional<AW> opt_aw = do_walk(g, ref_id, w_idx, w, start_locus)) {
-    aws.push_back(std::move(*opt_aw));
-  }
-
-  if (loop_count == 1) {
-    return aws;
-  }
-
-  auto [first_v_id, __] = w.front(); // first step in the walk
-  const pgr::VtxRefData &v_ref_data = g.get_vertex_by_id(first_v_id).get_refs();
-  const std::set<pgr::ref_step_t> &starts = v_ref_data.get_ref_data(ref_id);
-
-  for (auto [_, loop_start_locus] : starts) {
-    if (loop_start_locus != start_locus) {
-      if (std::optional<AW> opt_aw = do_walk(g, ref_id, w_idx, w, loop_start_locus)) {
-        aws.push_back(std::move(*opt_aw));
-      }
-    }
-  }
-
-  return aws;
+  return valid_len;
 }
 
-std::vector<std::pair<pt::idx_t, id_t>>
-pre_comp_tasks(const bd::VG &g, const std::vector<pgt::walk_t> &walks ) {
-  std::vector<std::pair<pt::idx_t, id_t>> tasks;
+bool comp_overlays(const bd::VG &g, const pgt::walk_t &w, pt::idx_t w_idx,
+                   std::map<pt::id_t, itn_t> &ref_map,
+                   std::map<pt::idx_t, std::set<pt::idx_t>> &walk_to_refs) {
+
+  bool is_tangled {false};
+  const pt::idx_t WALK_LEN = w.size();
+
+  for (pt::idx_t ref_idx{}; ref_idx < g.get_ref_count(); ref_idx++) {
+    const pgt::ref_walk_t &ref_w = g.get_ref_vec(ref_idx);
+
+    itn_t ref_itns;
+
+    std::vector<pt::slice_t> walk_slices;
+
+    for (pt::idx_t walk_step_idx{}; walk_step_idx < WALK_LEN; ++walk_step_idx) {
+      pt::idx_t slice_len = WALK_LEN - walk_step_idx;
+      const pgt::step_t &step = w[walk_step_idx];
+      auto [v_id, o] = step;
+      pt::idx_t v_idx = g.v_id_to_idx(v_id);
+      const std::vector<pt::idx_t> &vtx_ref_idxs = g.get_vertex_ref_idxs(v_idx, ref_idx);
+
+      std::pair<const pgt::walk_t&, pt::slice_t> walk_slice = {w, {walk_step_idx, slice_len}};
+      for (pt::idx_t ref_step_idx : vtx_ref_idxs) {
+
+        // Assumption:
+        // in a valid GFA file,
+        // if a ref starts within a walk then it has to start at the beginning
+        // of the walk
+        if (ref_step_idx != 0 && walk_step_idx > 0) {
+          continue;
+        }
+
+        std::pair<const pgt::ref_walk_t &, pt::slice_t> ref_slice = {ref_w, {ref_step_idx, slice_len}};
+
+        pt::idx_t valid_len = is_valid(ref_w, ref_step_idx, w, walk_step_idx, slice_len);
+
+        if (valid_len < 2) {
+          continue;
+        }
+
+        if (!is_contained(walk_slices, {walk_step_idx, valid_len})) {
+          walk_slices.push_back({walk_step_idx, valid_len});
+          ref_itns.append_at({&w, w_idx, walk_step_idx, &ref_w, ref_idx, ref_step_idx, valid_len});
+          walk_to_refs[w_idx].insert(ref_idx);
+
+          if (ref_itns.at_count() > 1) {
+            is_tangled = true;
+          }
+        }
+      }
+    }
+
+    if (ref_itns.at_count() > 0) {
+      ref_map.emplace(ref_idx, std::move(ref_itns));
+    }
+
+  }
+  return is_tangled;
+}
+
+
+
+void comp_itineraries(const bd::VG &g, Exp &exp) {
+
+  if (exp.get_rov() == nullptr) {
+    ERR("RoV pointer is null");
+    std::exit(EXIT_FAILURE);
+  }
+
+  //bool dbg = exp.id() == ">3645>3647" ? true : false;
+
+  const std::vector<pgt::walk_t> &walks = exp.get_rov()->get_walks();
+  std::map<pt::id_t, itn_t> &ref_map = exp.get_ref_itns_mut();
+  std::map<pt::idx_t, std::set<pt::idx_t>> &walk_to_refs = exp.get_walk_to_ref_idxs_mut();
+
   for (pt::idx_t w_idx = 0; w_idx < walks.size(); ++w_idx) {
-    const pgt::walk_t &w = walks[w_idx];
-    std::set<pt::id_t> ref_ids;
 
-    for (const pgt::step_t &s : w) {
-      auto v_id = s.v_id;
-      const std::set<pt::idx_t> &step_ref_ids = g.get_vertex_by_id(v_id).get_refs().get_ref_ids();
-      ref_ids.insert(step_ref_ids.begin(), step_ref_ids.end());
+    // if (dbg) {
+    //   INFO("{}", pgt::to_string(walks[w_idx]));
+    // }
+
+    bool is_tangled = comp_overlays(g, walks.at(w_idx), w_idx, ref_map, walk_to_refs);
+    if (is_tangled) {
+      exp.set_tangled(true);
     }
 
-    for (pt::id_t ref_id : ref_ids) {
-      tasks.push_back({w_idx, ref_id});
-    }
-  }
+#ifdef DEBUG
+    auto refs = exp.get_ref_idxs_for_walk(w_idx); // ensure walk pointers are valid
+    for (auto r : refs) {
+      const itn_t &r_itn = exp.get_itn(r);
+      for (pt::idx_t at_idx = 0; at_idx < r_itn.at_count(); ++at_idx) {
+        const allele_slice_t &as = r_itn.get_at(at_idx);
+        auto w_idx = as.walk_idx;
+        const pgt::walk_t &w = exp.get_rov()->get_walks().at(w_idx);
+        if (as.walk != &w) {
+          ERR("Inconsistent walk pointer in allele_slice, {}", exp.id());
+          std::exit(EXIT_FAILURE);
+        }
 
-  return tasks;
-}
-
-/**
- * @brief compute itineraries for a walk
- *
- * For each ref in the walk, find the steps that are continuous with the
- * previous steps for that ref and append them to the itinerary.
- *
- * The itinerary is a collection of allele walks for each ref in the walk.
- */
-void comp_itineraries_async(const bd::VG &g,
-                            const std::vector<pgt::walk_t> &walks,
-                            std::map<pt::id_t, Itn> &ref_map,
-                            povu::thread::thread_pool &pool) {
-
-  std::vector<std::pair<pt::idx_t, pt::id_t>> tasks = pre_comp_tasks(g, walks);
-  const std::size_t M = tasks.size();
-
-  std::vector<std::future<std::vector<AW>>> futs;
-  futs.reserve(M);
-
-  for (auto [w_idx, ref_id] : tasks) {
-    futs.emplace_back(pool.submit([&, w_idx, ref_id]() -> std::vector<AW> {
-      const auto &w = walks[w_idx];
-      auto [start_locus, loop_count] = comp_ref_visit_bounds(g, ref_id, w);
-      return handle_walks(g, ref_id, w_idx, w, start_locus, loop_count);
-    }));
-  }
-
-  // Merge results on this thread (no locks needed)
-  for (std::size_t i = 0; i < M; ++i) {
-    auto aws = futs[i].get(); // rethrows from worker
-    if (aws.empty())
-      continue;
-    auto ref_id = tasks[i].second;
-    Itn &itn = ref_map[ref_id];
-    for (AW &aw : aws)
-      itn.append_at(std::move(aw));
-  }
-
-  return;
-}
-
-void comp_itineraries_serial(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
-                      std::map<pt::id_t, Itn> &ref_map) {
-
-  std::vector<std::pair<pt::idx_t, id_t>> tasks = pre_comp_tasks(g, walks);
-
-  for (auto [w_idx, ref_id] : tasks) {
-    const auto &w = walks[w_idx];
-    auto [start_locus, loop_count] = comp_ref_visit_bounds(g, ref_id, w);
-    std::vector<AW> aws = handle_walks(g, ref_id, w_idx, w, start_locus, loop_count);
-
-    if (!aws.empty()) {
-      Itn &itn = ref_map[ref_id];
-      for (AW &aw : aws) {
-        itn.append_at(std::move(aw));
+        pt::idx_t step_idx = as.walk_start_idx;
+        pt::idx_t end = as.walk_start_idx + as.len;
+        for (step_idx; step_idx < end; ++step_idx) {
+          auto _ = as.get_step(step_idx);
+        }
       }
     }
-  }
+#endif
 
-  return;
-}
-
-void comp_itineraries(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
-                      std::map<pt::id_t, Itn> &ref_map,
-                      povu::thread::thread_pool &pool) {
-
-  if (walks.size() > 10) {
-    comp_itineraries_async(g, walks, ref_map, pool);
-  }
-  else {
-    comp_itineraries_serial(g, walks, ref_map);
   }
 
   return;

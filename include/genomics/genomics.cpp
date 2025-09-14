@@ -6,80 +6,24 @@
 
 namespace povu::genomics {
 
-
-/**
- * Remove walks that are prefixes of other walks in the same Itn
- * This is done to avoid redundant walks in the RoV
- * A walk is a prefix of another walk if it has fewer steps and starts with the same step
- */
-void remove_prefix_walks(pga::Itn &itn) {
-  std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
-
-  // we add walk idx which are prefixes is_prefix
-  std::set<pt::idx_t> to_remove;
-
-  for (pt::idx_t qry_w_idx {}; qry_w_idx < itn.at_count(); ++qry_w_idx)    {
-    const pga::AW &qry_aw = itn.get_at(qry_w_idx);
-    for (pt::idx_t txt_w_idx = {}; txt_w_idx < itn.at_count(); ++txt_w_idx) {
-      const pga::AW &txt_aw = itn.get_at(txt_w_idx);
-
-      if(qry_aw.step_count() < txt_aw.step_count() && qry_aw.get_steps().front() == txt_aw.get_steps().front()) {
-        to_remove.insert(qry_w_idx);
-      }
-    }
-  }
-
-  // remove the walks that are prefixes
-  itn.remove_aws(to_remove);
-}
-
 /**
  * Associate walks in an RoV with references
  */
-pga::Exp exp_frm_rov(const bd::VG &g, const pgg::RoV &rov, povu::thread::thread_pool &pool) {
-
-  // create an expedition object for the RoV
-  const std::vector<pgt::walk_t> &walks = rov.get_walks();
-  const pvst::VertexBase *pvst_v_ptr = rov.get_pvst_vtx();
-  pga::Exp ref_walks{pvst_v_ptr};
-
-  // compute the itineraries for each reference in the RoV
-  std::map<pt::id_t, pga::Itn> &ref_map = ref_walks.get_ref_itns_mut();
-  pga::comp_itineraries(g, walks, ref_map, pool);
-
-  for (pt::idx_t ref_id : ref_walks.get_ref_ids()) {
-    remove_prefix_walks(ref_walks.get_itn_mut(ref_id));
+pga::Exp exp_frm_rov(const bd::VG &g, const pgg::RoV &rov) {
+  pga::Exp exp(&rov);
+  pga::comp_itineraries(g, exp);
+  if (exp.is_tangled()) {
+    put::untangle_ref_walks(exp);
   }
 
-  for (const pt::idx_t ref_id : ref_walks.get_ref_ids()) {
-    if (ref_walks.get_itn(ref_id).at_count() > 1) {
-      // if any ref has more than one walk, the RoV is tangled
-      ref_walks.set_tangled(true);
-      // no need to check other refs, we know the RoV is tangled
-      break;
-    }
-  }
-
-  for (pt::id_t ref_id : ref_walks.get_ref_ids()) {
-    pga::Itn &itn = ref_walks.get_itn_mut(ref_id);
-    for (pga::AW &aw : itn.get_ats_mut()) {
-      aw.add_ref_id(ref_id); // add the ref id to each walk
-    }
-  }
-
-  if (ref_walks.is_tangled()) {
-    put::untangle_ref_walks(ref_walks);
-  }
-
-  return ref_walks;
+  return exp;
 }
 
 std::vector<pga::Exp> comp_expeditions_work_steal(
     const bd::VG &g, const std::vector<pgg::RoV> &all_rovs, pt::idx_t start,
     pt::idx_t count, povu::thread::thread_pool &pool,
     std::size_t outer_concurrency,
-    std::size_t reserve_for_inner
-    ) {
+    std::size_t reserve_for_inner) {
   const std::size_t base = static_cast<std::size_t>(start);
   const std::size_t want = static_cast<std::size_t>(count);
 
@@ -88,10 +32,11 @@ std::vector<pga::Exp> comp_expeditions_work_steal(
 
   // choose K workers; leave some for inner tasks
   const std::size_t pool_sz = pool.size();
-  if (reserve_for_inner >= pool_sz)
+  if (reserve_for_inner >= pool_sz) {
     reserve_for_inner = 0;
-  const std::size_t K = std::max<std::size_t>(
-      1, std::min({outer_concurrency, pool_sz - reserve_for_inner, N}));
+  }
+  const std::size_t K =
+    std::max<std::size_t>(1, std::min({outer_concurrency, pool_sz - reserve_for_inner, N}));
 
   std::atomic<std::size_t> next{0}; // counts *offsets* within [0, N)
   const std::size_t block = 64;
@@ -102,10 +47,10 @@ std::vector<pga::Exp> comp_expeditions_work_steal(
     tg.run([&, base] {
       for (;;) {
         // offset within the chunk
-        const std::size_t off =
-            next.fetch_add(block, std::memory_order_relaxed);
-        if (off >= N)
+        const std::size_t off = next.fetch_add(block, std::memory_order_relaxed);
+        if (off >= N) {
           break;
+        }
 
         // global index range [g_begin, g_end)
         const std::size_t g_begin = base + off;
@@ -114,7 +59,17 @@ std::vector<pga::Exp> comp_expeditions_work_steal(
         // fill results; local index = global - base
         for (std::size_t gi = g_begin; gi < g_end; ++gi) {
           const std::size_t li = gi - base;
-          all_exp[li] = exp_frm_rov(g, all_rovs[gi], pool);
+          // IMPORTANT:
+          // - Pass the RoV element directly: do NOT make a local copy like
+          //   `pgg::RoV rov = all_rovs[gi];` and then take &rov — that would
+          //   dangle.
+          // - `exp_frm_rov(...)` returns an Exp prvalue. Inside that function,
+          //   the return is elided (RVO), and here the assignment uses
+          //   move-assignment. No extra copy is performed; no `std::move` is
+          //   needed on the RHS.
+          // - Ensure `all_rovs` outlives all Exp objects that store pointers
+          //   into it.
+          all_exp[li] = exp_frm_rov(g, all_rovs[gi]);
         }
       }
     });
@@ -124,6 +79,8 @@ std::vector<pga::Exp> comp_expeditions_work_steal(
 
   return all_exp;
 }
+
+
 
 /**
  * Check if a vertex in the pvst is a flubble leaf
@@ -245,6 +202,7 @@ split_threads(std::size_t total, std::size_t outer_cap = 2,
 }
 
 void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
+                     const std::set<pt::id_t> &to_call_ref_ids,
                      pbq::bounded_queue<pgv::VcfRecIdx> &q,
                      DynamicProgress<ProgressBar> &prog, std::size_t prog_idx,
                      const core::config &app_config) {
@@ -282,7 +240,7 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 
     exps = comp_expeditions_work_steal(g, all_rovs, base, count, pool, outer, inner);
 
-    pgv::VcfRecIdx rs = pgv::gen_vcf_records(g, exps);
+    pgv::VcfRecIdx rs = pgv::gen_vcf_records(g, exps, to_call_ref_ids);
     if (!q.push(std::move(rs))) {
       break; // queue was closed early
     }
