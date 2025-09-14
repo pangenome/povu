@@ -569,6 +569,7 @@ public:
     return this->parent_v[v_idx];
   }
 
+  // TODO: rename to get_children_idxs()
   const std::vector<pt::idx_t>& get_children(pt::idx_t v_idx) const {
     return this->children_v[v_idx];
   }

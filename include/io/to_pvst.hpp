@@ -25,7 +25,6 @@ void write_pvst(const pvst::Tree &bt, const std::string &base_name, const core::
 
 } // namespace povu::io::pvst
 
-
 // add namespace alias for povu::compat
 // below tells clang-tidy to skip that specific check for the next line.
 // NOLINTNEXTLINE(misc-unused-alias-decls)

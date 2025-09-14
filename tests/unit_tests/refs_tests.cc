@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <vector>
+
 #include "../../include/refs/refs.hpp"
 
 std::pair<pt::idx_t, std::vector<std::string>> all_undefined_refs() {
