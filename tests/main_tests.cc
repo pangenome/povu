@@ -4,3 +4,4 @@
 #include "./integration_tests/pvst_tests.cc"
 
 #include "./unit_tests/refs_tests.cc"
+#include "./unit_tests/spanning_tree.cc"
