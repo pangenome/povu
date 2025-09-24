@@ -194,7 +194,7 @@ class Refs {
   /* genotype data */
 
   // TODO: in C++20 or greater, use a constexpr instead of const
-  inline static const std::string BLANK_GT_VALUE = ".";
+  inline static const std::string BLANK_GT_VALUE = "0";
 
   std::vector<std::vector<std::string>> blank_genotype_cols;
 
