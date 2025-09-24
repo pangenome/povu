@@ -1,4 +1,5 @@
 #include "./vcf.hpp"
+#include <limits>
 
 
 namespace povu::genomics::vcf {
@@ -166,6 +167,72 @@ VcfRecIdx gen_vcf_records(const bd::VG &g, const std::vector<pga::Exp> &exps,
       std::exit(EXIT_FAILURE);
     }
     std::map<pt::idx_t, std::vector<VcfRec>> exp_vcf_recs = gen_exp_vcf_recs(g, exp, to_call_ref_ids);
+    vcf_recs.ensure_append_recs(std::move(exp_vcf_recs));
+  }
+
+  return vcf_recs;
+}
+
+std::vector<pt::id_t> build_ref_preference_order(const bd::VG &g,
+                                                 const std::vector<std::string> &sample_prefixes) {
+  std::vector<pt::id_t> ref_order;
+  std::set<pt::id_t> seen_refs;
+
+  // First, add refs matching the provided prefixes in order
+  for (const std::string &prefix : sample_prefixes) {
+    std::set<pt::id_t> ref_ids = g.get_refs_in_sample(prefix);
+    for (pt::id_t ref_id : ref_ids) {
+      if (seen_refs.find(ref_id) == seen_refs.end()) {
+        ref_order.push_back(ref_id);
+        seen_refs.insert(ref_id);
+      }
+    }
+  }
+
+  // If no prefixes provided or some refs remain, add all remaining refs in GFA order
+  pt::id_t total_refs = g.get_ref_count();
+  for (pt::id_t ref_id = 0; ref_id < total_refs; ++ref_id) {
+    if (seen_refs.find(ref_id) == seen_refs.end()) {
+      ref_order.push_back(ref_id);
+      seen_refs.insert(ref_id);
+    }
+  }
+
+  return ref_order;
+}
+
+VcfRecIdx gen_vcf_records_nested(const bd::VG &g, const std::vector<pga::Exp> &exps,
+                                 const std::vector<pt::id_t> &ref_preference_order) {
+  VcfRecIdx vcf_recs;
+
+  // For each expedition (flubble), select the best reference according to preference order
+  for (const pga::Exp &exp : exps) {
+    if (exp.get_pvst_vtx_const_ptr() == nullptr) {
+      ERR("pvst vertex pointer is null {}", exp.get_rov()->as_str());
+      std::exit(EXIT_FAILURE);
+    }
+
+    // Get all ref IDs present in this expedition
+    std::set<pt::id_t> exp_ref_ids = exp.get_ref_ids();
+
+    // Find the first reference from the preference order that is present in this expedition
+    pt::id_t best_ref_id = std::numeric_limits<pt::id_t>::max();
+    for (pt::id_t pref_ref_id : ref_preference_order) {
+      if (exp_ref_ids.find(pref_ref_id) != exp_ref_ids.end()) {
+        best_ref_id = pref_ref_id;
+        break;
+      }
+    }
+
+    if (best_ref_id == std::numeric_limits<pt::id_t>::max()) {
+      continue; // No suitable reference found for this expedition
+    }
+
+    // Generate VCF records using the selected reference
+    std::set<pt::id_t> single_ref_set = {best_ref_id};
+    std::map<pt::idx_t, std::vector<VcfRec>> exp_vcf_recs = gen_exp_vcf_recs(g, exp, single_ref_set);
+
+    // Add to the overall records
     vcf_recs.ensure_append_recs(std::move(exp_vcf_recs));
   }
 

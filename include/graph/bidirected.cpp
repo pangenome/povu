@@ -1,6 +1,7 @@
 #include "./bidirected.hpp"
 #include <string>
 #include <string_view>
+#include <set>
 
 namespace povu::bidirected {
 
@@ -157,6 +158,17 @@ const std::vector<pt::idx_t> &VG::get_vertex_ref_idxs(pt::idx_t v_idx, pt::id_t 
 
 const std::vector<std::string> &VG::get_genotype_col_names() const {
   return this->refs_.get_genotype_col_names();
+}
+
+std::vector<std::string> VG::get_all_sample_names() const {
+  std::set<std::string> unique_samples;
+  pt::idx_t total_refs = this->refs_.ref_count();
+  for (pt::idx_t ref_id = 0; ref_id < total_refs; ++ref_id) {
+    const pr::Ref &ref = this->refs_.get_ref(ref_id);
+    std::string sample_name = ref.get_sample_name();
+    unique_samples.insert(sample_name);
+  }
+  return std::vector<std::string>(unique_samples.begin(), unique_samples.end());
 }
 
 std::vector<std::vector<std::string>> VG::get_blank_genotype_cols() const {

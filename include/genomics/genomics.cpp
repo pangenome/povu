@@ -240,7 +240,16 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 
     exps = comp_expeditions_work_steal(g, all_rovs, base, count, pool, outer, inner);
 
-    pgv::VcfRecIdx rs = pgv::gen_vcf_records(g, exps, to_call_ref_ids);
+    pgv::VcfRecIdx rs;
+    if (app_config.get_nested_mode()) {
+      // Build reference preference order from samples
+      std::vector<pt::id_t> ref_preference_order =
+          pgv::build_ref_preference_order(g, app_config.get_ref_name_prefixes());
+      rs = pgv::gen_vcf_records_nested(g, exps, ref_preference_order);
+    } else {
+      rs = pgv::gen_vcf_records(g, exps, to_call_ref_ids);
+    }
+
     if (!q.push(std::move(rs))) {
       break; // queue was closed early
     }
