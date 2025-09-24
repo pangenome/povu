@@ -176,6 +176,30 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom, std::o
 }
 
 
+void init_vcfs_nested(bd::VG &g, const std::vector<std::string> &sample_names,
+                     const std::set<pt::id_t> &used_ref_ids, VcfOutput &vout) {
+
+  vout.for_each_stream([&](std::ostream &os) {
+    write_header_common(os); // write common header lines
+  });
+
+  // Only add contig lines for references that are actually used
+  vout.for_each_stream([&](std::ostream &os) {
+    for (pt::id_t ref_id : used_ref_ids) {
+      const pr::Ref &ref = g.get_ref_by_id(ref_id);
+      write_header_contig_line(ref, os);
+    }
+  });
+
+  vout.for_each_stream([&](std::ostream &os) {
+    write_col_header(g.get_genotype_col_names(), os); // write column header
+  });
+
+  vout.flush_all();
+
+  return;
+}
+
 void write_vcfs(pgv::VcfRecIdx &vcf_recs, const bd::VG &g,
                 const std::set<pt::id_t> &vcf_ref_ids,
                 VcfOutput &vout, const core::config &app_config) {

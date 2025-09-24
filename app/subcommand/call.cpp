@@ -101,9 +101,13 @@ void do_call(core::config &app_config) {
     ? piv::VcfOutput::to_stdout()
     : piv::VcfOutput::to_split_files(app_config.get_ref_name_prefixes(), std::string(app_config.get_output_dir()));
 
-  std::thread init_vcfs_async([&] {
-    piv::init_vcfs(*g, samples, vout);
-  });
+  // Don't initialize VCFs yet in nested mode - we need to know which refs are used
+  std::thread init_vcfs_async;
+  if (!app_config.get_nested_mode()) {
+    init_vcfs_async = std::thread([&] {
+      piv::init_vcfs(*g, samples, vout);
+    });
+  }
 
   read_pvsts_async.join(); // make sure pvsts are read
 
@@ -126,13 +130,33 @@ void do_call(core::config &app_config) {
     }
   });
 
-  // consumer on this thread
+  // Collect all VCF records (and track used refs for nested mode)
+  std::vector<pgv::VcfRecIdx> all_vcf_records;
+  std::set<pt::id_t> used_ref_ids;
+
   while (auto opt_rec_idx = q.pop()) {
-    piv::write_vcfs(*opt_rec_idx, *g, vcf_ref_ids, vout, app_config);
+    if (app_config.get_nested_mode()) {
+      // In nested mode, collect records and track which refs are used
+      for (const auto &[ref_id, _] : opt_rec_idx->get_recs_mut()) {
+        used_ref_ids.insert(ref_id);
+      }
+      all_vcf_records.push_back(std::move(*opt_rec_idx));
+    } else {
+      // Standard mode: write immediately
+      piv::write_vcfs(*opt_rec_idx, *g, vcf_ref_ids, vout, app_config);
+    }
   }
 
-  // make sure VCF are initialised before producer finishes
-  init_vcfs_async.join();
+  // In nested mode, initialize VCF header with only used refs, then write all records
+  if (app_config.get_nested_mode()) {
+    piv::init_vcfs_nested(*g, samples, used_ref_ids, vout);
+    for (auto &vcf_rec_idx : all_vcf_records) {
+      piv::write_vcfs(vcf_rec_idx, *g, vcf_ref_ids, vout, app_config);
+    }
+  } else {
+    // make sure VCF are initialised before producer finishes
+    init_vcfs_async.join();
+  }
 
   // wait for producer to finish
   producer.join();
