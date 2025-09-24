@@ -69,7 +69,7 @@ class VcfRec {
   /* info */
   // number of refs in a given walk
   std::vector<pt::idx_t> ref_count;
-  std::vector<pt::idx_t> ac_; // allele count for each alt allele
+  std::vector<pt::idx_t> allele_counts_; // count for each allele (ref at idx 0, alts at idx 1+)
   std::vector<double> af_; // allele frequency for each alt allele
   pt::idx_t an_ = 0;       // total number of alleles in called genotypes
   //pt::idx_t ns_ = 0;       // number of samples with data
@@ -100,15 +100,35 @@ class VcfRec {
 
       this->alt_at_to_unique_alt_idx_.emplace_back(seen[key]);
     }
+    // Initialize allele_counts_ with the right size (ref + unique alts)
+    this->allele_counts_.resize(this->unique_alts_.size(), 0);
   }
 
   void set_genotype_data(const bd::VG &g) {
+    // Initialize all genotypes to 0 (reference)
+    for (auto &col : this->genotype_cols_) {
+      for (auto &gt : col) {
+        gt = "0";
+      }
+    }
+
     for (pt::idx_t i {}; i < this->ats_.size(); ++i) {
       const pga::allele_slice_t &sl = this->ats_.at(i);
       const pt::op_t<pt::idx_t> &gt_col_idx = g.get_ref_gt_col_idx(sl.ref_idx);
       this->col_to_allele_count_[gt_col_idx.first]++;
       pt::idx_t alt_col_idx = this->alt_at_to_unique_alt_idx_.at(i);
       this->genotype_cols_[gt_col_idx.first][gt_col_idx.second] = std::to_string(alt_col_idx);
+      // Count this allele occurrence
+      this->allele_counts_[alt_col_idx]++;
+    }
+
+    // Count reference alleles (genotypes that remained "0")
+    for (const auto &col : this->genotype_cols_) {
+      for (const auto &gt : col) {
+        if (gt == "0") {
+          this->allele_counts_[0]++;
+        }
+      }
     }
   }
 
@@ -167,9 +187,10 @@ public:
   std::string get_ac() const {
     std::string ac_str;
     std::string sep = "";
-    for (auto it = ref_count.begin() + 1; it != ref_count.end(); ++it) {
+    // AC field shows counts for alternate alleles only (skip ref at index 0)
+    for (pt::idx_t i = 1; i < this->allele_counts_.size(); ++i) {
       ac_str += sep;
-      ac_str += std::to_string(*it);
+      ac_str += std::to_string(this->allele_counts_[i]);
       sep = ",";
     }
     return ac_str;
@@ -186,16 +207,20 @@ public:
       std::exit(EXIT_FAILURE);
     }
 
-    for (auto it = ref_count.begin() + 1; it != ref_count.end(); ++it) {
+    // AF field shows frequencies for alternate alleles only (skip ref at index 0)
+    for (pt::idx_t i = 1; i < this->allele_counts_.size(); ++i) {
       af_str += sep;
-      double v = static_cast<double>(*it) / static_cast<double>(AN);
+      double v = static_cast<double>(this->allele_counts_[i]) / static_cast<double>(AN);
       af_str += fmt::format("{:.1f}", v);
       sep = ",";
     }
     return af_str;
   }
 
-  pt::idx_t get_an() const { return std::reduce(this->ref_count.begin(), this->ref_count.end()); }
+  pt::idx_t get_an() const {
+    // Total number of alleles = sum of all allele counts
+    return std::reduce(this->allele_counts_.begin(), this->allele_counts_.end());
+  }
   pt::idx_t get_ns() const {
     // sum of values in col_to_allele_count_
     pt::idx_t ns{0};
