@@ -44,10 +44,9 @@ struct reference_opts {
   args::ValueFlagList<std::string> path_prefixes;
   args::PositionalList<std::string> refs_positional;
 
-  /* One of ref_list, path_prefixes, or list of references must be set—never
-   * multiple, and never none */
+  /* Reference selection is optional in nested mode - if none provided, uses all paths in GFA order */
   explicit reference_opts(args::Subparser& p)
-    : refsel(p, "Reference source (choose exactly one)", args::Group::Validators::Xor),
+    : refsel(p, "Reference source (optional - if not specified, uses all paths in GFA order)", args::Group::Validators::AtMostOne),
       prefix_list(refsel, "prefix_list", "path to file containing reference name prefixes [optional]", {'r', "prefix-list"}),
       path_prefixes(refsel, "path_prefix", "All paths beginning with NAME used as reference (multiple allowed) [optional]", {'P', "path-prefix"}),
       refs_positional(refsel, "refs","list of refs to use as reference haplotypes [optional]") {}
@@ -61,12 +60,18 @@ void populate_ref_ops(reference_opts &ref_opts, core::config &app_config) {
   }
 
   app_config.set_ref_input_format(core::input_format_e::params);
-  auto prefixes = ref_opts.path_prefixes ? args::get(ref_opts.path_prefixes)
-                                         : args::get(ref_opts.refs_positional);
 
-  for (auto &&p : prefixes) {
-    app_config.add_ref_name_prefix(p);
+  // Check if any references were provided
+  if (ref_opts.path_prefixes) {
+    for (auto &&p : args::get(ref_opts.path_prefixes)) {
+      app_config.add_ref_name_prefix(p);
+    }
+  } else if (ref_opts.refs_positional) {
+    for (auto &&p : args::get(ref_opts.refs_positional)) {
+      app_config.add_ref_name_prefix(p);
+    }
   }
+  // If no references provided, leave the list empty - nested mode will use all paths
 }
 
 void call_handler(args::Subparser &parser, core::config& app_config) {

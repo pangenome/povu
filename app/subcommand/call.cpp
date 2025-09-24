@@ -65,29 +65,49 @@ void do_call(core::config &app_config) {
   // assumes no duplicates in samples
   read_graph.join();
   get_refs_async.join();
-  const std::vector<std::string> &samples = app_config.get_ref_name_prefixes();
+  std::vector<std::string> samples = app_config.get_ref_name_prefixes();
+
+  // In nested mode, if no samples specified, get all sample names from the graph
+  if (app_config.get_nested_mode() && samples.empty()) {
+    samples = g->get_all_sample_names();
+  }
 
 #ifdef DEBUG
-  assert(samples.size() > 0 && "No reference samples found");
+  if (!app_config.get_nested_mode()) {
+    assert(samples.size() > 0 && "No reference samples found");
+  }
 #endif
 
   std::set<pt::id_t> vcf_ref_ids; // ref IDs that we need to output VCF for
-  for (std::string_view sample : samples) {
-    std::set<pt::id_t> ref_ids = g->get_refs_in_sample(sample);
-    vcf_ref_ids.insert(ref_ids.begin(), ref_ids.end());
+  if (app_config.get_nested_mode()) {
+    // In nested mode, include all refs in the graph
+    pt::id_t total_refs = g->get_ref_count();
+    for (pt::id_t ref_id = 0; ref_id < total_refs; ++ref_id) {
+      vcf_ref_ids.insert(ref_id);
+    }
+  } else {
+    // Standard mode: only refs matching the specified samples
+    for (std::string_view sample : samples) {
+      std::set<pt::id_t> ref_ids = g->get_refs_in_sample(sample);
+      vcf_ref_ids.insert(ref_ids.begin(), ref_ids.end());
+    }
   }
 
 #ifdef DEBUG
   assert(vcf_ref_ids.size() > 0 && "No reference IDs found for VCF output");
 #endif
 
-  piv::VcfOutput vout = app_config.get_stdout_vcf()
+  piv::VcfOutput vout = (app_config.get_nested_mode() || app_config.get_stdout_vcf())
     ? piv::VcfOutput::to_stdout()
     : piv::VcfOutput::to_split_files(app_config.get_ref_name_prefixes(), std::string(app_config.get_output_dir()));
 
-  std::thread init_vcfs_async([&] {
-    piv::init_vcfs(*g, samples, vout);
-  });
+  // Don't initialize VCFs yet in nested mode - we need to know which refs are used
+  std::thread init_vcfs_async;
+  if (!app_config.get_nested_mode()) {
+    init_vcfs_async = std::thread([&] {
+      piv::init_vcfs(*g, samples, vout);
+    });
+  }
 
   read_pvsts_async.join(); // make sure pvsts are read
 
@@ -110,13 +130,33 @@ void do_call(core::config &app_config) {
     }
   });
 
-  // consumer on this thread
+  // Collect all VCF records (and track used refs for nested mode)
+  std::vector<pgv::VcfRecIdx> all_vcf_records;
+  std::set<pt::id_t> used_ref_ids;
+
   while (auto opt_rec_idx = q.pop()) {
-    piv::write_vcfs(*opt_rec_idx, *g, vcf_ref_ids, vout, app_config);
+    if (app_config.get_nested_mode()) {
+      // In nested mode, collect records and track which refs are used
+      for (const auto &[ref_id, _] : opt_rec_idx->get_recs_mut()) {
+        used_ref_ids.insert(ref_id);
+      }
+      all_vcf_records.push_back(std::move(*opt_rec_idx));
+    } else {
+      // Standard mode: write immediately
+      piv::write_vcfs(*opt_rec_idx, *g, vcf_ref_ids, vout, app_config);
+    }
   }
 
-  // make sure VCF are initialised before producer finishes
-  init_vcfs_async.join();
+  // In nested mode, initialize VCF header with only used refs, then write all records
+  if (app_config.get_nested_mode()) {
+    piv::init_vcfs_nested(*g, samples, used_ref_ids, vout);
+    for (auto &vcf_rec_idx : all_vcf_records) {
+      piv::write_vcfs(vcf_rec_idx, *g, vcf_ref_ids, vout, app_config);
+    }
+  } else {
+    // make sure VCF are initialised before producer finishes
+    init_vcfs_async.join();
+  }
 
   // wait for producer to finish
   producer.join();

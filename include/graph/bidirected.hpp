@@ -144,6 +144,7 @@ public:
   const pgt::ref_walk_t &get_ref_vec(pt::id_t ref_id) const;
   pgt::ref_walk_t &get_ref_vec_mut(pt::id_t ref_id);
   pt::idx_t get_ref_count() const;
+  std::vector<std::string> get_all_sample_names() const;
   const std::vector<pt::idx_t> &get_vertex_ref_idxs(pt::idx_t v_idx, pt::id_t ref_id) const;
   const std::vector<std::string> &get_genotype_col_names() const;
   std::vector<std::vector<std::string>> get_blank_genotype_cols() const;
