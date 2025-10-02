@@ -1,0 +1,6 @@
+CompileFlags:
+  Add: [-Wall, -Wextra]   # optional, doesn’t affect include cleaning
+
+Diagnostics:
+  UnusedIncludes: Strict   # options: No | Yes | Strict
+

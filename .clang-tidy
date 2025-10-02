@@ -1,0 +1,16 @@
+Checks: 'modernize-*,performance-*,-modernize-use-trailing-return-type,misc-include-cleaner'
+
+CheckOptions:
+  - key: misc-include-cleaner.UnusedIncludes
+    value: 'true'          # keep warnings for unused includes
+  - key: misc-include-cleaner.MissingIncludes
+    value: 'false'         # don't suggest adding includes
+  - key: misc-include-cleaner.IgnoreHeaders
+    value: 'third_party/.*;deps/.*;external/.*'   # ignore vendor trees
+  - key: misc-include-cleaner.DeduplicateFindings
+    value: 'true'
+
+
+WarningsAsErrors: ''
+HeaderFilterRegex: '.*'
+FormatStyle: file
