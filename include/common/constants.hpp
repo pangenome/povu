@@ -20,10 +20,10 @@ inline constexpr std::string_view RED{"red"};
 inline constexpr std::string_view BLUE{"blue"};
 
 // numeric
-inline constexpr std::size_t SIZE_T_MIN = std::numeric_limits<size_t>::min();
-inline constexpr std::size_t SIZE_T_MAX = std::numeric_limits<size_t>::max();
-inline constexpr int UNDEFINED_INT = std::numeric_limits<int>::min();
-inline constexpr std::size_t UNDEFINED_SIZE_T = SIZE_T_MAX;
+//inline constexpr std::size_t SIZE_T_MIN = std::numeric_limits<size_t>::min();
+//inline constexpr std::size_t SIZE_T_MAX = std::numeric_limits<size_t>::max();
+//inline constexpr int UNDEFINED_INT = std::numeric_limits<int>::min();
+inline constexpr std::size_t UNDEFINED_SIZE_T = std::numeric_limits<size_t>::max();
 inline constexpr pt::idx_t MAX_ID = std::numeric_limits<pt::idx_t>::max();
 inline constexpr pt::idx_t MAX_IDX = std::numeric_limits<pt::idx_t>::max();
 

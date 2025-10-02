@@ -12,10 +12,7 @@ inline lq::gfa_config gen_lq_conf(const core::config &app_config, std::string &g
   lq::gfa_config_cpp lq_conf(
       gfa_fp.c_str(), // file path
       app_config.inc_vtx_labels(), // include vertex labels
-      app_config.inc_refs(), // include references
-      read_all_refs, // read all references
-      ref_count, // reference count
-      NULL // reference names
+      app_config.inc_refs()  // include references
   );
 
   return lq_conf;
@@ -44,7 +41,7 @@ bd::VG *to_bd(const core::config &app_config) {
   std::string gfa_fp;
   lq::gfa_config conf = gen_lq_conf(app_config, gfa_fp);
   lq::gfa_props *gfa = nullptr;
-  //lq::gfa_props *gfa = lq::gfa_new(&conf);
+
   std::thread get_gfa_async([&]() {
     gfa = lq::gfa_new(&conf);
     if (show_prog) {
@@ -63,12 +60,12 @@ bd::VG *to_bd(const core::config &app_config) {
   get_gfa_async.join();
 
 
-  pt::idx_t vtx_count = gfa->s_line_count;
+  pt::idx_t vtx_count = gfa->vtx_arr_size;
   pt::idx_t edge_count = gfa->l_line_count;
-  pt::idx_t ref_count = gfa->p_line_count;
+  pt::idx_t ref_count = gfa->ref_count;
 
   /* initialize a povu bidirected graph */
-  bd::VG *vg = new bd::VG(vtx_count, edge_count, ref_count);
+  bd::VG *vg = new bd::VG(gfa);
 
   /* set up progress bars */
   const std::size_t PROG_BAR_COUNT {3};
@@ -84,7 +81,7 @@ bd::VG *to_bd(const core::config &app_config) {
   const size_t REF_BAR_IDX{2};
 
   /* add vertices */
-  for (size_t i{}; i < vtx_count; ++i) {
+  for (pt::idx_t i{}; i < vtx_count; ++i) {
 
     if (show_prog) { // update progress bar
       std::string prog_msg = fmt::format("Loading vertices ({}/{})", i + 1, vtx_count);
@@ -92,15 +89,19 @@ bd::VG *to_bd(const core::config &app_config) {
       bars.set_progress<VTX_BAR_IDX>(static_cast<size_t>(i + 1));
     }
 
-    std::size_t v_id = gfa->v[i].id;
-    std::string label = app_config.inc_vtx_labels() ? std::string(gfa->v[i].seq) : std::string();
+    lq::vtx *v = lq::get_vtx(gfa, i);
+    if (v == nullptr) { // skip uninitialized vertices
+      continue;
+    }
+    std::size_t v_id = v->id;
+    std::string label = app_config.inc_vtx_labels() ? std::string(v->seq) : std::string();
     vg->add_vertex(v_id, label);
   }
 
   /* add edges */
   for (std::size_t i{}; i < edge_count; ++i) {
     if (show_prog) { // update progress bar
-      std::string prog_msg = fmt::format("Loading edges ({}/{})", i + 1, edge_count);
+       std::string prog_msg = fmt::format("Loading edges ({}/{})", i + 1, edge_count);
       edge_bar.set_option(indicators::option::PostfixText{prog_msg});
       bars.set_progress<EDGE_BAR_IDX>(static_cast<size_t>(i + 1));
     }
@@ -114,56 +115,72 @@ bd::VG *to_bd(const core::config &app_config) {
     vg->add_edge(v1, v1_end, v2, v2_end);
   }
 
-  /* add references if necessary */
-  // TODO: to parallise run in parallel for each vertex
+  /* refs */
   if (app_config.inc_refs()) {
+    vg->add_all_refs(gfa->refs, ref_count);
 
-    pt::idx_t path_pos {}; // the position of a base in a reference path
-    pt::id_t curr_ref_id{pc::INVALID_ID};
-
-    // TODO: [C] set up ref names independently?
-
-    for (pt::idx_t ref_idx{}; ref_idx < ref_count; ++ref_idx) {
-
-      if (show_prog) { // update progress bar
-        std::string prog_msg =fmt::format("Loading references ({}/{})", ref_idx + 1, ref_count);
-        ref_bar.set_option(indicators::option::PostfixText{prog_msg});
-        bars.set_progress<REF_BAR_IDX>(static_cast<size_t>(ref_idx + 1));
+    for (pt::idx_t ref_idx{}; ref_idx < ref_count; ref_idx++) {
+      lq::ref *ref = lq::get_ref(gfa, ref_idx);
+      pt::idx_t N = lq::get_step_count(ref);
+      for (pt::idx_t step_idx{}; step_idx < N; step_idx++) {
+	pt::id_t v_id = ref->walk->v_ids[step_idx];
+	vg->set_vtx_ref_idx(v_id, ref_idx, step_idx);
       }
-
-      const std::string &label = gfa->refs[ref_idx].name;
-
-      char delim = '#';
-      curr_ref_id = vg->add_ref(label, delim);
-      path_pos = 1; // this is 1 indexed
-
-      pgt::ref_walk_t &ref_vector = vg->get_ref_vec_mut(curr_ref_id);
-      ref_vector.reserve(gfa->refs[ref_idx].step_count);
-
-      // color each vertex in the path
-      for (pt::idx_t step_idx{}; step_idx < gfa->refs[ref_idx].step_count; ++step_idx) {
-        pt::id_t v_id = gfa->refs[ref_idx].steps[step_idx].v_id;
-        lq::strand_e s = gfa->refs[ref_idx].steps[step_idx].s;
-        pgt::or_e o = (s == lq::strand_e::FORWARD) ? pgt::or_e::forward : pgt::or_e::reverse;
-
-        // add step to the reference walk
-        pt::idx_t idx_in_ref_vec = static_cast<pt::idx_t>(ref_vector.size());
-        ref_vector.emplace_back(pgt::ref_step_t{v_id, o, path_pos});
-        vg->set_vtx_ref_idx(v_id, curr_ref_id, idx_in_ref_vec);
-
-        bd::Vertex& v = vg->get_vertex_mut_by_id(v_id);
-        path_pos += v.get_label().length();
-      }
-
-      // set the length of the reference
-      pr::Ref &ref = vg->get_ref_by_id_mut(curr_ref_id);
-      ref.set_length(path_pos - 1);
     }
 
     vg->gen_genotype_metadata();
   }
 
-  gfa_free(gfa); // very important free the gfa props
+  // /* add references if necessary */
+  // // TODO: to parallise run in parallel for each vertex
+  // if (app_config.inc_refs()) {
+
+  //   pt::idx_t path_pos {}; // the position of a base in a reference path
+  //   pt::id_t curr_ref_id{pc::INVALID_ID};
+
+  //   // TODO: [C] set up ref names independently?
+
+  //   for (pt::idx_t ref_idx{}; ref_idx < ref_count; ++ref_idx) {
+
+  //     if (show_prog) { // update progress bar
+  //	std::string prog_msg =fmt::format("Loading references ({}/{})", ref_idx + 1, ref_count);
+  //	ref_bar.set_option(indicators::option::PostfixText{prog_msg});
+  //	bars.set_progress<REF_BAR_IDX>(static_cast<size_t>(ref_idx + 1));
+  //     }
+
+  //     const std::string &label = gfa->refs[ref_idx].name;
+
+  //     char delim = '#';
+  //     curr_ref_id = vg->add_ref(label, delim);
+  //     path_pos = 1; // this is 1 indexed
+
+  //     pgt::ref_walk_t &ref_vector = vg->get_ref_vec_mut(curr_ref_id);
+  //     ref_vector.reserve(gfa->refs[ref_idx].step_count);
+
+  //     // color each vertex in the path
+  //     for (pt::idx_t step_idx{}; step_idx < gfa->refs[ref_idx].step_count; ++step_idx) {
+  //	pt::id_t v_id = gfa->refs[ref_idx].steps[step_idx].v_id;
+  //	lq::strand_e s = gfa->refs[ref_idx].steps[step_idx].s;
+  //	pgt::or_e o = (s == lq::strand_e::FORWARD) ? pgt::or_e::forward : pgt::or_e::reverse;
+
+  //	// add step to the reference walk
+  //	pt::idx_t idx_in_ref_vec = static_cast<pt::idx_t>(ref_vector.size());
+  //	ref_vector.emplace_back(pgt::ref_step_t{v_id, o, path_pos});
+  //	vg->set_vtx_ref_idx(v_id, curr_ref_id, idx_in_ref_vec);
+
+  //	bd::Vertex& v = vg->get_vertex_mut_by_id(v_id);
+  //	path_pos += v.get_label().length();
+  //     }
+
+  //     // set the length of the reference
+  //     pr::Ref &ref = vg->get_ref_by_id_mut(curr_ref_id);
+  //     ref.set_length(path_pos - 1);
+  //   }
+
+  //   vg->gen_genotype_metadata();
+  // }
+
+  // gfa_free(gfa); // very important free the gfa props
 
   /* populate tips */
   for (std::size_t v_idx{}; v_idx < vg->vtx_count(); ++v_idx) {
@@ -171,7 +188,7 @@ bd::VG *to_bd(const core::config &app_config) {
 
     if (v.get_edges_l().empty() && v.get_edges_r().empty()) {
       if (app_config.verbosity() > 2) {
-        WARN("isolated vertex {}", v.id());
+	WARN("isolated vertex {}", v.id());
       }
       vg->add_tip(v.id(), pgt::v_end_e::l);
     }

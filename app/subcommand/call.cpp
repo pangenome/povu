@@ -124,6 +124,9 @@ void do_call(core::config &app_config) {
   // just in case
   vout.flush_all();
 
+  delete g;
+  g = nullptr;
+
   return;
 }
 

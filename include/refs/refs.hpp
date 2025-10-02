@@ -9,6 +9,8 @@
 #include <charconv>
 #include <map>
 
+#include <liteseq/gfa.h>
+
 #include "../common/constants.hpp"
 #include "../common/core.hpp"
 #include "../common/utils.hpp"
@@ -16,116 +18,15 @@
 
 namespace povu::refs {
 inline constexpr std::string_view MODULE = "povu::refs";
+namespace lq = liteseq;
 
 enum class ref_format_e {
   PANSN = 1,
   UNDEFINED = 0,
 };
 
-const uint8_t PANSN_ELEMENT_COUNT = 3;
-const char    EXPECTED_PANSN_DELIM = '#';
-
-struct pan_sn {
-private:
-  std::string sample_name_;
-  pt::id_t    haplotype_id_;
-  std::string contig_name_;
-
-public:
-  pan_sn(std::string_view sample_name, pt::id_t hap_id,
-         std::string_view contig_name)
-      : sample_name_(sample_name), haplotype_id_(hap_id),
-        contig_name_(contig_name) {}
-
-  const std::string &sample() const { return this->sample_name_; }
-  pt::id_t hap() const { return this->haplotype_id_; }
-  const std::string &contig() const { return this->contig_name_; }
-};
-
-// The sum type: either a parsed format, or the original string when unknown.
-using ref_variant = std::variant <
-  std::string, // unknown / passthrough
-  pan_sn
-  // add future types here
->;
-
 class Ref {
-  ref_format_e format_ = ref_format_e::UNDEFINED;
-  // TODO find a better way and name to store the data_
-  ref_variant  data_; // holds either the parsed data or the original string
-  pt::id_t ref_id_ = pc::INVALID_ID; // the ref id assigned in Refs
-  pt::idx_t len_;                    // length of the contig/scaffold
-
-  // ---------------
-  // private methods
-  // ---------------
-  /**
-   * Split a string_view into exactly 3 parts based on a delimiter.
-   * Returns false if there are not exactly 3 parts.
-   *
-   * @param s The input string_view to split.
-   * @param delim The delimiter character.
-   * @param out An array of 3 string_views to hold the split parts.
-   */
-  [[nodiscard]] static bool
-  split3_tag(std::string_view s, char delim,
-             std::string_view (&out)[PANSN_ELEMENT_COUNT]) {
-    size_t pos = 0, idx = 0;
-    while (idx < PANSN_ELEMENT_COUNT - 1) {
-      size_t next = s.find(delim, pos);
-      if (next == std::string_view::npos) {
-        return false; // not enough parts
-      }
-      out[idx++] = s.substr(pos, next - pos);
-      pos = next + 1;
-    }
-    // last part is the remainder; disallow extra delimiters
-    if (s.find(delim, pos) != std::string_view::npos) {
-      return false; // too many parts
-    }
-    out[idx] = s.substr(pos);
-
-    return true;
-  }
-
-  [[nodiscard]] static std::optional<pan_sn>
-  parse_pan_sn(std::string_view tag, char delim) {
-    std::string_view p[PANSN_ELEMENT_COUNT];
-    if (!split3_tag(tag, delim, p)) {
-      return std::nullopt;
-    }
-    if (p[0].empty() || p[1].empty() || p[2].empty()) {
-      return std::nullopt;
-    }
-
-    // parse haplotype with from_chars (no throw)
-    unsigned long long tmp = 0;
-    auto res = std::from_chars(p[1].data(), p[1].data() + p[1].size(), tmp, 10);
-    if (res.ec != std::errc{} || res.ptr != p[1].data() + p[1].size())
-      return std::nullopt;
-
-    // range-check for pt::id_t
-    using id_lim = std::numeric_limits<std::make_unsigned_t<pt::id_t>>;
-    if (tmp > static_cast<unsigned long long>(id_lim::max()))
-      return std::nullopt;
-
-    pan_sn out(p[0], static_cast<pt::id_t>(tmp), p[2]);
-    // pan_sn out();
-    // out.sample_name_.assign(p[0]);
-    // out.haplotype_id_ = static_cast<pt::id_t>(tmp);
-    // out.contig_name_.assign(p[2]);
-    return out;
-  }
-
-  [[nodiscard]] static std::pair<ref_format_e, ref_variant>
-  determine_format(std::string_view tag, char delim) {
-  if (auto psn = parse_pan_sn(tag, delim)) {
-    return {ref_format_e::PANSN, std::move(*psn)};
-  }
-
-  // unknown → keep original
-  return {ref_format_e::UNDEFINED, std::string(tag)};
-  }
+  const lq::ref *ref_ptr_; // pointer to the original liteseq ref
 
   // make default constructor private
   Ref() = default;
@@ -134,67 +35,48 @@ public:
   // --------------
   // constructor(s)
   // --------------
-  static Ref parse(pt::id_t ref_id, std::string_view tag, char delim) {
-    Ref r;
-    r.ref_id_ = ref_id;
-    auto [f, d] = determine_format(tag, delim);
-    r.data_ = d;
-    r.format_ = f;
-    return r;
+  static Ref from_lq_ref(const lq::ref *r) {
+    Ref ref;
+    ref.ref_ptr_ = r;
+    return ref;
   }
 
   // ---------
   // getter(s)
   // ---------
-  std::string tag() const {
-    if (std::holds_alternative<std::string>(this->data_)) {
-      return std::get<std::string>(this->data_);
-    }
-    else if (std::holds_alternative<pan_sn>(this->data_)) {
-      const pan_sn &psn = std::get<pan_sn>(this->data_);
-      return psn.sample() + EXPECTED_PANSN_DELIM + std::to_string(psn.hap()) +
-             EXPECTED_PANSN_DELIM + psn.contig();
-    }
-
-    // should not get here
-    throw std::runtime_error("Could not generate tag for Ref. Invalid ref_variant state.");
-  }
+  std::string tag() const { return lq::get_tag(this->ref_ptr_); }
 
   ref_format_e get_format() const {
-    return this->format_;
+    lq::ref_id_type rt = lq::get_ref_id_type(this->ref_ptr_);
+    if (rt == lq::ref_id_type::REF_ID_PANSN) {
+      return ref_format_e::PANSN;
+    } else {
+      return ref_format_e::UNDEFINED;
+    }
   }
 
   const std::string &get_sample_name() const {
-    switch (this->format_) {
-    case ref_format_e::PANSN:
-      return std::get<pan_sn>(this->data_).sample();
-    case ref_format_e::UNDEFINED:
-      return std::get<std::string>(this->data_);
-    default:
-      throw std::runtime_error("Unknown ref format");
-    }
+    return lq::get_sample_name(this->ref_ptr_);
   }
 
-  pt::id_t get_length() const {
-    return this->len_;
-  }
-
-  // ---------
-  // setter(s)
-  // ---------
-  void set_length(pt::idx_t len) {
-    this->len_ = len;
-  }
-
+  pt::id_t get_length() const { return lq::get_hap_len(this->ref_ptr_); }
 };
 
+
+
 class Refs {
+  lq::ref **refs;
+
+  pt::idx_t ref_count_;
+
+
+  // TODO we are storing this pointer twice. Let's not do that.
   std::vector<Ref> refs_;
 
   /* genotype data */
 
   // TODO: in C++20 or greater, use a constexpr instead of const
-  inline static const std::string BLANK_GT_VALUE = "0";
+  inline static const std::string BLANK_GT_VALUE = ".";
 
   std::vector<std::vector<std::string>> blank_genotype_cols;
 
@@ -207,42 +89,34 @@ class Refs {
   // string contains the sample name or label
   std::vector<std::string> genotype_col_names;
 
-  // make default constructor private
-  Refs() = default;
-
 public:
-  // --------------
-  // constructor(s)
-  // --------------
-  Refs (pt::idx_t capacity) {
-    this->refs_.reserve(capacity);
-  }
 
   // ---------
   // getter(s)
   // ---------
 
   pt::id_t ref_count() const {
-    return static_cast<pt::id_t>(this->refs_.size());
+	return ref_count_;
   }
 
-  const Ref &get_ref(pt::id_t ref_id) const {
-    return this->refs_.at(ref_id);
+  const lq::ref *get_lq_ref_ptr(pt::idx_t ref_idx) const
+  {
+	return refs[ref_idx];
   }
 
-  Ref &get_ref_mut(pt::id_t ref_id) {
-    return this->refs_[ref_id];
+  const Ref &get_lq_ref(pt::id_t ref_id) const {
+	return this->refs_.at(ref_id);
   }
 
   const std::string &get_sample_name(pt::id_t ref_id) const {
-    return this->refs_[ref_id].get_sample_name();
+    return lq::get_sample_name(this->refs[ref_id]);
   }
 
   std::optional<pt::id_t> get_ref_id(std::string_view tag) const {
-    for (pt::id_t ref_id{}; ref_id < this->refs_.size(); ref_id++) {
-      const Ref &r = this->refs_[ref_id];
-      if (r.tag() == tag) {
-        return ref_id;
+    for (pt::id_t ref_id{}; ref_id < this->ref_count(); ref_id++) {
+      const char *t = lq::get_tag(this->refs[ref_id]);
+      if (tag == t) {
+	return ref_id;
       }
     }
 
@@ -250,96 +124,117 @@ public:
   }
 
   // the sample name could also be referred to as a prefix
-  std::set<pt::id_t> get_refs_in_sample(std::string_view sample_name) const {
+  std::set<pt::id_t>
+  get_refs_in_sample(std::string_view sample_name) const
+  {
     std::set<pt::id_t> in_sample;
-    for (pt::id_t ref_id{}; ref_id < this->refs_.size(); ref_id++) {
-      const Ref &r = this->refs_[ref_id];
-
-      switch (r.get_format()) {
-      case ref_format_e::PANSN:
-        if (r.get_sample_name() == sample_name) { in_sample.insert(ref_id);}
-        break;
-      case ref_format_e::UNDEFINED:
-        if (pu::is_prefix(sample_name, r.get_sample_name())) { in_sample.insert(ref_id); }
-        break;
-      default:
-        ;
+    for (pt::id_t ref_id{}; ref_id < this->ref_count(); ref_id++) {
+      const lq::ref *r = this->refs[ref_id];
+      const char *r_sn = lq::get_sample_name(r);
+      lq::ref_id_type rt = lq::get_ref_id_type(r);
+      if (rt == lq::ref_id_type::REF_ID_PANSN) {
+	if (r_sn == sample_name)
+	  in_sample.insert(ref_id);
+      }
+      else if (rt == lq::ref_id_type::REF_ID_RAW) {
+	if (pu::is_prefix(sample_name, r_sn))
+	  in_sample.insert(ref_id);
       }
     }
 
     return in_sample;
   }
 
-  std::set<pt::id_t> get_shared_samples(pt::id_t ref_id) const {
-    const Ref &r = this->refs_[ref_id];
-    return this->get_refs_in_sample(r.get_sample_name());
+  std::set<pt::id_t> get_shared_samples(pt::id_t ref_id) const
+  {
+    const lq::ref *r = this->refs[ref_id];
+    const char *sample_name = lq::get_sample_name(r);
+    return this->get_refs_in_sample(sample_name);
   }
 
-  const std::vector<std::string> &get_genotype_col_names() const {
+  const std::vector<std::string> &get_genotype_col_names() const
+  {
     return this->genotype_col_names;
   }
 
-  const std::vector<std::vector<std::string>> &get_blank_genotype_cols() const {
+  const std::vector<std::vector<std::string>> &
+  get_blank_genotype_cols() const
+  {
     return this->blank_genotype_cols;
   }
 
-  const pt::op_t<pt::idx_t> &get_ref_gt_col_idx(pt::id_t ref_id) const {
+  const pt::op_t<pt::idx_t> &get_ref_gt_col_idx(pt::id_t ref_id) const
+  {
     return this->ref_id_to_col_idx.at(ref_id);
   }
 
   // ---------
   // setter(s)
   // ---------
-
-  pt::id_t add_ref(const std::string &label, char delim) {
-    pt::id_t ref_id = static_cast<pt::id_t>(this->refs_.size());
-    Ref ref = Ref::parse(ref_id, label, delim);
-    this->refs_.emplace_back(std::move(ref));
-    return ref_id;
+  void add_all_refs(lq::ref **refs, pt::idx_t ref_count)
+  {
+    this->ref_count_ = ref_count;
+    this->refs = refs;
+    for (pt::idx_t ref_idx{}; ref_idx < ref_count; ++ref_idx) {
+      Ref ref = Ref::from_lq_ref(refs[ref_idx]);
+      this->refs_.emplace_back(std::move(ref));
+    }
   }
 
-  void gen_genotype_metadata() {
+  // pt::id_t add_ref(const std::string &label, char delim) {
+  //   pt::id_t ref_id = static_cast<pt::id_t>(this->refs_.size());
+  //   Ref ref = Ref::parse(ref_id, label, delim);
+  //   this->refs_.emplace_back(std::move(ref));
+  //   return ref_id;
+  // }
+
+  void gen_genotype_metadata()
+  {
     std::set<pt::id_t> handled;
 
     for (pt::id_t ref_id = 0; ref_id < this->ref_count(); ++ref_id) {
       if (pv_cmp::contains(handled, ref_id)) {
-        continue;
+	continue;
       }
 
       handled.insert(ref_id);
 
-      const std::set<pt::id_t> &sample_refs =  this->get_shared_samples(ref_id);
+      const std::set<pt::id_t> &sample_refs =
+	this->get_shared_samples(ref_id);
 
-      std::string col_name = this->get_ref(ref_id).get_sample_name();
+      const lq::ref *r = this->refs[ref_id];
+      const char *col_name = lq::get_sample_name(r);
+      // std::string col_name =
+      // this->get_ref(ref_id).get_sample_name();
 
       if (sample_refs.empty()) {
-        // throw an exeption
-        ERR("No sample names found for ref_id {}", ref_id);
-        std::exit(EXIT_FAILURE);
+
+	ERR("No sample names found for ref_id {}", ref_id);
+	std::exit(EXIT_FAILURE);
       }
       else if (sample_refs.size() == 1) {
-        this->blank_genotype_cols.push_back(std::vector<std::string>{BLANK_GT_VALUE});
-        pt::op_t<pt::idx_t> x { static_cast<pt::idx_t>(this->genotype_col_names.size()), 0};
-        this->ref_id_to_col_idx[ref_id] = x;
-        this->genotype_col_names.push_back(col_name);
+	this->blank_genotype_cols.push_back(std::vector<std::string>{ BLANK_GT_VALUE});
+	pt::op_t<pt::idx_t> x{ static_cast<pt::idx_t>(this->genotype_col_names .size()), 0};
+	this->ref_id_to_col_idx[ref_id] = x;
+	this->genotype_col_names.push_back(col_name);
       }
       else if (sample_refs.size() > 1) {
-        pt::idx_t col_idx = this->genotype_col_names.size();
-        pt::idx_t col_col_idx {};
+	pt::idx_t col_idx = this->genotype_col_names.size();
+	pt::idx_t col_col_idx{};
 
-        this->blank_genotype_cols.push_back(std::vector<std::string>(sample_refs.size(), BLANK_GT_VALUE));
+	this->blank_genotype_cols.push_back(
+	  std::vector<std::string>(sample_refs.size(), BLANK_GT_VALUE));
 
-        for(pt::id_t ref_id_ : sample_refs) {
-          pt::op_t<pt::idx_t> x{ col_idx, col_col_idx++};
-          this->ref_id_to_col_idx[ref_id_] = x;
-          handled.insert(ref_id_);
-        }
-        this->genotype_col_names.push_back(col_name);
+	for (pt::id_t ref_id_ : sample_refs) {
+	  pt::op_t<pt::idx_t> x{col_idx, col_col_idx++};
+	  this->ref_id_to_col_idx[ref_id_] = x;
+	  handled.insert(ref_id_);
+	}
+	this->genotype_col_names.push_back(col_name);
       }
     }
   }
 };
-
 
 }; // namespace povu::refs::pansn
 

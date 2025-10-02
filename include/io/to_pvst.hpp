@@ -3,7 +3,7 @@
 
 #include <cstddef>
 #include <fstream> // for std::ifstream
-#include <gfa.h>
+#include <liteseq/gfa.h>
 #include <ostream>
 #include <string>
 #include <vector>

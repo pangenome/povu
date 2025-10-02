@@ -14,6 +14,8 @@
 #include <vector>
 #include <valarray>
 
+#include <liteseq/gfa.h>
+
 #include "../common/compat.hpp"
 #include "../common/core.hpp"
 
@@ -28,6 +30,7 @@
 namespace povu::genomics::allele {
 inline constexpr std::string_view MODULE = "povu::genomics::allele";
 
+namespace lq = liteseq;
 namespace pgt = povu::types::graph;
 namespace pvst = povu::pvst;
 
@@ -36,7 +39,8 @@ struct allele_slice_t {
   pt::idx_t walk_idx;
   pt::idx_t walk_start_idx;
 
-  const pgt::ref_walk_t *ref_walk;
+  const lq::ref_walk *ref_w;
+//  const pgt::ref_walk_t *ref_walk;
   pt::idx_t ref_idx;
   pt::idx_t ref_start_idx;
 
@@ -51,9 +55,15 @@ struct allele_slice_t {
     return this->walk->at(idx);
   }
 
+  pt::idx_t get_locus(pt::idx_t idx) const { return this->ref_w->loci[idx]; }
+
   bd::id_or_t get_step(pt::idx_t idx) const {
-    auto [v_id, o_, _] = this->ref_walk->at(idx);
-    return {v_id, o_};
+    pt::idx_t ref_v_id = ref_w->v_ids[idx];
+    pgt::or_e ref_o = ref_w->strands[idx] == lq::strand::STRAND_FWD
+			  ? pgt::or_e::forward
+			  : pgt::or_e::reverse;
+    //auto [v_id, o_, _] = this->ref_walk->at(idx);
+    return {ref_v_id, ref_o};
   }
 
   std::string as_str() const {
@@ -67,6 +77,7 @@ struct allele_slice_t {
   }
 
 };
+
 
 /**
  * Ref Itinerary or just Itinerary
@@ -128,11 +139,11 @@ public:
   // ---------------------
 
   Exp() : rov_(nullptr), ref_itns_(), walk_idx_to_ref_idxs_(), aln_(),
-        is_tangled_(false) {}
+	is_tangled_(false) {}
 
   Exp(const povu::genomics::graph::RoV *rov)
       : rov_(rov), ref_itns_(), walk_idx_to_ref_idxs_(), aln_(),
-        is_tangled_(false) {
+	is_tangled_(false) {
     if (this->rov_ == nullptr) {
       ERR("RoV pointer is null");
       std::exit(EXIT_FAILURE);

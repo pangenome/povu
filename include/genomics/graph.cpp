@@ -34,7 +34,7 @@ inline pgt::v_end_e get_v_end(pgt::or_e o, dir_e e) {
     return (o == pgt::or_e::forward) ? pgt::v_end_e::r : pgt::v_end_e::l;
   default:
     std::string msg = pv_cmp::format("[{}::{}] Invalid v_end: {}",
-                                  MODULE, __func__, static_cast<int>(e));
+				  MODULE, __func__, static_cast<int>(e));
     throw std::invalid_argument(msg);
   }
 };
@@ -55,7 +55,7 @@ inline pgt::or_e get_or(pgt::v_end_e side, dir_e d) {
     return (side == pgt::v_end_e::l ? pgt::or_e::reverse : pgt::or_e::forward);
   default:
     std::string msg = pv_cmp::format("[{}::{}] Invalid orientation: {}",
-                  MODULE, __func__, static_cast<int>(d));
+		  MODULE, __func__, static_cast<int>(d));
     throw std::invalid_argument(msg);
   }
 };
@@ -65,7 +65,7 @@ inline pgt::or_e get_or(pgt::v_end_e side, dir_e d) {
  * @brief the stack is a unique path from s to t
  */
 pgt::walk_t walk_from_stack(const bd::VG &g, const std::deque<idx_or_t> &dq,
-                            pvst::route_e route) {
+			    pvst::route_e route) {
   pgt::walk_t w;
   auto append_w = [&](idx_or_t it) {
     auto [v_idx, o] = it;
@@ -95,7 +95,7 @@ pgt::walk_t walk_from_stack(const bd::VG &g, const std::deque<idx_or_t> &dq,
 // Runs in O((V+E)·(P+1)) time where P = number of paths found.
 // when a vertex has been explored we unblock its neighbours and the current vertex
 void comp_walks(const bd::VG &g, pvst::route_e route, idx_or_t src, idx_or_t snk,
-                std::vector<pgt::walk_t> &walks, const std::string_view &rov_label) {
+		std::vector<pgt::walk_t> &walks, const std::string_view &rov_label) {
 
   // default is source to sink
   dir_e ve_dir = OUT;
@@ -127,18 +127,26 @@ void comp_walks(const bd::VG &g, pvst::route_e route, idx_or_t src, idx_or_t snk
     curr = dq.back();
 
     if (curr == end) {
-      walks.push_back(walk_from_stack(g, dq, route));
-      dq.pop_back(); // we are done with this path up to this point
-      continue; // we are done with that path
+      pgt::walk_t w = walk_from_stack(g, dq, route);
+
+      if (w.size() == 1) {
+	WARN("Skipping walk of len {} in RoV {}", w.size(), rov_label);
+      } else {
+	walks.push_back(w);
+      }
+
+      //walks.push_back(walk_from_stack(g, dq, route));
+      dq.pop_back(); // we are done with this path up to this point. Cleanup.
+      continue; // we are done with that path. Proceed to the next path.
     }
 
     if (dq.size() > MAX_FLUBBLE_STEPS) {
-      WARN("max steps reached for {}\n", rov_label);
+      WARN("max steps reached for {}", rov_label);
       return;
     }
 
     if (unblock_counter > 1000) {
-      WARN("unblock counter too high for {}\n", rov_label);
+      WARN("unblock counter too high for {}", rov_label);
       return;
     }
 
@@ -157,7 +165,7 @@ void comp_walks(const bd::VG &g, pvst::route_e route, idx_or_t src, idx_or_t snk
       idx_or_t nbr {alt_idx, get_or(side, nbr_dir)};
 
       if(pv_cmp::contains(seen_[curr], nbr)) {
-        continue;
+	continue;
       }
 
       is_explored = false;
@@ -170,10 +178,10 @@ void comp_walks(const bd::VG &g, pvst::route_e route, idx_or_t src, idx_or_t snk
       // unblock all in the stack up to and including the current vertex
       unblock_counter++;
       for (auto it = dq.rbegin(); it != dq.rend(); ++it) {
-        seen_[*it].clear();
-        if (*it == curr) {
-          break;
-        }
+	seen_[*it].clear();
+	if (*it == curr) {
+	  break;
+	}
       }
 
       dq.pop_back(); // we are done with this path up to this point
