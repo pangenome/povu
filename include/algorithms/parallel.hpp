@@ -16,14 +16,14 @@
 #include <utility>
 #include <vector>
 
-#include "../graph/tree_utils.hpp"
 #include "../common/compat.hpp"
 #include "../common/utils.hpp"
-#include "../graph/spanning_tree.hpp"
 #include "../graph/pvst.hpp"
+#include "../graph/spanning_tree.hpp"
+#include "../graph/tree_utils.hpp"
 
-
-namespace povu::parallel {
+namespace povu::parallel
+{
 inline constexpr std::string_view MODULE = "povu::parallel";
 
 namespace pc = povu::constants;
@@ -32,8 +32,8 @@ namespace pvst = povu::pvst;
 namespace pgt = povu::types::graph;
 namespace pst = povu::spanning_tree;
 
-
-void find_parallel(const pst::Tree &st, pvst::Tree &ft, const ptu::tree_meta &tm);
+void find_parallel(const pst::Tree &st, pvst::Tree &ft,
+		   const ptu::tree_meta &tm);
 
 } // namespace povu::parallel
 #endif // PV_PARALLEL_HPP

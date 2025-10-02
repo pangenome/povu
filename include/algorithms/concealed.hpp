@@ -16,24 +16,25 @@
 #include <utility>
 #include <vector>
 
-
-#include "../graph/pvst.hpp"
-#include "../graph/spanning_tree.hpp"
 #include "../common/compat.hpp"
 #include "../common/utils.hpp"
+#include "../graph/pvst.hpp"
+#include "../graph/spanning_tree.hpp"
 #include "../graph/tree_utils.hpp"
 
-namespace povu::concealed {
+namespace povu::concealed
+{
 
 inline constexpr std::string_view MODULE = "povu::concealed";
 
 namespace pgt = povu::types::graph;
 namespace pc = povu::constants;
 namespace pst = povu::spanning_tree;
-namespace pvst= povu::pvst;
+namespace pvst = povu::pvst;
 namespace pc = povu::constants;
 namespace ptu = povu::tree_utils;
 
-void find_concealed(const pst::Tree &st, pvst::Tree &ft, const ptu::tree_meta &tm);
+void find_concealed(const pst::Tree &st, pvst::Tree &ft,
+		    const ptu::tree_meta &tm);
 } // namespace povu::concealed
 #endif // PV_CONCEALED_HPP

@@ -1,41 +1,30 @@
 #ifndef IO_HPP
 #define IO_HPP
 
-#include <cstddef>
 #include <filesystem>
-#include <fstream> // for std::ifstream
-#include <liteseq/gfa.h>
-#include <ostream>
 #include <string>
 #include <vector>
 
-#include "../../app/cli/app.hpp"
-#include "../../include/common/compat.hpp"
-#include "../../include/common/utils.hpp"
-#include "../../include/graph/bidirected.hpp"
+#include <liteseq/gfa.h>
 
-namespace povu::io::common {
-namespace pgt = povu::types::graph;
+namespace povu::io::common
+{
+inline constexpr std::string_view MODULE = "povu::io::common";
 namespace fs = std::filesystem;
 
 #define FILE_ERROR(name)                                                       \
-  {                                                                            \
-    std::string e = "Error, Failed to open the file " + name; \
-    throw std::invalid_argument(e);                                              \
-  }
+	throw std::invalid_argument(std::string("Failed to open file ") + name);
+
 /**
  * @brief Get the list of files in a dir with a given name
  *
  */
-std::vector<fs::path> get_files(const std::string& dir_path, const std::string& ext);
-
+std::vector<fs::path> get_files(const std::string &dir_path,
+				const std::string &ext);
 
 void read_lines_to_vec_str(const std::string &fp, std::vector<std::string> *v);
 
 void create_dir_if_not_exists(const fs::path &out_dir);
-
-}; // namespace io::generic
-
-
+}; // namespace povu::io::common
 
 #endif

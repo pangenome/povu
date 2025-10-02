@@ -16,13 +16,14 @@
 #include <utility>
 #include <vector>
 
-#include "../graph/tree_utils.hpp"
 #include "../common/compat.hpp"
 #include "../common/utils.hpp"
-#include "../graph/spanning_tree.hpp"
 #include "../graph/pvst.hpp"
+#include "../graph/spanning_tree.hpp"
+#include "../graph/tree_utils.hpp"
 
-namespace povu::midi {
+namespace povu::midi
+{
 inline constexpr std::string_view MODULE = "povu::misc";
 
 namespace pgt = povu::types::graph;
@@ -33,6 +34,6 @@ namespace pc = povu::constants;
 namespace ptu = povu::tree_utils;
 
 void find_midi(const pst::Tree &st, pvst::Tree &pvst, const ptu::tree_meta &tm);
-} // namespace povu::misc
+} // namespace povu::midi
 
 #endif // PV_MISC_HPP

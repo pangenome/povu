@@ -16,13 +16,14 @@
 #include <utility>
 #include <vector>
 
-#include "../graph/tree_utils.hpp"
 #include "../common/compat.hpp"
 #include "../common/utils.hpp"
-#include "../graph/spanning_tree.hpp"
 #include "../graph/pvst.hpp"
+#include "../graph/spanning_tree.hpp"
+#include "../graph/tree_utils.hpp"
 
-namespace povu::smothered {
+namespace povu::smothered
+{
 inline constexpr std::string_view MODULE = "povu::smothered";
 
 namespace pgt = povu::types::graph;
@@ -32,7 +33,8 @@ namespace pvst = povu::pvst;
 namespace pc = povu::constants;
 namespace ptu = povu::tree_utils;
 
-void find_smothered(const pst::Tree &st, pvst::Tree &ft, const ptu::tree_meta &tm);
+void find_smothered(const pst::Tree &st, pvst::Tree &ft,
+		    const ptu::tree_meta &tm);
 } // namespace povu::smothered
 
 #endif // PV_SMOTHERED_HPP

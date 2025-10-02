@@ -2,17 +2,15 @@
 #define POVU_TYPES_CONSTANTS_HPP
 
 #include <cstddef>
-#include <cstdint>
-#include <string>
+#include <limits>
 #include <string_view>
 #include <sys/types.h>
 
-#include "./core.hpp"
 #include "../graph/types.hpp"
+#include "./core.hpp"
 
-
-namespace povu::constants {
-
+namespace povu::constants
+{
 // colors for DOT format
 inline constexpr std::string_view GRAY{"gray"};
 inline constexpr std::string_view BLACK{"black"};
@@ -20,15 +18,17 @@ inline constexpr std::string_view RED{"red"};
 inline constexpr std::string_view BLUE{"blue"};
 
 // numeric
-//inline constexpr std::size_t SIZE_T_MIN = std::numeric_limits<size_t>::min();
-//inline constexpr std::size_t SIZE_T_MAX = std::numeric_limits<size_t>::max();
-//inline constexpr int UNDEFINED_INT = std::numeric_limits<int>::min();
-inline constexpr std::size_t UNDEFINED_SIZE_T = std::numeric_limits<size_t>::max();
+// inline constexpr std::size_t SIZE_T_MIN = std::numeric_limits<size_t>::min();
+// inline constexpr std::size_t SIZE_T_MAX = std::numeric_limits<size_t>::max();
+// inline constexpr int UNDEFINED_INT = std::numeric_limits<int>::min();
+inline constexpr std::size_t UNDEFINED_SIZE_T =
+	std::numeric_limits<size_t>::max();
 inline constexpr pt::idx_t MAX_ID = std::numeric_limits<pt::idx_t>::max();
 inline constexpr pt::idx_t MAX_IDX = std::numeric_limits<pt::idx_t>::max();
 
-inline constexpr pt::idx_t UNDEFINED_IDX = MAX_IDX; // TODO: replace with INVALID
-inline constexpr pt::id_t UNDEFINED_ID = MAX_ID;    // TODO: replace with INVALID
+// TODO: replace UNDEFINED with INVALID ? or at least be consistent
+inline constexpr pt::idx_t UNDEFINED_IDX = MAX_IDX;
+inline constexpr pt::id_t UNDEFINED_ID = MAX_ID;
 inline constexpr pt::id_t DUMMY_VTX_ID = UNDEFINED_ID;
 inline constexpr pt::id_t INVALID_ID = MAX_ID;
 inline constexpr pt::idx_t INVALID_IDX = MAX_IDX;
@@ -41,7 +41,7 @@ inline constexpr ptg::id_or_t INVALID_ID_OR{INVALID_ID, ptg::or_e::forward};
 inline constexpr std::string_view EMPTY_SET = "\u2205";
 inline constexpr std::string_view UNDEFINED_VALUE = EMPTY_SET;
 inline constexpr std::string_view WAVY_ARROW = "\u2933";
-inline constexpr std::string_view INF = "\u221E"; //infinity
+inline constexpr std::string_view INF = "\u221E"; // infinity
 
 // genomics
 inline constexpr std::string_view UNDEFINED_PATH_LABEL{"undefined"};
@@ -72,7 +72,6 @@ inline constexpr std::string_view SHORT_TAB = "  ";
 inline constexpr char COL_SEP = '\t'; // column separator
 inline constexpr char NO_VALUE = '.'; // null character
 } // namespace povu::constants
-
 // NOLINTNEXTLINE(misc-unused-alias-decls)
 namespace pc = povu::constants;
 

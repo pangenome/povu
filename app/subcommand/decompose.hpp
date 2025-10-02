@@ -24,7 +24,8 @@
 #include "../cli/app.hpp"
 #include "../cli/cli.hpp"
 
-namespace povu::subcommands::decompose {
+namespace povu::subcommands::decompose
+{
 constexpr std::string_view MODULE = "povu::subcommands::decompose";
 
 namespace fs = std::filesystem;
@@ -37,6 +38,6 @@ namespace ptu = povu::tree_utils;
 namespace pfl = povu::flubbles;
 
 void do_decompose(const core::config &app_config);
-}
+} // namespace povu::subcommands::decompose
 
 #endif

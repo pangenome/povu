@@ -7,14 +7,13 @@
 #include <string>
 #include <vector>
 
-#include "./call.hpp"
-#include "./decompose.hpp"
 #include "../../include/common/compat.hpp"
 #include "../cli/app.hpp"
+#include "./call.hpp"
+#include "./decompose.hpp"
 
-
-
-namespace povu::subcommands::gfa2vcf {
+namespace povu::subcommands::gfa2vcf
+{
 
 namespace fs = std::filesystem;
 

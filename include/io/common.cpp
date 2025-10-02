@@ -1,21 +1,29 @@
+#include <cstddef>
+#include <fstream> // for std::ifstream
+#include <iostream>
+
+#include "../../include/common/log.hpp"
 #include "./common.hpp"
 
-namespace povu::io::common {
+namespace povu::io::common
+{
 
-std::vector<fs::path> get_files(const std::string& dir_path, const std::string& ext) {
-  if (!fs::exists(dir_path)) {
-    std::cerr << "Directory does not exist: " << dir_path << std::endl;
-    exit(EXIT_FAILURE);
-  }
+std::vector<fs::path> get_files(const std::string &dir_path,
+				const std::string &ext)
+{
+	if (!fs::exists(dir_path)) {
+		ERR("Directory does not exist: {}", dir_path);
+		exit(EXIT_FAILURE);
+	}
 
-  std::vector<fs::path> files;
-  for (const auto& entry : fs::directory_iterator(dir_path)) {
-    if (entry.path().extension() == ext) {
-      files.push_back(entry.path().string());
-    }
-  }
+	std::vector<fs::path> files;
+	for (const auto &entry : fs::directory_iterator(dir_path)) {
+		if (entry.path().extension() == ext) {
+			files.push_back(entry.path().string());
+		}
+	}
 
-  return files;
+	return files;
 }
 
 /**
@@ -23,20 +31,20 @@ std::vector<fs::path> get_files(const std::string& dir_path, const std::string& 
  * @param fp file path
  * @return size of the file in bytes
  */
-std::size_t get_file_size(const std::string &fp) {
-  std::streampos begin, end;
-  std::ifstream f(fp);
+std::size_t get_file_size(const std::string &fp)
+{
+	std::streampos begin, end;
+	std::ifstream f(fp);
 
-  if (!f) {
-    FILE_ERROR(fp);
-  }
+	if (!f)
+		FILE_ERROR(fp);
 
-  begin = f.tellg();
-  f.seekg(0, std::ios::end);
-  end = f.tellg();
-  f.close();
+	begin = f.tellg();
+	f.seekg(0, std::ios::end);
+	end = f.tellg();
+	f.close();
 
-  return end - begin;
+	return end - begin;
 }
 
 /**
@@ -45,34 +53,36 @@ std::size_t get_file_size(const std::string &fp) {
  * process it at once
  * will perform whitespace normalization/formatting
  */
-void read_lines_to_vec_str(const std::string &fp, std::vector<std::string> *v) {
-  std::ifstream f{fp};
-  std::string temp;
+void read_lines_to_vec_str(const std::string &fp, std::vector<std::string> *v)
+{
+	std::ifstream f{fp};
+	std::string temp;
 
-  if (!f) {
-    FILE_ERROR(fp);
-  }
+	if (!f)
+		FILE_ERROR(fp);
 
-  while (f >> temp) {
-    v->push_back(temp);
-  }
+	while (f >> temp)
+		v->push_back(temp);
 }
 
-void fp_to_vector(const std::string &fp, std::vector<std::string> *v) {
-  std::size_t file_size = get_file_size(fp);
+void fp_to_vector(const std::string &fp, std::vector<std::string> *v)
+{
+	std::size_t file_size = get_file_size(fp);
 
-  v->reserve(file_size);
-  read_lines_to_vec_str(fp, v);
-  v->shrink_to_fit();
+	v->reserve(file_size);
+	read_lines_to_vec_str(fp, v);
+	v->shrink_to_fit();
 }
 
-void create_dir_if_not_exists(const fs::path &out_dir) {
-  if (!fs::exists(out_dir)) {
-    if (!fs::create_directories(out_dir)) {
-      throw std::runtime_error("Failed to create output directory: " +
-                               out_dir.string());
-    }
-  }
+void create_dir_if_not_exists(const fs::path &out_dir)
+{
+	if (!fs::exists(out_dir)) {
+		if (!fs::create_directories(out_dir)) {
+			throw std::runtime_error(
+				"Failed to create output directory: " +
+				out_dir.string());
+		}
+	}
 }
 
-} // namespace io::generic
+} // namespace povu::io::common

@@ -1,13 +1,14 @@
 #ifndef POVU_TYPES_CORE_HPP
 #define POVU_TYPES_CORE_HPP
 
+#include <algorithm>
 #include <chrono>
 #include <cstdint>
 #include <sys/types.h>
 #include <tuple>
-#include <algorithm>
 
-namespace povu::types::core {
+namespace povu::types::core
+{
 
 typedef std::chrono::high_resolution_clock Time; // C++ timer
 
@@ -16,70 +17,85 @@ typedef u_int32_t idx_t;
 typedef int8_t status_t; // return status of a fn
 
 struct slice_t {
-  idx_t start;
-  idx_t len;
+	idx_t start;
+	idx_t len;
 
-  slice_t(idx_t start, idx_t len) : start{start}, len{len} {}
+	slice_t(idx_t start, idx_t len) : start{start}, len{len}
+	{}
 };
 
-class Config {
-  unsigned int requested_threads_ {1};
-  uint8_t log_level_{0};
+class Config
+{
+	unsigned int requested_threads_{1};
+	uint8_t log_level_{0};
 
-  Config() = default;
+	Config() = default;
 
 public:
-  Config(unsigned int reqested_theads, uint8_t log_level) {
-    this->requested_threads_ = reqested_theads;
-    this->log_level_ = log_level;
-  }
+	Config(unsigned int reqested_theads, uint8_t log_level)
+	{
+		this->requested_threads_ = reqested_theads;
+		this->log_level_ = log_level;
+	}
 
-  unsigned int requested_threads() const { return this->requested_threads_; }
-  uint8_t log_level() const { return this->log_level_; }
+	unsigned int requested_threads() const
+	{
+		return this->requested_threads_;
+	}
+
+	uint8_t log_level() const
+	{
+		return this->log_level_;
+	}
 };
 
 /**
- * an ordered pair type similar to std::pair but with same type on both sides for less typing
+ * an ordered pair type similar to std::pair but with same type on both sides
+ * for less typing
  */
-template<typename T>
-using op_t = std::pair<T, T>;
-
-
+template <typename T> using op_t = std::pair<T, T>;
 
 /**
  * unordered pair with same type on both sides
  * therefore always stores as (min, max)
- * we prefer (a,b) over (l,r) to avoid confusion with (left, right) in unordered pairs
+ * we prefer (a,b) over (l,r) to avoid confusion with (left, right) in unordered
+ * pairs
  */
 template <typename T> struct unordered_pair {
-  T a_;
-  T b_;
+	T a_;
+	T b_;
 
-  // -----------
-  // Constructor
-  // -----------
-  unordered_pair(T a, T b) : a_(std::min(a, b)), b_(std::max(a, b)) {}
+	// -----------
+	// Constructor
+	// -----------
+	unordered_pair(T a, T b) : a_(std::min(a, b)), b_(std::max(a, b))
+	{}
 
-  // --------------------
-  // Comparison operators
-  // --------------------
+	// --------------------
+	// Comparison operators
+	// --------------------
 
-  friend bool operator==(const unordered_pair &up1, const unordered_pair &up2) {
-    return up1.a_ == up2.a_ && up1.b_ == up2.b_;
-  }
+	friend bool operator==(const unordered_pair &up1,
+			       const unordered_pair &up2)
+	{
+		return up1.a_ == up2.a_ && up1.b_ == up2.b_;
+	}
 
-  friend bool operator<(const unordered_pair &up1, const unordered_pair &up2) {
-    return std::tie(up1.a_, up1.b_) < std::tie(up2.a_, up2.b_);
-  }
+	friend bool operator<(const unordered_pair &up1,
+			      const unordered_pair &up2)
+	{
+		return std::tie(up1.a_, up1.b_) < std::tie(up2.a_, up2.b_);
+	}
 
-  friend bool operator>(const unordered_pair &up1, const unordered_pair &up2) {
-    return up2 < up1;
-  }
+	friend bool operator>(const unordered_pair &up1,
+			      const unordered_pair &up2)
+	{
+		return up2 < up1;
+	}
 };
 
-template <typename T>
-using up_t = unordered_pair<T>;
-} // namespace povu::types
+template <typename T> using up_t = unordered_pair<T>;
+} // namespace povu::types::core
 
 // NOLINTNEXTLINE(misc-unused-alias-decls)
 namespace pt = povu::types::core;

@@ -1,31 +1,33 @@
 #include "./info.hpp"
 
+namespace povu::subcommands::info
+{
 
-namespace povu::subcommands::info {
+void do_info(const core::config &app_config)
+{
+	std::string fn_name = pv_cmp::format("[povu::main::{}]", __func__);
 
-void do_info(const core::config &app_config) {
-  std::string fn_name = pv_cmp::format("[povu::main::{}]", __func__);
+	// -----
+	// read the input gfa into a bidirected variation graph
+	// -----
 
-  // -----
-  // read the input gfa into a bidirected variation graph
-  // -----
+	bd::VG *g = povu::io::from_gfa::to_bd(app_config);
 
-  bd::VG *g = povu::io::from_gfa::to_bd(app_config);
+	std::vector<bd::VG *> components = bd::VG::componetize(*g);
 
-  std::vector<bd::VG *> components = bd::VG::componetize(*g);
+	delete g;
 
-  delete g;
+	std::cerr << pv_cmp::format("{} Component count {}\n", fn_name,
+				    components.size());
 
-  std::cerr << pv_cmp::format("{} Component count {}\n", fn_name, components.size());
+	for (pt::idx_t i{}; i < components.size(); ++i) {
+		bd::VG *c = components[i];
+		c->summary(app_config.print_tips());
+		delete c;
+		components[i] = nullptr;
+	}
+	components.clear();
 
-  for (pt::idx_t i{}; i < components.size(); ++i) {
-    bd::VG *c = components[i];
-    c->summary(app_config.print_tips());
-    delete c;
-    components[i] = nullptr;
-  }
-  components.clear();
-
-  return;
+	return;
 }
-}
+} // namespace povu::subcommands::info

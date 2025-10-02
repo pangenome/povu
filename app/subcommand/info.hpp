@@ -6,10 +6,11 @@
 #include "../../include/io/from_gfa.hpp"
 #include "../cli/app.hpp"
 
-namespace povu::subcommands::info {
+namespace povu::subcommands::info
+{
 namespace bd = povu::bidirected;
 
 void do_info(const core::config &app_config);
-}
+} // namespace povu::subcommands::info
 
 #endif
