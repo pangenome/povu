@@ -6,7 +6,7 @@
 #include "../../include/common/utils.hpp"
 #include "../../include/graph/bidirected.hpp"
 #include <fstream> // for std::ifstream
-#include <gfa.h>   // from liteseq
+#include <liteseq/gfa.h>   // from liteseq
 #include "../common/progress.hpp"
 
 #include <ostream>
@@ -24,6 +24,9 @@ namespace bd = povu::bidirected;
 namespace pgt = povu::types::graph;
 namespace pc = povu::constants;
 
+/**
+ * Remember to free the returned graph after use
+ */
 bd::VG *to_bd(const core::config& app_config);
 }; // namespace io::from_gfa
 #endif

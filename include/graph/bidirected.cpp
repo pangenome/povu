@@ -1,4 +1,5 @@
 #include "./bidirected.hpp"
+#include "liteseq/gfa.h"
 #include <string>
 #include <string_view>
 
@@ -20,7 +21,7 @@ pt::idx_t &Edge::get_v2_idx_mut() { return this->v2_idx_; }
 pgt::v_end_e Edge::get_v2_end() const { return this->v2_end_; }
 pgt::side_n_idx_t Edge::get_other_vtx(pt::idx_t v_idx) const {
   return (get_v1_idx() == v_idx) ? pgt::side_n_id_t{v2_end_, v2_idx_}
-                                 : pgt::side_n_id_t{v1_end_, v1_idx_};
+				 : pgt::side_n_id_t{v1_end_, v1_idx_};
 }
 
 pgt::side_n_idx_t Edge::get_other_vtx(pt::idx_t v_idx, pgt::v_end_e ve) const {
@@ -75,15 +76,29 @@ void Vertex::add_edge_r(pt::idx_t e_idx) { e_r.insert(e_idx); }
 // constructor(s)
 // --------------
 
-VariationGraph::VariationGraph(pt::idx_t v_count, pt::idx_t e_count, pt::idx_t ref_count): refs_(refs::Refs(ref_count)) {
-  this->vertices.reserve(v_count);
-  this->edges.reserve(e_count);
-  //this->refs_ = pr::Refs(ref_count);
-  this->vertex_to_step_matrix_.resize(v_count);
+VariationGraph::VariationGraph(pt::idx_t vtx_count, pt::idx_t edge_count,
+			       pt::idx_t ref_count) {
+  this->gfa = nullptr;
+  this->vertices.reserve(vtx_count);
+  this->edges.reserve(edge_count);
+  this->vertex_to_step_matrix_.resize(vtx_count);
   for (auto &vec : this->vertex_to_step_matrix_) {
     vec.resize(ref_count);
   }
-  this->ref_matrix_.resize(ref_count);
+}
+
+VariationGraph::VariationGraph(lq::gfa_props *gfa) {
+  pt::idx_t vtx_count = gfa->vtx_arr_size;
+  pt::idx_t edge_count = gfa->l_line_count;
+  pt::idx_t ref_count = gfa->ref_count;
+
+  this->gfa = gfa;
+  this->vertices.reserve(vtx_count);
+  this->edges.reserve(edge_count);
+  this->vertex_to_step_matrix_.resize(vtx_count);
+  for (auto &vec : this->vertex_to_step_matrix_) {
+    vec.resize(ref_count);
+  }
 }
 
 // ---------
@@ -120,12 +135,12 @@ const std::string &VG::get_sample_name(pt::id_t ref_id) const {
 }
 
 const pr::Ref &VG::get_ref_by_id(pt::id_t ref_id) const {
-  return this->refs_.get_ref(ref_id);
+  return this->refs_.get_lq_ref(ref_id);
 }
 
-pr::Ref &VG::get_ref_by_id_mut(pt::id_t ref_id) {
-  return this->refs_.get_ref_mut(ref_id);
-}
+// pr::Ref &VG::get_ref_by_id_mut(pt::id_t ref_id) {
+//   return this->refs_.get_ref_mut(ref_id);
+// }
 
 std::optional<pt::id_t> VG::get_ref_id(std::string_view tag) const {
   return this->refs_.get_ref_id(tag);
@@ -141,15 +156,12 @@ std::set<pt::id_t> VG::get_refs_in_sample(std::string_view sample_name) const {
 
 pt::id_t VG::ref_count() const { return this->refs_.ref_count(); }
 
-const pgt::ref_walk_t &VG::get_ref_vec(pt::id_t ref_id) const {
-  return this->ref_matrix_.at(ref_id);
+
+const lq::ref *VG::get_ref_vec(pt::id_t ref_id) const {
+  return this->refs_.get_lq_ref_ptr(ref_id);
 }
 
-pgt::ref_walk_t &VG::get_ref_vec_mut(pt::id_t ref_id) {
-  return this->ref_matrix_.at(ref_id);
-}
-
-pt::idx_t VG::get_ref_count() const { return this->ref_matrix_.size(); }
+pt::idx_t VG::get_ref_count() const { return this->refs_.ref_count(); }
 
 const std::vector<pt::idx_t> &VG::get_vertex_ref_idxs(pt::idx_t v_idx, pt::id_t ref_id) const {
   return this->vertex_to_step_matrix_.at(v_idx).at(ref_id);
@@ -203,9 +215,9 @@ pt::idx_t VG::add_edge(pt::id_t v1_id, pgt::v_end_e v1_end, pt::id_t v2_id, pgt:
   return e_idx;
 }
 
-pt::id_t VG::add_ref(const std::string &label, char delim) {
-  pt::id_t ref_id = this->refs_.add_ref(label, delim);
-  return ref_id;
+
+void VG::add_all_refs(lq::ref **refs, pt::idx_t ref_count) {
+  this->refs_.add_all_refs(refs, ref_count);
 }
 
 void VG::set_vtx_ref_idx(pt::id_t v_id, pt::id_t ref_id, pt::idx_t step_idx) {
@@ -348,27 +360,27 @@ std::vector<VG *> VG::componetize(const povu::bidirected::VG &g) {
 
       /* add vertices */
       for (auto v_idx_ : comp_vtxs) {
-        const Vertex& v_ = g.get_vertex_by_idx(v_idx_);
-        curr_vg->add_vertex(v_.id(), v_.get_label());
+	const Vertex& v_ = g.get_vertex_by_idx(v_idx_);
+	curr_vg->add_vertex(v_.id(), v_.get_label());
       }
 
       /* add edges */
       for (auto v_idx_ : comp_vtxs) {
-        const Vertex &v_ = g.get_vertex_by_idx(v_idx_);
-        for (auto e_idx : v_.get_edges_l()) {
-          add_edges(v_, pgt::v_end_e::l, v_idx_, e_idx);
-        }
+	const Vertex &v_ = g.get_vertex_by_idx(v_idx_);
+	for (auto e_idx : v_.get_edges_l()) {
+	  add_edges(v_, pgt::v_end_e::l, v_idx_, e_idx);
+	}
 
-        for (auto e_idx : v_.get_edges_r()) {
-          add_edges(v_, pgt::v_end_e::r, v_idx_, e_idx);
-        }
+	for (auto e_idx : v_.get_edges_r()) {
+	  add_edges(v_, pgt::v_end_e::r, v_idx_, e_idx);
+	}
       }
 
       /* add tips */
       for (auto [side, v_id] : g.tips()) {
-        if (pv_cmp::contains(comp_vtxs, g.v_id_to_idx(v_id))) {
-          curr_vg->add_tip(v_id, side);
-        }
+	if (pv_cmp::contains(comp_vtxs, g.v_id_to_idx(v_id))) {
+	  curr_vg->add_tip(v_id, side);
+	}
       }
 
       // clear the set for the next component
@@ -378,13 +390,13 @@ std::vector<VG *> VG::componetize(const povu::bidirected::VG &g) {
 
       /* find the next unvisited vertex */
       for (std::size_t v_idx_{}; v_idx_ < g.vtx_count(); ++v_idx_) {
-        if (!pv_cmp::contains(visited, v_idx_)) { // if not visited
-          comp_vtxs.clear();
-          s.push(v_idx_);
-          visited.insert(v_idx_);
-          comp_vtxs.insert(v_idx_);
-          break;
-        }
+	if (!pv_cmp::contains(visited, v_idx_)) { // if not visited
+	  comp_vtxs.clear();
+	  s.push(v_idx_);
+	  visited.insert(v_idx_);
+	  comp_vtxs.insert(v_idx_);
+	  break;
+	}
       }
     }
   }

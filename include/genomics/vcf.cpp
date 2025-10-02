@@ -6,7 +6,7 @@ namespace povu::genomics::vcf {
 
 
 var_type_e det_var_type(const pga::allele_slice_t &ref_allele_slice,
-                        const pga::allele_slice_t &alt_allele_slice) {
+			const pga::allele_slice_t &alt_allele_slice) {
   if (ref_allele_slice.len < alt_allele_slice.len) {
     return var_type_e::del;
   }
@@ -19,8 +19,11 @@ var_type_e det_var_type(const pga::allele_slice_t &ref_allele_slice,
 }
 
 pt::idx_t comp_pos(const pga::allele_slice_t &ref_allele_slice, var_type_e variant_type) {
-  const pgt::ref_walk_t rw = *ref_allele_slice.ref_walk;
-  pt::idx_t locus = rw[ref_allele_slice.ref_start_idx + 1].locus;
+  // const pgt::ref_walk_t rw = *ref_allele_slice.ref_walk;
+  // pt::idx_t locus = rw[ref_allele_slice.ref_start_idx + 1].locus;
+
+  pt::idx_t locus =
+      ref_allele_slice.get_locus(ref_allele_slice.ref_start_idx + 1);
 
   switch (variant_type) {
   case var_type_e::del:
@@ -89,12 +92,12 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp, const std::set<pt::id_t> 
     std::set<pt::id_t> exp_ref_ids = exp.get_ref_ids();
     for (pt::id_t ref_ref_id : exp_ref_ids) {
       if (!pv_cmp::contains(to_call_ref_ids, ref_ref_id)) {
-        continue;
+	continue;
       }
       for (pt::id_t alt_ref_id : exp_ref_ids) {
-        if (ref_ref_id != alt_ref_id) {
-          ref_pairs.emplace_back(ref_ref_id, alt_ref_id);
-        }
+	if (ref_ref_id != alt_ref_id) {
+	  ref_pairs.emplace_back(ref_ref_id, alt_ref_id);
+	}
       }
     }
     return ref_pairs;
@@ -115,7 +118,7 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp, const std::set<pt::id_t> 
 
       // TODO: check if start and len of the walks as well
       if (ref_walk_idx == alt_walk_idx) { // this means they are from the same walk, skip
-        continue;
+	continue;
       }
 
       pt::idx_t ref_walk_ref_count = exp.get_ref_idxs_for_walk(ref_walk_idx).size();
@@ -127,19 +130,19 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp, const std::set<pt::id_t> 
 
       // if it does not exist create a variant type for it and add to var_type_to_vcf_rec
       if (!pv_cmp::contains(var_type_to_vcf_rec, key)) {
-        pt::idx_t pos = comp_pos(ref_allele_slice, variant_type);
-        VcfRec vcf_rec {
-          ref_ref_id,
-          pos,
-          exp.id(),
-          ref_allele_slice,
-          pvst_vtx_ptr->get_height(),
-          variant_type,
-          exp.is_tangled(),
-          ref_walk_ref_count,
-          g.get_blank_genotype_cols()};
+	pt::idx_t pos = comp_pos(ref_allele_slice, variant_type);
+	VcfRec vcf_rec {
+	  ref_ref_id,
+	  pos,
+	  exp.id(),
+	  ref_allele_slice,
+	  pvst_vtx_ptr->get_height(),
+	  variant_type,
+	  exp.is_tangled(),
+	  ref_walk_ref_count,
+	  g.get_blank_genotype_cols()};
 
-        var_type_to_vcf_rec.emplace(key, std::move(vcf_rec));
+	var_type_to_vcf_rec.emplace(key, std::move(vcf_rec));
       }
 
       VcfRec &curr_vcf_rec = var_type_to_vcf_rec.at(key);
@@ -156,7 +159,7 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp, const std::set<pt::id_t> 
 }
 
 VcfRecIdx gen_vcf_records(const bd::VG &g, const std::vector<pga::Exp> &exps,
-                          const std::set<pt::id_t> &to_call_ref_ids) {
+			  const std::set<pt::id_t> &to_call_ref_ids) {
   VcfRecIdx vcf_recs;
 
   for (pt::idx_t i {}; i < exps.size(); ++i) {

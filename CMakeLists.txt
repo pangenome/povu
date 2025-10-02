@@ -16,6 +16,10 @@ project(povu LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# === Compile Commands for Tooling ===
+# Generate compile_commands.json for use with clangd, clang-tidy, etc.
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 
 # === Build Configuration Options ===
 
@@ -24,6 +28,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # This will build and run tests using GoogleTest.
 option(POVU_ENABLE_TESTING "Build and run tests" OFF)
 
+# --- Build Type Defaults ---
+# Default to Release if user hasn't set a build type
+# Can be overridden via -DCMAKE_BUILD_TYPE=Debug
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build (Debug, Release)" FORCE)
+endif()
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+
 # Optional static build toggle.
 # Enable with: -DBUILD_STATIC=ON
 # This forces fully static linking for portable binaries (primarily Linux).
@@ -31,23 +43,6 @@ option(BUILD_STATIC
   "Build a fully static executable (including libstdc++, libgcc, glibc, etc.)"
   OFF
 )
-
-# === Build Type Defaults ===
-# Default to Release if user hasn't set a build type
-# Can be overridden via -DCMAKE_BUILD_TYPE=Debug
-if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build (Debug, Release)" FORCE)
-endif()
-
-
-# === Compile Commands for Tooling ===
-# Generate compile_commands.json for use with clangd, clang-tidy, etc.
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-
-
-# === Platform & Toolchain Configuration ===
-#
 
 if(BUILD_STATIC)
   # Use static libraries where possible
@@ -63,15 +58,13 @@ if(BUILD_STATIC)
   endif()
 endif()
 
-# === Build Configuration ===
-#
+
+
 # This section configures compile-time warnings, optimization levels,
 # and debug/release-specific behavior using generator expressions.
 # Flags are applied conditionally based on the active build configuration.
 # Users can add extra flags via CMake options if needed:
 #   cmake -DCMAKE_C_FLAGS="-Wpadded" -DCMAKE_CXX_FLAGS="-Wpadded" ..
-
-# --- Build Flags Configuration ---
 
 # Warnings that apply to all build types
 set(COMMON_WARNINGS
@@ -121,26 +114,54 @@ if(CI OR DEFINED ENV{CI})
 endif()
 
 
-# === Enable Sanitizers for Debug Builds ===
+# ========================== Dependencies ===============================
+
+# --- Enable Sanitizers for Debug Builds ---
 #
 # This file typically enables AddressSanitizer, UndefinedBehaviorSanitizer, etc.
 # It's included unconditionally, but should internally check for Debug mode and compiler support.
-# You can make it optional with 'include(... OPTIONAL)' if needed.
-include(sanitizers.cmake)
+# sanitizers.cmake checks if build mode is Debug and if not it returns early.
+include(cmake/sanitizers.cmake)
 
-# === Project Directory Structure ===
-#
+# --- Depds from CPM.cmake --
+include(cmake/deps.cmake)
+
+# --- Silence compiler warnings for dependencies ---
+function(silence_warnings target)
+  if(TARGET ${target})
+    get_target_property(type ${target} TYPE)
+    if(type STREQUAL "INTERFACE_LIBRARY")
+      target_compile_options(${target} INTERFACE -w)
+    else()
+      target_compile_options(${target} PRIVATE -w)
+    endif()
+  endif()
+endfunction()
+
+silence_warnings(fmt)
+silence_warnings(liteseq)
+silence_warnings(args)
+silence_warnings(indicators)
+
+# ============================ povu config =============================
+
 # These variables define paths for source code, headers, and tests.
 # Used later in the project to organize sources and targets.
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/app)
 set(INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
-set(TEST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests)
+set(TESTS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests)
+set(BIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
-# === povulib Library ===
+# When set uses uses build dir for output binaries
+# set(BIN_DIR ${CMAKE_BINARY_DIR}/bin)
+
+# -------- povu Library & executable ----------------
 #
 # Build the core 'povulib' library, composed of implementation files from various modules.
 # This library contains the core algorithms, data structures, and utilities used by povu.
 # The library is built from the source files located in the 'include' directory.
+
+#  ........ Define the library target ............
 
 ADD_LIBRARY(povulib
 
@@ -180,10 +201,11 @@ ADD_LIBRARY(povulib
   ${INCLUDE_DIR}/io/to_vcf.cpp
 )
 
-# === Command Line Executable Sources ===
+# ..... executable .......
+#
 # Main executable source files are listed here.
-
-set(SOURCE_FILES
+# Define the main executable target
+add_executable(povu
   # cli
   ${SRC_DIR}/cli/cli.cpp
 
@@ -196,72 +218,8 @@ set(SOURCE_FILES
   ${SRC_DIR}/main.cpp
 )
 
-# === Build Executable ===
-# Define the main executable target
-add_executable(povu ${SOURCE_FILES})
+# ---- linking -----
 
-
-# === Dependencies ===
-# Use FetchContent to fetch and build dependencies from GitHub
-include(FetchContent)
-
-
-# --- args (command-line parser) ---
-# Disable building example and test binaries that are unnecessary for povu
-set(ARGS_BUILD_UNITTESTS OFF CACHE BOOL "" FORCE)
-set(ARGS_BUILD_EXAMPLE OFF CACHE BOOL "" FORCE)
-FetchContent_Declare(
-  args
-  GIT_REPOSITORY https://github.com/Taywee/args.git
-  GIT_TAG        114200a9ad5fe06c8dea76e15d92325695cf3e34 # v6.4.7
-)
-FetchContent_MakeAvailable(args)
-
-# --- liteseqlib (lightweight genomics data library) ---
-FetchContent_Declare(
-  liteseq
-  GIT_REPOSITORY https://github.com/urbanslug/liteseq.git
-  GIT_TAG        b2abf40c1ad334019604dc085cb38cde772f76d2
-)
-FetchContent_MakeAvailable(liteseq)
-
-# --- fmt (fast formatting library) ---
-FetchContent_Declare(
-  fmt
-  GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-  GIT_TAG        e69e5f977d458f2650bb346dadf2ad30c5320281 # v10.2.1
-)
-FetchContent_MakeAvailable(fmt)
-
-# --- indicators (progress bars) ---
-FetchContent_Declare(
-  indicators
-  GIT_REPOSITORY https://github.com/p-ranav/indicators.git
-  GIT_TAG        26d39ad8fb438f5f50fb16427f554045d8431030 # v2.3.0
-)
-FetchContent_MakeAvailable(indicators)
-
-
-
-# --- Silence compiler warnings for dependencies ---
-function(silence_warnings target)
-  if(TARGET ${target})
-    get_target_property(type ${target} TYPE)
-    if(type STREQUAL "INTERFACE_LIBRARY")
-      target_compile_options(${target} INTERFACE -w)
-    else()
-      target_compile_options(${target} PRIVATE -w)
-    endif()
-  endif()
-endfunction()
-
-silence_warnings(fmt)
-silence_warnings(liteseq)
-silence_warnings(args)
-silence_warnings(indicators)
-
-# === Link Dependencies ===
-# Link fmt to povulib (used in the library implementation)
 target_link_libraries(povulib
   PRIVATE
   fmt::fmt
@@ -269,7 +227,6 @@ target_link_libraries(povulib
   indicators  # progress bars
 )
 
-# Link everything needed for the executable
 target_link_libraries(povu
   PRIVATE
   povulib      # internal library
@@ -279,30 +236,49 @@ target_link_libraries(povu
   indicators   # progress bars
 )
 
-# === Post-Build: Copy Binary to bin/ ===
-# Create a bin/ directory and copy the compiled binary to it
-set(BINARY_DIR ./bin)
-file(MAKE_DIRECTORY ${BINARY_DIR}/)
-add_custom_command(TARGET povu
-  POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:povu> ../${BINARY_DIR}/
+# =================== Set Build-Time Output Directory ========================
+
+# Set the runtime output directory for the binary
+set_target_properties(povu PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${BIN_DIR}
+)
+message(STATUS "Build-time binary output directory: ${BIN_DIR}")
+
+# ========================== Installation ====================================
+# Installation configuration for install() actions (system-wide install)
+# triggered by 'cmake --install .'
+
+# Install configuration
+include(GNUInstallDirs)
+
+# Install the povulib library
+install(TARGETS povulib
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}  # Static Libraries
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}  # Shared Libraries
 )
 
-# === Tests ===
+# Install the povu binary into the system bin directory
+install(TARGETS povu
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}  # Executables
+)
 
+# Install header files (if applicable)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  FILES_MATCHING PATTERN "*.h"
+)
 
-if (POVU_ENABLE_TESTING)
-  set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
-  set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
-  # For Windows: Prevent overriding the parent project's compiler/linker settings
-  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+# Log where items are being installed
+message(STATUS "Install include directory: ${CMAKE_INSTALL_INCLUDEDIR}")
+message(STATUS "Install library directory: ${CMAKE_INSTALL_LIBDIR}")
+message(STATUS "Install binary directory: ${CMAKE_INSTALL_BINDIR}")
 
-  FetchContent_Declare(
-    googletest
-    URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
-  )
-  FetchContent_MakeAvailable(googletest)
+# ================================ Tests =====================================
+
+if (LITESEQ_ENABLE_TESTING)
+  # Add the global TESTING definition
+  add_compile_definitions(TESTING)
 
   enable_testing()
-  add_subdirectory(tests)
+  add_subdirectory(${TESTS_DIR})
 endif()

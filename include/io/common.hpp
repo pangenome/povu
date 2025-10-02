@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <filesystem>
 #include <fstream> // for std::ifstream
-#include <gfa.h>   // from liteseq
+#include <liteseq/gfa.h>
 #include <ostream>
 #include <string>
 #include <vector>

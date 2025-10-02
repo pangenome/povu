@@ -1,0 +1,37 @@
+name: C++17 Build (CMake, macOS)
+
+on:
+  # branch glob syntax https://stackoverflow.com/a/57903434
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ "**" ]
+
+jobs:
+  build:
+    runs-on:  macos-latest  # Use a macOS container
+
+    strategy:
+      matrix:
+        build_type: [Release, Debug]
+
+    name: Build ${{ matrix.build_type }}
+
+    env:
+      CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
+      BIN_DIR: ${{ github.workspace }}/bin  # Define BIN_DIR as an environment variable
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure CMake
+        run: |
+          cmake -B ${{ github.workspace }}/build \
+          -DCMAKE_OSX_SYSROOT=/Applications/Xcode_16.4.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0" \
+          -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }}
+
+      - name: Build
+        run: |
+          cmake --build ${{ github.workspace }}/build --config ${{ env.CMAKE_BUILD_TYPE }}

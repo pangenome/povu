@@ -19,6 +19,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include <liteseq/gfa.h>
+
 #include "../common/compat.hpp"
 #include "../common/constants.hpp"
 #include "./types.hpp"
@@ -31,6 +33,8 @@ inline constexpr std::string_view MODULE = "povu::bidirected";
 
 using namespace povu::types::graph;
 namespace pgt = povu::types::graph;
+
+namespace lq = liteseq;
 
 // undirected edge
 // stores the index of the vertex in the graph not the id
@@ -91,20 +95,34 @@ public:
 
 class VariationGraph {
   std::vector<Vertex> vertices;
-  std::vector<Edge> edges;
+  std::set<pgt::side_n_id_t> tips_; // the set of side and id of the tips
   pu::TwoWayMap<std::size_t, std::size_t> v_id_to_idx_; // TODO: reserve size
+
+  std::vector<Edge> edges;
 
   // i is the vertex index, j is the ref index
   std::vector<std::vector<std::vector<pt::idx_t>>> vertex_to_step_matrix_;
-  std::vector<pgt::ref_walk_t> ref_matrix_;
-  pr::Refs refs_ = pr::Refs(0); // has no refs by default
-  std::set<pgt::side_n_id_t> tips_; // the set of side and id of the tips
+  pr::Refs refs_;
+
+  lq::gfa_props *gfa;
+
+  // i is the vertex index, j is the ref index
+  // std::vector<std::vector<std::vector<pt::idx_t>>> vertex_to_step_matrix_;
+  // std::vector<pgt::ref_walk_t> ref_matrix_;
+  // pr::Refs refs_ = pr::Refs(0); // has no refs by default
+
 
 public:
   // --------------
   // constructor(s)
   // --------------
   VariationGraph(pt::idx_t vtx_count, pt::idx_t edge_count, pt::idx_t ref_count);
+  VariationGraph(lq::gfa_props *gfa);
+  ~VariationGraph() {
+    if (this->gfa != nullptr) {
+      gfa_free(this->gfa);
+    }
+  }
 
   // -----------------
   // factory method(s)
@@ -141,8 +159,7 @@ public:
   std::set<pt::id_t> get_shared_samples(pt::id_t ref_id) const;
   // sometimes the sample name is referred to as a prefix
   std::set<pt::id_t> get_refs_in_sample(std::string_view sample_name) const;
-  const pgt::ref_walk_t &get_ref_vec(pt::id_t ref_id) const;
-  pgt::ref_walk_t &get_ref_vec_mut(pt::id_t ref_id);
+  const lq::ref *get_ref_vec(pt::id_t ref_id) const;
   pt::idx_t get_ref_count() const;
   const std::vector<pt::idx_t> &get_vertex_ref_idxs(pt::idx_t v_idx, pt::id_t ref_id) const;
   const std::vector<std::string> &get_genotype_col_names() const;
@@ -156,8 +173,10 @@ public:
   // returns the index (v_idx) of the added vertex
   pt::idx_t add_vertex(pt::id_t v_id, const std::string& label);
   // returns the index (e_idx) of the added edge
-  pt::idx_t add_edge(pt::id_t v1_id, pgt::v_end_e v1_end, pt::id_t v2_id, pgt::v_end_e v2_end);
-  pt::id_t add_ref(const std::string &label, char delim);
+  pt::idx_t add_edge(pt::id_t v1_id, pgt::v_end_e v1_end, pt::id_t v2_id,
+		     pgt::v_end_e v2_end);
+  void add_all_refs(lq::ref **refs, pt::idx_t ref_count);
+  // pt::id_t add_ref(const std::string &label, char delim);
   void shrink_to_fit();
   void set_vtx_ref_idx(pt::id_t v_id, pt::id_t ref_id, pt::idx_t step_idx);
   void gen_genotype_metadata();
