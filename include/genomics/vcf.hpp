@@ -302,6 +302,14 @@ public:
 VcfRecIdx gen_vcf_records(const bd::VG &g, const std::vector<pga::Exp> &ref_walks,
                           const std::set<pt::id_t> &to_call_ref_ids);
 
+// Nested variation mode: select best reference per flubble
+VcfRecIdx gen_vcf_records_nested(const bd::VG &g, const std::vector<pga::Exp> &exps,
+                                 const std::vector<pt::id_t> &ref_preference_order);
+
+// Build reference preference order from samples and graph
+std::vector<pt::id_t> build_ref_preference_order(const bd::VG &g,
+                                                 const std::vector<std::string> &sample_prefixes);
+
 } // namespace povu::genomics::vcf
 
 #endif // POVU_GENOMICS_VCF_HPP

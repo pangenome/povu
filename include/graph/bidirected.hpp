@@ -161,6 +161,7 @@ public:
   std::set<pt::id_t> get_refs_in_sample(std::string_view sample_name) const;
   const lq::ref *get_ref_vec(pt::id_t ref_id) const;
   pt::idx_t get_ref_count() const;
+  std::vector<std::string> get_all_sample_names() const;
   const std::vector<pt::idx_t> &get_vertex_ref_idxs(pt::idx_t v_idx, pt::id_t ref_id) const;
   const std::vector<std::string> &get_genotype_col_names() const;
   std::vector<std::vector<std::string>> get_blank_genotype_cols() const;

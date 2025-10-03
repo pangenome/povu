@@ -99,6 +99,7 @@ struct config {
   input_format_e ref_input_format;
   std::vector<std::string> ref_name_prefixes_; // path prefixes for reference selection
   bool stdout_vcf; // output single VCF to stdout instead of separate files
+  bool nested_mode_; // use nested variation mode with reference preference ordering
 
   // -------------
   // Contructor(s)
@@ -119,7 +120,8 @@ struct config {
         references_txt(""),
         ref_input_format(input_format_e::unset),
         ref_name_prefixes_(std::vector<std::string>{}),
-        stdout_vcf(false)
+        stdout_vcf(false),
+        nested_mode_(true)  // default to nested mode
     {}
 
   // ---------
@@ -143,6 +145,7 @@ struct config {
   unsigned int thread_count() const { return this->thread_count_; }
   bool print_dot() const { return this->print_dot_; }
   bool get_stdout_vcf() const { return this->stdout_vcf; }
+  bool get_nested_mode() const { return this->nested_mode_; }
   task_e get_task() const { return this->task; }
 
 
@@ -171,6 +174,7 @@ struct config {
   void set_output_dir(std::string s) { this->output_dir = s; }
   void set_task(task_e t) { this->task = t; }
   void set_stdout_vcf(bool b) { this->stdout_vcf = b; }
+  void set_nested_mode(bool b) { this->nested_mode_ = b; }
 
   // --------
   // other(s)
