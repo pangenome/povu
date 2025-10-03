@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "../../include/common/compat.hpp"
-#include "../cli/app.hpp"
+#include "common/app.hpp"
 #include "./call.hpp"
 #include "./decompose.hpp"
 

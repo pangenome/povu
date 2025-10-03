@@ -4,7 +4,7 @@
 #include "../../include/common/compat.hpp"
 #include "../../include/graph/bidirected.hpp"
 #include "../../include/io/from_gfa.hpp"
-#include "../cli/app.hpp"
+#include "common/app.hpp"
 
 namespace povu::subcommands::info
 {

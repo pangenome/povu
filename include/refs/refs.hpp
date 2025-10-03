@@ -8,9 +8,9 @@
 #include <string>
 #include <string_view>
 
-#include "../common/core.hpp"
-#include "../common/log.hpp"
-#include "../common/utils.hpp"
+"#include "povu/common/core.hpp"
+"#include "povu/common/log.hpp"
+"#include "povu/common/utils.hpp"
 
 namespace povu::refs
 {

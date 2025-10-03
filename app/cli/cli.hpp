@@ -3,7 +3,7 @@
 
 #include <args.hxx> // for command line parsing
 
-#include "./app.hpp"
+#include "common/app.hpp"
 
 namespace cli
 {

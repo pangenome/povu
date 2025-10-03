@@ -21,7 +21,7 @@
 #include "../../include/io/from_gfa.hpp"
 #include "../../include/io/to_pvst.hpp"
 #include "../../include/io/to_vcf.hpp"
-#include "../cli/app.hpp"
+#include "common/app.hpp"
 #include "../cli/cli.hpp"
 
 namespace povu::subcommands::decompose
