@@ -1,18 +1,12 @@
 #ifndef PV_CLI_HPP
 #define PV_CLI_HPP
 
-#include <args.hxx> // for command line parsing
+#include <string> // for basic_string, string
 
-#include "common/app.hpp"
+#include "povu/common/app.hpp" // for config
 
 namespace cli
 {
-
-#define FILE_ERROR(name)                                                       \
-	{                                                                      \
-		std::string e = "Error, Failed to open the file " + name;      \
-		throw std::invalid_argument(e);                                \
-	}
 
 // app version string constant
 const std::string VERSION = "0.0.0-alpha";

@@ -1,30 +1,23 @@
 #ifndef POVU_GENOMICS_ALLELE_HPP
 #define POVU_GENOMICS_ALLELE_HPP
 
-#include <algorithm>
-#include <deque>
-#include <functional> // for std::reference_wrapper
-#include <future>
-#include <optional>
-#include <set>
-#include <stack>
-#include <string>
-#include <sys/types.h>
-#include <utility>
-#include <valarray>
-#include <vector>
+#include <cstdlib>     // for exit, EXIT_FAILURE
+#include <map>	       // for map
+#include <set>	       // for set, operator!=
+#include <string>      // for basic_string, string
+#include <string_view> // for string_view
+#include <utility>     // for move, pair
+#include <vector>      // for vector
 
-#include <liteseq/gfa.h>
-
-"#include "povu/common/compat.hpp"
-"#include "povu/common/core.hpp"
-
-"#include "povu/common/log.hpp"
-"#include "povu/common/thread.hpp"
-"#include "povu/graph/bidirected.hpp"
-"#include "povu/graph/pvst.hpp"
-"#include "povu/graph/types.hpp"
-#include "graph.hpp"
+#include "liteseq/refs.h"	     // for ref_walk
+#include "liteseq/types.h"	     // for strand
+#include "povu/common/compat.hpp"    // for contains, pv_cmp
+#include "povu/common/core.hpp"	     // for pt, idx_t, id_t, op_t
+#include "povu/common/log.hpp"	     // for ERR
+#include "povu/genomics/graph.hpp"   // for RoV
+#include "povu/graph/bidirected.hpp" // for bd, VG
+#include "povu/graph/pvst.hpp"	     // for VertexBase
+#include "povu/graph/types.hpp"	     // for or_e, id_or_t, walk_t
 
 namespace povu::genomics::allele
 {

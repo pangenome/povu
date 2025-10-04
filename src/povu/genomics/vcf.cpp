@@ -1,7 +1,15 @@
-"#include "povu/genomics/vcf.hpp"
+#include "povu/genomics/vcf.hpp"
+
+#include <iterator>                  // for pair
+
+#include "povu/genomics/allele.hpp"  // for Exp, allele_slice_t, itn_t
+#include "povu/genomics/graph.hpp"   // for RoV
+#include "povu/graph/pvst.hpp"       // for VertexBase
 
 namespace povu::genomics::vcf
 {
+namespace pvst = povu::pvst;
+namespace pgg = povu::genomics::graph;
 
 var_type_e det_var_type(const pga::allele_slice_t &ref_allele_slice,
 			const pga::allele_slice_t &alt_allele_slice)

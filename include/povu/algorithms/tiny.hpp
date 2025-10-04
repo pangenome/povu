@@ -1,26 +1,13 @@
 #ifndef PV_TINY_HPP
 #define PV_TINY_HPP
 
-#include <any>
-#include <cassert>
-#include <cstddef>
-#include <cstdio>
-#include <iostream>
-#include <map>
-#include <optional>
-#include <queue>
-#include <stack>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <utility>
-#include <vector>
+#include <string_view>                   // for string_view
 
-"#include "povu/common/compat.hpp"
-"#include "povu/common/utils.hpp"
-"#include "povu/graph/pvst.hpp"
-"#include "povu/graph/spanning_tree.hpp"
-"#include "povu/graph/tree_utils.hpp"
+#include "povu/graph/pvst.hpp"           // for Tree
+#include "povu/graph/spanning_tree.hpp"  // for Tree
+#include "povu/graph/tree_utils.hpp"     // for tree_meta
+#include "povu/common/constants.hpp"     // for constants
+#include "povu/graph/types.hpp"          // for graph
 
 namespace povu::tiny
 {

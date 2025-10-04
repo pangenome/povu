@@ -1,25 +1,17 @@
 #ifndef PV_FLUBBLES_HPP
 #define PV_FLUBBLES_HPP
 
-#include <algorithm>
-#include <cassert>
-#include <cstddef>
-#include <deque>
-#include <iostream>
-#include <limits>
-#include <map>
-#include <stack>
-#include <tuple>
-#include <unordered_map>
-#include <unordered_set>
-#include <utility>
-#include <vector>
+#include <cstddef>                       // for size_t
+#include <vector>                        // for vector
+#include <string_view>                   // for string_view
 
-"#include "povu/common/app.hpp"
-"#include "povu/common/compat.hpp"
-"#include "povu/graph/pvst.hpp"
-"#include "povu/graph/spanning_tree.hpp"
-"#include "povu/graph/tree_utils.hpp"
+#include "povu/common/app.hpp"           // for config
+#include "povu/graph/pvst.hpp"           // for Tree
+#include "povu/graph/spanning_tree.hpp"  // for Tree
+#include "povu/graph/tree_utils.hpp"     // for tree_utils
+#include "povu/common/constants.hpp"     // for INVALID_IDX
+#include "povu/common/core.hpp"          // for pt, idx_t, id_t
+#include "povu/graph/types.hpp"          // for or_e
 
 namespace povu::flubbles
 {

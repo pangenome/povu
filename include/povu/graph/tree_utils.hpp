@@ -1,29 +1,25 @@
 #ifndef PV_TREE_UTILS_HPP
 #define PV_TREE_UTILS_HPP
 
-#include <algorithm>
-#include <cassert>
-#include <iostream>
-#include <list>
-#include <map>
-#include <queue>
-#include <set>
-#include <stack>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
+#include <cstddef>     // for size_t
+#include <iostream>    // for basic_ostream, operator<<, cerr
+#include <map>	       // for map
+#include <string>      // for operator<<
+#include <string_view> // for string_view
+#include <vector>      // for vector
 
-"#include "povu/common/compat.hpp"
-#include "spanning_tree.hpp"
+#include "fmt/core.h"			// for format
+#include "povu/common/compat.hpp"	// for format, pv_cmp
+#include "povu/common/constants.hpp"	// for pc, INVALID_IDX
+#include "povu/common/core.hpp"		// for pt, idx_t
+#include "povu/graph/spanning_tree.hpp" // for Tree
+#include "povu/graph/types.hpp"		// for graph
 
 namespace povu::tree_utils
 {
 inline constexpr std::string_view MODULE = "povu::tree_utils";
-
 using namespace povu::types::graph;
 namespace pgt = povu::types::graph;
-
-namespace pc = povu::constants;
 namespace pst = povu::spanning_tree;
 
 // key is edge idx of an edge and value is the v idx of the next braching vtx or

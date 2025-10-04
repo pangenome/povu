@@ -1,5 +1,18 @@
-"#include "povu/algorithms/smothered.hpp"
-#include <optional>
+#include "povu/algorithms/smothered.hpp"
+
+#include <optional>                // for optional, nullopt, nullopt_t
+#include <iostream>                // for basic_ostream, operator<<, basic_ios
+#include <map>                     // for map
+#include <memory>                  // for make_unique
+#include <set>                     // for set
+#include <string>                  // for char_traits, basic_string, string
+#include <unordered_set>           // for unordered_set
+#include <utility>                 // for get, pair
+#include <vector>                  // for vector
+
+#include "fmt/core.h"              // for format
+#include "povu/common/compat.hpp"  // for format, pv_cmp
+#include "povu/common/core.hpp"    // for pt, idx_t
 
 namespace povu::smothered
 {

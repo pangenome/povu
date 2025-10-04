@@ -1,14 +1,11 @@
-"#include "povu/genomics/allele.hpp"
-#include <cstdlib>
-#include <map>
-#include <optional>
-#include <sys/types.h>
-#include <thread>
-#include <unordered_set>
-#include <valarray>
-#include <vector>
+#include "povu/genomics/allele.hpp"
 
-#include <liteseq/refs.h>
+#include <liteseq/refs.h>           // for ref_walk, ref
+#include <cstdlib>                  // for exit, EXIT_FAILURE
+#include <map>                      // for map
+#include <vector>                   // for vector
+
+#include "povu/genomics/graph.hpp"  // for RoV, pgt
 
 namespace povu::genomics::allele
 {

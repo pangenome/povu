@@ -1,30 +1,23 @@
 #ifndef SPANNING_TREE_HPP
 #define SPANNING_TREE_HPP
 
-#include <cstddef>
-#include <list>
-#include <map>
-#include <ostream>
-#include <set>
-#include <string>
-#include <unordered_map>
-#include <vector>
+#include <cstddef> // for size_t
+#include <map>	   // for map
+#include <ostream> // for ostream
+#include <set>	   // for set
+#include <utility> // for pair
+#include <vector>  // for vector
 
-"#include "povu/common/compat.hpp"
-"#include "povu/common/constants.hpp"
-#include "bidirected.hpp"
-#include "bracket_list.hpp"
-#include "types.hpp"
+#include "bidirected.hpp"	// for VG, bd
+#include "bracket_list.hpp"	// for WBracketList, Bracket, BracketList
+#include "povu/common/core.hpp" // for pt, idx_t, id_t
+#include "types.hpp"		// for color_e, v_type_e
 
 namespace povu::spanning_tree
 {
-
 using namespace povu::types::graph;
-namespace pgt = povu::types::graph;
-namespace bd = povu::bidirected;
-namespace pc = povu::constants;
 using namespace povu::bracket_list;
-using namespace povu::constants;
+namespace pgt = povu::types::graph;
 
 enum class be_type_e {
 	// tree_edge, // TODO: remove

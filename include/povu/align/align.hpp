@@ -1,11 +1,15 @@
 #ifndef PV_ALN_HPP
 #define PV_ALN_HPP
 
-#include <iostream>
-#include <vector>
+#include <iostream>                   // for char_traits, basic_ostream, ope...
+#include <vector>                     // for vector
+#include <string>                     // for basic_string, string, to_string
+#include <string_view>                // for operator<<, string_view
 
-"#include "povu/common/log.hpp"
-"#include "povu/genomics/allele.hpp"
+#include "povu/genomics/allele.hpp"   // for itn_t
+#include "povu/common/constants.hpp"  // for INF, INVALID_IDX
+#include "povu/common/core.hpp"       // for pt, idx_t
+#include "povu/graph/types.hpp"       // for graph
 
 namespace povu::align
 {

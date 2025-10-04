@@ -1,32 +1,20 @@
 #ifndef BIDIRECTED_HPP
 #define BIDIRECTED_HPP
 
-#include <algorithm>
-#include <cstddef>
-#include <cstring>
-#include <iostream>
-#include <iterator>
-#include <map>
-#include <optional>
-#include <ostream>
-#include <queue>
-#include <set>
-#include <stack>
-#include <string>
-#include <string_view>
-#include <sys/types.h>
-#include <tuple>
-#include <unordered_set>
-#include <vector>
+#include <cstddef>	 // for size_t
+#include <iostream>	 // for ostream
+#include <liteseq/gfa.h> // for gfa_free, gfa_props
+#include <optional>	 // for optional
+#include <set>		 // for set
+#include <string>	 // for string, basic_string
+#include <string_view>	 // for string_view
+#include <vector>	 // for vector
 
-#include <liteseq/gfa.h>
-
-"#include "povu/common/compat.hpp"
-"#include "povu/common/constants.hpp"
-"#include "povu/common/log.hpp"
-"#include "povu/common/utils.hpp"
-#include "refs/refs.hpp"
-#include "types.hpp"
+#include "liteseq/refs.h"	 // for ref
+#include "povu/common/core.hpp"	 // for pt, idx_t, id_t, op_t
+#include "povu/common/utils.hpp" // for pu, TwoWayMap
+#include "povu/graph/types.hpp"	 // for v_end_e, side_n_id_t, side_n_idx_t
+#include "povu/refs/refs.hpp"	 // for pr, Ref, Refs
 
 namespace povu::bidirected
 {

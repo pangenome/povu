@@ -1,29 +1,17 @@
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
-#include <atomic>
-#include <chrono>
-#include <condition_variable>
-#include <cstddef>
-#include <ctime>
-#include <functional>
-#include <future>
-#include <iomanip>
-#include <iostream>
-#include <iterator>
-#include <mutex>
-#include <queue>
-#include <sstream>
-#include <string>
-#include <sys/types.h>
-#include <thread>
-#include <type_traits>
-#include <unordered_map>
-#include <utility>
-#include <vector>
+#include <chrono>         // for duration
+#include <cstddef>        // for size_t
+#include <iterator>       // for next
+#include <sstream>        // for basic_ostringstream, operator<<, basic_ostream
+#include <string>         // for string, allocator, char_traits, basic_string
+#include <unordered_map>  // for unordered_map
+#include <utility>        // for pair
+#include <vector>         // for vector
+#include <string_view>    // for string_view
 
-#include "compat.hpp"
-#include "core.hpp"
+#include "core.hpp"       // for idx_t, pt
 
 namespace povu::utils
 {

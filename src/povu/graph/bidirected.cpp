@@ -1,7 +1,16 @@
-"#include "povu/graph/bidirected.hpp"
-#include "liteseq/gfa.h"
-#include <string>
-#include <string_view>
+#include "povu/graph/bidirected.hpp"
+
+#include <string>                     // for basic_string, char_traits, string
+#include <string_view>                // for string_view
+#include <algorithm>                  // for lower_bound
+#include <stack>                      // for stack
+#include <unordered_set>              // for unordered_set, operator!=
+
+#include "liteseq/gfa.h"              // for gfa_props
+#include "fmt/core.h"                 // for format
+#include "povu/common/compat.hpp"     // for contains, pv_cmp, format
+#include "povu/common/constants.hpp"  // for UNDEFINED_ID
+#include "povu/graph/types.hpp"       // for v_end_e, side_n_id_t, complement
 
 namespace povu::bidirected
 {

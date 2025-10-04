@@ -1,26 +1,19 @@
 #ifndef POVU_GENOMICS_GRAPH_HPP
 #define POVU_GENOMICS_GRAPH_HPP
 
-#include <algorithm>
-#include <deque>
-#include <set>
-#include <stack>
-#include <string>
-#include <sys/types.h>
-#include <utility>
-#include <vector>
+#include <string>      // for basic_string, string
+#include <string_view> // for string_view
+#include <utility>     // for move
+#include <vector>      // for vector
 
-"#include "povu/common/compat.hpp"
-"#include "povu/common/core.hpp"
-"#include "povu/common/log.hpp"
-"#include "povu/graph/bidirected.hpp"
-"#include "povu/graph/pvst.hpp"
-"#include "povu/graph/types.hpp"
+#include "povu/common/core.hpp"	     // for idx_t, pt
+#include "povu/graph/bidirected.hpp" // for VG, bd
+#include "povu/graph/pvst.hpp"	     // for VertexBase
+#include "povu/graph/types.hpp"	     // for walk_t, id_or_t
 
 namespace povu::genomics::graph
 {
 inline constexpr std::string_view MODULE = "povu::genomics::graph";
-
 namespace pvst = povu::pvst;
 namespace pgt = povu::types::graph;
 

@@ -1,11 +1,11 @@
 #ifndef IO_HPP
 #define IO_HPP
 
-#include <filesystem>
-#include <string>
-#include <vector>
-
-#include <liteseq/gfa.h>
+#include <filesystem>   // for path
+#include <string>       // for string, basic_string, operator+
+#include <vector>       // for vector
+#include <stdexcept>    // for invalid_argument
+#include <string_view>  // for string_view
 
 namespace povu::io::common
 {

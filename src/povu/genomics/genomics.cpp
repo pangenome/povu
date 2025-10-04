@@ -1,11 +1,32 @@
-"#include "povu/genomics/genomics.hpp"
-#include "indicators/dynamic_progress.hpp"
-"#include "povu/genomics/vcf.hpp"
-#include <cstddef>
-#include <unordered_set>
+#include "povu/genomics/genomics.hpp"
+
+#include <algorithm> // for min, max
+#include <atomic>    // for atomic, memory_order
+#include <cmath>     // for ceil
+#include <cstddef>   // for size_t
+#include <iterator>  // for back_insert_iterator, bac...
+#include <optional>  // for optional, operator==
+#include <string>    // for basic_string, string
+#include <utility>   // for move
+
+#include "fmt/core.h"			   // for format_to
+#include "fmt/format.h"			   // for vformat_to
+#include "indicators/dynamic_progress.hpp" // for DynamicProgress
+#include "indicators/setting.hpp"	   // for PostfixText
+#include "povu/common/thread.hpp"	   // for thread_pool, task_group
+#include "povu/common/utils.hpp"	   // for comp_prog, pu
+#include "povu/genomics/allele.hpp"	   // for Exp, comp_itineraries
+#include "povu/genomics/graph.hpp"	   // for RoV, find_walks, pgt
+#include "povu/genomics/untangle.hpp"	   // for untangle_ref_walks
+#include "povu/genomics/vcf.hpp"	   // for VcfRecIdx, gen_vcf_records
 
 namespace povu::genomics
 {
+namespace pga = povu::genomics::allele;
+namespace pgg = povu::genomics::graph;
+namespace put = povu::genomics::untangle;
+namespace pvst = povu::pvst;
+
 /**
  * Associate walks in an RoV with references
  */

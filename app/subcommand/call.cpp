@@ -1,8 +1,38 @@
 #include "./call.hpp"
-#include "indicators/progress_bar.hpp"
+
+#include <cassert>    // for assert
+#include <cstdlib>    // for size_t, exit, EXIT_FAILURE
+#include <filesystem> // for path
+#include <optional>   // for optional
+#include <set>	      // for set
+#include <string>     // for basic_string, string, cha...
+#include <thread>     // for thread
+#include <utility>    // for move
+#include <vector>     // for vector
+
+#include "indicators/dynamic_progress.hpp" // for DynamicProgress
+#include "indicators/progress_bar.hpp"	   // for ProgressBar
+#include "povu/common/bounded_queue.hpp"   // for pbq, bounded_queue
+#include "povu/common/core.hpp"		   // for pt, id_t
+#include "povu/common/log.hpp"		   // for ERR
+#include "povu/common/progress.hpp"	   // for set_progress_bar_common_opts
+#include "povu/genomics/genomics.hpp"	   // for gen_vcf_rec_map
+#include "povu/genomics/vcf.hpp"	   // for VcfRecIdx
+#include "povu/graph/bidirected.hpp"	   // for VG, bd
+#include "povu/graph/pvst.hpp"		   // for Tree
+#include "povu/io/common.hpp"		   // for get_files, read_lines_to_...
+#include "povu/io/from_gfa.hpp"		   // for to_bd
+#include "povu/io/from_pvst.hpp"	   // for read_pvst
+#include "povu/io/to_vcf.hpp"		   // for VcfOutput, init_vcfs, wri...
 
 namespace povu::subcommands::call
 {
+using namespace povu::progress;
+namespace fs = std::filesystem;
+namespace pgv = povu::genomics::vcf;
+namespace pg = povu::genomics;
+namespace pic = povu::io::common;
+namespace piv = povu::io::to_vcf;
 
 /**
  * loop through the .pvst files and read them

@@ -1,7 +1,10 @@
-"#include "povu/graph/bracket_list.hpp"
+#include "povu/graph/bracket_list.hpp"
+
+#include "povu/common/constants.hpp" // for UNDEFINED_SIZE_T
 
 namespace povu::bracket_list
 {
+using namespace povu::constants;
 
 /*
  * Bracket

@@ -1,5 +1,15 @@
 #include "./gfa2vcf.hpp"
 
+#include <cstdlib>                   // for exit, mkdtemp, EXIT_FAILURE, size_t
+#include <filesystem>                // for remove_all, path
+#include <iostream>                  // for basic_ostream, operator<<, cerr
+#include <string>                    // for basic_string, char_traits, opera...
+
+#include "fmt/core.h"                // for format
+#include "povu/common/compat.hpp"    // for format, pv_cmp
+#include "subcommand/call.hpp"       // for do_call
+#include "subcommand/decompose.hpp"  // for do_decompose
+
 namespace povu::subcommands::gfa2vcf
 {
 

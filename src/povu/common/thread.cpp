@@ -1,4 +1,4 @@
-"#include "povu/common/thread.hpp"
+#include "povu/common/thread.hpp"
 
 namespace povu::thread
 {

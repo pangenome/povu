@@ -1,4 +1,17 @@
-"#include "povu/algorithms/midi.hpp"
+#include "povu/algorithms/midi.hpp"
+
+#include <exception>               // for exception
+#include <map>                     // for map
+#include <memory>                  // for make_unique
+#include <stdexcept>               // for runtime_error
+#include <string>                  // for basic_string, string
+#include <utility>                 // for get, pair
+#include <vector>                  // for vector
+
+#include "fmt/core.h"              // for format
+#include "povu/common/compat.hpp"  // for format, pv_cmp
+#include "povu/common/core.hpp"    // for pt, idx_t
+#include "povu/common/log.hpp"     // for WARN, ERR
 
 namespace povu::midi
 {

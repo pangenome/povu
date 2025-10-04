@@ -6,10 +6,10 @@
 #include <stack>
 #include <string_view>
 
-"#include "povu/common/compat.hpp"
-"#include "povu/common/constants.hpp"
-"#include "povu/common/log.hpp"
-#include "types.hpp"
+#include "povu/common/compat.hpp"
+#include "povu/common/constants.hpp"
+#include "povu/common/log.hpp"
+#include "povu/graph/types.hpp"
 
 /* === PVST pangenome variation structure tree === */
 

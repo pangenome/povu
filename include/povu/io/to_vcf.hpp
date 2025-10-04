@@ -1,18 +1,27 @@
 #ifndef PV_IO_VCF_HPP
 #define PV_IO_VCF_HPP
 
-#include <fstream> // std::ofstream
-#include <map>
-#include <string>
-#include <string_view>
-#include <vector>
+#include <cstdlib>     // for exit, EXIT_FAILURE
+#include <filesystem>  // for path, absolute, operator/
+#include <fstream>     // for basic_ofstream, basic_ios, ios
+#include <functional>  // for function
+#include <iostream>    // for cout
+#include <map>	       // for map, operator!=
+#include <set>	       // for set
+#include <stdexcept>   // for runtime_error
+#include <string>      // for basic_string, operator+, operator<
+#include <string_view> // for string_view
+#include <utility>     // for get, move
+#include <vector>      // for vector
 
-#include "common.hpp"
-"#include "povu/common/app.hpp"
-"#include "povu/common/compat.hpp"
-"#include "povu/common/utils.hpp"
-"#include "povu/genomics/vcf.hpp"
-"#include "povu/graph/bidirected.hpp"
+#include "common.hpp"		     // for create_dir_if_not_exists
+#include "povu/common/app.hpp"	     // for config
+#include "povu/common/compat.hpp"    // for contains, pv_cmp
+#include "povu/common/core.hpp"	     // for id_t, pt
+#include "povu/common/log.hpp"	     // for ERR
+#include "povu/common/utils.hpp"     // for is_prefix
+#include "povu/genomics/vcf.hpp"     // for VcfRecIdx
+#include "povu/graph/bidirected.hpp" // for VG
 
 namespace povu::io::to_vcf
 {
@@ -20,7 +29,6 @@ inline constexpr std::string_view MODULE = "povu::io::to_vcf";
 namespace fs = std::filesystem;
 namespace pgv = povu::genomics::vcf;
 namespace bd = povu::bidirected;
-namespace pu = povu::utils;
 
 class VcfOutput
 {

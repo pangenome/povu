@@ -1,7 +1,23 @@
-"#include "povu/graph/spanning_tree.hpp"
+#include "povu/graph/spanning_tree.hpp"
+
+#include <algorithm>	 // for max, min
+#include <stack>	 // for stack
+#include <stdexcept>	 // for runtime_error
+#include <string>	 // for basic_string, string, operator<<
+#include <string_view>	 // for string_view, basic_string_view
+#include <sys/types.h>	 // for u_int8_t
+#include <unordered_set> // for unordered_set, operator!=
+
+#include "fmt/core.h"		       // for format
+#include "povu/common/compat.hpp"      // for pv_cmp, format, contains
+#include "povu/common/constants.hpp"   // for INVALID_CLS, COL_SEP, INVALI...
+#include "povu/graph/bidirected.hpp"   // for Vertex, VG, pgt, Edge
+#include "povu/graph/bracket_list.hpp" // for WBracketList, Bracket, Bracke...
+#include "povu/graph/types.hpp"	       // for v_type_e, v_end_e, color_e
 
 namespace povu::spanning_tree
 {
+using namespace povu::constants;
 
 /*
  * Edge

@@ -1,16 +1,9 @@
 #ifndef POVU_GFA2VCF_HPP
 #define POVU_GFA2VCF_HPP
 
-#include <cstdlib>
-#include <filesystem>
-#include <iostream>
-#include <string>
-#include <vector>
+#include <chrono>               // for filesystem
 
-#include "../../include/common/compat.hpp"
-#include "common/app.hpp"
-#include "./call.hpp"
-#include "./decompose.hpp"
+#include "povu/common/app.hpp"  // for config
 
 namespace povu::subcommands::gfa2vcf
 {

@@ -11,8 +11,8 @@
 #include <utility>
 #include <vector>
 
-#include "../../include/common/log.hpp"
-#include "../../include/common/utils.hpp"
+#include "povu/common/log.hpp"
+#include "povu/common/utils.hpp"
 
 namespace core
 {

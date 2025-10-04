@@ -1,27 +1,31 @@
 #ifndef POVU_GENOMICS_VCF_HPP
 #define POVU_GENOMICS_VCF_HPP
 
-#include <algorithm>
-#include <map>
-#include <numeric>
-#include <string>
-#include <utility>
-#include <vector>
+#include <cstdlib>     // for exit, EXIT_FAILURE
+#include <map>	       // for map, _Rb_tree_iterator, operator!=
+#include <numeric>     // for reduce
+#include <set>	       // for set
+#include <sstream>     // for basic_ostringstream, basic_ostream
+#include <string>      // for basic_string, string, allocator
+#include <string_view> // for operator<<, string_view
+#include <tuple>       // for tuple, make_tuple
+#include <utility>     // for get, move, pair
+#include <vector>      // for vector
 
-"#include "povu/common/compat.hpp"
-"#include "povu/graph/bidirected.hpp"
-"#include "povu/graph/types.hpp"
-#include "allele.hpp"
+#include "allele.hpp"		     // for allele_slice_t, Exp
+#include "fmt/core.h"		     // for format
+#include "povu/common/compat.hpp"    // for contains, pv_cmp
+#include "povu/common/core.hpp"	     // for pt, idx_t, id_t, op_t
+#include "povu/common/log.hpp"	     // for ERR
+#include "povu/common/utils.hpp"     // for concat_with, pu
+#include "povu/graph/bidirected.hpp" // for VG
 
 namespace povu::genomics::vcf
 {
 inline constexpr std::string_view MODULE = "povu::genomics::vcf";
-
 namespace bd = povu::bidirected;
 namespace pgt = povu::types::graph;
-namespace pvst = povu::pvst;
 namespace pga = povu::genomics::allele;
-namespace pgg = povu::genomics::graph;
 
 enum class var_type_e {
 	del, // deletion

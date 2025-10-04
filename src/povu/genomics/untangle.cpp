@@ -1,7 +1,19 @@
-"#include "povu/genomics/untangle.hpp"
+#include "povu/genomics/untangle.hpp"
+
+#include <set>	   // for set, operator!=
+#include <string>  // for basic_string, string
+#include <utility> // for move
+#include <vector>  // for vector
+
+#include "fmt/core.h"		    // for format
+#include "povu/align/align.hpp"	    // for align, aln_level_e
+#include "povu/common/compat.hpp"   // for format, pv_cmp
+#include "povu/common/core.hpp"	    // for pt, id_t, up_t, operator<
+#include "povu/genomics/allele.hpp" // for Exp, itn_t
 
 namespace povu::genomics::untangle
 {
+namespace pa = povu::align;
 
 inline std::vector<pt::up_t<pt::id_t>> compute_pairs(const pga::Exp &rt)
 {
