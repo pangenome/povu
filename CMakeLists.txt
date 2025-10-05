@@ -282,7 +282,7 @@ message(STATUS "Install binary directory: ${CMAKE_INSTALL_BINDIR}")
 
 # ================================ Tests =====================================
 
-if (LITESEQ_ENABLE_TESTING)
+if (POVU_ENABLE_TESTING)
   # Add the global TESTING definition
   add_compile_definitions(TESTING)
 

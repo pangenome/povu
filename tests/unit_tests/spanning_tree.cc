@@ -1,15 +1,15 @@
 #include <gtest/gtest.h>
-#include <vector>
+// #include <vector>
+// #include "povu/algorithms/flubbles.hpp"
+// #include "povu/common/app.hpp"
 
-#include "../../app/cli/app.hpp"
-#include "../../include/algorithms/flubbles.hpp"
-#include "../../include/graph/bidirected.hpp"
-#include "../../include/graph/pvst.hpp"
-#include "../../include/graph/spanning_tree.hpp"
+#include "povu/graph/bidirected.hpp"
+#include "povu/graph/pvst.hpp"
+#include "povu/graph/spanning_tree.hpp"
 
 namespace povu::unit_tests_spanning_tree
 {
-namespace pfl = povu::flubbles;
+// namespace pfl = povu::flubbles;
 
 bd::VG *create_test_vg()
 {
