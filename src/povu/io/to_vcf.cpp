@@ -1,11 +1,11 @@
 #include "povu/io/to_vcf.hpp"
 
-#include <sstream>                   // for basic_ostringstream
+#include <sstream> // for basic_ostringstream
 
-#include "povu/genomics/allele.hpp"  // for allele_slice_t
-#include "povu/graph/types.hpp"      // for step_t, or_e
-#include "fmt/core.h"                // for format
-#include "povu/refs/refs.hpp"        // for Ref, pr
+#include "fmt/core.h"		    // for format
+#include "povu/genomics/allele.hpp" // for allele_slice_t
+#include "povu/graph/types.hpp"	    // for step_t, or_e
+#include "povu/refs/refs.hpp"	    // for Ref, pr
 
 namespace povu::io::to_vcf
 {

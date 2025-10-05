@@ -6,8 +6,8 @@
 #include <string_view>
 #include <sys/types.h>
 
-#include "povu/graph/types.hpp"
 #include "core.hpp"
+#include "povu/graph/types.hpp"
 
 namespace povu::constants
 {

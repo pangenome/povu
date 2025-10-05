@@ -1,16 +1,16 @@
-#include <assert.h>                      // for assert
-#include <vector>                        // for vector
-#include <algorithm>                     // for max, min, sort
-#include <limits>                        // for numeric_limits
-#include <queue>                         // for priority_queue, queue
-#include <set>                           // for set
-#include <stack>                         // for stack
-#include <unordered_set>                 // for unordered_set, operator!=
-#include <utility>                       // for pair, make_pair
+#include <algorithm>	 // for max, min, sort
+#include <assert.h>	 // for assert
+#include <limits>	 // for numeric_limits
+#include <queue>	 // for priority_queue, queue
+#include <set>		 // for set
+#include <stack>	 // for stack
+#include <unordered_set> // for unordered_set, operator!=
+#include <utility>	 // for pair, make_pair
+#include <vector>	 // for vector
 
-#include "povu/common/core.hpp"          // for pt, idx_t
+#include "povu/common/core.hpp"		// for pt, idx_t
+#include "povu/graph/spanning_tree.hpp" // for Tree, BackEdge, Vertex, be_t...
 #include "povu/graph/tree_utils.hpp"
-#include "povu/graph/spanning_tree.hpp"  // for Tree, BackEdge, Vertex, be_t...
 
 namespace povu::tree_utils
 {

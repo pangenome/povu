@@ -90,3 +90,6 @@ AlignOperands: Align
 BreakBeforeTernaryOperators: true
 BreakBinaryOperations: Never
 BreakConstructorInitializers: BeforeColon
+
+# --------- Comments ----------
+AlignTrailingComments: true

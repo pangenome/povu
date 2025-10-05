@@ -1,22 +1,22 @@
 #include "povu/algorithms/flubbles.hpp"
 
-#include <assert.h>                     // for assert
-#include <algorithm>                    // for min, sort
-#include <iostream>                     // for basic_ostream, operator<<
-#include <iterator>                     // for pair
-#include <list>                         // for list, _List_iterator, operator!=
-#include <map>                          // for map, operator==, _Rb_tree_ite...
-#include <memory>                       // for make_unique
-#include <set>                          // for set
-#include <stack>                        // for stack
-#include <string>                       // for char_traits, basic_string
-#include <unordered_map>                // for unordered_map, operator!=
-#include <unordered_set>                // for unordered_set
-#include <utility>                      // for pair, get, move, make_pair
+#include <algorithm>	 // for min, sort
+#include <assert.h>	 // for assert
+#include <iostream>	 // for basic_ostream, operator<<
+#include <iterator>	 // for pair
+#include <list>		 // for list, _List_iterator, operator!=
+#include <map>		 // for map, operator==, _Rb_tree_ite...
+#include <memory>	 // for make_unique
+#include <set>		 // for set
+#include <stack>	 // for stack
+#include <string>	 // for char_traits, basic_string
+#include <unordered_map> // for unordered_map, operator!=
+#include <unordered_set> // for unordered_set
+#include <utility>	 // for pair, get, move, make_pair
 
-#include "fmt/core.h"                   // for format
-#include "povu/common/compat.hpp"       // for pv_cmp, format, contains
-#include "povu/graph/bracket_list.hpp"  // for Bracket
+#include "fmt/core.h"		       // for format
+#include "povu/common/compat.hpp"      // for pv_cmp, format, contains
+#include "povu/graph/bracket_list.hpp" // for Bracket
 
 namespace povu::flubbles
 {

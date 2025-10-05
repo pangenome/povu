@@ -1,16 +1,16 @@
 #include "povu/genomics/graph.hpp"
 
-#include <cstdlib>                 // for exit
-#include <deque>                   // for deque, operator==
-#include <iterator>                // for operator!=
-#include <map>                     // for map, operator!=
-#include <optional>                // for optional
-#include <set>                     // for set
-#include <stdexcept>               // for invalid_argument
+#include <cstdlib>   // for exit
+#include <deque>     // for deque, operator==
+#include <iterator>  // for operator!=
+#include <map>	     // for map, operator!=
+#include <optional>  // for optional
+#include <set>	     // for set
+#include <stdexcept> // for invalid_argument
 
-#include "fmt/core.h"              // for format
-#include "povu/common/compat.hpp"  // for pv_cmp, contains, format
-#include "povu/common/log.hpp"     // for WARN, ERR
+#include "fmt/core.h"		  // for format
+#include "povu/common/compat.hpp" // for pv_cmp, contains, format
+#include "povu/common/log.hpp"	  // for WARN, ERR
 
 namespace povu::genomics::graph
 {

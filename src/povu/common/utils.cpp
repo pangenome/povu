@@ -1,13 +1,13 @@
 #include "povu/common/utils.hpp"
 
-#include <algorithm>               // for all_of
-#include <cctype>                  // for isdigit
-#include <ctime>                   // for tm, localtime, time, time_t
-#include <iomanip>                 // for operator<<, setfill, setw
+#include <algorithm> // for all_of
+#include <cctype>    // for isdigit
+#include <ctime>     // for tm, localtime, time, time_t
+#include <iomanip>   // for operator<<, setfill, setw
 
-#include "fmt/core.h"              // for format
-#include "povu/common/compat.hpp"  // for format, pv_cmp
-#include "povu/common/core.hpp"    // for idx_t, pt
+#include "fmt/core.h"		  // for format
+#include "povu/common/compat.hpp" // for format, pv_cmp
+#include "povu/common/core.hpp"	  // for idx_t, pt
 
 namespace povu::utils
 {

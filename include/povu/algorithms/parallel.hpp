@@ -1,13 +1,13 @@
 #ifndef PV_PARALLEL_HPP
 #define PV_PARALLEL_HPP
 
-#include <string_view>                   // for string_view
+#include <string_view> // for string_view
 
-#include "povu/graph/pvst.hpp"           // for Tree
-#include "povu/graph/spanning_tree.hpp"  // for Tree
-#include "povu/graph/tree_utils.hpp"     // for tree_meta
-#include "povu/common/constants.hpp"     // for constants
-#include "povu/graph/types.hpp"          // for graph
+#include "povu/common/constants.hpp"	// for constants
+#include "povu/graph/pvst.hpp"		// for Tree
+#include "povu/graph/spanning_tree.hpp" // for Tree
+#include "povu/graph/tree_utils.hpp"	// for tree_meta
+#include "povu/graph/types.hpp"		// for graph
 
 namespace povu::parallel
 {

@@ -1,20 +1,20 @@
 #include "povu/algorithms/concealed.hpp"
 
-#include <assert.h>                // for assert
-#include <stdio.h>                 // for perror
-#include <stdlib.h>                // for exit
-#include <algorithm>               // for sort
-#include <iostream>                // for basic_ostream, operator<<, cerr
-#include <memory>                  // for make_unique
-#include <optional>                // for optional
-#include <set>                     // for set
-#include <string>                  // for basic_string, string
-#include <utility>                 // for pair, get
-#include <vector>                  // for vector
+#include <algorithm> // for sort
+#include <assert.h>  // for assert
+#include <iostream>  // for basic_ostream, operator<<, cerr
+#include <memory>    // for make_unique
+#include <optional>  // for optional
+#include <set>	     // for set
+#include <stdio.h>   // for perror
+#include <stdlib.h>  // for exit
+#include <string>    // for basic_string, string
+#include <utility>   // for pair, get
+#include <vector>    // for vector
 
-#include "fmt/core.h"              // for format
-#include "povu/common/compat.hpp"  // for pv_cmp, format, erase_if
-#include "povu/common/core.hpp"    // for pt, idx_t, id_t
+#include "fmt/core.h"		  // for format
+#include "povu/common/compat.hpp" // for pv_cmp, format, erase_if
+#include "povu/common/core.hpp"	  // for pt, idx_t, id_t
 
 namespace povu::concealed
 {

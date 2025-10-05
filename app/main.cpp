@@ -1,11 +1,11 @@
-#include <string_view>                 // for string_view
+#include <string_view> // for string_view
 
-#include "./cli/cli.hpp"               // for cli
-#include "./subcommand/call.hpp"       // for do_call
-#include "./subcommand/decompose.hpp"  // for do_decompose
-#include "./subcommand/gfa2vcf.hpp"    // for do_gfa2vcf
-#include "./subcommand/info.hpp"       // for do_info
-#include "povu/common/app.hpp"         // for task_e, config
+#include "./cli/cli.hpp"	      // for cli
+#include "./subcommand/call.hpp"      // for do_call
+#include "./subcommand/decompose.hpp" // for do_decompose
+#include "./subcommand/gfa2vcf.hpp"   // for do_gfa2vcf
+#include "./subcommand/info.hpp"      // for do_info
+#include "povu/common/app.hpp"	      // for task_e, config
 
 constexpr std::string_view MODULE = "povu::main";
 namespace pv = povu::subcommands;

@@ -1,13 +1,13 @@
 #include "povu/algorithms/tiny.hpp"
 
-#include <assert.h>                // for assert
-#include <set>                     // for set
-#include <string>                  // for basic_string, string
-#include <vector>                  // for vector
+#include <assert.h> // for assert
+#include <set>	    // for set
+#include <string>   // for basic_string, string
+#include <vector>   // for vector
 
-#include "fmt/core.h"              // for format
-#include "povu/common/compat.hpp"  // for format, pv_cmp
-#include "povu/common/core.hpp"    // for pt, idx_t
+#include "fmt/core.h"		  // for format
+#include "povu/common/compat.hpp" // for format, pv_cmp
+#include "povu/common/core.hpp"	  // for pt, idx_t
 
 namespace povu::tiny
 {

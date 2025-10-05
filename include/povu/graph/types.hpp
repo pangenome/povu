@@ -1,15 +1,15 @@
 #ifndef POVU_TYPES_GRAPH_HPP
 #define POVU_TYPES_GRAPH_HPP
 
-#include <iostream>                // for ostream
-#include <string>                  // for basic_string, string
-#include <string_view>             // for string_view, basic_string_view
-#include <vector>                  // for vector
-#include <cstddef>                 // for size_t
+#include <cstddef>     // for size_t
+#include <iostream>    // for ostream
+#include <string>      // for basic_string, string
+#include <string_view> // for string_view, basic_string_view
+#include <vector>      // for vector
 
-#include "povu/common/compat.hpp"  // for format, pv_cmp
-#include "povu/common/core.hpp"    // for pt, id_t, idx_t
-#include "fmt/core.h"              // for format
+#include "fmt/core.h"		  // for format
+#include "povu/common/compat.hpp" // for format, pv_cmp
+#include "povu/common/core.hpp"	  // for pt, id_t, idx_t
 
 namespace povu::types::graph
 {

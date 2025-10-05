@@ -1,8 +1,8 @@
-#include <stdlib.h>             // for exit, EXIT_FAILURE
-#include <cstddef>              // for size_t
-#include <fstream>              // for basic_ifstream, basic_istream, basic_ios
+#include <cstddef>  // for size_t
+#include <fstream>  // for basic_ifstream, basic_istream, basic_ios
+#include <stdlib.h> // for exit, EXIT_FAILURE
 
-#include "povu/common/log.hpp"  // for ERR
+#include "povu/common/log.hpp" // for ERR
 #include "povu/io/common.hpp"
 
 namespace povu::io::common

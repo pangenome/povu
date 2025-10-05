@@ -1,9 +1,9 @@
 #include "povu/align/align.hpp"
 
-#include <algorithm>            // for min, max, reverse
-#include <cstdlib>              // for exit
+#include <algorithm> // for min, max, reverse
+#include <cstdlib>   // for exit
 
-#include "povu/common/log.hpp"  // for ERR
+#include "povu/common/log.hpp" // for ERR
 
 namespace povu::align
 {

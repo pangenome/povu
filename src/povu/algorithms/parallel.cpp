@@ -1,12 +1,12 @@
 #include "povu/algorithms/parallel.hpp"
 
-#include <set>                     // for set
-#include <string>                  // for basic_string, string
-#include <vector>                  // for vector
+#include <set>	  // for set
+#include <string> // for basic_string, string
+#include <vector> // for vector
 
-#include "fmt/core.h"              // for format
-#include "povu/common/compat.hpp"  // for format, pv_cmp
-#include "povu/common/core.hpp"    // for idx_t, pt
+#include "fmt/core.h"		  // for format
+#include "povu/common/compat.hpp" // for format, pv_cmp
+#include "povu/common/core.hpp"	  // for idx_t, pt
 
 namespace povu::parallel
 {

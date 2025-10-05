@@ -1,12 +1,12 @@
 #include "./cli.hpp"
 
-#include <cstdlib>     // for exit, size_t, EXIT_SUCCESS
-#include <functional>  // for function
-#include <iostream>    // for basic_ostream, basic_ios, cout, endl, operator<<
-#include <utility>     // for move
-#include <vector>      // for vector
+#include <cstdlib>    // for exit, size_t, EXIT_SUCCESS
+#include <functional> // for function
+#include <iostream>   // for basic_ostream, basic_ios, cout, endl, operator<<
+#include <utility>    // for move
+#include <vector>     // for vector
 
-#include "args.hxx"    // for ValueFlag, EitherFlag, Flag, get, Subparser
+#include "args.hxx" // for ValueFlag, EitherFlag, Flag, get, Subparser
 
 namespace cli
 {

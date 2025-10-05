@@ -1,23 +1,23 @@
-#include <liteseq/gfa.h>                              // for gfa_config, gfa...
-#include <chrono>                                     // for milliseconds
-#include <cstddef>                                    // for size_t
-#include <optional>                                   // for optional
-#include <set>                                        // for set
-#include <string>                                     // for basic_string
-#include <thread>                                     // for thread, sleep_for
-#include <vector>                                     // for vector
+#include <chrono>	 // for milliseconds
+#include <cstddef>	 // for size_t
+#include <liteseq/gfa.h> // for gfa_config, gfa...
+#include <optional>	 // for optional
+#include <set>		 // for set
+#include <string>	 // for basic_string
+#include <thread>	 // for thread, sleep_for
+#include <vector>	 // for vector
 
-#include "povu/common/progress.hpp"                   // for set_progress_ba...
+#include "fmt/core.h"				     // for format
+#include "indicators/indeterminate_progress_bar.hpp" // for IndeterminatePr...
+#include "indicators/multi_progress.hpp"	     // for MultiProgress
+#include "indicators/progress_bar.hpp"		     // for ProgressBar
+#include "indicators/setting.hpp"		     // for PostfixText
+#include "liteseq/refs.h"			     // for get_step_count
+#include "povu/common/core.hpp"			     // for pt, idx_t, id_t
+#include "povu/common/log.hpp"			     // for WARN
+#include "povu/common/progress.hpp"		     // for set_progress_ba...
+#include "povu/graph/types.hpp"			     // for v_end_e
 #include "povu/io/from_gfa.hpp"
-#include "fmt/core.h"                                 // for format
-#include "indicators/indeterminate_progress_bar.hpp"  // for IndeterminatePr...
-#include "indicators/multi_progress.hpp"              // for MultiProgress
-#include "indicators/progress_bar.hpp"                // for ProgressBar
-#include "indicators/setting.hpp"                     // for PostfixText
-#include "liteseq/refs.h"                             // for get_step_count
-#include "povu/common/core.hpp"                       // for pt, idx_t, id_t
-#include "povu/common/log.hpp"                        // for WARN
-#include "povu/graph/types.hpp"                       // for v_end_e
 
 namespace povu::io::from_gfa
 {

@@ -1,23 +1,23 @@
-#include <fstream>                    // for basic_ifstream, basic_ostream
-#include <map>                        // for map
-#include <sstream>                    // for basic_stringstream
-#include <string>                     // for basic_string, char_traits, string
-#include <vector>                     // for vector
-#include <algorithm>                  // for find
-#include <cctype>                     // for isspace
-#include <cstdlib>                    // for exit, size_t, strtol
-#include <memory>                     // for make_unique
-#include <utility>                    // for get, pair
+#include <algorithm> // for find
+#include <cctype>    // for isspace
+#include <cstdlib>   // for exit, size_t, strtol
+#include <fstream>   // for basic_ifstream, basic_ostream
+#include <map>	     // for map
+#include <memory>    // for make_unique
+#include <sstream>   // for basic_stringstream
+#include <string>    // for basic_string, char_traits, string
+#include <utility>   // for get, pair
+#include <vector>    // for vector
 
-#include "povu/common/compat.hpp"     // for format, pv_cmp
-#include "povu/common/log.hpp"        // for ERR
-#include "povu/common/utils.hpp"      // for split, concat_with
-#include "povu/io/common.hpp"         // for FILE_ERROR
+#include "fmt/core.h"		     // for format
+#include "povu/common/compat.hpp"    // for format, pv_cmp
+#include "povu/common/constants.hpp" // for INVALID_IDX, COL_SEP, EXPECTED_...
+#include "povu/common/core.hpp"	     // for pt, idx_t
+#include "povu/common/log.hpp"	     // for ERR
+#include "povu/common/utils.hpp"     // for split, concat_with
+#include "povu/graph/types.hpp"	     // for id_or_t, or_e
+#include "povu/io/common.hpp"	     // for FILE_ERROR
 #include "povu/io/from_pvst.hpp"
-#include "fmt/core.h"                 // for format
-#include "povu/common/constants.hpp"  // for INVALID_IDX, COL_SEP, EXPECTED_...
-#include "povu/common/core.hpp"       // for pt, idx_t
-#include "povu/graph/types.hpp"       // for id_or_t, or_e
 
 namespace povu::io::from_pvst
 {
