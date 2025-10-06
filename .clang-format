@@ -1,0 +1,95 @@
+# .clang-format configuration for a Linux Kernel-inspired C++ style guide
+BasedOnStyle: LLVM
+
+# ------------- indentation -----------
+
+UseTab: Always
+IndentWidth: 8
+TabWidth: 8
+ContinuationIndentWidth: 8
+ColumnLimit: 80 # 80 char limit
+
+IndentCaseLabels: false
+IndentCaseBlocks: false
+
+IndentWrappedFunctionNames: false
+
+# Namespace handling
+NamespaceIndentation: None     # do not indent code inside namespaces
+
+# (public, private, and protected)
+# Access specifiers flush-left; members indented one level
+# = -IndentWidth
+AccessModifierOffset: -8
+
+# ------------- Braces -----------
+
+# Use custom Brace handling because C++ has more on braces than C
+# we do want to stay as close to the Linux Brace style unless C++ has a
+# feature that C does not
+
+# BreakBeforeBraces: Linux
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterFunction: true       # functions -> brace on next line
+  AfterClass: true         # classes/structs -> brace on next line
+  AfterNamespace: true
+  BeforeLambdaBody: true
+  AfterControlStatement: false # if/while/for -> same line
+  AfterEnum: false
+  AfterUnion: false
+  AfterExternBlock: false
+  BeforeCatch: true
+  BeforeElse: true
+  IndentBraces: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+
+
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+AllowShortEnumsOnASingleLine: false
+AllowShortNamespacesOnASingleLine: false
+
+# Lambda Behavior
+AlwaysBreakAfterDefinitionReturnType: None  # No custom breaks for return types
+AllowShortLambdasOnASingleLine: Inline  # if it is a fn arg
+
+# ----- Spacing preferences ------------
+SpaceBeforeParens: ControlStatements
+SpaceAfterCStyleCast: false
+SpaceBeforeAssignmentOperators: true
+SpacesInParentheses: false        # No spaces inside () expressions
+
+# Pointers/references on the right (int *p), not `char* p`
+DerivePointerAlignment: false
+PointerAlignment: Right
+ReferenceAlignment: Right
+
+# Ensure exactly one blank line between consecutive definitions
+# e.g class, struct, fn etc definitions
+SeparateDefinitionBlocks: Always
+MaxEmptyLinesToKeep: 1
+
+# ------------ Includes -------------------------
+SortIncludes: true
+
+# ---- declarations----
+
+
+# ----- Argument lists ----
+BinPackArguments: true
+BinPackParameters: true
+AllowAllArgumentsOnNextLine: true
+AllowAllParametersOfDeclarationOnNextLine: true
+
+# ------------ operators -------
+AlignOperands: Align
+BreakBeforeTernaryOperators: true
+BreakBinaryOperations: Never
+BreakConstructorInitializers: BeforeColon
+
+# --------- Comments ----------
+AlignTrailingComments: true

@@ -1,15 +1,11 @@
 #ifndef PV_SUBCOMMANDS_INF_HPP
 #define PV_SUBCOMMANDS_INF_HPP
 
-#include "../../include/common/compat.hpp"
-#include "../../include/graph/bidirected.hpp"
-#include "../../include/io/from_gfa.hpp"
-#include "../cli/app.hpp"
+#include "povu/common/app.hpp"
 
-namespace povu::subcommands::info {
-namespace bd = povu::bidirected;
-
+namespace povu::subcommands::info
+{
 void do_info(const core::config &app_config);
-}
+} // namespace povu::subcommands::info
 
 #endif

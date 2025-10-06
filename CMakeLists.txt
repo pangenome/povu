@@ -147,10 +147,12 @@ silence_warnings(indicators)
 
 # These variables define paths for source code, headers, and tests.
 # Used later in the project to organize sources and targets.
-set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/app)
+set(APP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/app)
 set(INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
+set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(TESTS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests)
 set(BIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+set(POVULIB_SOURCES_DIR ${SRC_DIR}/povu)
 
 # When set uses uses build dir for output binaries
 # set(BIN_DIR ${CMAKE_BINARY_DIR}/bin)
@@ -164,41 +166,40 @@ set(BIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 #  ........ Define the library target ............
 
 ADD_LIBRARY(povulib
-
   # algorithms
-  ${INCLUDE_DIR}/algorithms/concealed.cpp
-  ${INCLUDE_DIR}/algorithms/midi.cpp
-  ${INCLUDE_DIR}/algorithms/smothered.cpp
-  ${INCLUDE_DIR}/algorithms/parallel.cpp
-  ${INCLUDE_DIR}/algorithms/tiny.cpp
-  ${INCLUDE_DIR}/algorithms/flubbles.cpp
+  ${POVULIB_SOURCES_DIR}/algorithms/concealed.cpp
+  ${POVULIB_SOURCES_DIR}/algorithms/midi.cpp
+  ${POVULIB_SOURCES_DIR}/algorithms/smothered.cpp
+  ${POVULIB_SOURCES_DIR}/algorithms/parallel.cpp
+  ${POVULIB_SOURCES_DIR}/algorithms/tiny.cpp
+  ${POVULIB_SOURCES_DIR}/algorithms/flubbles.cpp
 
   # align
-  ${INCLUDE_DIR}/align/align.cpp
+  ${POVULIB_SOURCES_DIR}/align/align.cpp
 
   # common
-  ${INCLUDE_DIR}/common/utils.cpp
+  ${POVULIB_SOURCES_DIR}/common/utils.cpp
 
   # genomics
-  ${INCLUDE_DIR}/genomics/vcf.cpp
-  ${INCLUDE_DIR}/genomics/graph.cpp
-  ${INCLUDE_DIR}/genomics/allele.cpp
-  ${INCLUDE_DIR}/genomics/untangle.cpp
-  ${INCLUDE_DIR}/genomics/genomics.cpp
+  ${POVULIB_SOURCES_DIR}/genomics/vcf.cpp
+  ${POVULIB_SOURCES_DIR}/genomics/graph.cpp
+  ${POVULIB_SOURCES_DIR}/genomics/allele.cpp
+  ${POVULIB_SOURCES_DIR}/genomics/untangle.cpp
+  ${POVULIB_SOURCES_DIR}/genomics/genomics.cpp
 
   # graph
-  ${INCLUDE_DIR}/graph/types.cpp
-  ${INCLUDE_DIR}/graph/bidirected.cpp
-  ${INCLUDE_DIR}/graph/bracket_list.cpp
-  ${INCLUDE_DIR}/graph/spanning_tree.cpp
-  ${INCLUDE_DIR}/graph/tree_utils.cpp
+  ${POVULIB_SOURCES_DIR}/graph/types.cpp
+  ${POVULIB_SOURCES_DIR}/graph/bidirected.cpp
+  ${POVULIB_SOURCES_DIR}/graph/bracket_list.cpp
+  ${POVULIB_SOURCES_DIR}/graph/spanning_tree.cpp
+  ${POVULIB_SOURCES_DIR}/graph/tree_utils.cpp
 
   # io
-  ${INCLUDE_DIR}/io/from_pvst.cpp
-  ${INCLUDE_DIR}/io/to_pvst.cpp
-  ${INCLUDE_DIR}/io/from_gfa.cpp
-  ${INCLUDE_DIR}/io/common.cpp
-  ${INCLUDE_DIR}/io/to_vcf.cpp
+  ${POVULIB_SOURCES_DIR}/io/from_pvst.cpp
+  ${POVULIB_SOURCES_DIR}/io/to_pvst.cpp
+  ${POVULIB_SOURCES_DIR}/io/from_gfa.cpp
+  ${POVULIB_SOURCES_DIR}/io/common.cpp
+  ${POVULIB_SOURCES_DIR}/io/to_vcf.cpp
 )
 
 # ..... executable .......
@@ -207,15 +208,21 @@ ADD_LIBRARY(povulib
 # Define the main executable target
 add_executable(povu
   # cli
-  ${SRC_DIR}/cli/cli.cpp
+  ${APP_DIR}/cli/cli.cpp
 
   # subcommand
-  ${SRC_DIR}/subcommand/decompose.cpp
-  ${SRC_DIR}/subcommand/info.cpp
-  ${SRC_DIR}/subcommand/call.cpp
-  ${SRC_DIR}/subcommand/gfa2vcf.cpp
+  ${APP_DIR}/subcommand/decompose.cpp
+  ${APP_DIR}/subcommand/info.cpp
+  ${APP_DIR}/subcommand/call.cpp
+  ${APP_DIR}/subcommand/gfa2vcf.cpp
 
-  ${SRC_DIR}/main.cpp
+  ${APP_DIR}/main.cpp
+)
+
+target_include_directories(povulib
+  PUBLIC
+  ${INCLUDE_DIR}
+  ${APP_DIR}
 )
 
 # ---- linking -----
@@ -275,7 +282,7 @@ message(STATUS "Install binary directory: ${CMAKE_INSTALL_BINDIR}")
 
 # ================================ Tests =====================================
 
-if (LITESEQ_ENABLE_TESTING)
+if (POVU_ENABLE_TESTING)
   # Add the global TESTING definition
   add_compile_definitions(TESTING)
 
