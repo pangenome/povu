@@ -1,10 +1,9 @@
 # povu
 
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Build Test Status (CMake)](https://github.com/pangenome/povu/actions/workflows/build_cmake.yml/badge.svg?label=build)](https://github.com/pangenome/povu/actions/workflows/build_cmake.yml)
 [![Test Status](https://github.com/pangenome/povu/actions/workflows/test.yml/badge.svg?label=tests)](https://github.com/pangenome/povu/actions/workflows/test.yml)
-
+[![C++17 Build (CMake, macOS)](https://github.com/pangenome/povu/actions/workflows/macos.yml/badge.svg)](https://github.com/pangenome/povu/actions/workflows/macos.yml)
+[![C++17 Build (CMake, Ubuntu)](https://github.com/pangenome/povu/actions/workflows/build_cmake.yml/badge.svg)](https://github.com/pangenome/povu/actions/workflows/build_cmake.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A toolkit for exploring regions of genomic variation
 
