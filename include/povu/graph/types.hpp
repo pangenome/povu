@@ -13,8 +13,6 @@
 
 namespace povu::types::graph
 {
-
-// should this be renamed to clr_e or color_e?
 enum class color_e {
 	gray,
 	black
@@ -22,7 +20,7 @@ enum class color_e {
 std::string_view to_str(color_e ve);
 std::ostream &operator<<(std::ostream &os, const color_e &c);
 
-// Eq class and node id
+// Eq for equivalence class
 struct eq_n_id_t {
 	std::size_t eq_class;
 	std::size_t v_id;
@@ -70,7 +68,7 @@ struct side_n_id_t {
 	// methods
 	// -------
 	friend bool operator<(const side_n_id_t &lhs, const side_n_id_t &rhs);
-	side_n_id_t complement() const;
+	[[nodiscard]] side_n_id_t complement() const;
 };
 
 std::ostream &operator<<(std::ostream &os, const side_n_id_t &x);
@@ -82,11 +80,13 @@ enum class or_e {
 };
 std::string_view to_str(or_e o);
 std::ostream &operator<<(std::ostream &os, const or_e &o);
+or_e flip(or_e o);
 
 struct id_or_t {
 	pt::id_t v_id;
 	or_e orientation;
 
+	[[nodiscard]]
 	std::string as_str() const
 	{
 		return pv_cmp::format("{}{}", to_str(this->orientation),
@@ -110,6 +110,7 @@ struct ref_step_t {
 	// locus of the start
 	pt::idx_t locus; // position in the reference (aka step index)
 
+	[[nodiscard]]
 	std::string as_str() const
 	{
 		return pv_cmp::format("{}{}@{}", to_str(this->orientation),

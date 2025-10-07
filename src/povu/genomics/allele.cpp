@@ -1,11 +1,15 @@
 #include "povu/genomics/allele.hpp"
 
+#include <cstdint>
 #include <cstdlib>	  // for exit, EXIT_FAILURE
 #include <liteseq/refs.h> // for ref_walk, ref
 #include <map>		  // for map
 #include <vector>	  // for vector
 
+#include "povu/common/core.hpp"
+#include "povu/common/log.hpp"
 #include "povu/genomics/graph.hpp" // for RoV, pgt
+#include "povu/graph/types.hpp"
 
 namespace povu::genomics::allele
 {
@@ -41,6 +45,36 @@ bool is_contained(std::vector<pt::slice_t> ref_slices, pt::slice_t ref_slice)
 	return false;
 }
 
+pt::idx_t is_valid_rev(const lq::ref_walk *ref_w, pt::idx_t ref_w_start_idx,
+		       const pgt::walk_t &w, pt::idx_t w_start_idx,
+		       pt::idx_t len)
+{
+	pt::idx_t valid_len{0};
+
+	for (pt::idx_t i{}; i < len; i++) {
+		pt::idx_t ref_w_idx = ref_w_start_idx - i;
+		if (ref_w_idx > ref_w->step_count)
+			return valid_len;
+
+		pt::idx_t ref_v_id = ref_w->v_ids[ref_w_idx];
+		pgt::or_e ref_o =
+			ref_w->strands[ref_w_idx] == lq::strand::STRAND_FWD
+				? pgt::or_e::forward
+				: pgt::or_e::reverse;
+
+		pt::idx_t graph_w_idx = w_start_idx + i;
+		auto [w_v_id, w_o] = w[graph_w_idx];
+
+		if (ref_v_id != w_v_id || ref_o != ptg::flip(w_o)) {
+			break;
+		}
+
+		valid_len++;
+	}
+
+	return valid_len;
+}
+
 pt::idx_t is_valid(const lq::ref_walk *ref_w, pt::idx_t ref_w_start_idx,
 		   const pgt::walk_t &w, pt::idx_t w_start_idx, pt::idx_t len)
 {
@@ -59,9 +93,8 @@ pt::idx_t is_valid(const lq::ref_walk *ref_w, pt::idx_t ref_w_start_idx,
 		//  auto [ref_v_id, ref_o, _] = ref_w[ref_w_idx];
 		auto [w_v_id, w_o] = w[graph_w_idx];
 
-		if (ref_v_id != w_v_id || ref_o != w_o) {
+		if (ref_v_id != w_v_id || ref_o != w_o)
 			break;
-		}
 
 		valid_len++;
 	}
@@ -69,75 +102,93 @@ pt::idx_t is_valid(const lq::ref_walk *ref_w, pt::idx_t ref_w_start_idx,
 	return valid_len;
 }
 
+void run_conv(pt::idx_t ref_idx, const lq::ref_walk *ref_w,
+	      std::map<pt::idx_t, std::set<pt::idx_t>> &walk_to_refs,
+	      pt::idx_t w_idx,
+	      const std::pair<const pgt::walk_t &, pt::slice_t> &walk_slice,
+	      std::vector<pt::slice_t> &walk_slices, itn_t &ref_itns,
+	      const std::vector<pt::idx_t> &vtx_ref_idxs, bool &is_tangled)
+{
+	const pgt::walk_t &w = walk_slice.first;
+	pt::idx_t walk_step_idx = walk_slice.second.start;
+	pt::idx_t slice_len = walk_slice.second.len;
+
+	for (pt::idx_t ref_step_idx : vtx_ref_idxs) {
+		// Assumption:
+		// in a valid GFA file,
+		// if a ref starts within a walk then it has to
+		// start at the beginning of the walk
+		if (walk_step_idx > 0 && ref_step_idx != 0)
+			continue;
+
+		std::pair<const lq::ref_walk *, pt::slice_t> ref_slice = {
+			ref_w, {ref_step_idx, slice_len}};
+
+		ptg::or_e ref_or = pgt::or_e::forward;
+		pt::idx_t valid_len{};
+
+		valid_len = is_valid(ref_w, ref_step_idx, w, walk_step_idx,
+				     slice_len);
+
+		if (valid_len >= 2) {
+			ref_or = pgt::or_e::forward;
+		}
+		else { // valid_len < 2
+			valid_len = is_valid_rev(ref_w, ref_step_idx, w,
+						 walk_step_idx, slice_len);
+			ref_or = pgt::or_e::reverse;
+		}
+
+		if (valid_len < 2)
+			continue;
+
+		if (!is_contained(walk_slices, {walk_step_idx, valid_len})) {
+			walk_slices.push_back({walk_step_idx, valid_len});
+			ref_itns.append_at({&w, w_idx, walk_step_idx, ref_w,
+					    ref_idx, ref_step_idx, valid_len,
+					    ref_or});
+			walk_to_refs[w_idx].insert(ref_idx);
+
+			if (ref_itns.at_count() > 1) {
+				is_tangled = true;
+			}
+		}
+	}
+}
+
 bool comp_overlays(const bd::VG &g, const pgt::walk_t &w, pt::idx_t w_idx,
 		   std::map<pt::id_t, itn_t> &ref_map,
-		   std::map<pt::idx_t, std::set<pt::idx_t>> &walk_to_refs)
+		   std::map<pt::idx_t, std::set<pt::idx_t>> &walk_to_refs,
+		   const std::string &id)
 {
-
 	bool is_tangled{false};
-	const pt::idx_t WALK_LEN = w.size();
+	const pt::idx_t W_LEN = w.size();
 
 	for (pt::idx_t ref_idx{}; ref_idx < g.get_ref_count(); ref_idx++) {
 		const lq::ref_walk *ref_w = g.get_ref_vec(ref_idx)->walk;
-
 		itn_t ref_itns;
-
 		std::vector<pt::slice_t> walk_slices;
 
-		for (pt::idx_t walk_step_idx{}; walk_step_idx < WALK_LEN;
-		     ++walk_step_idx) {
-			pt::idx_t slice_len = WALK_LEN - walk_step_idx;
-			const pgt::step_t &step = w[walk_step_idx];
+		for (pt::idx_t w_step_idx{}; w_step_idx < W_LEN; ++w_step_idx) {
+			pt::idx_t slice_len = W_LEN - w_step_idx;
+			const pgt::step_t &step = w[w_step_idx];
 			auto [v_id, o] = step;
 			pt::idx_t v_idx = g.v_id_to_idx(v_id);
 			const std::vector<pt::idx_t> &vtx_ref_idxs =
 				g.get_vertex_ref_idxs(v_idx, ref_idx);
 
 			std::pair<const pgt::walk_t &, pt::slice_t> walk_slice =
-				{w, {walk_step_idx, slice_len}};
-			for (pt::idx_t ref_step_idx : vtx_ref_idxs) {
+				{w, {w_step_idx, slice_len}};
 
-				// Assumption:
-				// in a valid GFA file,
-				// if a ref starts within a walk then it has to
-				// start at the beginning of the walk
-				if (ref_step_idx != 0 && walk_step_idx > 0) {
-					continue;
-				}
-
-				std::pair<const lq::ref_walk *, pt::slice_t>
-					ref_slice = {ref_w,
-						     {ref_step_idx, slice_len}};
-
-				pt::idx_t valid_len =
-					is_valid(ref_w, ref_step_idx, w,
-						 walk_step_idx, slice_len);
-
-				if (valid_len < 2) {
-					continue;
-				}
-
-				if (!is_contained(walk_slices,
-						  {walk_step_idx, valid_len})) {
-					walk_slices.push_back(
-						{walk_step_idx, valid_len});
-					ref_itns.append_at(
-						{&w, w_idx, walk_step_idx,
-						 ref_w, ref_idx, ref_step_idx,
-						 valid_len});
-					walk_to_refs[w_idx].insert(ref_idx);
-
-					if (ref_itns.at_count() > 1) {
-						is_tangled = true;
-					}
-				}
-			}
+			run_conv(ref_idx, ref_w, walk_to_refs, w_idx,
+				 walk_slice, walk_slices, ref_itns,
+				 vtx_ref_idxs, is_tangled);
 		}
 
-		if (ref_itns.at_count() > 0) {
+		if (ref_itns.at_count() > 0)
 			ref_map.emplace(ref_idx, std::move(ref_itns));
-		}
 	}
+
 	return is_tangled;
 }
 
@@ -162,15 +213,15 @@ void comp_itineraries(const bd::VG &g, Exp &exp)
 		//   INFO("{}", pgt::to_string(walks[w_idx]));
 		// }
 
-		bool is_tangled = comp_overlays(g, walks.at(w_idx), w_idx,
-						ref_map, walk_to_refs);
-		if (is_tangled) {
+		bool is_tangled =
+			comp_overlays(g, walks.at(w_idx), w_idx, ref_map,
+				      walk_to_refs, exp.id());
+		if (is_tangled)
 			exp.set_tangled(true);
-		}
 
 #ifdef DEBUG
-		auto refs = exp.get_ref_idxs_for_walk(
-			w_idx); // ensure walk pointers are valid
+		// ensure walk pointers are valid
+		auto refs = exp.get_ref_idxs_for_walk(w_idx);
 		for (auto r : refs) {
 			const itn_t &r_itn = exp.get_itn(r);
 			for (pt::idx_t at_idx = 0; at_idx < r_itn.at_count();
@@ -188,9 +239,8 @@ void comp_itineraries(const bd::VG &g, Exp &exp)
 
 				pt::idx_t step_idx = as.walk_start_idx;
 				pt::idx_t end = as.walk_start_idx + as.len;
-				for (step_idx; step_idx < end; ++step_idx) {
+				for (step_idx; step_idx < end; ++step_idx)
 					auto _ = as.get_step(step_idx);
-				}
 			}
 		}
 #endif

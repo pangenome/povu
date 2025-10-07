@@ -32,7 +32,7 @@ CPMAddPackage(
 CPMAddPackage(
   NAME              liteseq
   GITHUB_REPOSITORY urbanslug/liteseq
-  GIT_TAG           83cd563acbbfe8fd2729ba5ffe391d7802b1f56f
+  GIT_TAG           3678c8b7d1c5e1bfaa9e3f07133e6e3f00567015
   OPTIONS
   "LITESEQ_BUILD_EXAMPLE OFF"
   "LITESEQ_ENABLE_TESTING OFF"

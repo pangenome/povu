@@ -1,8 +1,11 @@
 #include "povu/io/to_vcf.hpp"
 
 #include <sstream> // for basic_ostringstream
+#include <sys/types.h>
 
-#include "fmt/core.h"		    // for format
+#include "fmt/core.h" // for format
+#include "povu/common/core.hpp"
+#include "povu/common/log.hpp"
 #include "povu/genomics/allele.hpp" // for allele_slice_t
 #include "povu/graph/types.hpp"	    // for step_t, or_e
 #include "povu/refs/refs.hpp"	    // for Ref, pr
@@ -86,20 +89,20 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 	const pt::idx_t REF_AT_IDX = 0;
 	std::vector<pt::idx_t> alts = r.get_unique_alt_idxs();
 
-	auto get_label = [&](const pgt::step_t &step) -> std::string
+	auto get_label = [&](const pgt::step_t &s) -> std::string
 	{
-		auto [v_id, o] = step;
-		const bd::Vertex &v = g.get_vertex_by_id(v_id);
-		return (o == pgt::or_e::forward) ? v.get_label()
-						 : v.get_rc_label();
+		auto [v_id, o] = s;
+		return (o == pgt::or_e::forward)
+			       ? g.get_vertex_by_id(v_id).get_label()
+			       : g.get_vertex_by_id(v_id).get_rc_label();
 	};
 
 	auto slice_to_dna_str =
 		[&](const pga::allele_slice_t &as) -> std::string
 	{
 		std::string dna_str = "";
+		bool is_fwd = as.slice_or == pgt::or_e::forward;
 
-		// const pgt::walk_t w = *as.walk;
 		pt::idx_t start_idx = as.ref_start_idx;
 
 		// 1) Anchor base for deletions & insertions
@@ -109,7 +112,7 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 			// grab the first step’s label, take its last character
 			const pgt::step_t &s = as.get_step(start_idx);
 			auto lbl = get_label(s);
-			dna_str.push_back(lbl.back());
+			dna_str.push_back(is_fwd ? lbl.back() : lbl.front());
 			break;
 		}
 		default:
@@ -117,9 +120,13 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 		}
 
 		// 2) Middle steps (for all types) does nothing for deletions
-		pt::idx_t step_idx{start_idx + 1};
-		pt::idx_t end = start_idx + as.len - 1;
-		for (step_idx; step_idx < end; step_idx++) {
+		pt::idx_t step_idx = is_fwd ? start_idx + 1 : start_idx - 1;
+		pt::idx_t end = is_fwd ? start_idx + as.len - 1
+				       : start_idx - as.len + 1;
+		int8_t step_inc = is_fwd ? 1 : -1;
+
+		for (; (is_fwd ? step_idx < end : step_idx > end);
+		     step_idx += step_inc) {
 			const pgt::step_t &s = as.get_step(step_idx);
 			dna_str += get_label(s);
 		}
@@ -179,17 +186,29 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 	std::string alt_dna = slices_to_dna_str(alts);
 
 	std::ostringstream info_field;
-	info_field << "AC=" << r.get_ac() << ";AF=" << r.get_af()
-		   << ";AN=" << r.get_an() << ";NS=" << r.get_ns()
+	// clang-format off
+	info_field << "AC=" << r.get_ac()
+		   << ";AF=" << r.get_af()
+		   << ";AN=" << r.get_an()
+		   << ";NS=" << r.get_ns()
 		   << ";AT=" << allele_traversals()
 		   << ";VARTYPE=" << pgv::to_string_view(var_typ)
 		   << ";TANGLED=" << (r.is_tangled() ? "T" : "F")
 		   << ";LV=" << (r.get_height() - 1);
+	// clang-format on
 
-	os << chrom << "\t" << r.get_pos() << "\t" << r.get_id() << "\t"
-	   << ref_dna << "\t" << alt_dna << "\t" << r.get_qual() << "\t"
-	   << r.get_filter() << "\t" << info_field.str() << "\t"
-	   << r.get_format() << "\t" << r.get_genotype_fields() << "\n";
+	// clang-format off
+	os << chrom << "\t"
+	   << r.get_pos() << "\t"
+	   << r.get_id() << "\t"
+	   << ref_dna << "\t"
+	   << alt_dna << "\t"
+	   << r.get_qual() << "\t"
+	   << r.get_filter() << "\t"
+	   << info_field.str() << "\t"
+	   << r.get_format() << "\t"
+	   << r.get_genotype_fields() << "\n";
+	// clang-format on
 
 	return;
 }

@@ -33,30 +33,40 @@ struct allele_slice_t {
 	pt::idx_t walk_start_idx;
 
 	const lq::ref_walk *ref_w;
-	//  const pgt::ref_walk_t *ref_walk;
 	pt::idx_t ref_idx;
 	pt::idx_t ref_start_idx;
 
 	pt::idx_t len; // total step count in the itinerary
+	ptg::or_e slice_or;
 
 	// ---------
 	// getter(s)
 	// ---------
+	[[nodiscard]]
 	pt::idx_t step_count() const
 	{
 		return this->len;
 	}
 
+	[[nodiscard]]
+	ptg::or_e get_or() const
+	{
+		return this->slice_or;
+	}
+
+	[[nodiscard]]
 	bd::id_or_t get_walk_step(pt::idx_t idx) const
 	{
 		return this->walk->at(idx);
 	}
 
+	[[nodiscard]]
 	pt::idx_t get_locus(pt::idx_t idx) const
 	{
 		return this->ref_w->loci[idx];
 	}
 
+	[[nodiscard]]
 	bd::id_or_t get_step(pt::idx_t idx) const
 	{
 		pt::idx_t ref_v_id = ref_w->v_ids[idx];
@@ -67,14 +77,19 @@ struct allele_slice_t {
 		return {ref_v_id, ref_o};
 	}
 
+	[[nodiscard]]
 	std::string as_str() const
 	{
+		pt::idx_t ref_step_idx =
+			this->get_or() == pgt::or_e::forward
+				? this->ref_start_idx
+				: this->ref_start_idx - len + 1;
+		pt::idx_t end = ref_step_idx + this->len;
 		std::string s;
-		pt::idx_t ref_step_idx = this->ref_start_idx;
-		pt::idx_t end = this->ref_start_idx + this->len;
-		for (ref_step_idx; ref_step_idx < end; ++ref_step_idx) {
+
+		for (ref_step_idx; ref_step_idx < end; ++ref_step_idx)
 			s += this->get_step(ref_step_idx).as_str();
-		}
+
 		return s;
 	}
 };
@@ -152,14 +167,11 @@ public:
 	// public constructor(s)
 	// ---------------------
 
-	Exp()
-	    : rov_(nullptr), ref_itns_(), walk_idx_to_ref_idxs_(), aln_(),
-	      is_tangled_(false)
+	Exp() : rov_(nullptr), ref_itns_(), walk_idx_to_ref_idxs_(), aln_()
 	{}
 
 	Exp(const povu::genomics::graph::RoV *rov)
-	    : rov_(rov), ref_itns_(), walk_idx_to_ref_idxs_(), aln_(),
-	      is_tangled_(false)
+	    : rov_(rov), ref_itns_(), walk_idx_to_ref_idxs_(), aln_()
 	{
 		if (this->rov_ == nullptr) {
 			ERR("RoV pointer is null");
@@ -180,22 +192,25 @@ public:
 	// ---------
 	// getter(s)
 	// ---------
-
+	[[nodiscard]]
 	pt::idx_t ref_count() const
 	{
 		return this->ref_itns_.size();
 	}
 
+	[[nodiscard]]
 	const pvst::VertexBase *get_pvst_vtx_const_ptr() const
 	{
 		return this->rov_->get_pvst_vtx();
 	}
 
+	[[nodiscard]]
 	std::string id() const
 	{
 		return this->rov_->as_str();
 	}
 
+	[[nodiscard]]
 	std::set<pt::id_t> get_ref_ids() const
 	{
 		std::set<pt::id_t> ref_ids;
@@ -205,6 +220,7 @@ public:
 		return ref_ids;
 	}
 
+	[[nodiscard]]
 	const itn_t &get_itn(pt::id_t ref_id) const
 	{
 		return this->ref_itns_.at(ref_id);
@@ -215,11 +231,13 @@ public:
 		return this->ref_itns_.at(ref_id);
 	}
 
+	[[nodiscard]]
 	const povu::genomics::graph::RoV *get_rov() const
 	{
 		return this->rov_;
 	}
 
+	[[nodiscard]]
 	pt::idx_t walk_count() const
 	{
 		return this->rov_->walk_count();
@@ -230,41 +248,54 @@ public:
 		return this->walk_idx_to_ref_idxs_;
 	}
 
+	[[nodiscard]]
 	const std::set<pt::idx_t> &
 	get_ref_idxs_for_walk(const pt::idx_t walk_idx) const
 	{
 		return this->walk_idx_to_ref_idxs_.at(walk_idx);
 	}
 
+	[[nodiscard]]
 	const std::map<pt::id_t, itn_t> &get_ref_itns() const
 	{
 		return this->ref_itns_;
 	}
 
+	[[nodiscard]]
 	std::map<pt::id_t, itn_t> &get_ref_itns_mut()
 	{
 		return this->ref_itns_;
 	}
 
+	[[nodiscard]]
 	const std::string &get_aln(pt::id_t ref_id1, pt::id_t ref_id2) const
 	{
 		return this->aln_.at(pt::op_t<pt::id_t>{ref_id1, ref_id2});
 	}
 
+	[[nodiscard]]
 	bool has_aln(pt::id_t ref_id1, pt::id_t ref_id2) const
 	{
 		return pv_cmp::contains(this->aln_,
 					pt::op_t<pt::id_t>{ref_id1, ref_id2});
 	}
 
+	[[nodiscard]]
 	const std::map<pt::op_t<pt::id_t>, std::string> &get_alns() const
 	{
 		return this->aln_;
 	}
 
+	[[nodiscard]]
 	bool is_tangled() const
 	{
 		return this->is_tangled_;
+	}
+
+	[[nodiscard]]
+	bool has_ref(pt::id_t ref_id) const
+	{
+		return pv_cmp::contains(this->ref_itns_, ref_id);
 	}
 
 	// ---------

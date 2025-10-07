@@ -25,8 +25,10 @@ namespace pgt = povu::types::graph;
 
 namespace lq = liteseq;
 
-// undirected edge
-// stores the index of the vertex in the graph not the id
+/**
+ * undirected edge
+ * stores the index of the vertex in the graph not the id
+ */
 class Edge
 {
 	pt::idx_t v1_idx_;

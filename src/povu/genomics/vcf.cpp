@@ -125,6 +125,9 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 		const pga::itn_t &ref_itn = exp.get_itn(ref_ref_id);
 		const pga::itn_t &alt_itn = exp.get_itn(alt_ref_id);
 
+		if (!exp.has_ref(ref_ref_id))
+			continue;
+
 		for (auto [i, j] :
 		     get_call_itn_idxs(exp, ref_ref_id, alt_ref_id)) {
 			const pga::allele_slice_t &ref_allele_slice =
@@ -136,11 +139,9 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 			pt::idx_t alt_walk_idx = alt_allele_slice.walk_idx;
 
 			// TODO: check if start and len of the walks as well
-			if (ref_walk_idx ==
-			    alt_walk_idx) { // this means they are from the same
-					    // walk, skip
+			// this means they are from the same walk, skip
+			if (ref_walk_idx == alt_walk_idx)
 				continue;
-			}
 
 			pt::idx_t ref_walk_ref_count =
 				exp.get_ref_idxs_for_walk(ref_walk_idx).size();
@@ -199,6 +200,7 @@ VcfRecIdx gen_vcf_records(const bd::VG &g, const std::vector<pga::Exp> &exps,
 			    exp.get_rov()->as_str());
 			std::exit(EXIT_FAILURE);
 		}
+
 		std::map<pt::idx_t, std::vector<VcfRec>> exp_vcf_recs =
 			gen_exp_vcf_recs(g, exp, to_call_ref_ids);
 		vcf_recs.ensure_append_recs(std::move(exp_vcf_recs));
