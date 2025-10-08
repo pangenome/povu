@@ -4,10 +4,11 @@
 #include <atomic>    // for atomic, memory_order
 #include <cmath>     // for ceil
 #include <cstddef>   // for size_t
-#include <iterator>  // for back_insert_iterator, bac...
-#include <optional>  // for optional, operator==
-#include <string>    // for basic_string, string
-#include <utility>   // for move
+#include <cstdlib>
+#include <iterator> // for back_insert_iterator, bac...
+#include <optional> // for optional, operator==
+#include <string>   // for basic_string, string
+#include <utility>  // for move
 
 #include "fmt/core.h"			   // for format_to
 #include "fmt/format.h"			   // for vformat_to
@@ -34,9 +35,8 @@ pga::Exp exp_frm_rov(const bd::VG &g, const pgg::RoV &rov)
 {
 	pga::Exp exp(&rov);
 	pga::comp_itineraries(g, exp);
-	if (exp.is_tangled()) {
+	if (exp.is_tangled())
 		put::untangle_ref_walks(exp);
-	}
 
 	return exp;
 }

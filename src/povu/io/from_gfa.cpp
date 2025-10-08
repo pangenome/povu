@@ -121,9 +121,9 @@ bd::VG *to_bd(const core::config &app_config)
 		}
 
 		lq::vtx *v = lq::get_vtx(gfa, i);
-		if (v == nullptr) { // skip uninitialized vertices
+		if (v == nullptr) // skip uninitialized vertices
 			continue;
-		}
+
 		std::size_t v_id = v->id;
 		std::string label = app_config.inc_vtx_labels()
 					    ? std::string(v->seq)

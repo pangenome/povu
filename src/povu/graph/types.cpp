@@ -53,6 +53,11 @@ std::ostream &operator<<(std::ostream &os, const color_e &c)
 	return os << to_str(c);
 }
 
+or_e flip(or_e o)
+{
+	return o == or_e::forward ? or_e::reverse : or_e::forward;
+}
+
 /*
  * Side and SideID
  * ----
