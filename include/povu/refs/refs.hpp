@@ -43,11 +43,16 @@ public:
 	// ---------
 	// getter(s)
 	// ---------
+	[[nodiscard]]
 	std::string tag() const
 	{
-		return lq::get_tag(this->ref_ptr_);
+		const char *t = lq::get_tag(this->ref_ptr_);
+		if (t == nullptr)
+			ERR("Failed to get tag for ref.");
+		return t;
 	}
 
+	[[nodiscard]]
 	ref_format_e get_format() const
 	{
 		lq::ref_id_type rt = lq::get_ref_id_type(this->ref_ptr_);
@@ -59,11 +64,13 @@ public:
 		}
 	}
 
-	const std::string &get_sample_name() const
+	[[nodiscard]]
+	std::string get_sample_name() const
 	{
 		return lq::get_sample_name(this->ref_ptr_);
 	}
 
+	[[nodiscard]]
 	pt::id_t get_length() const
 	{
 		return lq::get_hap_len(this->ref_ptr_);
@@ -99,27 +106,34 @@ public:
 	// ---------
 	// getter(s)
 	// ---------
-
+	[[nodiscard]]
 	pt::id_t ref_count() const
 	{
 		return ref_count_;
 	}
 
+	[[nodiscard]]
 	const lq::ref *get_lq_ref_ptr(pt::idx_t ref_idx) const
 	{
 		return refs[ref_idx];
 	}
 
+	[[nodiscard]]
 	const Ref &get_lq_ref(pt::id_t ref_id) const
 	{
 		return this->refs_.at(ref_id);
 	}
 
-	const std::string &get_sample_name(pt::id_t ref_id) const
+	[[nodiscard]]
+	std::string get_sample_name(pt::id_t ref_id) const
 	{
-		return lq::get_sample_name(this->refs[ref_id]);
+		const Ref &r = this->refs_.at(ref_id);
+		std::string sn = r.get_sample_name();
+		return sn;
+		// return lq::get_sample_name(this->refs[ref_id]);
 	}
 
+	[[nodiscard]]
 	std::optional<pt::id_t> get_ref_id(std::string_view tag) const
 	{
 		for (pt::id_t ref_id{}; ref_id < this->ref_count(); ref_id++) {
@@ -132,6 +146,7 @@ public:
 	}
 
 	// the sample name could also be referred to as a prefix
+	[[nodiscard]]
 	std::set<pt::id_t>
 	get_refs_in_sample(std::string_view sample_name) const
 	{
@@ -153,6 +168,7 @@ public:
 		return in_sample;
 	}
 
+	[[nodiscard]]
 	std::set<pt::id_t> get_shared_samples(pt::id_t ref_id) const
 	{
 		const lq::ref *r = this->refs[ref_id];
@@ -160,17 +176,20 @@ public:
 		return this->get_refs_in_sample(sample_name);
 	}
 
+	[[nodiscard]]
 	const std::vector<std::string> &get_genotype_col_names() const
 	{
 		return this->genotype_col_names;
 	}
 
+	[[nodiscard]]
 	const std::vector<std::vector<std::string>> &
 	get_blank_genotype_cols() const
 	{
 		return this->blank_genotype_cols;
 	}
 
+	[[nodiscard]]
 	const pt::op_t<pt::idx_t> &get_ref_gt_col_idx(pt::id_t ref_id) const
 	{
 		return this->ref_id_to_col_idx.at(ref_id);
@@ -185,7 +204,7 @@ public:
 		this->refs = refs;
 		for (pt::idx_t ref_idx{}; ref_idx < ref_count; ++ref_idx) {
 			Ref ref = Ref::from_lq_ref(refs[ref_idx]);
-			this->refs_.emplace_back(std::move(ref));
+			this->refs_.emplace_back(ref);
 		}
 	}
 

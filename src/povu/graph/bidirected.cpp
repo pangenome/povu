@@ -216,7 +216,7 @@ Vertex &VG::get_vertex_mut_by_id(pt::id_t v_id)
 	return vertices[this->v_id_to_idx_.get_value(v_id)];
 }
 
-const std::string &VG::get_sample_name(pt::id_t ref_id) const
+std::string VG::get_sample_name(pt::id_t ref_id) const
 {
 	return this->refs_.get_sample_name(ref_id);
 }

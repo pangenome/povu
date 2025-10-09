@@ -149,7 +149,7 @@ public:
 	Vertex &get_vertex_mut_by_id(pt::id_t v_id);
 
 	// ref
-	const std::string &get_sample_name(pt::id_t ref_id) const;
+	std::string get_sample_name(pt::id_t ref_id) const;
 	const pr::Ref &get_ref_by_id(pt::id_t ref_id) const;
 	pr::Ref &get_ref_by_id_mut(pt::id_t ref_id);
 	std::optional<pt::id_t> get_ref_id(std::string_view ref_tag) const;

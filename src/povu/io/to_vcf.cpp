@@ -223,7 +223,7 @@ void write_vcfs(pgv::VcfRecIdx &vcf_recs, const bd::VG &g,
 	std::ostream *stdout_os = to_stdout ? &vout.stream_for("") : nullptr;
 
 	for (auto &[ref_id, recs] : vcf_recs.get_recs_mut()) {
-		const std::string &ref_tag = g.get_ref_by_id(ref_id).tag();
+		std::string ref_tag = g.get_ref_by_id(ref_id).tag();
 		std::ostream &os =
 			to_stdout ? *stdout_os
 				  : vout.stream_for(g.get_sample_name(ref_id));
