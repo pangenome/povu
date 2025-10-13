@@ -163,6 +163,10 @@ public:
 				if (pu::is_prefix(sample_name, r_sn))
 					in_sample.insert(ref_id);
 			}
+
+			// as a fallback, match using the tag
+			if (pu::is_prefix(sample_name, lq::get_tag(r)))
+				in_sample.insert(ref_id);
 		}
 
 		return in_sample;

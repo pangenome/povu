@@ -97,33 +97,35 @@ void do_call(core::config &app_config)
 	// assumes no duplicates in samples
 	read_graph.join();
 	get_refs_async.join();
-	const std::vector<std::string> &samples =
+	const std::vector<std::string> &ref_name_prefixes =
 		app_config.get_ref_name_prefixes();
 
 #ifdef DEBUG
-	assert(samples.size() > 0 && "No reference samples found");
+	assert(ref_name_prefixes.size() > 0 && "No reference samples found");
 #endif
 
-	std::set<pt::id_t>
-		vcf_ref_ids; // ref IDs that we need to output VCF for
-	for (std::string_view sample : samples) {
-		std::set<pt::id_t> ref_ids = g->get_refs_in_sample(sample);
+	// ref IDs for which we need to output VCFs
+	std::map<std::string, std::set<pt::id_t>> sample_to_ref_ids;
+	std::set<pt::id_t> vcf_ref_ids;
+	for (std::string_view prefix : ref_name_prefixes) {
+		std::set<pt::id_t> ref_ids = g->get_refs_in_sample(prefix);
+		sample_to_ref_ids[std::string(prefix)] = ref_ids;
 		vcf_ref_ids.insert(ref_ids.begin(), ref_ids.end());
 	}
 
 #ifdef DEBUG
-	assert(vcf_ref_ids.size() > 0 &&
-	       "No reference IDs found for VCF output");
+	assert(vcf_ref_ids.size() > 0 && "could not match ref ids to prefixes");
 #endif
 
 	piv::VcfOutput vout =
 		app_config.get_stdout_vcf()
 			? piv::VcfOutput::to_stdout()
 			: piv::VcfOutput::to_split_files(
-				  app_config.get_ref_name_prefixes(),
-				  std::string(app_config.get_output_dir()));
+				  std::string(app_config.get_output_dir()),
+				  sample_to_ref_ids);
 
-	std::thread init_vcfs_async([&] { piv::init_vcfs(*g, samples, vout); });
+	std::thread init_vcfs_async(
+		[&] { piv::init_vcfs(*g, ref_name_prefixes, vout); });
 
 	read_pvsts_async.join(); // make sure pvsts are read
 
@@ -146,8 +148,8 @@ void do_call(core::config &app_config)
 						    app_config);
 			}
 			catch (...) {
-				q.close(); // make sure consumers wake up on
-					   // errors
+				// make sure consumers wake up on errors
+				q.close();
 				throw;
 			}
 		});
@@ -161,11 +163,8 @@ void do_call(core::config &app_config)
 	// make sure VCF are initialised before producer finishes
 	init_vcfs_async.join();
 
-	// wait for producer to finish
-	producer.join();
-
-	// just in case
-	vout.flush_all();
+	producer.join();  // wait for producer to finish
+	vout.flush_all(); // just in case
 
 	delete g;
 	g = nullptr;

@@ -1,6 +1,7 @@
 #ifndef PV_IO_VCF_HPP
 #define PV_IO_VCF_HPP
 
+#include <cstddef>
 #include <cstdlib>     // for exit, EXIT_FAILURE
 #include <filesystem>  // for path, absolute, operator/
 #include <fstream>     // for basic_ofstream, basic_ios, ios
@@ -36,11 +37,31 @@ class VcfOutput
 	std::ostream *combined_ = nullptr;
 
 	// applies to split output
-	// ref to ofs for the ref
-	std::map<std::string, std::ofstream> files_;
+	std::vector<std::ofstream> all_ofs_;
+	std::map<std::string, pt::idx_t> label_to_ofs_idx_;
+	std::map<pt::idx_t, pt::idx_t> ref_id_to_ofs_idx_;
 
 	// keep default constructor private
 	VcfOutput() = default;
+
+	// ----------------
+	// private methods
+	// ----------------
+	std::size_t create_ofs(const fs::path &fp)
+	{
+		{ // if file exists, truncate
+			std::ofstream(fp, std::ios::out | std::ios::trunc);
+		}
+		std::ofstream ofs(fp, std::ios::out | std::ios::app);
+		if (!ofs) {
+			ERR("Append open failed: {}",
+			    fs::absolute(fp).string());
+			std::exit(EXIT_FAILURE);
+		}
+		this->all_ofs_.push_back(std::move(ofs));
+
+		return this->all_ofs_.size() - 1;
+	}
 
 public:
 	// ---------------
@@ -53,56 +74,75 @@ public:
 		return v;
 	}
 
+	/**
+	 * s_to_r sample to ref_ids
+	 */
 	static VcfOutput
-	to_split_files(const std::vector<std::string> &ref_labels,
-		       const fs::path &out_dir)
+	to_split_files(const fs::path &out_dir,
+		       const std::map<std::string, std::set<pt::id_t>> &s_to_r)
 	{
 		VcfOutput v;
 		povu::io::common::create_dir_if_not_exists(out_dir);
 
 		// open files for each ref label
-		for (const auto &ref_label : ref_labels) {
-			fs::path vcf_fp = out_dir / (ref_label + ".vcf");
-			{ // if file exists, truncate
-				std::ofstream(vcf_fp,
-					      std::ios::out | std::ios::trunc);
-			}
-			std::ofstream ofs(vcf_fp,
-					  std::ios::out | std::ios::app);
-			if (!ofs) {
-				ERR("Append open failed: {}",
-				    fs::absolute(vcf_fp).string());
-				std::exit(EXIT_FAILURE);
-			}
-			v.files_.emplace(ref_label, std::move(ofs));
+		for (const auto &[bn, ref_ids] : s_to_r) {
+			fs::path vcf_fp = out_dir / (bn + ".vcf");
+			std::size_t ofs_idx = v.create_ofs(vcf_fp);
+			v.label_to_ofs_idx_[bn] = ofs_idx;
+			for (pt::id_t ref_id : ref_ids)
+				v.ref_id_to_ofs_idx_[ref_id] = ofs_idx;
 		}
 
 		return v;
 	}
 
-	// ----------------
+	// -------
 	// getters
-	// ----------------
+	// -------
+
+	// TODO: [c] merge stream_for queries?
+
+	std::ostream &stream_for_combined()
+	{
+		if (!combined_)
+			throw std::runtime_error(
+				"[VcfOutput::stream_for_combined] Not a "
+				"combined output");
+
+		return *combined_;
+	}
 
 	/**
 	 * Get a stream for a given label (combined ignores label)
 	 */
-	std::ostream &stream_for(const std::string &ref_label)
+	std::ostream &stream_for_ref_label(const std::string &ref_label)
 	{
 		if (combined_)
 			return *combined_;
 
-		if (pv_cmp::contains(files_, ref_label))
-			return files_.at(ref_label);
+		if (pv_cmp::contains(label_to_ofs_idx_, ref_label))
+			return this->all_ofs_[label_to_ofs_idx_[ref_label]];
 
 		// TODO: [c] handle this before in the caller or at startup
 		// try prefix match
-		for (const auto &[k, _] : files_)
+		for (const auto &[k, _] : label_to_ofs_idx_)
 			if (pu::is_prefix(k, ref_label))
-				return files_.at(k);
+				return this->all_ofs_[label_to_ofs_idx_[k]];
 
 		throw std::runtime_error(
 			"[VcfOutput::stream_for] Unknown label: " + ref_label);
+	}
+
+	std::ostream &stream_for_ref_id(pt::idx_t ref_id)
+	{
+		if (combined_)
+			return *combined_;
+
+		if (pv_cmp::contains(ref_id_to_ofs_idx_, ref_id))
+			return this->all_ofs_[ref_id_to_ofs_idx_[ref_id]];
+
+		throw std::runtime_error(
+			"[VcfOutput::stream_for] Unknown ref id: " + ref_id);
 	}
 
 	/**
@@ -115,9 +155,9 @@ public:
 			return;
 		}
 
-		for (auto &[_, ofs] : files_) {
+		for (auto &ofs : all_ofs_)
 			fn(ofs);
-		}
+
 		return;
 	}
 
@@ -128,9 +168,9 @@ public:
 			return;
 		}
 
-		for (auto &[_, ofs] : files_) {
+		for (auto &ofs : all_ofs_)
 			ofs.flush();
-		}
+
 		return;
 	}
 };

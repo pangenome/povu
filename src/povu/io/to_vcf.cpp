@@ -50,7 +50,7 @@ void write_col_header(const std::vector<std::string> &genotype_col_names,
 	os << "\n";
 }
 
-void init_vcfs(bd::VG &g, const std::vector<std::string> &sample_names,
+void init_vcfs(bd::VG &g, const std::vector<std::string> &ref_name_prefixes,
 	       VcfOutput &vout)
 {
 	// write common header lines
@@ -58,9 +58,9 @@ void init_vcfs(bd::VG &g, const std::vector<std::string> &sample_names,
 			     { write_header_common(os); });
 
 	// add contig lines
-	for (const auto &sample_name : sample_names) {
-		std::ostream &os = vout.stream_for(sample_name);
-		std::set<pt::id_t> ref_ids = g.get_refs_in_sample(sample_name);
+	for (const auto &rn_pref : ref_name_prefixes) {
+		std::ostream &os = vout.stream_for_ref_label(rn_pref);
+		std::set<pt::id_t> ref_ids = g.get_refs_in_sample(rn_pref);
 		for (pt::id_t ref_id : ref_ids) {
 			const pr::Ref &ref = g.get_ref_by_id(ref_id);
 			write_header_contig_line(ref, os);
@@ -173,10 +173,6 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 		return s;
 	};
 
-	// pt::idx_t pos = var_typ == pgv::var_type_e::del || var_typ ==
-	// pgv::var_type_e::ins
-	//   ? r.get_pos() - 1 : r.get_pos();
-
 	// Both ref_dna and alt_dna are plain std::string values over the DNA
 	// letters {A, C, G, T}.
 	//   ref_dna  is a single contiguous sequence.
@@ -220,13 +216,13 @@ void write_vcfs(pgv::VcfRecIdx &vcf_recs, const bd::VG &g,
 
 	// Cache stdout stream once to avoid repeatedly asking for it.
 	const bool to_stdout = app_config.get_stdout_vcf();
-	std::ostream *stdout_os = to_stdout ? &vout.stream_for("") : nullptr;
+	std::ostream *stdout_os =
+		to_stdout ? &vout.stream_for_combined() : nullptr;
 
 	for (auto &[ref_id, recs] : vcf_recs.get_recs_mut()) {
 		std::string ref_tag = g.get_ref_by_id(ref_id).tag();
 		std::ostream &os =
-			to_stdout ? *stdout_os
-				  : vout.stream_for(g.get_sample_name(ref_id));
+			to_stdout ? *stdout_os : vout.stream_for_ref_id(ref_id);
 		for (pgv::VcfRec &r : recs)
 			write_rec(g, r, ref_tag, os);
 	}
