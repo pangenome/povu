@@ -1,4 +1,5 @@
-name: C++17 Build (CMake, Ubuntu)
+name: Build (Ubuntu)
+# Test build for Ubuntu with C++17 & CMake
 
 on:
   # branch glob syntax https://stackoverflow.com/a/57903434

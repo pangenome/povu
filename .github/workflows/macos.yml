@@ -1,4 +1,5 @@
-name: C++17 Build (CMake, macOS)
+name: Build (macOS)
+# Test build for macOS with C++17 & CMake
 
 on:
   # branch glob syntax https://stackoverflow.com/a/57903434
