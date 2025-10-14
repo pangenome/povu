@@ -79,7 +79,8 @@ std::vector<std::string> immutable_erase(std::vector<std::string> v,
 					 std::size_t idx);
 
 // TODO : move to povu::types
-template <typename Key, typename Value> class TwoWayMap
+template <typename Key, typename Value>
+class TwoWayMap
 {
 	std::unordered_map<Key, Value> keyToValueMap;
 	std::unordered_map<Value, Key> valueToKeyMap;
@@ -133,7 +134,8 @@ public:
 	}
 };
 
-template <typename T> void push_front(std::vector<T> &v, const T &elem)
+template <typename T>
+void push_front(std::vector<T> &v, const T &elem)
 {
 	v.insert(v.begin(), elem);
 }

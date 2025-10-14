@@ -5,6 +5,7 @@
 #include <string>	 // for basic_string, char_traits, string
 #include <string_view>	 // for string_view
 #include <unordered_set> // for unordered_set, operator!=
+#include <vector>
 
 #include "fmt/core.h"		     // for format
 #include "liteseq/gfa.h"	     // for gfa_props
@@ -260,6 +261,13 @@ const std::vector<pt::idx_t> &VG::get_vertex_ref_idxs(pt::idx_t v_idx,
 						      pt::id_t ref_id) const
 {
 	return this->vertex_to_step_matrix_.at(v_idx).at(ref_id);
+}
+
+const std::vector<std::vector<pt::idx_t>> &
+VG::get_vertex_refs(pt::idx_t v_id) const
+{
+	pt::idx_t v_idx = this->v_id_to_idx_.get_value(v_id);
+	return this->vertex_to_step_matrix_.at(v_idx);
 }
 
 const std::vector<std::string> &VG::get_genotype_col_names() const

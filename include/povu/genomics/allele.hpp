@@ -14,7 +14,7 @@
 #include "povu/common/compat.hpp"    // for contains, pv_cmp
 #include "povu/common/core.hpp"	     // for pt, idx_t, id_t, op_t
 #include "povu/common/log.hpp"	     // for ERR
-#include "povu/genomics/graph.hpp"   // for RoV
+#include "povu/genomics/rov.hpp"     // for RoV
 #include "povu/graph/bidirected.hpp" // for bd, VG
 #include "povu/graph/pvst.hpp"	     // for VertexBase
 #include "povu/graph/types.hpp"	     // for or_e, id_or_t, walk_t
@@ -38,6 +38,7 @@ struct allele_slice_t {
 
 	pt::idx_t len; // total step count in the itinerary
 	ptg::or_e slice_or;
+	pgr::var_type_e vt;
 
 	// ---------
 	// getter(s)
@@ -92,6 +93,36 @@ struct allele_slice_t {
 
 		return s;
 	}
+
+	[[nodiscard]]
+	std::string as_str(bool is_ref) const
+	{
+		pt::idx_t ref_step_idx =
+			this->get_or() == pgt::or_e::forward
+				? this->ref_start_idx
+				: this->ref_start_idx - len + 1;
+		pt::idx_t end = ref_step_idx + this->len;
+		std::string s;
+
+		pt::u32 i = ref_step_idx;
+		pt::u32 N = end;
+
+		switch (this->vt) {
+		case pgr::var_type_e::sub:
+			i++;
+			N--;
+			break;
+		case pgr::var_type_e::ins:
+		case pgr::var_type_e::del:
+			N--;
+			break;
+		}
+
+		for (i; i < N; i++)
+			s += this->get_step(i).as_str();
+
+		return s;
+	}
 };
 
 /**
@@ -112,16 +143,19 @@ struct itn_t {
 	// ---------
 	// getter(s)
 	// ---------
+	[[nodiscard]]
 	pt::idx_t at_count() const
 	{
 		return this->it_.size();
 	}
 
+	[[nodiscard]]
 	const std::vector<allele_slice_t> &get_ats() const
 	{
 		return this->it_;
 	}
 
+	[[nodiscard]]
 	const allele_slice_t &get_at(pt::idx_t at_idx) const
 	{
 		return this->it_[at_idx];
@@ -132,7 +166,7 @@ struct itn_t {
 	// ---------
 	void append_at(allele_slice_t &&s)
 	{
-		this->it_.emplace_back(std::move(s));
+		this->it_.emplace_back(s);
 	}
 };
 
@@ -146,7 +180,7 @@ struct itn_t {
 class Exp
 {
 	// pointer to the RoV from which the expedition is made
-	const povu::genomics::graph::RoV *rov_;
+	const pgr::RoV *rov_;
 
 	// map of ref_id to the itinerary (set of walks) of the ref in a RoV
 	// when tangled, a ref can have multiple walks in a RoV
@@ -170,7 +204,7 @@ public:
 	Exp() : rov_(nullptr), ref_itns_(), walk_idx_to_ref_idxs_(), aln_()
 	{}
 
-	Exp(const povu::genomics::graph::RoV *rov)
+	Exp(const pgr::RoV *rov)
 	    : rov_(rov), ref_itns_(), walk_idx_to_ref_idxs_(), aln_()
 	{
 		if (this->rov_ == nullptr) {
@@ -179,15 +213,15 @@ public:
 		}
 	}
 
-	// disable copy constructor
-	Exp(const Exp &other) = delete;
-	Exp &operator=(const Exp &other) = delete;
+	// // disable copy constructor
+	// Exp(const Exp &other) = delete;
+	// Exp &operator=(const Exp &other) = delete;
 
-	// move constructor
-	Exp(Exp &&other) noexcept = default;
-	Exp &operator=(Exp &&other) noexcept = default;
+	// // move constructor
+	// Exp(Exp &&other) noexcept = default;
+	// Exp &operator=(Exp &&other) noexcept = default;
 
-	~Exp() = default;
+	// ~Exp() = default;
 
 	// ---------
 	// getter(s)
@@ -211,6 +245,16 @@ public:
 	}
 
 	[[nodiscard]]
+	std::set<pt::id_t> get_walk_idxs() const
+	{
+		std::set<pt::id_t> walk_idxs;
+		for (const auto &p : this->walk_idx_to_ref_idxs_) {
+			walk_idxs.insert(p.first);
+		}
+		return walk_idxs;
+	}
+
+	[[nodiscard]]
 	std::set<pt::id_t> get_ref_ids() const
 	{
 		std::set<pt::id_t> ref_ids;
@@ -226,13 +270,14 @@ public:
 		return this->ref_itns_.at(ref_id);
 	}
 
+	[[nodiscard]]
 	itn_t &get_itn_mut(pt::id_t ref_id)
 	{
 		return this->ref_itns_.at(ref_id);
 	}
 
 	[[nodiscard]]
-	const povu::genomics::graph::RoV *get_rov() const
+	const pgr::RoV *get_rov() const
 	{
 		return this->rov_;
 	}
@@ -312,6 +357,8 @@ public:
 	}
 };
 
+std::vector<Exp> comp_itineraries3(const bd::VG &g, const pgr::RoV &rov);
+std::vector<Exp> comp_itineraries2(const bd::VG &g, const pgr::RoV &rov);
 void comp_itineraries(const bd::VG &g, Exp &exp);
 
 } // namespace povu::genomics::allele

@@ -182,6 +182,7 @@ ADD_LIBRARY(povulib
 
   # genomics
   ${POVULIB_SOURCES_DIR}/genomics/allele.cpp
+  ${POVULIB_SOURCES_DIR}/genomics/overlay.cpp
   ${POVULIB_SOURCES_DIR}/genomics/genomics.cpp
   ${POVULIB_SOURCES_DIR}/genomics/graph.cpp
   ${POVULIB_SOURCES_DIR}/genomics/rov.cpp

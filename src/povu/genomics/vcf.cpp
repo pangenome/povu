@@ -1,7 +1,9 @@
 #include "povu/genomics/vcf.hpp"
 
 #include <iterator> // for pair
+#include <vector>
 
+#include "povu/common/core.hpp"
 #include "povu/genomics/allele.hpp" // for Exp, allele_slice_t, itn_t
 #include "povu/genomics/graph.hpp"  // for RoV
 #include "povu/graph/pvst.hpp"	    // for VertexBase
@@ -11,22 +13,22 @@ namespace povu::genomics::vcf
 namespace pvst = povu::pvst;
 namespace pgg = povu::genomics::graph;
 
-var_type_e det_var_type(const pga::allele_slice_t &ref_allele_slice,
-			const pga::allele_slice_t &alt_allele_slice)
+pgr::var_type_e det_var_type(const pga::allele_slice_t &ref_allele_slice,
+			     const pga::allele_slice_t &alt_allele_slice)
 {
 	if (ref_allele_slice.len < alt_allele_slice.len) {
-		return var_type_e::del;
+		return pgr::var_type_e::del;
 	}
 	else if (ref_allele_slice.len > alt_allele_slice.len) {
-		return var_type_e::ins;
+		return pgr::var_type_e::ins;
 	}
 	else {
-		return var_type_e::sub;
+		return pgr::var_type_e::sub;
 	}
 }
 
 pt::idx_t comp_pos(const pga::allele_slice_t &ref_allele_slice,
-		   var_type_e variant_type)
+		   pgr::var_type_e variant_type)
 {
 	// const pgt::ref_walk_t rw = *ref_allele_slice.ref_walk;
 	// pt::idx_t locus = rw[ref_allele_slice.ref_start_idx + 1].locus;
@@ -35,8 +37,8 @@ pt::idx_t comp_pos(const pga::allele_slice_t &ref_allele_slice,
 		ref_allele_slice.get_locus(ref_allele_slice.ref_start_idx + 1);
 
 	switch (variant_type) {
-	case var_type_e::del:
-	case var_type_e::ins:
+	case pgr::var_type_e::del:
+	case pgr::var_type_e::ins:
 		return locus - 1;
 	default:
 		return locus;
@@ -87,13 +89,21 @@ std::map<pt::idx_t, std::vector<VcfRec>>
 gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 		 const std::set<pt::id_t> &to_call_ref_ids)
 {
+	auto start = pt::Time::now();
+
+	bool dbg = exp.id() == ">2376>2379" ? true : false;
+	dbg = false;
+
+	if (dbg)
+		std::cerr << exp.id() << " generating VCF records...\n";
+
 	std::map<pt::idx_t, std::vector<VcfRec>> exp_vcf_recs;
 
 	if (exp.get_rov() == nullptr) {
 		ERR("RoV pointer is null");
 		std::exit(EXIT_FAILURE);
 	}
-	const pgg::RoV &rov = *(exp.get_rov());
+	const pgr::RoV &rov = *(exp.get_rov());
 
 	if (exp.get_pvst_vtx_const_ptr() == nullptr) {
 		ERR("pvst vertex pointer is null");
@@ -119,9 +129,21 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 		return ref_pairs;
 	};
 
-	std::map<std::pair<pt::idx_t, var_type_e>, VcfRec> var_type_to_vcf_rec;
+	std::map<std::pair<pt::idx_t, pgr::var_type_e>, VcfRec>
+		var_type_to_vcf_rec;
+	std::vector<pt::op_t<pt::id_t>> ref_pairs = pre_comp_ref_pairs();
+	// std::cerr << "ref pairs size: " << ref_pairs.size() << "\n";
 
-	for (auto [ref_ref_id, alt_ref_id] : pre_comp_ref_pairs()) {
+	// std::cerr << "exp" << exp.id() << " \n";
+	// std::cerr << "walks: \n";
+	// for (auto i : exp.get_walk_idxs()) {
+	//	auto w = rov.get_walk(i);
+	//	std::cerr << i << ": ";
+	//	std::cerr << pgt::to_string(w);
+	// }
+	// std::cerr << "\n";
+
+	for (auto [ref_ref_id, alt_ref_id] : ref_pairs) {
 		const pga::itn_t &ref_itn = exp.get_itn(ref_ref_id);
 		const pga::itn_t &alt_itn = exp.get_itn(alt_ref_id);
 
@@ -132,6 +154,26 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 		     get_call_itn_idxs(exp, ref_ref_id, alt_ref_id)) {
 			const pga::allele_slice_t &ref_allele_slice =
 				ref_itn.get_at(i);
+
+			try {
+				const pga::allele_slice_t &alt_allele_slice =
+					alt_itn.get_at(j);
+			}
+			catch (...) {
+				ERR("Out of range accessing alt_itn at idx {} "
+				    "for alt_ref_id {} in exp {}",
+				    j, alt_ref_id, exp.id());
+				std::cerr << "walks: \n";
+				auto rov = exp.get_rov();
+				for (auto i : exp.get_walk_idxs()) {
+					auto w = rov->get_walk(i);
+					std::cerr << i << ": ";
+					std::cerr << pgt::to_string(w);
+				}
+
+				std::exit(EXIT_FAILURE);
+			}
+
 			const pga::allele_slice_t &alt_allele_slice =
 				alt_itn.get_at(j);
 
@@ -148,10 +190,12 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 			pt::idx_t alt_walk_ref_count =
 				exp.get_ref_idxs_for_walk(alt_walk_idx).size();
 
-			var_type_e variant_type = det_var_type(
-				ref_allele_slice, alt_allele_slice);
+			// pgr::var_type_e variant_type = det_var_type(
+			//	ref_allele_slice, alt_allele_slice);
 
-			std::pair<pt::idx_t, var_type_e> key =
+			pgr::var_type_e variant_type = ref_allele_slice.vt;
+
+			std::pair<pt::idx_t, pgr::var_type_e> key =
 				std::make_pair(ref_ref_id, variant_type);
 
 			// if it does not exist create a variant type for it and
@@ -184,6 +228,18 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 		auto [ref_ref_id, _] = k;
 		exp_vcf_recs[ref_ref_id].emplace_back(std::move(r));
 	}
+
+	auto end = pt::Time::now();
+
+	// Calculate the elapsed time
+	auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(
+		end - start);
+
+	// Output the elapsed time in nanoseconds
+	if (dbg)
+		std::cerr << __func__ << " Elapsed time: " << elapsed.count()
+			  << " ns"
+			  << "\n";
 
 	return exp_vcf_recs;
 }

@@ -72,8 +72,6 @@ std::string invert_aln(const std::string &aln)
  */
 void untangle_ref_walks(pga::Exp &rt)
 {
-	std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
-
 	std::string et;
 
 	for (pt::id_t ref_id1 : rt.get_ref_ids()) {

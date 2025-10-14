@@ -227,7 +227,7 @@ void comp_walks(const bd::VG &g, pvst::route_e route, idx_or_t src,
 	return;
 }
 
-void find_walks(const bd::VG &g, RoV &rov)
+void find_walks(const bd::VG &g, pgr::RoV &rov)
 {
 	// Assume route parameters are already set.
 	// Use structured bindings to unpack the pvst::route_params_t object.

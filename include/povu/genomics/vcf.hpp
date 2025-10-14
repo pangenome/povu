@@ -12,12 +12,13 @@
 #include <utility>     // for get, move, pair
 #include <vector>      // for vector
 
-#include "allele.hpp"		     // for allele_slice_t, Exp
 #include "fmt/core.h"		     // for format
 #include "povu/common/compat.hpp"    // for contains, pv_cmp
 #include "povu/common/core.hpp"	     // for pt, idx_t, id_t, op_t
 #include "povu/common/log.hpp"	     // for ERR
 #include "povu/common/utils.hpp"     // for concat_with, pu
+#include "povu/genomics/allele.hpp"  // for allele_slice_t, Exp
+#include "povu/genomics/rov.hpp"     // for var_type_e
 #include "povu/graph/bidirected.hpp" // for VG
 
 namespace povu::genomics::vcf
@@ -26,34 +27,6 @@ inline constexpr std::string_view MODULE = "povu::genomics::vcf";
 namespace bd = povu::bidirected;
 namespace pgt = povu::types::graph;
 namespace pga = povu::genomics::allele;
-
-enum class var_type_e {
-	del, // deletion
-	ins, // insertion
-	sub, // substitution
-	und  // undetermined
-};
-
-constexpr std::string_view to_string_view(var_type_e vt) noexcept
-{
-	switch (vt) {
-	case var_type_e::del:
-		return "DEL";
-	case var_type_e::ins:
-		return "INS";
-	case var_type_e::sub:
-		return "SUB";
-	case var_type_e::und:
-		return "UND";
-	}
-	// optional: handle out-of-range
-	return "??";
-}
-
-inline std::ostream &operator<<(std::ostream &os, var_type_e vt)
-{
-	return os << to_string_view(vt);
-}
 
 class VcfRec
 {
@@ -70,8 +43,11 @@ class VcfRec
 	inline static const std::string filter = "PASS"; // fixed as pass
 	inline static const std::string format = "GT";	 // fixed as pass
 
-	pt::idx_t height_;    // height of the pvst node in the tree
-	var_type_e var_type_; // type of the variant, e.g. del, ins, sub, und
+	pt::idx_t height_; // height of the pvst node in the tree
+
+	// type of the variant, e.g. del, ins, sub, und
+	pgr::var_type_e var_type_;
+
 	bool is_tangled_ = false; // is true when tangling exists, i.e. when a
 				  // walk traverses an RoV more than once
 
@@ -159,8 +135,9 @@ public:
 	// --------------
 
 	VcfRec(pt::id_t ref_id, pt::idx_t pos, std::string id,
-	       pga::allele_slice_t ref_at, pt::idx_t height, var_type_e var_typ,
-	       bool is_tangled, pt::idx_t ref_at_ref_count,
+	       pga::allele_slice_t ref_at, pt::idx_t height,
+	       pgr::var_type_e var_typ, bool is_tangled,
+	       pt::idx_t ref_at_ref_count,
 	       std::vector<std::vector<std::string>> &&genotype_cols)
 	    : ref_id_(ref_id), pos_(pos), id_(id), ats_({ref_at}),
 	      height_(height), var_type_(var_typ), is_tangled_(is_tangled),
@@ -235,7 +212,7 @@ public:
 		return this->height_;
 	}
 
-	var_type_e get_var_type() const
+	pgr::var_type_e get_var_type() const
 	{
 		return this->var_type_;
 	}
@@ -385,5 +362,8 @@ VcfRecIdx gen_vcf_records(const bd::VG &g,
 			  const std::set<pt::id_t> &to_call_ref_ids);
 
 } // namespace povu::genomics::vcf
+
+// NOLINTNEXTLINE(misc-unused-alias-decls)
+namespace pgv = povu::genomics::vcf;
 
 #endif // POVU_GENOMICS_VCF_HPP
