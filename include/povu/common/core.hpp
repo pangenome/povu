@@ -9,7 +9,9 @@
 
 namespace povu::types::core
 {
+[[deprecated("Deprecated: use u32")]]
 typedef u_int32_t id_t;
+[[deprecated("Deprecated: use u32")]]
 typedef u_int32_t idx_t;
 
 /* type aliases for fixed width types */
