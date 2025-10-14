@@ -14,17 +14,21 @@
 #include "fmt/format.h"			   // for vformat_to
 #include "indicators/dynamic_progress.hpp" // for DynamicProgress
 #include "indicators/setting.hpp"	   // for PostfixText
+#include "povu/common/app.hpp"		   // for config
 #include "povu/common/thread.hpp"	   // for thread_pool, task_group
 #include "povu/common/utils.hpp"	   // for comp_prog, pu
 #include "povu/genomics/allele.hpp"	   // for Exp, comp_itineraries
 #include "povu/genomics/graph.hpp"	   // for RoV, find_walks, pgt
+#include "povu/genomics/rov.hpp"	   // for gen_rov
 #include "povu/genomics/untangle.hpp"	   // for untangle_ref_walks
 #include "povu/genomics/vcf.hpp"	   // for VcfRecIdx, gen_vcf_records
 
 namespace povu::genomics
 {
+using namespace povu::progress;
 namespace pga = povu::genomics::allele;
 namespace pgg = povu::genomics::graph;
+namespace pgv = povu::genomics::vcf;
 namespace put = povu::genomics::untangle;
 namespace pvst = povu::pvst;
 
@@ -123,111 +127,6 @@ std::vector<pga::Exp> comp_expeditions_work_steal(
 	return all_exp;
 }
 
-/**
- * Check if a vertex in the pvst is a flubble leaf
- * A flubble leaf is a vertex that has no children that are also flubbles
- */
-bool is_fl_leaf(const pvst::Tree &pvst, pt::idx_t pvst_v_idx) noexcept
-{
-	const pvst::VertexBase *pvst_v_ptr =
-		pvst.get_vertex_const_ptr(pvst_v_idx);
-
-	// we assume that the vertex has a clan
-	pvst::vf_e prt_fam = pvst_v_ptr->get_fam();
-	if (pvst::to_clan(prt_fam).value() != pvst::vc_e::fl_like) {
-		return false; // not a flubble
-	}
-
-	for (pt::idx_t v_idx : pvst.get_children(pvst_v_idx)) {
-		pvst::vf_e c_fam = pvst.get_vertex_const_ptr(v_idx)->get_fam();
-		if (pvst::to_clan(c_fam) == pvst::vc_e::fl_like) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
-/**
- * find walks in the graph based on the leaves of the pvst
- * initialize RoVs from flubbles
- */
-std::vector<pgg::RoV> gen_rov(const std::vector<pvst::Tree> &pvsts,
-			      const bd::VG &g, const core::config &app_config)
-{
-
-	// the set of RoVs to return
-	std::vector<pgg::RoV> rs;
-	rs.reserve(pvsts.size());
-
-	// true when the vertex is a flubble leaf or a leaf in the pvst
-	auto should_call = [&](const pvst::Tree &pvst,
-			       const pvst::VertexBase *pvst_v_ptr,
-			       pt::idx_t pvst_v_idx) -> bool
-	{
-		if (std::optional<pvst::route_params_t> opt_rp =
-			    pvst_v_ptr->get_route_params()) {
-			return is_fl_leaf(pvst, pvst_v_idx) ||
-			       pvst.is_leaf(pvst_v_idx);
-		}
-		return false;
-	};
-
-	// reuse msg buffer for progress bar
-	DynamicProgress<ProgressBar> bars;
-	std::string prog_msg;
-	prog_msg.reserve(128);
-
-	for (pt::idx_t i{}; i < pvsts.size(); i++) { // for each pvst
-		const pvst::Tree &pvst = pvsts[i];
-		// loop through each tree
-		const pt::idx_t total = pvst.vtx_count();
-
-		// reset progress bar
-		ProgressBar bar;
-		set_progress_bar_common_opts(&bar);
-		std::size_t bar_idx = bars.push_back(bar);
-		set_progress_bar_common_opts(&bar, pvst.vtx_count());
-
-		for (pt::idx_t pvst_v_idx{}; pvst_v_idx < pvst.vtx_count();
-		     pvst_v_idx++) {
-
-			if (app_config.show_progress()) { // update progress bar
-				prog_msg.clear();
-				fmt::format_to(
-					std::back_inserter(prog_msg),
-					"Generating RoVs for PVST {} ({}/{})",
-					i + 1, pvst_v_idx + 1, total);
-				bars[bar_idx].set_option(
-					option::PostfixText{prog_msg});
-				bars[bar_idx].set_progress(pvst_v_idx + 1);
-			}
-
-			const pvst::VertexBase *pvst_v_ptr =
-				pvst.get_vertex_const_ptr(pvst_v_idx);
-			if (should_call(pvst, pvst_v_ptr, pvst_v_idx)) {
-				pgg::RoV r{pvst_v_ptr};
-
-				// get the set of walks for the RoV
-				povu::genomics::graph::find_walks(g, r);
-
-				if (r.get_walks().size() ==
-				    0) { // no walks found, skip this RoV
-					continue;
-				}
-
-				rs.push_back(std::move(r));
-			}
-
-			if (app_config.show_progress()) {
-				bars[bar_idx].mark_as_completed();
-			}
-		}
-	}
-
-	return rs;
-}
-
 struct ThreadSplit {
 	std::size_t outer;
 	std::size_t inner;
@@ -261,8 +160,7 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 		     DynamicProgress<ProgressBar> &prog, std::size_t prog_idx,
 		     const core::config &app_config)
 {
-
-	std::vector<pgg::RoV> all_rovs = gen_rov(pvsts, g, app_config);
+	std::vector<pgg::RoV> all_rovs = pgr::gen_rov(pvsts, g, app_config);
 
 	const std::size_t CHUNK_SIZE = app_config.get_chunk_size();
 	const std::size_t N = all_rovs.size();

@@ -46,20 +46,12 @@ public:
 	    : walks_(std::move(other.walks_)), pvst_vtx(other.pvst_vtx)
 	{
 		other.pvst_vtx = nullptr;
-		// INFO("Moved RoV {}", this->as_str());
 	}
 
 	RoV(const RoV &other) = delete;		   // disable copy constructor
 	RoV &operator=(const RoV &other) = delete; // disable copy assignment
 	RoV &
 	operator=(RoV &&other) noexcept = delete; // disable move assignment
-
-	~RoV()
-	{
-		if (this->pvst_vtx != nullptr) {
-			// INFO("Destroyed RoV {}", this->as_str());
-		}
-	}
 
 	// --------------
 	// constructor(s)
@@ -71,21 +63,25 @@ public:
 	// getter(s)
 	// ---------
 
+	[[nodiscard]]
 	pt::idx_t walk_count() const
 	{
 		return this->walks_.size();
 	}
 
+	[[nodiscard]]
 	const pvst::VertexBase *get_pvst_vtx() const
 	{
 		return this->pvst_vtx;
 	}
 
+	[[nodiscard]]
 	const std::vector<pgt::walk_t> &get_walks() const
 	{
 		return this->walks_;
 	}
 
+	[[nodiscard]]
 	std::vector<pgt::walk_t> &get_walks_mut()
 	{
 		return this->walks_;
@@ -104,6 +100,7 @@ public:
 	// other(s)
 	// --------
 
+	[[nodiscard]]
 	std::string as_str() const
 	{
 		return this->pvst_vtx->as_str();

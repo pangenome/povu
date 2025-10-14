@@ -181,11 +181,12 @@ ADD_LIBRARY(povulib
   ${POVULIB_SOURCES_DIR}/common/utils.cpp
 
   # genomics
-  ${POVULIB_SOURCES_DIR}/genomics/vcf.cpp
-  ${POVULIB_SOURCES_DIR}/genomics/graph.cpp
   ${POVULIB_SOURCES_DIR}/genomics/allele.cpp
-  ${POVULIB_SOURCES_DIR}/genomics/untangle.cpp
   ${POVULIB_SOURCES_DIR}/genomics/genomics.cpp
+  ${POVULIB_SOURCES_DIR}/genomics/graph.cpp
+  ${POVULIB_SOURCES_DIR}/genomics/rov.cpp
+  ${POVULIB_SOURCES_DIR}/genomics/untangle.cpp
+  ${POVULIB_SOURCES_DIR}/genomics/vcf.cpp
 
   # graph
   ${POVULIB_SOURCES_DIR}/graph/types.cpp
