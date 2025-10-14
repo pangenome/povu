@@ -29,7 +29,8 @@ struct slice_t {
  * an ordered pair type similar to std::pair but with same type on both sides
  * for less typing
  */
-template <typename T> using op_t = std::pair<T, T>;
+template <typename T>
+using op_t = std::pair<T, T>;
 
 /**
  * unordered pair with same type on both sides
@@ -37,7 +38,8 @@ template <typename T> using op_t = std::pair<T, T>;
  * we prefer (a,b) over (l,r) to avoid confusion with (left, right) in unordered
  * pairs
  */
-template <typename T> struct unordered_pair {
+template <typename T>
+struct unordered_pair {
 	T a_;
 	T b_;
 
@@ -70,7 +72,8 @@ template <typename T> struct unordered_pair {
 	}
 };
 
-template <typename T> using up_t = unordered_pair<T>;
+template <typename T>
+using up_t = unordered_pair<T>;
 } // namespace povu::types::core
 
 // NOLINTNEXTLINE(misc-unused-alias-decls)

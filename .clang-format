@@ -77,7 +77,7 @@ MaxEmptyLinesToKeep: 1
 SortIncludes: true
 
 # ---- declarations----
-
+BreakTemplateDeclarations: true
 
 # ----- Argument lists ----
 BinPackArguments: true
