@@ -9,12 +9,13 @@
 
 namespace povu::types::core
 {
-
-typedef std::chrono::high_resolution_clock Time; // C++ timer
-
 typedef u_int32_t id_t;
 typedef u_int32_t idx_t;
-typedef int8_t status_t; // return status of a fn
+
+/* type aliases for fixed width types */
+using u32 = u_int32_t;
+using status_t = int8_t;			 // return status of a fn
+using Time = std::chrono::high_resolution_clock; // C++ timer
 
 struct slice_t {
 	idx_t start;
@@ -22,31 +23,6 @@ struct slice_t {
 
 	slice_t(idx_t start, idx_t len) : start{start}, len{len}
 	{}
-};
-
-class Config
-{
-	unsigned int requested_threads_{1};
-	uint8_t log_level_{0};
-
-	Config() = default;
-
-public:
-	Config(unsigned int reqested_theads, uint8_t log_level)
-	{
-		this->requested_threads_ = reqested_theads;
-		this->log_level_ = log_level;
-	}
-
-	unsigned int requested_threads() const
-	{
-		return this->requested_threads_;
-	}
-
-	uint8_t log_level() const
-	{
-		return this->log_level_;
-	}
 };
 
 /**
