@@ -370,7 +370,7 @@ impl PovuGraph {
         let success = unsafe {
             ffi::povu_graph_set_references_from_prefixes(
                 self.inner,
-                c_ptrs.as_ptr(),
+                c_ptrs.as_ptr() as *mut *const libc::c_char,
                 c_ptrs.len(),
                 &mut error as *mut _,
             )

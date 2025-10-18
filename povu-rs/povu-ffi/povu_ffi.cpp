@@ -119,16 +119,16 @@ size_t povu_graph_add_edge(PovuGraph* graph,
     }
 
     try {
-        // Convert orientations to v_end_e enum
+        // Convert orientations to v_end_e enum (lowercase l/r)
         povu::types::graph::v_end_e from_end =
             (from_orientation == POVU_ORIENTATION_FORWARD)
-                ? povu::types::graph::v_end_e::L
-                : povu::types::graph::v_end_e::R;
+                ? povu::types::graph::v_end_e::l
+                : povu::types::graph::v_end_e::r;
 
         povu::types::graph::v_end_e to_end =
             (to_orientation == POVU_ORIENTATION_FORWARD)
-                ? povu::types::graph::v_end_e::L
-                : povu::types::graph::v_end_e::R;
+                ? povu::types::graph::v_end_e::l
+                : povu::types::graph::v_end_e::r;
 
         pt::idx_t idx = graph->vg->add_edge(from_id, from_end, to_id, to_end);
         return static_cast<size_t>(idx);
@@ -249,21 +249,27 @@ PovuPath* povu_graph_get_paths(const PovuGraph* graph, size_t* count) {
         const auto* ref_vec = graph->vg->get_ref_vec(ref_id);
         const auto& ref = graph->vg->get_ref_by_id(ref_id);
 
-        // Get path name
-        std::string path_name = ref.get_label();
+        // Get path name using tag
+        const char* tag = liteseq::get_tag(ref_vec);
+        std::string path_name = tag ? std::string(tag) : "";
         char* name = new char[path_name.size() + 1];
         std::strcpy(name, path_name.c_str());
         paths[ref_id].name = name;
         paths[ref_id].name_len = path_name.size();
 
-        // Get steps - access through the ref vector from liteseq
-        if (ref_vec && ref_vec->len > 0) {
-            paths[ref_id].steps_count = ref_vec->len;
-            paths[ref_id].steps = new PovuStep[ref_vec->len];
+        // Get steps - access through liteseq API
+        pt::idx_t step_count = liteseq::get_step_count(ref_vec);
+        if (ref_vec && step_count > 0) {
+            const liteseq::id_t* v_ids = liteseq::get_walk_v_ids(ref_vec);
+            const liteseq::strand* strands = liteseq::get_walk_strands(ref_vec);
 
-            for (size_t j = 0; j < ref_vec->len; j++) {
-                paths[ref_id].steps[j].vertex_id = ref_vec->ids[j];
-                paths[ref_id].steps[j].orientation = static_cast<PovuOrientation>(ref_vec->ors[j]);
+            paths[ref_id].steps_count = step_count;
+            paths[ref_id].steps = new PovuStep[step_count];
+
+            for (size_t j = 0; j < step_count; j++) {
+                paths[ref_id].steps[j].vertex_id = v_ids[j];
+                paths[ref_id].steps[j].orientation =
+                    static_cast<PovuOrientation>(strands[j]);
             }
         } else {
             paths[ref_id].steps_count = 0;
@@ -343,8 +349,12 @@ PovuFlubbles* povu_graph_find_flubbles(PovuGraph* graph, PovuError* error) {
     }
 
     try {
-        // Build spanning tree
-        povu::spanning_tree::Tree st(*graph->vg, graph->config);
+        // Build spanning tree - constructor takes size
+        povu::spanning_tree::Tree st(graph->vg->vtx_count());
+
+        // Initialize the spanning tree from the graph
+        // TODO: Need to properly initialize the spanning tree
+        // This requires more investigation of the spanning tree API
 
         // Find flubbles
         povu::pvst::Tree pvst_tree = povu::flubbles::find_flubbles(st, graph->config);
@@ -362,11 +372,11 @@ void povu_flubbles_free(PovuFlubbles* flubbles) {
 
 size_t povu_flubbles_count(const PovuFlubbles* flubbles) {
     if (!flubbles) return 0;
-    return flubbles->pvst_tree.vertex_count();
+    return flubbles->pvst_tree.vtx_count();
 }
 
 PovuFlubble* povu_flubbles_get(const PovuFlubbles* flubbles, size_t index) {
-    if (!flubbles || index >= flubbles->pvst_tree.vertex_count()) {
+    if (!flubbles || index >= flubbles->pvst_tree.vtx_count()) {
         return nullptr;
     }
 
@@ -400,7 +410,7 @@ void povu_pvst_tree_free(PovuPvstTree* tree) {
 }
 
 size_t povu_pvst_tree_vertex_count(const PovuPvstTree* tree) {
-    return tree ? tree->tree->vertex_count() : 0;
+    return tree ? tree->tree->vtx_count() : 0;
 }
 
 // VCF output

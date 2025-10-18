@@ -15,6 +15,14 @@ fn main() {
     println!("cargo:rustc-link-lib=static=povu_ffi");
     println!("cargo:rustc-link-lib=static=povulib");
 
+    // Link dependencies
+    println!("cargo:rustc-link-search=native={}/build/_deps/liteseq-build", dst.display());
+    println!("cargo:rustc-link-search=native={}/build/_deps/fmt-build", dst.display());
+    println!("cargo:rustc-link-search=native={}/build/_deps/log-build", dst.display());
+    println!("cargo:rustc-link-lib=static=liteseq");
+    println!("cargo:rustc-link-lib=static=fmtd");
+    println!("cargo:rustc-link-lib=static=log");
+
     // Link C++ standard library
     let target = env::var("TARGET").unwrap();
     if target.contains("apple") {
