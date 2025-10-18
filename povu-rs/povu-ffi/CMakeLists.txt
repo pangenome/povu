@@ -10,6 +10,8 @@ target_include_directories(povu_ffi PUBLIC
 
 target_link_libraries(povu_ffi PUBLIC
     povulib
+    fmt::fmt
+    liteseq
 )
 
 # Ensure C++17 standard
