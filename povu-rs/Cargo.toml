@@ -1,0 +1,31 @@
+[package]
+name = "povu-rs"
+version = "0.1.0"
+edition = "2021"
+authors = ["Erik Garrison"]
+description = "Rust bindings for Povu - pangenome variation toolkit"
+license = "MIT"
+repository = "https://github.com/pangenome/povu"
+
+[dependencies]
+thiserror = "1.0"
+libc = "0.2"
+
+[build-dependencies]
+cmake = "0.1"
+bindgen = "0.70"
+
+[dev-dependencies]
+tempfile = "3.8"
+
+[lib]
+name = "povu"
+path = "src/lib.rs"
+
+[[example]]
+name = "simple"
+path = "examples/simple.rs"
+
+[[example]]
+name = "topology"
+path = "examples/topology.rs"
