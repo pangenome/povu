@@ -59,6 +59,19 @@ static void set_error(PovuError* error, int code, const char* message) {
 }
 
 // Graph loading and management
+PovuGraph* povu_graph_new(size_t vertex_capacity, size_t edge_capacity, size_t path_capacity) {
+    try {
+        povu::bidirected::VG* vg = new povu::bidirected::VG(
+            vertex_capacity,
+            edge_capacity,
+            path_capacity
+        );
+        return new PovuGraph(vg);
+    } catch (const std::exception& e) {
+        return nullptr;
+    }
+}
+
 PovuGraph* povu_graph_from_gfa(const char* gfa_path, PovuError* error) {
     try {
         core::config config;
@@ -81,6 +94,78 @@ PovuGraph* povu_graph_from_gfa(const char* gfa_path, PovuError* error) {
 
 void povu_graph_free(PovuGraph* graph) {
     delete graph;
+}
+
+// Graph building
+size_t povu_graph_add_vertex(PovuGraph* graph, uint64_t id, const char* sequence) {
+    if (!graph || !sequence) {
+        return static_cast<size_t>(-1);
+    }
+
+    try {
+        std::string seq_str(sequence);
+        pt::idx_t idx = graph->vg->add_vertex(id, seq_str);
+        return static_cast<size_t>(idx);
+    } catch (const std::exception& e) {
+        return static_cast<size_t>(-1);
+    }
+}
+
+size_t povu_graph_add_edge(PovuGraph* graph,
+                           uint64_t from_id, PovuOrientation from_orientation,
+                           uint64_t to_id, PovuOrientation to_orientation) {
+    if (!graph) {
+        return static_cast<size_t>(-1);
+    }
+
+    try {
+        // Convert orientations to v_end_e enum
+        povu::types::graph::v_end_e from_end =
+            (from_orientation == POVU_ORIENTATION_FORWARD)
+                ? povu::types::graph::v_end_e::L
+                : povu::types::graph::v_end_e::R;
+
+        povu::types::graph::v_end_e to_end =
+            (to_orientation == POVU_ORIENTATION_FORWARD)
+                ? povu::types::graph::v_end_e::L
+                : povu::types::graph::v_end_e::R;
+
+        pt::idx_t idx = graph->vg->add_edge(from_id, from_end, to_id, to_end);
+        return static_cast<size_t>(idx);
+    } catch (const std::exception& e) {
+        return static_cast<size_t>(-1);
+    }
+}
+
+bool povu_graph_add_path(PovuGraph* graph, const char* name,
+                         const PovuStep* steps, size_t steps_count) {
+    if (!graph || !name || !steps) {
+        return false;
+    }
+
+    try {
+        // For now, path addition requires going through the liteseq API
+        // or manually constructing the path data structures.
+        // This is a TODO - needs more integration with the ref/path system
+
+        // Temporary stub - full implementation requires ref management
+        return false;
+    } catch (const std::exception& e) {
+        return false;
+    }
+}
+
+void povu_graph_finalize(PovuGraph* graph) {
+    if (!graph) {
+        return;
+    }
+
+    try {
+        graph->vg->shrink_to_fit();
+        graph->vg->gen_genotype_metadata();
+    } catch (const std::exception& e) {
+        // Silently fail - not critical
+    }
 }
 
 // Graph topology queries

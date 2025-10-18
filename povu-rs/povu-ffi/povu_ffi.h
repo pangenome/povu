@@ -135,6 +135,18 @@ typedef struct {
  */
 
 /**
+ * @brief Create a new empty graph with preallocated capacity
+ *
+ * Creates an empty graph with reserved capacity for efficient building.
+ *
+ * @param vertex_capacity Expected number of vertices
+ * @param edge_capacity Expected number of edges
+ * @param path_capacity Expected number of reference paths
+ * @return PovuGraph* Graph handle (must be freed with povu_graph_free)
+ */
+PovuGraph* povu_graph_new(size_t vertex_capacity, size_t edge_capacity, size_t path_capacity);
+
+/**
  * @brief Load a pangenome graph from a GFA file
  *
  * @param gfa_path Path to the GFA file to load
@@ -151,6 +163,60 @@ PovuGraph* povu_graph_from_gfa(const char* gfa_path, PovuError* error);
  * @param graph Graph to free (can be NULL)
  */
 void povu_graph_free(PovuGraph* graph);
+
+/*
+ * =============================================================================
+ * Graph Building (In-Memory Construction)
+ * =============================================================================
+ */
+
+/**
+ * @brief Add a vertex to the graph
+ *
+ * @param graph Graph to modify
+ * @param id Unique vertex identifier
+ * @param sequence DNA sequence for this vertex (null-terminated)
+ * @return Vertex index in the graph, or (size_t)-1 on error
+ */
+size_t povu_graph_add_vertex(PovuGraph* graph, uint64_t id, const char* sequence);
+
+/**
+ * @brief Add an edge between two vertices
+ *
+ * Connects two vertices at specific orientations in the bidirected graph.
+ *
+ * @param graph Graph to modify
+ * @param from_id Source vertex ID
+ * @param from_orientation Source vertex orientation
+ * @param to_id Target vertex ID
+ * @param to_orientation Target vertex orientation
+ * @return Edge index in the graph, or (size_t)-1 on error
+ */
+size_t povu_graph_add_edge(PovuGraph* graph,
+                           uint64_t from_id, PovuOrientation from_orientation,
+                           uint64_t to_id, PovuOrientation to_orientation);
+
+/**
+ * @brief Add a reference path to the graph
+ *
+ * @param graph Graph to modify
+ * @param name Path name (e.g., "sample#1#chr1")
+ * @param steps Array of steps in the path
+ * @param steps_count Number of steps
+ * @return true on success, false on error
+ */
+bool povu_graph_add_path(PovuGraph* graph, const char* name,
+                         const PovuStep* steps, size_t steps_count);
+
+/**
+ * @brief Finalize graph construction
+ *
+ * Optimizes internal data structures and prepares the graph for analysis.
+ * Should be called after all vertices, edges, and paths have been added.
+ *
+ * @param graph Graph to finalize
+ */
+void povu_graph_finalize(PovuGraph* graph);
 
 /*
  * =============================================================================

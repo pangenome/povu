@@ -29,3 +29,7 @@ path = "examples/simple.rs"
 [[example]]
 name = "topology"
 path = "examples/topology.rs"
+
+[[example]]
+name = "builder"
+path = "examples/builder.rs"

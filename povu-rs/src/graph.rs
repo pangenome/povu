@@ -13,6 +13,47 @@ pub struct PovuGraph {
 }
 
 impl PovuGraph {
+    /// Create a new empty graph for in-memory construction
+    ///
+    /// # Arguments
+    ///
+    /// * `vertex_capacity` - Expected number of vertices
+    /// * `edge_capacity` - Expected number of edges
+    /// * `path_capacity` - Expected number of reference paths
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use povu::{PovuGraph, Orientation};
+    ///
+    /// let mut graph = PovuGraph::new(100, 150, 5);
+    ///
+    /// // Add vertices
+    /// graph.add_vertex(1, "ACGT")?;
+    /// graph.add_vertex(2, "TTGG")?;
+    /// graph.add_vertex(3, "CCAA")?;
+    ///
+    /// // Add edges
+    /// graph.add_edge(1, Orientation::Forward, 2, Orientation::Forward)?;
+    /// graph.add_edge(1, Orientation::Forward, 3, Orientation::Forward)?;
+    /// graph.add_edge(2, Orientation::Reverse, 3, Orientation::Forward)?;
+    ///
+    /// // Finalize for analysis
+    /// graph.finalize();
+    ///
+    /// println!("Built graph with {} vertices", graph.vertex_count());
+    /// # Ok::<(), povu::Error>(())
+    /// ```
+    pub fn new(vertex_capacity: usize, edge_capacity: usize, path_capacity: usize) -> Self {
+        let inner = unsafe {
+            ffi::povu_graph_new(vertex_capacity, edge_capacity, path_capacity)
+        };
+
+        assert!(!inner.is_null(), "Failed to create graph");
+
+        PovuGraph { inner }
+    }
+
     /// Load a pangenome graph from a GFA file
     ///
     /// # Arguments
@@ -40,6 +81,122 @@ impl PovuGraph {
         }
 
         Ok(PovuGraph { inner })
+    }
+
+    /// Add a vertex to the graph
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - Unique vertex identifier
+    /// * `sequence` - DNA sequence for this vertex
+    ///
+    /// # Returns
+    ///
+    /// The vertex index, or an error if the addition failed
+    pub fn add_vertex(&mut self, id: u64, sequence: impl AsRef<str>) -> Result<usize> {
+        let c_seq = CString::new(sequence.as_ref())?;
+
+        let idx = unsafe {
+            ffi::povu_graph_add_vertex(self.inner, id, c_seq.as_ptr())
+        };
+
+        if idx == usize::MAX {
+            return Err(Error::Povu {
+                code: 1,
+                message: "Failed to add vertex".to_string(),
+            });
+        }
+
+        Ok(idx)
+    }
+
+    /// Add an edge between two vertices
+    ///
+    /// # Arguments
+    ///
+    /// * `from_id` - Source vertex ID
+    /// * `from_orientation` - Source vertex orientation
+    /// * `to_id` - Target vertex ID
+    /// * `to_orientation` - Target vertex orientation
+    ///
+    /// # Returns
+    ///
+    /// The edge index, or an error if the addition failed
+    pub fn add_edge(
+        &mut self,
+        from_id: u64,
+        from_orientation: Orientation,
+        to_id: u64,
+        to_orientation: Orientation,
+    ) -> Result<usize> {
+        let idx = unsafe {
+            ffi::povu_graph_add_edge(
+                self.inner,
+                from_id,
+                std::mem::transmute(from_orientation),
+                to_id,
+                std::mem::transmute(to_orientation),
+            )
+        };
+
+        if idx == usize::MAX {
+            return Err(Error::Povu {
+                code: 1,
+                message: "Failed to add edge".to_string(),
+            });
+        }
+
+        Ok(idx)
+    }
+
+    /// Add a reference path to the graph
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - Path name (e.g., "sample#1#chr1")
+    /// * `steps` - Steps in the path
+    ///
+    /// # Note
+    ///
+    /// This function is not yet fully implemented in the FFI layer
+    pub fn add_path(&mut self, name: impl AsRef<str>, steps: &[Step]) -> Result<()> {
+        let c_name = CString::new(name.as_ref())?;
+
+        let c_steps: Vec<ffi::PovuStep> = steps
+            .iter()
+            .map(|s| ffi::PovuStep {
+                vertex_id: s.vertex_id,
+                orientation: unsafe { std::mem::transmute(s.orientation) },
+            })
+            .collect();
+
+        let success = unsafe {
+            ffi::povu_graph_add_path(
+                self.inner,
+                c_name.as_ptr(),
+                c_steps.as_ptr(),
+                c_steps.len(),
+            )
+        };
+
+        if !success {
+            return Err(Error::Povu {
+                code: 1,
+                message: "Failed to add path (not yet fully implemented)".to_string(),
+            });
+        }
+
+        Ok(())
+    }
+
+    /// Finalize graph construction
+    ///
+    /// Optimizes internal data structures and prepares the graph for analysis.
+    /// Should be called after all vertices, edges, and paths have been added.
+    pub fn finalize(&mut self) {
+        unsafe {
+            ffi::povu_graph_finalize(self.inner);
+        }
     }
 
     /// Get the number of vertices in the graph
