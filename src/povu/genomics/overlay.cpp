@@ -30,27 +30,36 @@ const pt::u8 SLICE_B_IDX{1};
 using prefix_sum = std::vector<pt::u32>;
 using rs_to_ps = std::pair<pt::u32, prefix_sum>; // ref start to prefix sum
 
+struct overlay_prefix_sum_t {
+	pt::u32 ref_start_idx;
+	prefix_sum p_sum_fwd;
+	prefix_sum p_sum_rev;
+};
+
 class Overlays
 {
 	// i is the walk idx and j is the ref idx
-	std::vector<std::vector<std::vector<rs_to_ps>>> prefix_sums_;
+	std::vector<std::vector<std::vector<overlay_prefix_sum_t>>>
+		prefix_sums_;
 	// key is walk idx and value is idx in overlays vector
 	// std::map<pt::u32, pt::u32> walk_to_overlay_;
 
 public:
 	Overlays(pt::u32 walk_count, pt::u32 ref_count)
-	    : prefix_sums_(walk_count,
-			   std::vector<std::vector<rs_to_ps>>(ref_count))
+	    : prefix_sums_(
+		      walk_count,
+		      std::vector<std::vector<overlay_prefix_sum_t>>(ref_count))
 	{}
 
 	[[nodiscard]]
-	const std::vector<rs_to_ps> &get_ps(pt::u32 w_idx, pt::u32 r_idx) const
+	const std::vector<overlay_prefix_sum_t> &get_ps(pt::u32 w_idx,
+							pt::u32 r_idx) const
 	{
 		return prefix_sums_.at(w_idx).at(r_idx);
 	}
 
 	void add_overlay(pt::u32 w_idx, pt::u32 r_idx,
-			 std::vector<rs_to_ps> &&p_sums)
+			 std::vector<overlay_prefix_sum_t> &&p_sums)
 	{
 		prefix_sums_.at(w_idx).at(r_idx) = std::move(p_sums);
 	}
@@ -78,18 +87,19 @@ std::vector<pt::u32> comp_prefix_sum(const std::vector<pt::u8> &ov)
 	return ps;
 }
 
-std::vector<rs_to_ps> overlay_walk(const lq::ref_walk *ref_w,
-				   const pgt::walk_t &graph_w,
-				   const std::vector<pt::idx_t> &ref_idx_starts)
+std::vector<overlay_prefix_sum_t>
+overlay_walk(const lq::ref_walk *ref_w, const pgt::walk_t &graph_w,
+	     const std::vector<pt::idx_t> &ref_idx_starts)
 {
-
 	const pt::u32 GRAPH_W_LEN = graph_w.size();
 	std::vector<pt::u8> ov(GRAPH_W_LEN, 0);
+	std::vector<pt::u8> ov_rev(GRAPH_W_LEN, 0);
 
 	// std::string w_str = pgt::to_string(graph_w);
 	// std::cerr << w_str << "\t";
-
-	std::vector<rs_to_ps> prefix_sums;
+	// overlay_prefix_sum_t ops;
+	// std::vector<rs_to_ps> prefix_sums;
+	std::vector<overlay_prefix_sum_t> prefix_sums;
 	prefix_sums.reserve(ref_idx_starts.size());
 
 	for (pt::u32 ref_idx : ref_idx_starts) {
@@ -109,12 +119,38 @@ std::vector<rs_to_ps> overlay_walk(const lq::ref_walk *ref_w,
 		}
 
 		// std::cerr << "rw start " << ref_idx << "\n";
+		// prefix_sums.emplace_back(ref_idx, comp_prefix_sum(ov));
+		// reset ov for next ref start
 
-		prefix_sums.emplace_back(ref_idx, comp_prefix_sum(ov));
+		ref_w_idx = ref_idx;
+		step_idx = GRAPH_W_LEN;
+		for (; step_idx-- > 0; ref_w_idx++) {
+			auto [g_v_id, g_o] = graph_w[step_idx];
+
+			pt::idx_t ref_v_id = ref_w->v_ids[ref_w_idx];
+			pgt::or_e ref_o = ref_w->strands[ref_w_idx] ==
+							  lq::strand::STRAND_FWD
+						  ? pgt::or_e::forward
+						  : pgt::or_e::reverse;
+
+			if (ref_v_id != g_v_id || ref_o != pgt::flip(g_o))
+				ov_rev[step_idx] = 1;
+		}
+
+		// std::cerr << "rw start " << ref_idx << "\n";
+		// prefix_sums.emplace_back(ref_idx, comp_prefix_sum(ov_rev));
+		// reset ov for next ref start
+
+		prefix_sums.push_back(overlay_prefix_sum_t{
+			ref_idx, comp_prefix_sum(ov), comp_prefix_sum(ov_rev)});
 
 		// reset ov for next ref start
 		std::fill(ov.begin(), ov.end(), 0);
+		std::fill(ov_rev.begin(), ov_rev.end(), 0);
 	}
+
+	// for (pt::u32 ref_idx : ref_idx_starts) {
+	// }
 
 	return prefix_sums;
 }
@@ -192,7 +228,7 @@ Overlays comp_prefixes(const bd::VG &g, const std::vector<pgt::walk_t> &walks)
 			const std::vector<pt::idx_t> &ref_idx_starts =
 				s_vtx_refs[ref_idx];
 
-			std::vector<rs_to_ps> p_sums =
+			std::vector<overlay_prefix_sum_t> p_sums =
 				overlay_walk(ref_w, w, ref_idx_starts);
 
 			// if (dbg && ref_idx == 10) {
@@ -250,9 +286,9 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 	const auto &[sl_a, sl_b, vt] = pv; // slice a, slice b, var type
 
 	for (pt::u32 ref_idx{}; ref_idx < REF_COUNT; ref_idx++) {
-		const std::vector<rs_to_ps> &wa_pss =
+		const std::vector<overlay_prefix_sum_t> &wa_pss =
 			ov.get_ps(wa_idx, ref_idx);
-		for (const auto &[ref_start_idx, ps] : wa_pss) {
+		for (const auto &[ref_start_idx, ps_f, ps_r] : wa_pss) {
 			auto [start, len] = sl_a;
 
 			// add context for subs and insertions
@@ -286,31 +322,39 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 				break;
 			}
 
-			if ((ps[N] - ps[i]) == 0) {
-				// valid overlay
-				allele_slice_t at{&walks.at(wa_idx),
-						  wa_idx,
-						  as_walk_start_idx,
-						  g.get_ref_vec(ref_idx)->walk,
-						  ref_idx,
-						  as_ref_start_idx,
-						  as_len,
-						  pgt::or_e::forward,
-						  vt};
+			// Check prefix sums in one step
+			bool is_forward_zero = (ps_f[N] - ps_f[i]) == 0;
+			bool is_reverse_zero = (ps_r[N] - ps_r[i]) == 0;
 
-				itn_t &itn = ref_map[ref_idx];
-				itn.append_at(std::move(at));
-				walk_to_refs[wa_idx].insert(ref_idx);
-				if (itn.at_count() > 1)
-					is_tangled = true;
-			}
+			if (!is_forward_zero && !is_reverse_zero)
+				continue;
+
+			auto as_or = is_forward_zero ? pgt::or_e::forward
+						     : pgt::or_e::reverse;
+
+			// valid overlay
+			allele_slice_t at{&walks.at(wa_idx),
+					  wa_idx,
+					  as_walk_start_idx,
+					  g.get_ref_vec(ref_idx)->walk,
+					  ref_idx,
+					  as_ref_start_idx,
+					  as_len,
+					  as_or,
+					  vt};
+
+			itn_t &itn = ref_map[ref_idx];
+			itn.append_at(std::move(at));
+			walk_to_refs[wa_idx].insert(ref_idx);
+			if (itn.at_count() > 1)
+				is_tangled = true;
 		}
 	}
 
 	for (pt::u32 ref_idx{}; ref_idx < REF_COUNT; ref_idx++) {
-		const std::vector<rs_to_ps> &wb_pss =
+		const std::vector<overlay_prefix_sum_t> &wb_pss =
 			ov.get_ps(wb_idx, ref_idx);
-		for (const auto &[ref_start_idx, ps] : wb_pss) {
+		for (const auto &[ref_start_idx, ps_f, ps_r] : wb_pss) {
 			auto [start, len] = sl_b;
 			auto vt_ = pgr::covariant(vt);
 
@@ -344,23 +388,31 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 				break;
 			}
 
-			if ((ps[N] - ps[i]) == 0) { // valid overlay
-				allele_slice_t at{&walks.at(wb_idx),
-						  wb_idx,
-						  as_walk_start_idx,
-						  g.get_ref_vec(ref_idx)->walk,
-						  ref_idx,
-						  as_ref_start_idx,
-						  as_len,
-						  pgt::or_e::forward,
-						  vt_};
+			// Check prefix sums in one step
+			bool is_forward_zero = (ps_f[N] - ps_f[i]) == 0;
+			bool is_reverse_zero = (ps_r[N] - ps_r[i]) == 0;
 
-				itn_t &itn = ref_map[ref_idx];
-				itn.append_at(std::move(at));
-				walk_to_refs[wb_idx].insert(ref_idx);
-				if (itn.at_count() > 1)
-					is_tangled = true;
-			}
+			if (!is_forward_zero && !is_reverse_zero)
+				continue;
+
+			auto as_or = is_forward_zero ? pgt::or_e::forward
+						     : pgt::or_e::reverse;
+
+			allele_slice_t at{&walks.at(wb_idx),
+					  wb_idx,
+					  as_walk_start_idx,
+					  g.get_ref_vec(ref_idx)->walk,
+					  ref_idx,
+					  as_ref_start_idx,
+					  as_len,
+					  as_or,
+					  vt_};
+
+			itn_t &itn = ref_map[ref_idx];
+			itn.append_at(std::move(at));
+			walk_to_refs[wb_idx].insert(ref_idx);
+			if (itn.at_count() > 1)
+				is_tangled = true;
 		}
 	}
 }
@@ -370,7 +422,11 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
  */
 std::vector<Exp> comp_overlays3(const bd::VG &g, const pgr::RoV &rov)
 {
+
 	std::vector<Exp> rov_exps;
+	if (rov.as_str() == ">2597>2621") {
+		return rov_exps;
+	}
 
 	const std::vector<pgt::walk_t> &walks = rov.get_walks();
 	const std::vector<pgr::pairwise_variants> &pv = rov.get_irreducibles();
