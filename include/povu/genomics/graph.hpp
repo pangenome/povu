@@ -34,7 +34,7 @@ auto format_as(dir_e d);
 
 typedef pgt::id_or_t idx_or_t; // specifically for idx instead of id
 
-void find_walks(const bd::VG &g, pgr::RoV &rov);
+pt::status_t find_walks(const bd::VG &g, pgr::RoV &rov);
 } // namespace povu::genomics::graph
 
 #endif // POVU_GENOMICS_GRAPH_HPP

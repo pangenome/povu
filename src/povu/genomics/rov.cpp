@@ -253,10 +253,10 @@ void eval_vertex(const bd::VG &g, const pvst::Tree &pvst, pt::u32 pvst_v_idx,
 		RoV r{pvst_v_ptr};
 
 		// get the set of walks for the RoV
-		povu::genomics::graph::find_walks(g, r);
+		pt::status_t s = povu::genomics::graph::find_walks(g, r);
 
 		// no walks found, skip this RoV
-		if (r.get_walks().size() == 0)
+		if (r.get_walks().size() == 0 || s != 0)
 			return;
 
 		find_hidden(r);

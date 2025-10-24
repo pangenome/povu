@@ -424,9 +424,6 @@ std::vector<Exp> comp_overlays3(const bd::VG &g, const pgr::RoV &rov)
 {
 
 	std::vector<Exp> rov_exps;
-	if (rov.as_str() == ">2597>2621") {
-		return rov_exps;
-	}
 
 	const std::vector<pgt::walk_t> &walks = rov.get_walks();
 	const std::vector<pgr::pairwise_variants> &pv = rov.get_irreducibles();
