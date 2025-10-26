@@ -223,9 +223,8 @@ bool is_fl_leaf(const pvst::Tree &pvst, pt::idx_t pvst_v_idx) noexcept
 
 	for (pt::idx_t v_idx : pvst.get_children(pvst_v_idx)) {
 		pvst::vf_e c_fam = pvst.get_vertex_const_ptr(v_idx)->get_fam();
-		if (pvst::to_clan(c_fam) == pvst::vc_e::fl_like) {
+		if (pvst::to_clan(c_fam) == pvst::vc_e::fl_like)
 			return false;
-		}
 	}
 
 	return true;
@@ -241,6 +240,26 @@ bool should_call(const pvst::Tree &pvst, const pvst::VertexBase *pvst_v_ptr,
 		return is_fl_leaf(pvst, pvst_v_idx) || pvst.is_leaf(pvst_v_idx);
 
 	return false;
+}
+
+void find_pvst_rovs(const bd::VG &g, const pvst::Tree &pvst,
+		    const std::set<pt::u32> &colored_vtxs, std::vector<RoV> &rs)
+{
+	for (pt::u32 i : colored_vtxs) { // i is pvst_v_idx
+		// std::cout << "Colored pvst vertex idx: " << v_idx << "\n";
+		const pvst::VertexBase *v = pvst.get_vertex_const_ptr(i);
+		RoV r{v};
+
+		// get the set of walks for the RoV
+		pt::status_t s = povu::genomics::graph::find_walks(g, r);
+
+		// no walks found, skip this RoV
+		if (r.get_walks().size() == 0 || s != 0)
+			return;
+
+		find_hidden(r);
+		rs.emplace_back(std::move(r));
+	}
 }
 
 void eval_vertex(const bd::VG &g, const pvst::Tree &pvst, pt::u32 pvst_v_idx,
@@ -264,55 +283,146 @@ void eval_vertex(const bd::VG &g, const pvst::Tree &pvst, pt::u32 pvst_v_idx,
 	}
 }
 
+bool has_all_refs(const bd::VG &g, const std::set<pt::id_t> &to_call_ref_ids,
+		  pt::u32 s_v_idx, pt::u32 t_v_idx)
+{
+	for (pt::u32 r_idx : to_call_ref_ids) {
+		const std::vector<pt::idx_t> &s_idxs =
+			g.get_vertex_ref_idxs(s_v_idx, r_idx);
+
+		const std::vector<pt::idx_t> &t_idxs =
+			g.get_vertex_ref_idxs(t_v_idx, r_idx);
+
+		if (s_idxs.empty() || t_idxs.empty())
+			return false;
+	}
+
+	return true;
+}
+
+bool has_any_refs(const bd::VG &g, const std::set<pt::id_t> &to_call_ref_ids,
+		  pt::u32 s_v_idx, pt::u32 t_v_idx)
+{
+	for (pt::u32 r_idx : to_call_ref_ids) {
+		const std::vector<pt::idx_t> &s_idxs =
+			g.get_vertex_ref_idxs(s_v_idx, r_idx);
+
+		const std::vector<pt::idx_t> &t_idxs =
+			g.get_vertex_ref_idxs(t_v_idx, r_idx);
+
+		if (s_idxs.empty() || t_idxs.empty())
+			return false;
+	}
+
+	return true;
+}
+
+// given a vertex go up the tree until you find the flubble leaf which
+// has all to call ref ids
+std::optional<pt::u32> find_vertex(const bd::VG &g, const pvst::Tree &pvst,
+				   const std::set<pt::id_t> &to_call_ref_ids,
+				   pt::u32 pvst_v_idx)
+{
+
+	auto is_parent_valid = [&](pt::u32 pvst_v_idx)
+	{
+		return pvst_v_idx != pvst.root_idx() &&
+		       pvst_v_idx != pc::INVALID_IDX &&
+		       // if the parent has too many children, skip
+		       // avoids going too far up the tree
+		       pvst.get_children(pvst_v_idx).size() < 20;
+	};
+
+	while (is_parent_valid(pvst_v_idx)) {
+		const pvst::VertexBase *v =
+			pvst.get_vertex_const_ptr(pvst_v_idx);
+
+		if (v->get_route_params() == std::nullopt)
+			return std::nullopt;
+
+		auto [l, r, _] = v->get_route_params().value();
+		auto [start_id, __] = l;
+		auto [stop_id, ___] = r;
+
+		pt::u32 s_v_idx = g.v_id_to_idx(start_id);
+		pt::u32 t_v_idx = g.v_id_to_idx(stop_id);
+
+		if (has_all_refs(g, to_call_ref_ids, s_v_idx, t_v_idx))
+			return pvst_v_idx;
+
+		pvst_v_idx = pvst.get_parent_idx(pvst_v_idx);
+	};
+
+	return std::nullopt;
+}
+
+std::set<pt::u32> color_pvst(const bd::VG &g, const pvst::Tree &pvst,
+			     const std::set<pt::id_t> &to_call_ref_ids)
+{
+	std::set<pt::u32> colored_vtxs;
+	for (pt::u32 i{}; i < pvst.vtx_count(); i++) // i is pvst_v_idx
+		if (pvst.is_leaf(i))
+			if (auto j = find_vertex(g, pvst, to_call_ref_ids, i))
+				colored_vtxs.insert(*j);
+
+	return colored_vtxs;
+}
+
 /**
  * find walks in the graph based on the leaves of the pvst
  * initialize RoVs from flubbles
  */
 std::vector<RoV> gen_rov(const std::vector<pvst::Tree> &pvsts, const bd::VG &g,
+			 const std::set<pt::id_t> &to_call_ref_ids,
 			 const core::config &app_config)
 {
-
 	// the set of RoVs to return
 	std::vector<RoV> rs;
 	rs.reserve(pvsts.size());
 
-	// reuse msg buffer for progress bar
-	DynamicProgress<ProgressBar> bars;
-	std::string prog_msg;
-	prog_msg.reserve(128);
+	// // reuse msg buffer for progress bar
+	// DynamicProgress<ProgressBar> bars;
+	// std::string prog_msg;
+	// prog_msg.reserve(128);
 
-	auto update_prog = [&](pt::idx_t i, pt::idx_t v_idx, pt::idx_t total,
-			       std::size_t bar_idx)
-	{
-		prog_msg.clear();
-		fmt::format_to(std::back_inserter(prog_msg),
-			       "Generating RoVs for PVST {} ({}/{})", i + 1,
-			       v_idx + 1, total);
-		bars[bar_idx].set_option(option::PostfixText{prog_msg});
-		bars[bar_idx].set_progress(v_idx + 1);
-	};
+	// auto update_prog = [&](pt::idx_t i, pt::idx_t v_idx, pt::idx_t total,
+	//		       std::size_t bar_idx)
+	// {
+	//	prog_msg.clear();
+	//	fmt::format_to(std::back_inserter(prog_msg),
+	//		       "Generating RoVs for PVST {} ({}/{})", i + 1,
+	//		       v_idx + 1, total);
+	//	bars[bar_idx].set_option(option::PostfixText{prog_msg});
+	//	bars[bar_idx].set_progress(v_idx + 1);
+	// };
 
 	for (pt::idx_t i{}; i < pvsts.size(); i++) { // for each pvst
-		const pvst::Tree &pvst = pvsts[i];
+		const pvst::Tree &pvst = pvsts.at(i);
 		// loop through each tree
-		const pt::idx_t total = pvst.vtx_count();
+		// const pt::idx_t total = pvst.vtx_count();
 
+		std::set<pt::u32> colored_vtxs =
+			color_pvst(g, pvst, to_call_ref_ids);
+
+		// std::cerr << "clrd " << colored_vtxs.size() << "\n";
+
+		find_pvst_rovs(g, pvst, colored_vtxs, rs);
 		// reset progress bar
-		ProgressBar bar;
-		set_progress_bar_common_opts(&bar);
-		std::size_t bar_idx = bars.push_back(bar);
-		set_progress_bar_common_opts(&bar, pvst.vtx_count());
+		// ProgressBar bar;
+		// set_progress_bar_common_opts(&bar);
+		// std::size_t bar_idx = bars.push_back(bar);
+		// set_progress_bar_common_opts(&bar, pvst.vtx_count());
 
-		for (pt::u32 v_idx{}; v_idx < pvst.vtx_count(); v_idx++) {
-			// update progress bar
-			if (app_config.show_progress())
-				update_prog(i, v_idx, total, bar_idx);
+		// for (pt::u32 v_idx{}; v_idx < pvst.vtx_count(); v_idx++) {
+		//	// update progress bar
+		//	// if (app_config.show_progress())
+		//	//	update_prog(i, v_idx, total, bar_idx);
 
-			eval_vertex(g, pvst, v_idx, rs);
+		//	eval_vertex(g, pvst, v_idx, rs);
 
-			if (app_config.show_progress())
-				bars[bar_idx].mark_as_completed();
-		}
+		//	if (app_config.show_progress()) //
+		//	//	bars[bar_idx].mark_as_completed();
+		// }
 	}
 
 	return rs;

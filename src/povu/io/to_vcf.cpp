@@ -85,8 +85,9 @@ void init_vcfs(bd::VG &g, const std::vector<std::string> &ref_name_prefixes,
 void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 	       std::ostream &os)
 {
-
-	bool dbg = (r.get_id() == ">1542>1545") ? true : false;
+	std::string s = ">181>185";
+	s = ">3>6";
+	bool dbg = (r.get_id() == s) ? true : false;
 
 	pgr::var_type_e var_typ = r.get_var_type();
 
@@ -172,14 +173,14 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 		return dna_strs;
 	};
 
-	auto slices_as_at_str = [&](const std::vector<pt::idx_t> &idxs,
-				    bool is_ref) -> std::string
+	auto slices_as_at_str =
+		[&](const std::vector<pt::idx_t> &idxs) -> std::string
 	{
 		std::string str = "";
 		std::string sep = ""; // no leading comma
 		for (auto i : idxs) {
 			str += sep;
-			str += r.get_slice(i).as_str(is_ref);
+			str += r.get_slice(i).as_str();
 			sep = ",";
 		}
 		return str;
@@ -188,9 +189,9 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 	auto allele_traversals = [&]() -> std::string
 	{
 		std::string s;
-		s += slices_as_at_str(std::vector<pt::idx_t>{REF_AT_IDX}, true);
+		s += slices_as_at_str(std::vector<pt::idx_t>{REF_AT_IDX});
 		s += ",";
-		s += slices_as_at_str(alts, false);
+		s += slices_as_at_str(alts);
 		return s;
 	};
 
@@ -229,8 +230,6 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 
 	// if (dbg)
 	//	std::exit(1);
-
-	// std::exit(1);
 
 	return;
 }

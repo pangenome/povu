@@ -1,9 +1,11 @@
 #include "povu/genomics/vcf.hpp"
 
+#include <iostream>
 #include <iterator> // for pair
 #include <vector>
 
 #include "povu/common/core.hpp"
+#include "povu/common/utils.hpp"
 #include "povu/genomics/allele.hpp" // for Exp, allele_slice_t, itn_t
 #include "povu/genomics/graph.hpp"  // for RoV
 #include "povu/graph/pvst.hpp"	    // for VertexBase
@@ -89,13 +91,14 @@ std::map<pt::idx_t, std::vector<VcfRec>>
 gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 		 const std::set<pt::id_t> &to_call_ref_ids)
 {
-	auto start = pt::Time::now();
+	std::string s = ">181>185";
+	s = ">3>6";
+	bool dbg = exp.id() == s ? true : false;
 
-	bool dbg = exp.id() == ">2376>2379" ? true : false;
-	dbg = false;
-
-	if (dbg)
-		std::cerr << exp.id() << " generating VCF records...\n";
+	if (dbg) {
+		std::cerr << "to call r ids \n";
+		pu::print_with_comma(std::cerr, to_call_ref_ids, ',');
+	}
 
 	std::map<pt::idx_t, std::vector<VcfRec>> exp_vcf_recs;
 
@@ -111,11 +114,18 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 	}
 	const pvst::VertexBase *pvst_vtx_ptr = exp.get_pvst_vtx_const_ptr();
 
+	if (dbg)
+		std::cerr << "exp" << exp.id() << " \n";
+
 	auto pre_comp_ref_pairs = [&]() -> std::vector<pt::op_t<pt::id_t>>
 	{
 		std::vector<pt::op_t<pt::id_t>> ref_pairs;
 		std::set<pt::id_t> exp_ref_ids = exp.get_ref_ids();
+		if (dbg)
+			std::cerr << "exp ref ids: \n";
 		for (pt::id_t ref_ref_id : exp_ref_ids) {
+			if (dbg)
+				std::cerr << ref_ref_id << ", ";
 			if (!pv_cmp::contains(to_call_ref_ids, ref_ref_id)) {
 				continue;
 			}
@@ -126,24 +136,27 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 				}
 			}
 		}
+		if (dbg)
+			std::cerr << "\n";
+
 		return ref_pairs;
 	};
 
 	std::map<std::pair<pt::idx_t, pgr::var_type_e>, VcfRec>
 		var_type_to_vcf_rec;
 	std::vector<pt::op_t<pt::id_t>> ref_pairs = pre_comp_ref_pairs();
-	// std::cerr << "ref pairs size: " << ref_pairs.size() << "\n";
 
-	// std::cerr << "exp" << exp.id() << " \n";
-	// std::cerr << "walks: \n";
-	// for (auto i : exp.get_walk_idxs()) {
-	//	auto w = rov.get_walk(i);
-	//	std::cerr << i << ": ";
-	//	std::cerr << pgt::to_string(w);
-	// }
-	// std::cerr << "\n";
+	if (dbg)
+		std::cerr << "pairs " << ref_pairs.size() << " \n";
 
 	for (auto [ref_ref_id, alt_ref_id] : ref_pairs) {
+
+		if (dbg) {
+
+			std::cerr << "ref ref id " << ref_ref_id
+				  << " alt ref id " << alt_ref_id << "\n";
+		}
+
 		const pga::itn_t &ref_itn = exp.get_itn(ref_ref_id);
 		const pga::itn_t &alt_itn = exp.get_itn(alt_ref_id);
 
@@ -154,31 +167,15 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 		     get_call_itn_idxs(exp, ref_ref_id, alt_ref_id)) {
 			const pga::allele_slice_t &ref_allele_slice =
 				ref_itn.get_at(i);
-
-			try {
-				const pga::allele_slice_t &alt_allele_slice =
-					alt_itn.get_at(j);
-			}
-			catch (...) {
-				ERR("Out of range accessing alt_itn at idx {} "
-				    "for alt_ref_id {} in exp {}",
-				    j, alt_ref_id, exp.id());
-				std::cerr << "walks: \n";
-				auto rov = exp.get_rov();
-				for (auto i : exp.get_walk_idxs()) {
-					auto w = rov->get_walk(i);
-					std::cerr << i << ": ";
-					std::cerr << pgt::to_string(w);
-				}
-
-				std::exit(EXIT_FAILURE);
-			}
-
 			const pga::allele_slice_t &alt_allele_slice =
 				alt_itn.get_at(j);
 
 			pt::idx_t ref_walk_idx = ref_allele_slice.walk_idx;
 			pt::idx_t alt_walk_idx = alt_allele_slice.walk_idx;
+
+			if (dbg) {
+				std::cerr << ref_allele_slice.as_str() << "\n";
+			}
 
 			// TODO: check if start and len of the walks as well
 			// this means they are from the same walk, skip
@@ -201,6 +198,13 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 			// if it does not exist create a variant type for it and
 			// add to var_type_to_vcf_rec
 			if (!pv_cmp::contains(var_type_to_vcf_rec, key)) {
+				if (dbg) {
+					std::cerr << "New VCF rec for exp "
+						  << exp.id() << " ref id "
+						  << ref_ref_id << " or "
+						  << ref_allele_slice.get_or()
+						  << "\n";
+				}
 				pt::idx_t pos = comp_pos(ref_allele_slice,
 							 variant_type);
 				VcfRec vcf_rec{ref_ref_id,
@@ -229,17 +233,8 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 		exp_vcf_recs[ref_ref_id].emplace_back(std::move(r));
 	}
 
-	auto end = pt::Time::now();
-
-	// Calculate the elapsed time
-	auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(
-		end - start);
-
-	// Output the elapsed time in nanoseconds
-	if (dbg)
-		std::cerr << __func__ << " Elapsed time: " << elapsed.count()
-			  << " ns"
-			  << "\n";
+	// if (dbg)
+	//	std::exit(1);
 
 	return exp_vcf_recs;
 }

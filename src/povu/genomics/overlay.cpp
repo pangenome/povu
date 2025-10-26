@@ -1,5 +1,6 @@
 #include "povu/genomics/allele.hpp"
 
+#include <algorithm>
 #include <csignal> // for raise, SIGINT
 
 #include <cstdint>
@@ -123,8 +124,10 @@ overlay_walk(const lq::ref_walk *ref_w, const pgt::walk_t &graph_w,
 		// reset ov for next ref start
 
 		ref_w_idx = ref_idx;
-		step_idx = GRAPH_W_LEN;
-		for (; step_idx-- > 0; ref_w_idx++) {
+		step_idx = 0;
+		ref_w_idx++;
+		for (; step_idx < graph_w.size() && ref_w_idx-- > 0;
+		     step_idx++) {
 			auto [g_v_id, g_o] = graph_w[step_idx];
 
 			pt::idx_t ref_v_id = ref_w->v_ids[ref_w_idx];
@@ -135,6 +138,9 @@ overlay_walk(const lq::ref_walk *ref_w, const pgt::walk_t &graph_w,
 
 			if (ref_v_id != g_v_id || ref_o != pgt::flip(g_o))
 				ov_rev[step_idx] = 1;
+
+			// if (ref_w_idx == 0)
+			//	break;
 		}
 
 		// std::cerr << "rw start " << ref_idx << "\n";
@@ -143,6 +149,28 @@ overlay_walk(const lq::ref_walk *ref_w, const pgt::walk_t &graph_w,
 
 		prefix_sums.push_back(overlay_prefix_sum_t{
 			ref_idx, comp_prefix_sum(ov), comp_prefix_sum(ov_rev)});
+
+		// std::cerr << "fw  ";
+		// for (pt::u32 i{}; i < ov.size(); i++)
+		//	std::cerr << static_cast<pt::u32>(ov[i]) << ", ";
+		// std::cerr << "\n";
+
+		// std::cerr << "ps  ";
+		// auto x = comp_prefix_sum(ov);
+		// for (pt::u32 i{}; i < ov.size(); i++)
+		//	std::cerr << static_cast<pt::u32>(x[i]) << ", ";
+		// std::cerr << "\n";
+
+		// std::cerr << "rev ";
+		// for (pt::u32 i{}; i < ov_rev.size(); i++)
+		//	std::cerr << static_cast<pt::u32>(ov_rev[i]) << ", ";
+		// std::cerr << "\n";
+
+		// std::cerr << "ps rev  ";
+		// x = comp_prefix_sum(ov_rev);
+		// for (pt::u32 i{}; i < ov.size(); i++)
+		//	std::cerr << static_cast<pt::u32>(x[i]) << ", ";
+		// std::cerr << "\n";
 
 		// reset ov for next ref start
 		std::fill(ov.begin(), ov.end(), 0);
@@ -209,7 +237,6 @@ Overlays comp_prefixes(const bd::VG &g, const std::vector<pgt::walk_t> &walks)
 		std::set<pt::u32> walk_ref_idxs =
 			find_refs_in_walk(g, walks.at(w_idx));
 
-		// std::cerr << pgt::to_string(walks.at(w_idx)) << "\n";
 		// std::cerr << "refs: ";
 		// povu::utils::print_with_comma(std::cerr, walk_ref_idxs, ',');
 		// std::cerr << "\n";
@@ -227,6 +254,9 @@ Overlays comp_prefixes(const bd::VG &g, const std::vector<pgt::walk_t> &walks)
 
 			const std::vector<pt::idx_t> &ref_idx_starts =
 				s_vtx_refs[ref_idx];
+
+			// std::cerr << pgt::to_string(walks.at(w_idx)) << "\n";
+			// std::cerr << "ref idx " << ref_idx << "\n";
 
 			std::vector<overlay_prefix_sum_t> p_sums =
 				overlay_walk(ref_w, w, ref_idx_starts);
@@ -246,6 +276,8 @@ Overlays comp_prefixes(const bd::VG &g, const std::vector<pgt::walk_t> &walks)
 			overlays.add_overlay(w_idx, ref_idx, std::move(p_sums));
 		}
 	}
+
+	// std::exit(1);
 
 	return overlays;
 }
@@ -279,8 +311,12 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 	     const Overlays &ov, const pgr::raw_variant &pv, pt::u32 wa_idx,
 	     pt::u32 wb_idx, std::map<pt::u32, itn_t> &ref_map,
 	     std::map<pt::idx_t, std::set<pt::idx_t>> &walk_to_refs,
-	     bool &is_tangled)
+	     bool &is_tangled, bool dbg)
 {
+	// dbg = false;
+	if (dbg)
+		std::cerr << "(" << wb_idx << ", " << wa_idx << ")\n";
+
 	const pt::u32 REF_COUNT = g.ref_count();
 
 	const auto &[sl_a, sl_b, vt] = pv; // slice a, slice b, var type
@@ -291,7 +327,7 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 		for (const auto &[ref_start_idx, ps_f, ps_r] : wa_pss) {
 			auto [start, len] = sl_a;
 
-			// add context for subs and insertions
+			// add context for subs yand insertions
 			pt::u32 i;
 			pt::u32 N;
 			pt::u32 as_walk_start_idx;
@@ -323,14 +359,30 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 			}
 
 			// Check prefix sums in one step
-			bool is_forward_zero = (ps_f[N] - ps_f[i]) == 0;
-			bool is_reverse_zero = (ps_r[N] - ps_r[i]) == 0;
+			bool is_forward_zero =
+				(ps_f[N] - ps_f[i]) + ps_f[N] == 0;
+			bool is_reverse_zero =
+				(ps_r[N] - ps_r[i]) + ps_r[N] == 0;
+
+			// if (dbg)
+			//	std::cerr << "A "
+			//		  << "N " << N << " i " << i
+			//		  << "is fwd zero " << is_forward_zero
+			//		  << " is rev zero " << is_reverse_zero
+			//		  << " ref idx " << ref_idx << "\n";
 
 			if (!is_forward_zero && !is_reverse_zero)
 				continue;
 
 			auto as_or = is_forward_zero ? pgt::or_e::forward
 						     : pgt::or_e::reverse;
+
+			if (dbg) {
+				std::cerr << "A "
+					  << " N " << N << " i " << i
+					  << " ref idx " << ref_idx << " as or "
+					  << as_or << " ";
+			}
 
 			// valid overlay
 			allele_slice_t at{&walks.at(wa_idx),
@@ -345,6 +397,15 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 
 			itn_t &itn = ref_map[ref_idx];
 			itn.append_at(std::move(at));
+
+			if (dbg) {
+				std::cerr << "Added or "
+					  << ref_map.at(ref_idx)
+						     .it_.back()
+						     .get_or()
+					  << "\n";
+			}
+
 			walk_to_refs[wa_idx].insert(ref_idx);
 			if (itn.at_count() > 1)
 				is_tangled = true;
@@ -389,14 +450,29 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 			}
 
 			// Check prefix sums in one step
-			bool is_forward_zero = (ps_f[N] - ps_f[i]) == 0;
-			bool is_reverse_zero = (ps_r[N] - ps_r[i]) == 0;
+			bool is_forward_zero =
+				(ps_f[N] - ps_f[i]) + ps_f[N] == 0;
+			bool is_reverse_zero =
+				(ps_r[N] - ps_r[i]) + ps_r[N] == 0;
+
+			// for (auto x : ps_f) {
+			//	if (dbg)
+			//		std::cerr << static_cast<pt::u32>(x)
+			//			  << ", ";
+			// }
+			// if (dbg)
+			//	std::cerr << "\n";
 
 			if (!is_forward_zero && !is_reverse_zero)
 				continue;
 
 			auto as_or = is_forward_zero ? pgt::or_e::forward
 						     : pgt::or_e::reverse;
+
+			if (dbg)
+				std::cerr << "B "
+					  << " ref idx " << ref_idx << " as or "
+					  << as_or << " ";
 
 			allele_slice_t at{&walks.at(wb_idx),
 					  wb_idx,
@@ -410,9 +486,27 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 
 			itn_t &itn = ref_map[ref_idx];
 			itn.append_at(std::move(at));
+
+			if (dbg) {
+				std::cerr << "Added or "
+					  << ref_map.at(ref_idx)
+						     .it_.back()
+						     .get_or()
+					  << "\n";
+			}
+
 			walk_to_refs[wb_idx].insert(ref_idx);
 			if (itn.at_count() > 1)
 				is_tangled = true;
+		}
+	}
+
+	if (dbg) {
+		auto z = ref_map.at(0);
+		for (int i{}; i < z.at_count(); i++) {
+			const allele_slice_t &as = z.get_at(i);
+			std::cerr << "Itn at " << i << " as ridx " << as.ref_idx
+				  << " or " << as.get_or() << "\n";
 		}
 	}
 }
@@ -420,8 +514,23 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 /**
  * [out] rov_exps: vector of expeditions, one per pairwise variant set
  */
-std::vector<Exp> comp_overlays3(const bd::VG &g, const pgr::RoV &rov)
+std::vector<Exp> comp_overlays3(const bd::VG &g, const pgr::RoV &rov,
+				const std::set<pt::id_t> &to_call_ref_ids)
 {
+	std::string s = ">181>185";
+	s = ">3>6";
+	bool dbg = rov.as_str() == s ? true : false;
+	// dbg = false;
+
+	if (dbg) {
+		std::cerr << "RoV: " << rov.as_str() << "\n";
+		// print all the walks
+		const std::vector<pgt::walk_t> &walks = rov.get_walks();
+		for (pt::u32 i{}; i < walks.size(); i++) {
+			std::cerr << "Walk " << i << ": "
+				  << pgt::to_string(walks.at(i)) << "\n";
+		}
+	}
 
 	std::vector<Exp> rov_exps;
 
@@ -450,21 +559,49 @@ std::vector<Exp> comp_overlays3(const bd::VG &g, const pgr::RoV &rov)
 
 			bool is_tangled = false;
 			pop_exp(g, walks, ov, variants.at(i), wa_idx, wb_idx,
-				ref_map, walk_to_refs, is_tangled);
+				ref_map, walk_to_refs, is_tangled, dbg);
+
+			std::set<pt::id_t> exp_refs = e.get_ref_ids();
+
+			// get set intersection with to_call_ref_ids
+			std::set<pt::id_t> intersect_refs;
+			std::set_intersection(
+				exp_refs.begin(), exp_refs.end(),
+				to_call_ref_ids.begin(), to_call_ref_ids.end(),
+				std::inserter(intersect_refs,
+					      intersect_refs.begin()));
+
+			if (intersect_refs.empty())
+				continue;
 
 			e.set_tangled(is_tangled);
+
+			if (dbg) {
+				auto z = e.get_itn(0);
+				for (int i{}; i < z.at_count(); i++) {
+					const allele_slice_t &as = z.get_at(i);
+					std::cerr << "Itn at " << i
+						  << " as ridx " << as.ref_idx
+						  << " or " << as.get_or()
+						  << "\n";
+				}
+			}
 
 			rov_exps.emplace_back(std::move(e));
 		}
 	}
 
+	// if (dbg)
+	//	std::exit(1);
+
 	return rov_exps;
 }
 
-std::vector<Exp> comp_itineraries3(const bd::VG &g, const pgr::RoV &rov)
+std::vector<Exp> comp_itineraries3(const bd::VG &g, const pgr::RoV &rov,
+				   const std::set<pt::id_t> &to_call_ref_ids)
 {
 
-	return comp_overlays3(g, rov);
+	return comp_overlays3(g, rov, to_call_ref_ids);
 }
 
 } // namespace povu::genomics::allele

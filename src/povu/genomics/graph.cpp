@@ -179,7 +179,7 @@ pt::status_t comp_walks(const bd::VG &g, pvst::route_e route, idx_or_t src,
 			return -1;
 		}
 
-		if (unblock_counter > 1000) {
+		if (unblock_counter > MAX_UNBLOCK_CTR) {
 			WARN("unblock counter too high for {}", rov_label);
 			return -2;
 		}

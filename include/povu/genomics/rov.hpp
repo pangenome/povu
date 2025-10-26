@@ -212,6 +212,7 @@ public:
  * initialize RoVs from flubbles
  */
 std::vector<RoV> gen_rov(const std::vector<pvst::Tree> &pvsts, const bd::VG &g,
+			 const std::set<pt::id_t> &to_call_ref_ids,
 			 const core::config &app_config);
 
 #ifdef TESTING

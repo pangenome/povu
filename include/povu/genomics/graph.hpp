@@ -19,7 +19,8 @@ namespace pvst = povu::pvst;
 namespace pgt = povu::types::graph;
 
 // Maximum number of steps to take from flubble start to end
-const pt::idx_t MAX_FLUBBLE_STEPS{20};
+const pt::u32 MAX_FLUBBLE_STEPS{100};
+const pt::u32 MAX_UNBLOCK_CTR{10000};
 
 // direction for traversing a vertex in a bidirected graph
 enum class dir_e : pt::u8 {

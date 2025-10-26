@@ -48,7 +48,8 @@ pga::Exp exp_frm_rov(const bd::VG &g, const pgr::RoV &rov)
 
 std::vector<pga::Exp>
 comp_expeditions_serial(const bd::VG &g, const std::vector<pgr::RoV> &all_rovs,
-			pt::idx_t start, pt::idx_t count)
+			pt::idx_t start, pt::idx_t count,
+			const std::set<pt::id_t> &to_call_ref_ids)
 {
 	const std::size_t N = all_rovs.size();
 	std::vector<pga::Exp> all_exp;
@@ -56,7 +57,8 @@ comp_expeditions_serial(const bd::VG &g, const std::vector<pgr::RoV> &all_rovs,
 
 	for (pt::idx_t i = start; i < start + count && i < N; ++i) {
 		const pgr::RoV &rov = all_rovs[i];
-		std::vector<pga::Exp> rov_exps = pga::comp_itineraries3(g, rov);
+		std::vector<pga::Exp> rov_exps =
+			pga::comp_itineraries3(g, rov, to_call_ref_ids);
 		for (auto &e : rov_exps) {
 			if (e.is_tangled())
 				put::untangle_ref_walks(e);
@@ -195,7 +197,8 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 		     DynamicProgress<ProgressBar> &prog, std::size_t prog_idx,
 		     const core::config &app_config)
 {
-	std::vector<pgr::RoV> all_rovs = pgr::gen_rov(pvsts, g, app_config);
+	std::vector<pgr::RoV> all_rovs =
+		pgr::gen_rov(pvsts, g, to_call_ref_ids, app_config);
 
 	const std::size_t CHUNK_SIZE = app_config.get_chunk_size();
 	const std::size_t N = all_rovs.size();
@@ -211,6 +214,8 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 	std::size_t thread_count = app_config.thread_count();
 	povu::thread::thread_pool pool(thread_count);
 	auto [outer, inner] = split_threads(pool.size());
+
+	// std::cerr << "Computing expeditions\n";
 
 	try {
 
@@ -233,15 +238,15 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 					chunk_num + 1, CHUNK_COUNT));
 			}
 
-			// std::cerr << "Computing expeditions...\n";
+			std::cerr << "Computing expeditions...\n";
 
-			exps = comp_expeditions_serial(g, all_rovs, base,
-						       count);
+			exps = comp_expeditions_serial(g, all_rovs, base, count,
+						       to_call_ref_ids);
 
 			// exps = comp_expeditions_work_steal(
 			//	g, all_rovs, base, count, pool, outer, inner);
 
-			// std::cerr << "Generating VCF records...\n";
+			std::cerr << "Generating VCF records...\n";
 
 			pgv::VcfRecIdx rs =
 				pgv::gen_vcf_records(g, exps, to_call_ref_ids);

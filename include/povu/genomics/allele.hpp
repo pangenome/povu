@@ -88,24 +88,14 @@ struct allele_slice_t {
 		pt::idx_t end = ref_step_idx + this->len;
 		std::string s;
 
-		for (ref_step_idx; ref_step_idx < end; ++ref_step_idx)
-			s += this->get_step(ref_step_idx).as_str();
-
-		return s;
-	}
-
-	[[nodiscard]]
-	std::string as_str(bool is_ref) const
-	{
-		pt::idx_t ref_step_idx =
-			this->get_or() == pgt::or_e::forward
-				? this->ref_start_idx
-				: this->ref_start_idx - len + 1;
-		pt::idx_t end = ref_step_idx + this->len;
-		std::string s;
-
 		pt::u32 i = ref_step_idx;
 		pt::u32 N = end;
+
+		// INFO("allele_slice_t::as_str()");
+		// std::cerr << " or " << this->get_or() << "\n";
+		// std::cerr << " s " << this->ref_start_idx << " r idx "
+		//	  << this->ref_idx << "\n";
+		// std::cerr << "i " << i << " N " << N << "\n";
 
 		switch (this->vt) {
 		case pgr::var_type_e::sub:
@@ -357,7 +347,8 @@ public:
 	}
 };
 
-std::vector<Exp> comp_itineraries3(const bd::VG &g, const pgr::RoV &rov);
+std::vector<Exp> comp_itineraries3(const bd::VG &g, const pgr::RoV &rov,
+				   const std::set<pt::id_t> &to_call_ref_ids);
 std::vector<Exp> comp_itineraries2(const bd::VG &g, const pgr::RoV &rov);
 void comp_itineraries(const bd::VG &g, Exp &exp);
 
