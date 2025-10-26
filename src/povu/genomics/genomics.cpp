@@ -46,19 +46,25 @@ pga::Exp exp_frm_rov(const bd::VG &g, const pgr::RoV &rov)
 	return exp;
 }
 
-std::vector<pga::Exp>
+std::pair<std::vector<pga::Exp>, std::vector<pga::sub_inv>>
 comp_expeditions_serial(const bd::VG &g, const std::vector<pgr::RoV> &all_rovs,
 			pt::idx_t start, pt::idx_t count,
 			const std::set<pt::id_t> &to_call_ref_ids)
 {
 	const std::size_t N = all_rovs.size();
 	std::vector<pga::Exp> all_exp;
+	std::vector<pga::sub_inv> all_sub_invs;
 	all_exp.reserve(N * 2);
 
 	for (pt::idx_t i = start; i < start + count && i < N; ++i) {
 		const pgr::RoV &rov = all_rovs[i];
-		std::vector<pga::Exp> rov_exps =
+		auto [rov_exps, sub_invs] =
 			pga::comp_itineraries3(g, rov, to_call_ref_ids);
+
+		for (auto &si : sub_invs) {
+			all_sub_invs.emplace_back(std::move(si));
+		}
+
 		for (auto &e : rov_exps) {
 			if (e.is_tangled())
 				put::untangle_ref_walks(e);
@@ -79,7 +85,7 @@ comp_expeditions_serial(const bd::VG &g, const std::vector<pgr::RoV> &all_rovs,
 
 	all_exp.shrink_to_fit();
 
-	return all_exp;
+	return {all_exp, all_sub_invs};
 }
 
 std::vector<pga::Exp> comp_expeditions_work_steal(
@@ -239,9 +245,8 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 			}
 
 			std::cerr << "Computing expeditions...\n";
-
-			exps = comp_expeditions_serial(g, all_rovs, base, count,
-						       to_call_ref_ids);
+			auto [exps, sub_invs] = comp_expeditions_serial(
+				g, all_rovs, base, count, to_call_ref_ids);
 
 			// exps = comp_expeditions_work_steal(
 			//	g, all_rovs, base, count, pool, outer, inner);

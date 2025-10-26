@@ -91,13 +91,12 @@ std::map<pt::idx_t, std::vector<VcfRec>>
 gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 		 const std::set<pt::id_t> &to_call_ref_ids)
 {
-	std::string s = ">181>185";
-	s = ">3>6";
+	std::string s = ">288>292";
 	bool dbg = exp.id() == s ? true : false;
 
 	if (dbg) {
-		std::cerr << "to call r ids \n";
-		pu::print_with_comma(std::cerr, to_call_ref_ids, ',');
+		std::cerr << "Generating for exp " << exp.id()
+			  << "\n--------------\n";
 	}
 
 	std::map<pt::idx_t, std::vector<VcfRec>> exp_vcf_recs;
@@ -114,18 +113,18 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 	}
 	const pvst::VertexBase *pvst_vtx_ptr = exp.get_pvst_vtx_const_ptr();
 
-	if (dbg)
-		std::cerr << "exp" << exp.id() << " \n";
+	// if (dbg)
+	//	std::cerr << "exp" << exp.id() << " \n";
 
 	auto pre_comp_ref_pairs = [&]() -> std::vector<pt::op_t<pt::id_t>>
 	{
 		std::vector<pt::op_t<pt::id_t>> ref_pairs;
 		std::set<pt::id_t> exp_ref_ids = exp.get_ref_ids();
-		if (dbg)
-			std::cerr << "exp ref ids: \n";
+		// if (dbg)
+		//	std::cerr << "exp ref ids: \n";
 		for (pt::id_t ref_ref_id : exp_ref_ids) {
-			if (dbg)
-				std::cerr << ref_ref_id << ", ";
+			// if (dbg)
+			//	std::cerr << ref_ref_id << ", ";
 			if (!pv_cmp::contains(to_call_ref_ids, ref_ref_id)) {
 				continue;
 			}
@@ -136,8 +135,8 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 				}
 			}
 		}
-		if (dbg)
-			std::cerr << "\n";
+		// if (dbg)
+		//	std::cerr << "\n";
 
 		return ref_pairs;
 	};
@@ -146,16 +145,11 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 		var_type_to_vcf_rec;
 	std::vector<pt::op_t<pt::id_t>> ref_pairs = pre_comp_ref_pairs();
 
-	if (dbg)
-		std::cerr << "pairs " << ref_pairs.size() << " \n";
+	// if (dbg) {
+	//	std::cerr << "pairs " << ref_pairs.size() << " \n";
+	// }
 
 	for (auto [ref_ref_id, alt_ref_id] : ref_pairs) {
-
-		if (dbg) {
-
-			std::cerr << "ref ref id " << ref_ref_id
-				  << " alt ref id " << alt_ref_id << "\n";
-		}
 
 		const pga::itn_t &ref_itn = exp.get_itn(ref_ref_id);
 		const pga::itn_t &alt_itn = exp.get_itn(alt_ref_id);
@@ -173,14 +167,22 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 			pt::idx_t ref_walk_idx = ref_allele_slice.walk_idx;
 			pt::idx_t alt_walk_idx = alt_allele_slice.walk_idx;
 
-			if (dbg) {
-				std::cerr << ref_allele_slice.as_str() << "\n";
+			// if (dbg) {
+			//	std::cerr << ref_allele_slice.as_str() << "\n";
+			// }
+
+			if (ref_walk_idx == alt_walk_idx &&
+			    ref_allele_slice.slice_or ==
+				    alt_allele_slice.slice_or) {
+				continue;
 			}
 
-			// TODO: check if start and len of the walks as well
-			// this means they are from the same walk, skip
-			if (ref_walk_idx == alt_walk_idx)
-				continue;
+			// TODO: check if start and len of the walks as
+			// well this means they are from the same walk,
+			// skip
+			if (ref_walk_idx == alt_walk_idx) {
+				// is inversion
+			}
 
 			pt::idx_t ref_walk_ref_count =
 				exp.get_ref_idxs_for_walk(ref_walk_idx).size();
@@ -198,13 +200,7 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 			// if it does not exist create a variant type for it and
 			// add to var_type_to_vcf_rec
 			if (!pv_cmp::contains(var_type_to_vcf_rec, key)) {
-				if (dbg) {
-					std::cerr << "New VCF rec for exp "
-						  << exp.id() << " ref id "
-						  << ref_ref_id << " or "
-						  << ref_allele_slice.get_or()
-						  << "\n";
-				}
+
 				pt::idx_t pos = comp_pos(ref_allele_slice,
 							 variant_type);
 				VcfRec vcf_rec{ref_ref_id,
@@ -220,6 +216,18 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 				var_type_to_vcf_rec.emplace(key,
 							    std::move(vcf_rec));
 			}
+
+			// if (dbg) {
+			//	std::cerr << "New VCF rec for exp \n"
+			//		  << exp.id() << "\n";
+			//	std::cerr << "(ref ref id " << ref_ref_id
+			//		  << " alt ref id " << alt_ref_id
+			//		  << ")\n";
+			//	std::cerr << " ref id " << ref_ref_id << " ~> "
+			//		  << ref_allele_slice.at_str()
+			//		  << " alts " << alt_ref_id << " "
+			//		  << alt_allele_slice.at_str() << "\n";
+			// }
 
 			VcfRec &curr_vcf_rec = var_type_to_vcf_rec.at(key);
 			const pt::idx_t alt_allele_col_idx =

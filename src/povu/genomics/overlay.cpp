@@ -12,6 +12,7 @@
 #include <utility>
 #include <vector> // for vector
 
+#include "povu/common/compat.hpp"
 #include "povu/common/core.hpp"
 #include "povu/common/log.hpp"
 #include "povu/common/utils.hpp"
@@ -42,14 +43,17 @@ class Overlays
 	// i is the walk idx and j is the ref idx
 	std::vector<std::vector<std::vector<overlay_prefix_sum_t>>>
 		prefix_sums_;
+
+	std::vector<sub_inv> sub_invs_;
 	// key is walk idx and value is idx in overlays vector
 	// std::map<pt::u32, pt::u32> walk_to_overlay_;
 
 public:
 	Overlays(pt::u32 walk_count, pt::u32 ref_count)
-	    : prefix_sums_(
-		      walk_count,
-		      std::vector<std::vector<overlay_prefix_sum_t>>(ref_count))
+	    : prefix_sums_(walk_count,
+			   std::vector<std::vector<overlay_prefix_sum_t>>(
+				   ref_count)),
+	      sub_invs_()
 	{}
 
 	[[nodiscard]]
@@ -63,6 +67,29 @@ public:
 			 std::vector<overlay_prefix_sum_t> &&p_sums)
 	{
 		prefix_sums_.at(w_idx).at(r_idx) = std::move(p_sums);
+	}
+
+	[[nodiscard]]
+	std::vector<sub_inv> get_sub_invs_cpy() const
+	{
+		return sub_invs_;
+	}
+
+	[[nodiscard]]
+	const std::vector<sub_inv> &get_sub_invs() const
+	{
+		return sub_invs_;
+	}
+
+	[[nodiscard]]
+	bool has_sub_invs() const
+	{
+		return !sub_invs_.empty();
+	}
+
+	void add_sub_inv(sub_inv &&si)
+	{
+		sub_invs_.emplace_back(std::move(si));
 	}
 };
 
@@ -222,6 +249,74 @@ find_ref_walks(const bd::VG &g, const std::vector<pgt::walk_t> &walks)
 	return refs_in_walks;
 }
 
+std::optional<std::map<pgt::or_e, std::vector<pt::u32>>>
+find_walk_sub_inv(const Overlays &overlays, const pt::u32 REF_COUNT,
+		  const pt::u32 WALK_IDX)
+{
+	std::map<pgt::or_e, std::vector<pt::u32>> locs;
+
+	for (pt::u32 r_idx{}; r_idx < REF_COUNT; ++r_idx) {
+		const std::vector<overlay_prefix_sum_t> &pss =
+			overlays.get_ps(WALK_IDX, r_idx);
+
+		// if (WALK_IDX == 1) {
+		//	std::cerr << "ref idx " << r_idx << " ps size "
+		//		  << pss.size() << "\n";
+		// }
+
+		if (pss.size() != 1) {
+			continue;
+			// tangled give up on the walk entirely
+			// return std::nullopt;
+		}
+
+		auto [_, ps_f, ps_r] = pss.front();
+
+		// if (WALK_IDX == 1) {
+		//	std::cerr << "ref idx " << r_idx << " ps fwd: ";
+		//	povu::utils::print_with_comma(std::cerr, ps_f, ',');
+		//	std::cerr << "\n";
+		//	std::cerr << "ref idx " << r_idx << " ps rev: ";
+		//	povu::utils::print_with_comma(std::cerr, ps_r, ',');
+		//	std::cerr << "\n";
+		// }
+
+		if (ps_f.back() == 0) {
+			locs[pgt::or_e::forward].push_back(r_idx);
+		}
+		else if (ps_r.back() == 0) {
+			locs[pgt::or_e::reverse].push_back(r_idx);
+		}
+	}
+
+	if (locs.size() != 2) {
+		return std::nullopt;
+	}
+
+	return locs;
+}
+
+void find_sub_inv(Overlays &overlays, const pt::u32 REF_COUNT,
+		  const pt::u32 WALK_COUNT)
+{
+	// std::vector<sub_inv> svi;
+
+	for (pt::u32 w_idx{}; w_idx < WALK_COUNT; ++w_idx) {
+
+		auto locs_opt = find_walk_sub_inv(overlays, REF_COUNT, w_idx);
+
+		if (!locs_opt.has_value())
+			continue;
+
+		// has both fwd and rev
+		overlays.add_sub_inv(sub_inv{w_idx,
+					     locs_opt->at(pgt::or_e::forward),
+					     locs_opt->at(pgt::or_e::reverse)});
+	}
+
+	// return svi;
+}
+
 /**
  * comp ps for each walk as maps to the ref
  */
@@ -277,7 +372,7 @@ Overlays comp_prefixes(const bd::VG &g, const std::vector<pgt::walk_t> &walks)
 		}
 	}
 
-	// std::exit(1);
+	find_sub_inv(overlays, REF_COUNT, WALK_COUNT);
 
 	return overlays;
 }
@@ -313,7 +408,7 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 	     std::map<pt::idx_t, std::set<pt::idx_t>> &walk_to_refs,
 	     bool &is_tangled, bool dbg)
 {
-	// dbg = false;
+	dbg = false;
 	if (dbg)
 		std::cerr << "(" << wb_idx << ", " << wa_idx << ")\n";
 
@@ -327,7 +422,7 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 		for (const auto &[ref_start_idx, ps_f, ps_r] : wa_pss) {
 			auto [start, len] = sl_a;
 
-			// add context for subs yand insertions
+			// add context for subs and insertions
 			pt::u32 i;
 			pt::u32 N;
 			pt::u32 as_walk_start_idx;
@@ -364,13 +459,6 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 			bool is_reverse_zero =
 				(ps_r[N] - ps_r[i]) + ps_r[N] == 0;
 
-			// if (dbg)
-			//	std::cerr << "A "
-			//		  << "N " << N << " i " << i
-			//		  << "is fwd zero " << is_forward_zero
-			//		  << " is rev zero " << is_reverse_zero
-			//		  << " ref idx " << ref_idx << "\n";
-
 			if (!is_forward_zero && !is_reverse_zero)
 				continue;
 
@@ -379,9 +467,17 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 
 			if (dbg) {
 				std::cerr << "A "
-					  << " N " << N << " i " << i
-					  << " ref idx " << ref_idx << " as or "
-					  << as_or << " ";
+					  << "r idx " << ref_idx << " rs "
+					  << ref_start_idx << " s " << start
+					  << "\n";
+			}
+
+			if (as_or == pgt::or_e::forward) {
+				// adjust ref start idx for reverse
+				as_ref_start_idx = ref_start_idx + i;
+			}
+			else {
+				as_ref_start_idx = ref_start_idx - i;
 			}
 
 			// valid overlay
@@ -397,14 +493,6 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 
 			itn_t &itn = ref_map[ref_idx];
 			itn.append_at(std::move(at));
-
-			if (dbg) {
-				std::cerr << "Added or "
-					  << ref_map.at(ref_idx)
-						     .it_.back()
-						     .get_or()
-					  << "\n";
-			}
 
 			walk_to_refs[wa_idx].insert(ref_idx);
 			if (itn.at_count() > 1)
@@ -455,24 +543,26 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 			bool is_reverse_zero =
 				(ps_r[N] - ps_r[i]) + ps_r[N] == 0;
 
-			// for (auto x : ps_f) {
-			//	if (dbg)
-			//		std::cerr << static_cast<pt::u32>(x)
-			//			  << ", ";
-			// }
-			// if (dbg)
-			//	std::cerr << "\n";
-
 			if (!is_forward_zero && !is_reverse_zero)
 				continue;
 
 			auto as_or = is_forward_zero ? pgt::or_e::forward
 						     : pgt::or_e::reverse;
 
-			if (dbg)
+			if (as_or == pgt::or_e::forward) {
+				// adjust ref start idx for reverse
+				as_ref_start_idx = ref_start_idx + i;
+			}
+			else {
+				as_ref_start_idx = ref_start_idx - i;
+			}
+
+			if (dbg) {
 				std::cerr << "B "
-					  << " ref idx " << ref_idx << " as or "
-					  << as_or << " ";
+					  << "r idx " << ref_idx << " rs "
+					  << ref_start_idx << " s " << start
+					  << "\n";
+			}
 
 			allele_slice_t at{&walks.at(wb_idx),
 					  wb_idx,
@@ -487,26 +577,9 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 			itn_t &itn = ref_map[ref_idx];
 			itn.append_at(std::move(at));
 
-			if (dbg) {
-				std::cerr << "Added or "
-					  << ref_map.at(ref_idx)
-						     .it_.back()
-						     .get_or()
-					  << "\n";
-			}
-
 			walk_to_refs[wb_idx].insert(ref_idx);
 			if (itn.at_count() > 1)
 				is_tangled = true;
-		}
-	}
-
-	if (dbg) {
-		auto z = ref_map.at(0);
-		for (int i{}; i < z.at_count(); i++) {
-			const allele_slice_t &as = z.get_at(i);
-			std::cerr << "Itn at " << i << " as ridx " << as.ref_idx
-				  << " or " << as.get_or() << "\n";
 		}
 	}
 }
@@ -514,23 +587,34 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 /**
  * [out] rov_exps: vector of expeditions, one per pairwise variant set
  */
-std::vector<Exp> comp_overlays3(const bd::VG &g, const pgr::RoV &rov,
-				const std::set<pt::id_t> &to_call_ref_ids)
+std::pair<std::vector<Exp>, std::vector<sub_inv>>
+comp_overlays3(const bd::VG &g, const pgr::RoV &rov,
+	       const std::set<pt::id_t> &to_call_ref_ids)
 {
 	std::string s = ">181>185";
-	s = ">3>6";
+	// s = ">288>292";
 	bool dbg = rov.as_str() == s ? true : false;
 	// dbg = false;
 
-	if (dbg) {
-		std::cerr << "RoV: " << rov.as_str() << "\n";
-		// print all the walks
-		const std::vector<pgt::walk_t> &walks = rov.get_walks();
-		for (pt::u32 i{}; i < walks.size(); i++) {
-			std::cerr << "Walk " << i << ": "
-				  << pgt::to_string(walks.at(i)) << "\n";
-		}
-	}
+	// if (dbg) {
+	//	std::cerr << " ------------------------- Computing overlays "
+	//		     "for RoV --------------------- "
+	//		  << rov.as_str() << "\n";
+	// }
+
+	// if (dbg) {
+	//	std::cerr << "RoV: " << rov.as_str() << " fam "
+	//		  << rov.get_pvst_vtx()->get_fam() << "\n";
+	//	// print all the walks
+	//	const std::vector<pgt::walk_t> &walks = rov.get_walks();
+	//	for (pt::u32 i{}; i < walks.size(); i++) {
+	//		std::cerr << "Walk " << i << ": "
+	//			  << pgt::to_string(walks.at(i)) << "\n";
+	//	}
+	// }
+
+	if (dbg)
+		volatile int x = 1;
 
 	std::vector<Exp> rov_exps;
 
@@ -576,29 +660,28 @@ std::vector<Exp> comp_overlays3(const bd::VG &g, const pgr::RoV &rov,
 
 			e.set_tangled(is_tangled);
 
-			if (dbg) {
-				auto z = e.get_itn(0);
-				for (int i{}; i < z.at_count(); i++) {
-					const allele_slice_t &as = z.get_at(i);
-					std::cerr << "Itn at " << i
-						  << " as ridx " << as.ref_idx
-						  << " or " << as.get_or()
-						  << "\n";
-				}
-			}
+			// if (dbg) {
+			//	auto z = e.get_itn(0);
+			//	for (int i{}; i < z.at_count(); i++) {
+			//		const allele_slice_t &as = z.get_at(i);
+			//		std::cerr << "Itn at " << i
+			//			  << " as ridx " << as.ref_idx
+			//			  << " or " << as.get_or()
+			//			  << "\n";
+			//	}
+			// }
 
 			rov_exps.emplace_back(std::move(e));
 		}
 	}
 
-	// if (dbg)
-	//	std::exit(1);
-
-	return rov_exps;
+	//	return {rov_exps, ov.get_sub_invs_cpy()};
+	return {rov_exps, {}};
 }
 
-std::vector<Exp> comp_itineraries3(const bd::VG &g, const pgr::RoV &rov,
-				   const std::set<pt::id_t> &to_call_ref_ids)
+std::pair<std::vector<Exp>, std::vector<sub_inv>>
+comp_itineraries3(const bd::VG &g, const pgr::RoV &rov,
+		  const std::set<pt::id_t> &to_call_ref_ids)
 {
 
 	return comp_overlays3(g, rov, to_call_ref_ids);

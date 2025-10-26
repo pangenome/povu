@@ -85,14 +85,11 @@ void init_vcfs(bd::VG &g, const std::vector<std::string> &ref_name_prefixes,
 void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 	       std::ostream &os)
 {
-	std::string s = ">181>185";
-	s = ">3>6";
+	std::string s = ">288>292";
+	// s = ">181>185";
 	bool dbg = (r.get_id() == s) ? true : false;
 
 	pgr::var_type_e var_typ = r.get_var_type();
-
-	// if (dbg)
-	//	volatile int stop_here = 1;
 
 	r.gen_rec_data_lookups(g); // ensure lookups are generated
 	const pt::idx_t REF_AT_IDX = 0;
@@ -109,47 +106,50 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 	auto slice_to_dna_str =
 		[&](const pga::allele_slice_t &as) -> std::string
 	{
-		// if (dbg)
-		//	volatile int stop_here = 1;
-
 		std::string dna_str = "";
-		bool is_fwd = as.slice_or == pgt::or_e::forward;
+		bool is_fwd = as.get_or() == pgt::or_e::forward;
 
-		pt::idx_t start_idx = as.ref_start_idx;
-		pt::u32 len = as.len;
+		pt::u32 i = as.ref_start_idx;
+		pt::u32 N = is_fwd ? as.ref_start_idx + as.len
+				   : as.ref_start_idx - as.len;
 
-		pt::idx_t step_idx = start_idx;
-		pt::idx_t end = is_fwd ? start_idx + len : start_idx - len;
-
-		// if (dbg)
-		//	std::cerr << start_idx << " len " << len << "\n";
+		if (dbg) {
+			std::cerr << "s " << as.ref_start_idx << " len "
+				  << as.len << "\n";
+		}
 
 		// 1) Anchor base for deletions & insertions
-		switch (var_typ) {
-		case pgr::var_type_e::del:
-		case pgr::var_type_e::ins: {
+		if (var_typ == pgr::var_type_e::del ||
+		    var_typ == pgr::var_type_e::ins) {
 			// grab the first step’s label, take its last character
-			const pgt::step_t &s = as.get_step(step_idx);
+			const pgt::step_t &s = as.get_step(i);
 			auto lbl = get_label(s);
 			dna_str.push_back(is_fwd ? lbl.back() : lbl.front());
-			step_idx++;
-			end--;
-			break;
 		}
-		case pgr::var_type_e::sub: {
-			step_idx++;
-			end--;
-			break;
-		}
+		// switch (var_typ) {
+		// case pgr::var_type_e::del:
+		// case pgr::var_type_e::ins: {
+
+		//	// step_idx++;
+		//	// end--;
+		//	break;
+		// }
+		// }
+
+		if (dbg) {
+			std::cerr << i << " " << N << "("
+				  << as.get_step(i).as_str() << ", "
+				  << as.get_step(N).as_str() << ")\n";
 		}
 
 		// 2) Middle steps (for all types) does nothing for deletions
 
-		int8_t step_inc = is_fwd ? 1 : -1;
+		int8_t step = is_fwd ? 1 : -1;
+		pt::u32 start = is_fwd ? ++i : --i;
+		pt::u32 end = is_fwd ? --N : ++N;
 
-		for (; (is_fwd ? step_idx < end : step_idx > end);
-		     step_idx += step_inc) {
-			const pgt::step_t &s = as.get_step(step_idx);
+		for (pt::u32 i{start}; i != end; i += step) {
+			const pgt::step_t &s = as.get_step(i);
 			dna_str += get_label(s);
 		}
 
@@ -228,8 +228,10 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 	   << r.get_genotype_fields() << "\n";
 	// clang-format on
 
-	// if (dbg)
-	//	std::exit(1);
+	// std::exit(1);
+
+	if (dbg)
+		std::cerr << "====\n";
 
 	return;
 }

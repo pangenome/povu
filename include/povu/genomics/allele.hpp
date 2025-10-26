@@ -27,6 +27,12 @@ namespace lq = liteseq;
 namespace pgt = povu::types::graph;
 namespace pvst = povu::pvst;
 
+struct sub_inv {
+	pt::u32 walk_idx;
+	std::vector<pt::u32> fwd_refs;
+	std::vector<pt::u32> rev_refs;
+};
+
 struct allele_slice_t {
 	const pgt::walk_t *walk;
 	pt::idx_t walk_idx;
@@ -81,15 +87,24 @@ struct allele_slice_t {
 	[[nodiscard]]
 	std::string as_str() const
 	{
-		pt::idx_t ref_step_idx =
-			this->get_or() == pgt::or_e::forward
-				? this->ref_start_idx
-				: this->ref_start_idx - len + 1;
-		pt::idx_t end = ref_step_idx + this->len;
-		std::string s;
+		bool is_fwd = this->get_or() == pgt::or_e::forward;
 
-		pt::u32 i = ref_step_idx;
-		pt::u32 N = end;
+		// pt::idx_t ref_step_idx = is_fwd ? this->ref_start_idx
+		//				: this->ref_start_idx - len + 1;
+
+		// pt::idx_t end = this->get_or() == pgt::or_e::forward
+		//			? ref_step_idx + this->len
+		//			: this->ref_start_idx;
+		std::string at_str = "";
+
+		// if (this->get_or() == pgt::or_e::reverse &&
+		//     this->vt == pgr::var_type_e::sub) {
+		//	ref_step_idx = this->ref_start_idx - len;
+		//	end = this->ref_start_idx;
+		// }
+
+		pt::u32 i = is_fwd ? ref_start_idx : ref_start_idx - len + 1;
+		pt::u32 N = is_fwd ? ref_start_idx + len : ref_start_idx + 1;
 
 		// INFO("allele_slice_t::as_str()");
 		// std::cerr << " or " << this->get_or() << "\n";
@@ -109,9 +124,9 @@ struct allele_slice_t {
 		}
 
 		for (i; i < N; i++)
-			s += this->get_step(i).as_str();
+			at_str += this->get_step(i).as_str();
 
-		return s;
+		return at_str;
 	}
 };
 
@@ -347,8 +362,9 @@ public:
 	}
 };
 
-std::vector<Exp> comp_itineraries3(const bd::VG &g, const pgr::RoV &rov,
-				   const std::set<pt::id_t> &to_call_ref_ids);
+std::pair<std::vector<Exp>, std::vector<sub_inv>>
+comp_itineraries3(const bd::VG &g, const pgr::RoV &rov,
+		  const std::set<pt::id_t> &to_call_ref_ids);
 std::vector<Exp> comp_itineraries2(const bd::VG &g, const pgr::RoV &rov);
 void comp_itineraries(const bd::VG &g, Exp &exp);
 
