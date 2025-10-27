@@ -591,16 +591,13 @@ std::pair<std::vector<Exp>, std::vector<sub_inv>>
 comp_overlays3(const bd::VG &g, const pgr::RoV &rov,
 	       const std::set<pt::id_t> &to_call_ref_ids)
 {
-	std::string s = ">181>185";
+
+	std::string s = ">3597>3600";
 	// s = ">288>292";
 	bool dbg = rov.as_str() == s ? true : false;
-	// dbg = false;
+	dbg = false;
 
-	// if (dbg) {
-	//	std::cerr << " ------------------------- Computing overlays "
-	//		     "for RoV --------------------- "
-	//		  << rov.as_str() << "\n";
-	// }
+	// std::cerr << rov.as_str() << "\n";
 
 	// if (dbg) {
 	//	std::cerr << "RoV: " << rov.as_str() << " fam "
@@ -613,10 +610,25 @@ comp_overlays3(const bd::VG &g, const pgr::RoV &rov,
 	//	}
 	// }
 
-	if (dbg)
-		volatile int x = 1;
+	// if (dbg)
+	//	volatile int x = 1;
 
 	std::vector<Exp> rov_exps;
+
+	// if (rov.get_walks().size() < 1000) {
+	//	// if (rov.get_walks().size() > 1000) {
+	//	//	std::cerr << rov.as_str() << " ---- "
+	//	//		  << rov.get_walks().size() << "\n";
+	//	// }
+
+	//	return {{}, {}};
+	// }
+
+	std::cerr << rov.as_str() << " ---- " << rov.get_walks().size() << "\n";
+	if (rov.get_walks().size() > 1000)
+		return {{}, {}};
+
+	// return {{}, {}};
 
 	const std::vector<pgt::walk_t> &walks = rov.get_walks();
 	const std::vector<pgr::pairwise_variants> &pv = rov.get_irreducibles();

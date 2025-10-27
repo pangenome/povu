@@ -232,6 +232,9 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 
 			pt::idx_t chunk_num = (base / CHUNK_SIZE) + 1;
 
+			std::cerr << fmt::format("Processing Chunk ({}/{})\n",
+						 chunk_num, CHUNK_COUNT);
+
 			if (app_config.show_progress()) { // update progress bar
 				prog_msg.clear();
 				pt::idx_t chunk_num = (base / CHUNK_SIZE) + 1;
@@ -250,6 +253,8 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 
 			// exps = comp_expeditions_work_steal(
 			//	g, all_rovs, base, count, pool, outer, inner);
+
+			continue;
 
 			std::cerr << "Generating VCF records...\n";
 
