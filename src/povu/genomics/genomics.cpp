@@ -232,7 +232,7 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 
 			pt::idx_t chunk_num = (base / CHUNK_SIZE) + 1;
 
-			std::cerr << fmt::format("Processing Chunk ({}/{})\n",
+			std::cerr << fmt::format("Processing Chunk({}/{})\n ",
 						 chunk_num, CHUNK_COUNT);
 
 			if (app_config.show_progress()) { // update progress bar
@@ -247,21 +247,21 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 					chunk_num + 1, CHUNK_COUNT));
 			}
 
-			std::cerr << "Computing expeditions...\n";
+			// std::cerr << "Computing expeditions...\n";
 			auto [exps, sub_invs] = comp_expeditions_serial(
 				g, all_rovs, base, count, to_call_ref_ids);
 
 			// exps = comp_expeditions_work_steal(
 			//	g, all_rovs, base, count, pool, outer, inner);
 
-			continue;
+			// continue;
 
 			std::cerr << "Generating VCF records...\n";
 
 			pgv::VcfRecIdx rs =
 				pgv::gen_vcf_records(g, exps, to_call_ref_ids);
 
-			// std::cerr << "Generated VCF records for variants\n";
+			std::cerr << "Generated VCF records for variants\n";
 
 			if (!q.push(std::move(rs))) {
 				break; // queue was closed early
