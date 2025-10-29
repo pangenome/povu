@@ -6,6 +6,7 @@
 #include <cstddef>   // for size_t
 #include <cstdlib>
 #include <iterator> // for back_insert_iterator, bac...
+#include <memory>
 #include <optional> // for optional, operator==
 #include <string>   // for basic_string, string
 #include <utility>  // for move
@@ -14,15 +15,17 @@
 #include "fmt/core.h"			   // for format_to
 #include "fmt/format.h"			   // for vformat_to
 #include "indicators/dynamic_progress.hpp" // for DynamicProgress
-#include "indicators/setting.hpp"	   // for PostfixText
-#include "povu/common/app.hpp"		   // for config
-#include "povu/common/thread.hpp"	   // for thread_pool, task_group
-#include "povu/common/utils.hpp"	   // for comp_prog, pu
-#include "povu/genomics/allele.hpp"	   // for Exp, comp_itineraries
+#include "indicators/progress_bar.hpp"
+#include "indicators/setting.hpp"   // for PostfixText
+#include "povu/common/app.hpp"	    // for config
+#include "povu/common/thread.hpp"   // for thread_pool, task_group
+#include "povu/common/utils.hpp"    // for comp_prog, pu
+#include "povu/genomics/allele.hpp" // for Exp, comp_itineraries
 // #include "povu/genomics/graph.hpp"	   // for RoV, find_walks, pgt
 #include "povu/genomics/rov.hpp"      // for RoV, gen_rov
 #include "povu/genomics/untangle.hpp" // for untangle_ref_walks
 #include "povu/genomics/vcf.hpp"      // for VcfRecIdx, gen_vcf_records
+#include "povu/overlay/overlay.hpp"   // for comp_itineraries3, sub_inv
 
 namespace povu::genomics
 {
@@ -46,20 +49,20 @@ pga::Exp exp_frm_rov(const bd::VG &g, const pgr::RoV &rov)
 	return exp;
 }
 
-std::pair<std::vector<pga::Exp>, std::vector<pga::sub_inv>>
+std::pair<std::vector<pga::Exp>, std::vector<po::sub_inv>>
 comp_expeditions_serial(const bd::VG &g, const std::vector<pgr::RoV> &all_rovs,
 			pt::idx_t start, pt::idx_t count,
 			const std::set<pt::id_t> &to_call_ref_ids)
 {
 	const std::size_t N = all_rovs.size();
 	std::vector<pga::Exp> all_exp;
-	std::vector<pga::sub_inv> all_sub_invs;
+	std::vector<po::sub_inv> all_sub_invs;
 	all_exp.reserve(N * 2);
 
 	for (pt::idx_t i = start; i < start + count && i < N; ++i) {
 		const pgr::RoV &rov = all_rovs[i];
 		auto [rov_exps, sub_invs] =
-			pga::comp_itineraries3(g, rov, to_call_ref_ids);
+			po::comp_itineraries3(g, rov, to_call_ref_ids);
 
 		for (auto &si : sub_invs) {
 			all_sub_invs.emplace_back(std::move(si));
@@ -200,20 +203,21 @@ split_threads(std::size_t total, std::size_t outer_cap = 2,
 void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 		     const std::set<pt::id_t> &to_call_ref_ids,
 		     pbq::bounded_queue<pgv::VcfRecIdx> &q,
-		     DynamicProgress<ProgressBar> &prog, std::size_t prog_idx,
 		     const core::config &app_config)
 {
+	bool prog = app_config.show_progress();
+
 	std::vector<pgr::RoV> all_rovs =
 		pgr::gen_rov(pvsts, g, to_call_ref_ids, app_config);
 
 	const std::size_t CHUNK_SIZE = app_config.get_chunk_size();
 	const std::size_t N = all_rovs.size();
 	const std::size_t CHUNK_COUNT = (N + CHUNK_SIZE - 1) / CHUNK_SIZE;
-	std::vector<pga::Exp> exps;
-	exps.reserve(CHUNK_SIZE);
 
-	// setup buffer for progress bar messages
-	std::string prog_msg;
+	// set up progress bars
+	ProgressBar chunks_prog_bar{option::Stream{std::cerr}};
+	set_progress_bar_common_opts(&chunks_prog_bar, CHUNK_COUNT);
+	std::string prog_msg; // setup buffer for progress bar messages
 	prog_msg.reserve(128);
 
 	// set up thread pool & decide on thread split
@@ -221,30 +225,24 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 	povu::thread::thread_pool pool(thread_count);
 	auto [outer, inner] = split_threads(pool.size());
 
-	// std::cerr << "Computing expeditions\n";
+	std::vector<pga::Exp> exps;
+	exps.reserve(CHUNK_SIZE);
 
 	try {
-
-		for (pt::idx_t base{}; base < all_rovs.size();
-		     base += CHUNK_SIZE) {
+		for (pt::idx_t base{}; base < N; base += CHUNK_SIZE) {
 			const pt::idx_t end = std::min(base + CHUNK_SIZE, N);
 			const pt::idx_t count = end - base;
 
-			pt::idx_t chunk_num = (base / CHUNK_SIZE) + 1;
-
-			std::cerr << fmt::format("Processing Chunk({}/{})\n ",
-						 chunk_num, CHUNK_COUNT);
-
-			if (app_config.show_progress()) { // update progress bar
-				prog_msg.clear();
+			if (prog) {
 				pt::idx_t chunk_num = (base / CHUNK_SIZE) + 1;
-				fmt::format_to(std::back_inserter(prog_msg),
-					       "Processing Chunk ({}/{})",
-					       chunk_num, CHUNK_COUNT);
-				prog[prog_idx].set_option(
+
+				prog_msg = pv_cmp::format(
+					"Processing RoV Chunk ({}/{})",
+					chunk_num, CHUNK_COUNT);
+				chunks_prog_bar.set_option(
 					option::PostfixText{prog_msg});
-				prog[prog_idx].set_progress(pu::comp_prog(
-					chunk_num + 1, CHUNK_COUNT));
+				chunks_prog_bar.set_progress(
+					static_cast<size_t>(chunk_num));
 			}
 
 			// std::cerr << "Computing expeditions...\n";
@@ -254,14 +252,14 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 			// exps = comp_expeditions_work_steal(
 			//	g, all_rovs, base, count, pool, outer, inner);
 
-			// continue;
+			continue;
 
-			std::cerr << "Generating VCF records...\n";
+			// std::cerr << "Generating VCF records...\n";
 
 			pgv::VcfRecIdx rs =
 				pgv::gen_vcf_records(g, exps, to_call_ref_ids);
 
-			std::cerr << "Generated VCF records for variants\n";
+			// std::cerr << "Generated VCF records for variants\n";
 
 			if (!q.push(std::move(rs))) {
 				break; // queue was closed early
@@ -274,7 +272,7 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 		throw;
 	}
 
-	std::cerr << "Finished producing VCF records\n";
+	// std::cerr << "Finished producing VCF records\n";
 
 	q.close(); // we're done
 }

@@ -25,7 +25,6 @@ namespace pgv = povu::genomics::vcf;
 void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 		     const std::set<pt::id_t> &to_call_ref_ids,
 		     pbq::bounded_queue<pgv::VcfRecIdx> &q,
-		     DynamicProgress<ProgressBar> &prog, std::size_t prog_idx,
 		     const core::config &app_config);
 } // namespace povu::genomics
 
