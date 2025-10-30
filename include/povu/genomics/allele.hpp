@@ -14,10 +14,10 @@
 #include "povu/common/compat.hpp"    // for contains, pv_cmp
 #include "povu/common/core.hpp"	     // for pt, idx_t, id_t, op_t
 #include "povu/common/log.hpp"	     // for ERR
-#include "povu/genomics/rov.hpp"     // for RoV
 #include "povu/graph/bidirected.hpp" // for bd, VG
 #include "povu/graph/pvst.hpp"	     // for VertexBase
 #include "povu/graph/types.hpp"	     // for or_e, id_or_t, walk_t
+#include "povu/variation/rov.hpp"    // for RoV
 
 namespace povu::genomics::allele
 {
@@ -44,7 +44,7 @@ struct allele_slice_t {
 
 	pt::idx_t len; // total step count in the itinerary
 	ptg::or_e slice_or;
-	pgr::var_type_e vt;
+	pvr::var_type_e vt;
 
 	// ---------
 	// getter(s)
@@ -113,12 +113,12 @@ struct allele_slice_t {
 		// std::cerr << "i " << i << " N " << N << "\n";
 
 		switch (this->vt) {
-		case pgr::var_type_e::sub:
+		case pvr::var_type_e::sub:
 			i++;
 			N--;
 			break;
-		case pgr::var_type_e::ins:
-		case pgr::var_type_e::del:
+		case pvr::var_type_e::ins:
+		case pvr::var_type_e::del:
 			N--;
 			break;
 		}
@@ -185,7 +185,7 @@ struct itn_t {
 class Exp
 {
 	// pointer to the RoV from which the expedition is made
-	const pgr::RoV *rov_;
+	const pvr::RoV *rov_;
 
 	// map of ref_id to the itinerary (set of walks) of the ref in a RoV
 	// when tangled, a ref can have multiple walks in a RoV
@@ -209,7 +209,7 @@ public:
 	Exp() : rov_(nullptr), ref_itns_(), walk_idx_to_ref_idxs_(), aln_()
 	{}
 
-	Exp(const pgr::RoV *rov)
+	Exp(const pvr::RoV *rov)
 	    : rov_(rov), ref_itns_(), walk_idx_to_ref_idxs_(), aln_()
 	{
 		if (this->rov_ == nullptr) {
@@ -282,7 +282,7 @@ public:
 	}
 
 	[[nodiscard]]
-	const pgr::RoV *get_rov() const
+	const pvr::RoV *get_rov() const
 	{
 		return this->rov_;
 	}
@@ -363,11 +363,14 @@ public:
 };
 
 std::pair<std::vector<Exp>, std::vector<sub_inv>>
-comp_itineraries3(const bd::VG &g, const pgr::RoV &rov,
+comp_itineraries3(const bd::VG &g, const pvr::RoV &rov,
 		  const std::set<pt::id_t> &to_call_ref_ids);
-std::vector<Exp> comp_itineraries2(const bd::VG &g, const pgr::RoV &rov);
+std::vector<Exp> comp_itineraries2(const bd::VG &g, const pvr::RoV &rov);
 void comp_itineraries(const bd::VG &g, Exp &exp);
 
 } // namespace povu::genomics::allele
+
+// NOLINTNEXTLINE(misc-unused-alias-decls)
+namespace pga = povu::genomics::allele;
 
 #endif // POVU_GENOMICS_ALLELE_HPP

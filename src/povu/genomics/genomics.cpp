@@ -22,10 +22,10 @@
 #include "povu/common/utils.hpp"    // for comp_prog, pu
 #include "povu/genomics/allele.hpp" // for Exp, comp_itineraries
 // #include "povu/genomics/graph.hpp"	   // for RoV, find_walks, pgt
-#include "povu/genomics/rov.hpp"      // for RoV, gen_rov
 #include "povu/genomics/untangle.hpp" // for untangle_ref_walks
 #include "povu/genomics/vcf.hpp"      // for VcfRecIdx, gen_vcf_records
 #include "povu/overlay/overlay.hpp"   // for comp_itineraries3, sub_inv
+#include "povu/variation/rov.hpp"     // for RoV, gen_rov
 
 namespace povu::genomics
 {
@@ -39,7 +39,7 @@ namespace pvst = povu::pvst;
 /**
  * Associate walks in an RoV with references
  */
-pga::Exp exp_frm_rov(const bd::VG &g, const pgr::RoV &rov)
+pga::Exp exp_frm_rov(const bd::VG &g, const pvr::RoV &rov)
 {
 	pga::Exp exp(&rov);
 	pga::comp_itineraries(g, exp);
@@ -50,7 +50,7 @@ pga::Exp exp_frm_rov(const bd::VG &g, const pgr::RoV &rov)
 }
 
 std::pair<std::vector<pga::Exp>, std::vector<po::sub_inv>>
-comp_expeditions_serial(const bd::VG &g, const std::vector<pgr::RoV> &all_rovs,
+comp_expeditions_serial(const bd::VG &g, const std::vector<pvr::RoV> &all_rovs,
 			pt::idx_t start, pt::idx_t count,
 			const std::set<pt::id_t> &to_call_ref_ids)
 {
@@ -60,7 +60,7 @@ comp_expeditions_serial(const bd::VG &g, const std::vector<pgr::RoV> &all_rovs,
 	all_exp.reserve(N * 2);
 
 	for (pt::idx_t i = start; i < start + count && i < N; ++i) {
-		const pgr::RoV &rov = all_rovs[i];
+		const pvr::RoV &rov = all_rovs[i];
 		auto [rov_exps, sub_invs] =
 			po::comp_itineraries3(g, rov, to_call_ref_ids);
 
@@ -92,7 +92,7 @@ comp_expeditions_serial(const bd::VG &g, const std::vector<pgr::RoV> &all_rovs,
 }
 
 std::vector<pga::Exp> comp_expeditions_work_steal(
-	const bd::VG &g, const std::vector<pgr::RoV> &all_rovs, pt::idx_t start,
+	const bd::VG &g, const std::vector<pvr::RoV> &all_rovs, pt::idx_t start,
 	pt::idx_t count, povu::thread::thread_pool &pool,
 	std::size_t outer_concurrency, std::size_t reserve_for_inner)
 {
@@ -144,7 +144,7 @@ std::vector<pga::Exp> comp_expeditions_work_steal(
 						// - Pass the RoV element
 						// directly: do NOT make a local
 						// copy like
-						//   `pgr::RoV rov =
+						//   `pvr::RoV rov =
 						//   all_rovs[gi];` and then
 						//   take &rov — that would
 						//   dangle.
@@ -207,8 +207,8 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 {
 	bool prog = app_config.show_progress();
 
-	std::vector<pgr::RoV> all_rovs =
-		pgr::gen_rov(pvsts, g, to_call_ref_ids, app_config);
+	std::vector<pvr::RoV> all_rovs =
+		pvr::gen_rov(pvsts, g, to_call_ref_ids, app_config);
 
 	const std::size_t CHUNK_SIZE = app_config.get_chunk_size();
 	const std::size_t N = all_rovs.size();
@@ -252,7 +252,7 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 			// exps = comp_expeditions_work_steal(
 			//	g, all_rovs, base, count, pool, outer, inner);
 
-			continue;
+			// continue;
 
 			// std::cerr << "Generating VCF records...\n";
 
@@ -261,9 +261,9 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 
 			// std::cerr << "Generated VCF records for variants\n";
 
-			if (!q.push(std::move(rs))) {
+			if (!q.push(std::move(rs)))
 				break; // queue was closed early
-			}
+
 			exps.clear();
 		}
 	}

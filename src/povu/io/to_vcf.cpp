@@ -8,9 +8,9 @@
 #include "povu/common/core.hpp"
 #include "povu/common/log.hpp"
 #include "povu/genomics/allele.hpp" // for allele_slice_t
-#include "povu/genomics/rov.hpp"    // for var_type_e
 #include "povu/graph/types.hpp"	    // for step_t, or_e
 #include "povu/refs/refs.hpp"	    // for Ref, pr
+#include "povu/variation/rov.hpp"   // for var_type_e
 
 namespace povu::io::to_vcf
 {
@@ -89,7 +89,7 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 	// s = ">181>185";
 	bool dbg = (r.get_id() == s) ? true : false;
 
-	pgr::var_type_e var_typ = r.get_var_type();
+	pvr::var_type_e var_typ = r.get_var_type();
 
 	r.gen_rec_data_lookups(g); // ensure lookups are generated
 	const pt::idx_t REF_AT_IDX = 0;
@@ -119,16 +119,16 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 		}
 
 		// 1) Anchor base for deletions & insertions
-		if (var_typ == pgr::var_type_e::del ||
-		    var_typ == pgr::var_type_e::ins) {
+		if (var_typ == pvr::var_type_e::del ||
+		    var_typ == pvr::var_type_e::ins) {
 			// grab the first step’s label, take its last character
 			const pgt::step_t &s = as.get_step(i);
 			auto lbl = get_label(s);
 			dna_str.push_back(is_fwd ? lbl.back() : lbl.front());
 		}
 		// switch (var_typ) {
-		// case pgr::var_type_e::del:
-		// case pgr::var_type_e::ins: {
+		// case pvr::var_type_e::del:
+		// case pvr::var_type_e::ins: {
 
 		//	// step_idx++;
 		//	// end--;
@@ -210,7 +210,7 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 		   << ";AN=" << r.get_an()
 		   << ";NS=" << r.get_ns()
 		   << ";AT=" << allele_traversals()
-		   << ";VARTYPE=" << pgr::to_string_view(var_typ)
+		   << ";VARTYPE=" << pvr::to_string_view(var_typ)
 		   << ";TANGLED=" << (r.is_tangled() ? "T" : "F")
 		   << ";LV=" << (r.get_height() - 1);
 	// clang-format on

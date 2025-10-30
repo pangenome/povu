@@ -7,10 +7,10 @@
 #include <vector>      // for vector
 
 #include "povu/common/core.hpp"	     // for idx_t, pt
-#include "povu/genomics/rov.hpp"     // for RoV
 #include "povu/graph/bidirected.hpp" // for VG, bd
 #include "povu/graph/pvst.hpp"	     // for VertexBase
 #include "povu/graph/types.hpp"	     // for walk_t, id_or_t
+#include "povu/variation/rov.hpp"    // for RoV
 
 namespace povu::genomics::graph
 {
@@ -35,7 +35,7 @@ auto format_as(dir_e d);
 
 typedef pgt::id_or_t idx_or_t; // specifically for idx instead of id
 
-pt::status_t find_walks(const bd::VG &g, pgr::RoV &rov);
+pt::status_t find_walks(const bd::VG &g, pvr::RoV &rov);
 } // namespace povu::genomics::graph
 
 #endif // POVU_GENOMICS_GRAPH_HPP

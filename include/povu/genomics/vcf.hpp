@@ -18,8 +18,8 @@
 #include "povu/common/log.hpp"	     // for ERR
 #include "povu/common/utils.hpp"     // for concat_with, pu
 #include "povu/genomics/allele.hpp"  // for allele_slice_t, Exp
-#include "povu/genomics/rov.hpp"     // for var_type_e
 #include "povu/graph/bidirected.hpp" // for VG
+#include "povu/variation/rov.hpp"    // for var_type_e
 
 namespace povu::genomics::vcf
 {
@@ -46,7 +46,7 @@ class VcfRec
 	pt::idx_t height_; // height of the pvst node in the tree
 
 	// type of the variant, e.g. del, ins, sub, und
-	pgr::var_type_e var_type_;
+	pvr::var_type_e var_type_;
 
 	bool is_tangled_ = false; // is true when tangling exists, i.e. when a
 				  // walk traverses an RoV more than once
@@ -136,7 +136,7 @@ public:
 
 	VcfRec(pt::id_t ref_id, pt::idx_t pos, std::string id,
 	       pga::allele_slice_t ref_at, pt::idx_t height,
-	       pgr::var_type_e var_typ, bool is_tangled,
+	       pvr::var_type_e var_typ, bool is_tangled,
 	       pt::idx_t ref_at_ref_count,
 	       std::vector<std::vector<std::string>> &&genotype_cols)
 	    : ref_id_(ref_id), pos_(pos), id_(id), ats_({ref_at}),
@@ -212,7 +212,7 @@ public:
 		return this->height_;
 	}
 
-	pgr::var_type_e get_var_type() const
+	pvr::var_type_e get_var_type() const
 	{
 		return this->var_type_;
 	}

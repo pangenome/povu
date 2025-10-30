@@ -1,4 +1,4 @@
-#include "povu/genomics/allele.hpp"
+#include "povu/overlay/overlay.hpp"
 
 #include <algorithm>
 #include <csignal> // for raise, SIGINT
@@ -16,16 +16,18 @@
 #include "povu/common/log.hpp"
 #include "povu/common/utils.hpp"
 
-#include "povu/genomics/rov.hpp"
-#include "povu/graph/types.hpp"
+#include "povu/genomics/allele.hpp"
 
-namespace povu::genomics::allele
+#include "povu/graph/types.hpp"
+#include "povu/variation/rov.hpp"
+
+namespace povu::overlay
 {
 namespace lq = liteseq;
 
-constexpr pgr::var_type_e ins = pgr::var_type_e::ins;
-constexpr pgr::var_type_e del = pgr::var_type_e::del;
-constexpr pgr::var_type_e sub = pgr::var_type_e::sub;
+constexpr pvr::var_type_e ins = pvr::var_type_e::ins;
+constexpr pvr::var_type_e del = pvr::var_type_e::del;
+constexpr pvr::var_type_e sub = pvr::var_type_e::sub;
 
 const pt::u8 SLICE_A_IDX{0};
 const pt::u8 SLICE_B_IDX{1};
@@ -98,7 +100,7 @@ struct overlay_t {
 	pt::idx_t ref_start_idx;
 	pt::idx_t len;
 	ptg::or_e slice_or;
-	pgr::var_type_e vt;
+	pvr::var_type_e vt;
 };
 
 std::vector<pt::u32> comp_prefix_sum(const std::vector<pt::u8> &ov)
@@ -339,7 +341,7 @@ Overlays comp_prefixes(const bd::VG &g, const std::vector<pgt::walk_t> &walks)
 
 std::set<pt::u32> find_refs_in_slice(const bd::VG &g, const pgt::walk_t &walk,
 				     const pt::slice_t &sl,
-				     pgr::var_type_e var_type)
+				     pvr::var_type_e var_type)
 {
 	auto [start, len] = sl;
 	auto [s_v_id, s_o] = walk[start];
@@ -363,8 +365,8 @@ std::set<pt::u32> find_refs_in_slice(const bd::VG &g, const pgt::walk_t &walk,
 }
 
 void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
-	     const Overlays &ov, const pgr::raw_variant &pv, pt::u32 wa_idx,
-	     pt::u32 wb_idx, std::map<pt::u32, itn_t> &ref_map,
+	     const Overlays &ov, const pvr::raw_variant &pv, pt::u32 wa_idx,
+	     pt::u32 wb_idx, std::map<pt::u32, pga::itn_t> &ref_map,
 	     std::map<pt::idx_t, std::set<pt::idx_t>> &walk_to_refs,
 	     bool &is_tangled)
 {
@@ -386,21 +388,21 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 			pt::u32 as_len;
 
 			switch (vt) {
-			case pgr::var_type_e::del:
+			case pvr::var_type_e::del:
 				i = start - 1;
 				N = start + len;
 				as_walk_start_idx = start - 1;
 				as_ref_start_idx = ref_start_idx;
 				as_len = len + 1 + 1;
 				break;
-			case pgr::var_type_e::sub:
+			case pvr::var_type_e::sub:
 				i = start - 1;
 				N = start + len;
 				as_walk_start_idx = start - 1;
 				as_ref_start_idx = ref_start_idx;
 				as_len = len + 1 + 1;
 				break;
-			case pgr::var_type_e::ins:
+			case pvr::var_type_e::ins:
 				i = start;
 				N = start + 1; // len is 0 for insertions
 				as_walk_start_idx = start;
@@ -430,17 +432,17 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 			}
 
 			// valid overlay
-			allele_slice_t at{&walks.at(wa_idx),
-					  wa_idx,
-					  as_walk_start_idx,
-					  g.get_ref_vec(ref_idx)->walk,
-					  ref_idx,
-					  as_ref_start_idx,
-					  as_len,
-					  as_or,
-					  vt};
+			pga::allele_slice_t at{&walks.at(wa_idx),
+					       wa_idx,
+					       as_walk_start_idx,
+					       g.get_ref_vec(ref_idx)->walk,
+					       ref_idx,
+					       as_ref_start_idx,
+					       as_len,
+					       as_or,
+					       vt};
 
-			itn_t &itn = ref_map[ref_idx];
+			pga::itn_t &itn = ref_map[ref_idx];
 			itn.append_at(std::move(at));
 
 			walk_to_refs[wa_idx].insert(ref_idx);
@@ -454,7 +456,7 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 			ov.get_ps(wb_idx, ref_idx);
 		for (const auto &[ref_start_idx, ps_f, ps_r] : wb_pss) {
 			auto [start, len] = sl_b;
-			auto vt_ = pgr::covariant(vt);
+			auto vt_ = pvr::covariant(vt);
 
 			pt::u32 i;
 			pt::u32 N;
@@ -463,21 +465,21 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 			pt::u32 as_len;
 
 			switch (vt_) {
-			case pgr::var_type_e::del:
+			case pvr::var_type_e::del:
 				i = start - 1;
 				N = start + len;
 				as_walk_start_idx = start - 1;
 				as_ref_start_idx = ref_start_idx;
 				as_len = len + 1 + 1;
 				break;
-			case pgr::var_type_e::sub:
+			case pvr::var_type_e::sub:
 				i = start - 1;
 				N = start + len;
 				as_walk_start_idx = start - 1;
 				as_ref_start_idx = ref_start_idx;
 				as_len = len + 1 + 1;
 				break;
-			case pgr::var_type_e::ins:
+			case pvr::var_type_e::ins:
 				i = start;
 				N = start + 1; // len is 0 for insertions
 				as_walk_start_idx = start;
@@ -506,17 +508,17 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 				as_ref_start_idx = ref_start_idx - i;
 			}
 
-			allele_slice_t at{&walks.at(wb_idx),
-					  wb_idx,
-					  as_walk_start_idx,
-					  g.get_ref_vec(ref_idx)->walk,
-					  ref_idx,
-					  as_ref_start_idx,
-					  as_len,
-					  as_or,
-					  vt_};
+			pga::allele_slice_t at{&walks.at(wb_idx),
+					       wb_idx,
+					       as_walk_start_idx,
+					       g.get_ref_vec(ref_idx)->walk,
+					       ref_idx,
+					       as_ref_start_idx,
+					       as_len,
+					       as_or,
+					       vt_};
 
-			itn_t &itn = ref_map[ref_idx];
+			pga::itn_t &itn = ref_map[ref_idx];
 			itn.append_at(std::move(at));
 
 			walk_to_refs[wb_idx].insert(ref_idx);
@@ -529,18 +531,21 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 /**
  * [out] rov_exps: vector of expeditions, one per pairwise variant set
  */
-std::pair<std::vector<Exp>, std::vector<sub_inv>>
-comp_overlays3(const bd::VG &g, const pgr::RoV &rov,
+std::pair<std::vector<pga::Exp>, std::vector<sub_inv>>
+comp_overlays3(const bd::VG &g, const pvr::RoV &rov,
 	       const std::set<pt::id_t> &to_call_ref_ids)
 {
 
-	std::vector<Exp> rov_exps;
+	std::vector<pga::Exp> rov_exps;
 
 	const std::vector<pgt::walk_t> &walks = rov.get_walks();
-	const std::vector<pgr::pairwise_variants> &pv = rov.get_irreducibles();
+	const std::vector<pvr::pairwise_variants> &pv = rov.get_irreducibles();
 
-	std::cerr << rov.as_str() << " ---- " << walks.size() << " ---- "
-		  << pv.size() << "\n";
+	if (walks.size() > 500) {
+		std::cerr << "Skipping " << rov.as_str() << " ---- "
+			  << walks.size() << "----" << pv.size() << "\n";
+		return {{}, {}};
+	}
 
 #ifdef DEBUG
 	if (pv.empty()) {
@@ -551,13 +556,13 @@ comp_overlays3(const bd::VG &g, const pgr::RoV &rov,
 
 	Overlays ov = comp_prefixes(g, walks);
 
-	for (const rov::pairwise_variants &p : pv) {
+	for (const pvr::pairwise_variants &p : pv) {
 
 		auto [wa_idx, wb_idx, variants] = p;
 
 		for (pt::u32 i{}; i < p.size(); i++) {
-			Exp e(&rov);
-			std::map<pt::id_t, itn_t> &ref_map =
+			pga::Exp e(&rov);
+			std::map<pt::id_t, pga::itn_t> &ref_map =
 				e.get_ref_itns_mut();
 			std::map<pt::idx_t, std::set<pt::idx_t>> &walk_to_refs =
 				e.get_walk_to_ref_idxs_mut();
@@ -588,12 +593,12 @@ comp_overlays3(const bd::VG &g, const pgr::RoV &rov,
 	return {rov_exps, {}};
 }
 
-std::pair<std::vector<Exp>, std::vector<sub_inv>>
-comp_itineraries3(const bd::VG &g, const pgr::RoV &rov,
+std::pair<std::vector<pga::Exp>, std::vector<sub_inv>>
+comp_itineraries3(const bd::VG &g, const pvr::RoV &rov,
 		  const std::set<pt::id_t> &to_call_ref_ids)
 {
 
 	return comp_overlays3(g, rov, to_call_ref_ids);
 }
 
-} // namespace povu::genomics::allele
+} // namespace povu::overlay

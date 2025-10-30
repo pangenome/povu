@@ -13,16 +13,16 @@
 #include "povu/common/core.hpp"
 #include "povu/common/log.hpp"
 #include "povu/common/utils.hpp"
-#include "povu/genomics/rov.hpp"
 #include "povu/graph/types.hpp"
+#include "povu/variation/rov.hpp"
 
 namespace povu::genomics::allele
 {
 namespace lq = liteseq;
 
-constexpr pgr::var_type_e ins = pgr::var_type_e::ins;
-constexpr pgr::var_type_e del = pgr::var_type_e::del;
-constexpr pgr::var_type_e sub = pgr::var_type_e::sub;
+constexpr pvr::var_type_e ins = pvr::var_type_e::ins;
+constexpr pvr::var_type_e del = pvr::var_type_e::del;
+constexpr pvr::var_type_e sub = pvr::var_type_e::sub;
 
 bool is_contained(const std::vector<pt::slice_t> &ref_slices,
 		  pt::slice_t ref_slice)
@@ -227,7 +227,7 @@ struct overlay_t {
 	pt::idx_t ref_start_idx;
 	pt::idx_t len;
 	ptg::or_e slice_or;
-	pgr::var_type_e vt;
+	pvr::var_type_e vt;
 };
 
 const pt::u8 SLICE_A_IDX{0};
@@ -239,7 +239,7 @@ const pt::u8 SLICE_B_IDX{1};
 std::map<pt::u32, std::vector<overlay_t>>
 overlay(const bd::VG &g, const pgt::walk_t &graph_w,
 	const std::set<pt::u32> &graph_walk_refs,
-	const std::vector<pgr::raw_variant> &variants, pt::u8 sl_idx, bool dbg)
+	const std::vector<pvr::raw_variant> &variants, pt::u8 sl_idx, bool dbg)
 {
 	std::map<pt::u32, std::vector<overlay_t>> ref_to_overlays;
 
@@ -251,14 +251,14 @@ overlay(const bd::VG &g, const pgt::walk_t &graph_w,
 	for (pt::u32 ref_idx : graph_walk_refs) {
 		const lq::ref_walk *ref_w = g.get_ref_vec(ref_idx)->walk;
 
-		for (const pgr::raw_variant &v : variants) {
+		for (const pvr::raw_variant &v : variants) {
 
 			auto [sl_a, sl_b, vt_] = v;
 			auto [start, len] = sl_idx == SLICE_A_IDX ? sl_a : sl_b;
-			pgr::var_type_e vt = sl_idx == SLICE_A_IDX
+			pvr::var_type_e vt = sl_idx == SLICE_A_IDX
 						     ? vt_
-						     : pgr::covariant(vt_);
-			pgr::var_type_e overlay_vt = vt;
+						     : pvr::covariant(vt_);
+			pvr::var_type_e overlay_vt = vt;
 
 			pt::u32 i{start};
 			pt::u32 N = start + len;
@@ -351,8 +351,8 @@ std::set<pt::id_t> refs_in_walk(const bd::VG &g, const pgt::walk_t &walk)
  * [out] rov_exps: vector of expeditions, one per pairwise variant set
  */
 void comp_overlays2(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
-		    const std::vector<pgr::pairwise_variants> &pv,
-		    const pgr::RoV *rov, std::vector<Exp> &rov_exps)
+		    const std::vector<pvr::pairwise_variants> &pv,
+		    const pvr::RoV *rov, std::vector<Exp> &rov_exps)
 {
 	// bool dbg = rov->as_str() == ">1546>1551" ? true : false;
 
@@ -422,7 +422,7 @@ void comp_overlays2(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 	}
 	start = pt::Time::now();
 
-	for (const rov::pairwise_variants &p : pv) {
+	for (const pvr::pairwise_variants &p : pv) {
 		Exp e(rov);
 		std::map<pt::id_t, itn_t> &ref_map = e.get_ref_itns_mut();
 		std::map<pt::idx_t, std::set<pt::idx_t>> &walk_to_refs =
@@ -433,7 +433,7 @@ void comp_overlays2(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 		if (dbg) {
 			std::cerr << "(" << w1_idx << "," << w2_idx << ")\n";
 			std::cerr << "Variants:\n";
-			for (const pgr::raw_variant &rv : variants) {
+			for (const pvr::raw_variant &rv : variants) {
 				std::cerr << rv << "\n";
 			}
 		}
@@ -472,12 +472,12 @@ void comp_overlays2(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 	return;
 }
 
-std::vector<Exp> comp_itineraries2(const bd::VG &g, const pgr::RoV &rov)
+std::vector<Exp> comp_itineraries2(const bd::VG &g, const pvr::RoV &rov)
 {
 
 	const std::vector<pgt::walk_t> &walks = rov.get_walks();
-	const std::vector<pgr::pairwise_variants> &pv = rov.get_irreducibles();
-	const pgr::RoV *rov_ = &rov;
+	const std::vector<pvr::pairwise_variants> &pv = rov.get_irreducibles();
+	const pvr::RoV *rov_ = &rov;
 
 	if (pv.empty()) {
 		ERR("No pairwise variants in RoV {}", rov.as_str());
@@ -501,7 +501,7 @@ void comp_itineraries(const bd::VG &g, Exp &exp)
 	std::map<pt::idx_t, std::set<pt::idx_t>> &walk_to_refs =
 		exp.get_walk_to_ref_idxs_mut();
 
-	const std::vector<pgr::pairwise_variants> &pv =
+	const std::vector<pvr::pairwise_variants> &pv =
 		exp.get_rov()->get_irreducibles();
 
 	for (pt::idx_t w_idx = 0; w_idx < walks.size(); ++w_idx) {

@@ -1,0 +1,124 @@
+#include "povu/variation/color.hpp"
+
+#include <cstddef>  // for size_t
+#include <cstdlib>  // for exit, EXIT_FAILURE
+#include <iterator> // for back_insert_iterator, bac...
+#include <map>	    // for map
+#include <optional> // for optional, operator==
+#include <string>   // for basic_string, string
+#include <utility>  // for move
+#include <vector>   // for vector
+
+#include "fmt/core.h"		  // for format_to
+#include "indicators/setting.hpp" // for PostfixText
+#include "povu/common/app.hpp"	  // for config
+#include "povu/common/constants.hpp"
+#include "povu/common/core.hpp" // for pt
+// #include "povu/common/log.hpp"
+#include "povu/common/progress.hpp" // for set_progress_bar_com...
+// #include "povu/common/utils.hpp"
+// #include "povu/genomics/graph.hpp" // for RoV, find_walks, pgt
+// #include "povu/genomics/vcf.hpp"
+#include "povu/graph/bidirected.hpp" // for VG, bd
+#include "povu/graph/pvst.hpp"	     // for Tree, VertexBase
+#include "povu/graph/types.hpp"
+
+// #include "povu/common/utils.hpp" // for print_with_comma
+
+namespace povu::var::color
+{
+// namespace pgg = povu::genomics::grapah;
+namespace pvst = povu::pvst;
+
+// using namespace povu::progress;
+
+bool has_all_refs(const bd::VG &g, const std::set<pt::id_t> &to_call_ref_ids,
+		  pt::u32 s_v_idx, pt::u32 t_v_idx)
+{
+	for (pt::u32 r_idx : to_call_ref_ids) {
+		const std::vector<pt::idx_t> &s_idxs =
+			g.get_vertex_ref_idxs(s_v_idx, r_idx);
+
+		const std::vector<pt::idx_t> &t_idxs =
+			g.get_vertex_ref_idxs(t_v_idx, r_idx);
+
+		if (s_idxs.empty() || t_idxs.empty())
+			return false;
+	}
+
+	return true;
+}
+
+bool has_any_refs(const bd::VG &g, const std::set<pt::id_t> &to_call_ref_ids,
+		  pt::u32 s_v_idx, pt::u32 t_v_idx)
+{
+	for (pt::u32 r_idx : to_call_ref_ids) {
+		const std::vector<pt::idx_t> &s_idxs =
+			g.get_vertex_ref_idxs(s_v_idx, r_idx);
+
+		const std::vector<pt::idx_t> &t_idxs =
+			g.get_vertex_ref_idxs(t_v_idx, r_idx);
+
+		if (s_idxs.empty() || t_idxs.empty())
+			return false;
+	}
+
+	return true;
+}
+
+// given a vertex go up the tree until you find the flubble leaf which
+// has all to call ref ids
+std::optional<pt::u32> find_vertex(const bd::VG &g, const pvst::Tree &pvst,
+				   const std::set<pt::id_t> &to_call_ref_ids,
+				   pt::u32 pvst_v_idx)
+{
+	std::string s = ">3597>3600";
+	std::string ss = pvst.get_vertex(pvst_v_idx).as_str();
+
+	auto dbg = (ss == s) ? true : false;
+
+	auto is_parent_valid = [&](pt::u32 pvst_v_idx)
+	{
+		return pvst_v_idx != pvst.root_idx() &&
+		       pvst_v_idx != pc::INVALID_IDX &&
+		       // if the parent has too many children, skip
+		       // avoids going too far up the tree
+		       pvst.get_children(pvst_v_idx).size() < 20;
+	};
+
+	do {
+		const pvst::VertexBase *v =
+			pvst.get_vertex_const_ptr(pvst_v_idx);
+
+		if (v->get_route_params() == std::nullopt)
+			return std::nullopt;
+
+		auto [l, r, _] = v->get_route_params().value();
+		auto [start_id, __] = l;
+		auto [stop_id, ___] = r;
+
+		pt::u32 s_v_idx = g.v_id_to_idx(start_id);
+		pt::u32 t_v_idx = g.v_id_to_idx(stop_id);
+
+		if (has_all_refs(g, to_call_ref_ids, s_v_idx, t_v_idx))
+			return pvst_v_idx;
+
+		pvst_v_idx = pvst.get_parent_idx(pvst_v_idx);
+	} while (is_parent_valid(pvst_v_idx));
+
+	return std::nullopt;
+}
+
+std::set<pt::u32> color_pvst(const bd::VG &g, const pvst::Tree &pvst,
+			     const std::set<pt::id_t> &to_call_ref_ids)
+{
+	std::set<pt::u32> colored_vtxs;
+	for (pt::u32 i{}; i < pvst.vtx_count(); i++) // i is pvst_v_idx
+		if (pvst.is_leaf(i))
+			if (auto j = find_vertex(g, pvst, to_call_ref_ids, i))
+				colored_vtxs.insert(*j);
+
+	return colored_vtxs;
+}
+
+} // namespace povu::var::color

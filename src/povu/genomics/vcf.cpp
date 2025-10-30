@@ -15,22 +15,22 @@ namespace povu::genomics::vcf
 namespace pvst = povu::pvst;
 namespace pgg = povu::genomics::graph;
 
-pgr::var_type_e det_var_type(const pga::allele_slice_t &ref_allele_slice,
+pvr::var_type_e det_var_type(const pga::allele_slice_t &ref_allele_slice,
 			     const pga::allele_slice_t &alt_allele_slice)
 {
 	if (ref_allele_slice.len < alt_allele_slice.len) {
-		return pgr::var_type_e::del;
+		return pvr::var_type_e::del;
 	}
 	else if (ref_allele_slice.len > alt_allele_slice.len) {
-		return pgr::var_type_e::ins;
+		return pvr::var_type_e::ins;
 	}
 	else {
-		return pgr::var_type_e::sub;
+		return pvr::var_type_e::sub;
 	}
 }
 
 pt::idx_t comp_pos(const pga::allele_slice_t &ref_allele_slice,
-		   pgr::var_type_e variant_type)
+		   pvr::var_type_e variant_type)
 {
 	// const pgt::ref_walk_t rw = *ref_allele_slice.ref_walk;
 	// pt::idx_t locus = rw[ref_allele_slice.ref_start_idx + 1].locus;
@@ -39,8 +39,8 @@ pt::idx_t comp_pos(const pga::allele_slice_t &ref_allele_slice,
 		ref_allele_slice.get_locus(ref_allele_slice.ref_start_idx + 1);
 
 	switch (variant_type) {
-	case pgr::var_type_e::del:
-	case pgr::var_type_e::ins:
+	case pvr::var_type_e::del:
+	case pvr::var_type_e::ins:
 		return locus - 1;
 	default:
 		return locus;
@@ -93,6 +93,7 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 {
 	std::string s = ">288>292";
 	bool dbg = exp.id() == s ? true : false;
+	dbg = false;
 
 	if (dbg) {
 		std::cerr << "Generating for exp " << exp.id()
@@ -105,7 +106,7 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 		ERR("RoV pointer is null");
 		std::exit(EXIT_FAILURE);
 	}
-	const pgr::RoV &rov = *(exp.get_rov());
+	const pvr::RoV &rov = *(exp.get_rov());
 
 	if (exp.get_pvst_vtx_const_ptr() == nullptr) {
 		ERR("pvst vertex pointer is null");
@@ -141,7 +142,7 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 		return ref_pairs;
 	};
 
-	std::map<std::pair<pt::idx_t, pgr::var_type_e>, VcfRec>
+	std::map<std::pair<pt::idx_t, pvr::var_type_e>, VcfRec>
 		var_type_to_vcf_rec;
 	std::vector<pt::op_t<pt::id_t>> ref_pairs = pre_comp_ref_pairs();
 
@@ -189,12 +190,12 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 			pt::idx_t alt_walk_ref_count =
 				exp.get_ref_idxs_for_walk(alt_walk_idx).size();
 
-			// pgr::var_type_e variant_type = det_var_type(
+			// pvr::var_type_e variant_type = det_var_type(
 			//	ref_allele_slice, alt_allele_slice);
 
-			pgr::var_type_e variant_type = ref_allele_slice.vt;
+			pvr::var_type_e variant_type = ref_allele_slice.vt;
 
-			std::pair<pt::idx_t, pgr::var_type_e> key =
+			std::pair<pt::idx_t, pvr::var_type_e> key =
 				std::make_pair(ref_ref_id, variant_type);
 
 			// if it does not exist create a variant type for it and

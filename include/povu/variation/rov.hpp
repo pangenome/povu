@@ -1,5 +1,5 @@
-#ifndef POVU_GENOMICS_ROV_HPP
-#define POVU_GENOMICS_ROV_HPP
+#ifndef POVU_ROV_HPP
+#define POVU_ROV_HPP
 
 #include <vector> // for vector
 
@@ -10,7 +10,7 @@
 #include "povu/graph/pvst.hpp"	     // for Tree, VertexBase
 #include "povu/graph/types.hpp"	     // for or_e, id_or_t, walk_t
 
-namespace povu::genomics::rov
+namespace povu::var::rov
 {
 inline constexpr std::string_view MODULE = "povu::genomics::rov";
 namespace pvst = povu::pvst;
@@ -219,9 +219,9 @@ std::vector<RoV> gen_rov(const std::vector<pvst::Tree> &pvsts, const bd::VG &g,
 void find_hidden(RoV &r);
 #endif
 
-} // namespace povu::genomics::rov
+} // namespace povu::var::rov
 
 // NOLINTNEXTLINE(misc-unused-alias-decls)
-namespace pgr = povu::genomics::rov;
+namespace pvr = povu::var::rov;
 
-#endif
+#endif // POVU_ROV_HPP

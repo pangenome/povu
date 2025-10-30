@@ -183,11 +183,15 @@ ADD_LIBRARY(povulib
   #overlays
   ${POVULIB_SOURCES_DIR}/overlay/overlay.cpp
 
+  ${POVULIB_SOURCES_DIR}/variation/rov.cpp
+  ${POVULIB_SOURCES_DIR}/variation/color.cpp
+
+
   # genomics
   ${POVULIB_SOURCES_DIR}/genomics/allele.cpp
   ${POVULIB_SOURCES_DIR}/genomics/genomics.cpp
   ${POVULIB_SOURCES_DIR}/genomics/graph.cpp
-  ${POVULIB_SOURCES_DIR}/genomics/rov.cpp
+
   ${POVULIB_SOURCES_DIR}/genomics/untangle.cpp
   ${POVULIB_SOURCES_DIR}/genomics/vcf.cpp
 

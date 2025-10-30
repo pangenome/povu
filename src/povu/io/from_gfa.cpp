@@ -97,11 +97,7 @@ bd::VG *to_bd(const core::config &app_config)
 
 	/* set up progress bars */
 	ProgressBar vtx_bar{option::Stream{std::cerr}};
-	ProgressBar edge_bar{option::Stream{std::cerr}};
-	if (show_prog) {
-		set_progress_bar_common_opts(&vtx_bar, vtx_count);
-		set_progress_bar_common_opts(&edge_bar, edge_count);
-	}
+	set_progress_bar_common_opts(&vtx_bar, vtx_count);
 
 	/* add vertices */
 	for (pt::idx_t i{}; i < vtx_count; ++i) {
@@ -125,6 +121,11 @@ bd::VG *to_bd(const core::config &app_config)
 	}
 
 	/* add edges */
+	ProgressBar edge_bar{option::Stream{std::cerr}};
+	if (show_prog) {
+
+		set_progress_bar_common_opts(&edge_bar, edge_count);
+	}
 	for (std::size_t i{}; i < edge_count; ++i) {
 		if (show_prog) { // update progress bar
 			std::string prog_msg = pv_cmp::format(

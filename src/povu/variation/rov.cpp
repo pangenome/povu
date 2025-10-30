@@ -1,4 +1,4 @@
-#include "povu/genomics/rov.hpp"
+#include "povu/variation/rov.hpp"
 
 #include <cstddef>  // for size_t
 #include <cstdlib>  // for exit, EXIT_FAILURE
@@ -21,14 +21,15 @@
 // #include "povu/genomics/vcf.hpp"
 #include "povu/graph/pvst.hpp" // for Tree, VertexBase
 #include "povu/graph/types.hpp"
+#include "povu/variation/color.hpp"
 
 // #include "povu/common/utils.hpp" // for print_with_comma
 
-namespace povu::genomics::rov
+namespace povu::var::rov
 {
 namespace pgg = povu::genomics::graph;
 namespace pvst = povu::pvst;
-using namespace povu::progress;
+// using namespace povu::progress;
 
 constexpr var_type_e ins = var_type_e::ins;
 constexpr var_type_e del = var_type_e::del;
@@ -245,9 +246,6 @@ bool should_call(const pvst::Tree &pvst, const pvst::VertexBase *pvst_v_ptr,
 void find_pvst_rovs(const bd::VG &g, const pvst::Tree &pvst,
 		    const std::set<pt::u32> &colored_vtxs, std::vector<RoV> &rs)
 {
-	if (pv_cmp::contains(colored_vtxs, 1114))
-		std::cerr << "found 1114\n";
-
 	for (pt::u32 i : colored_vtxs) { // i is pvst_v_idx
 		// std::cout << "Colored pvst vertex idx: " << v_idx << "\n";
 		const pvst::VertexBase *v = pvst.get_vertex_const_ptr(i);
@@ -256,9 +254,6 @@ void find_pvst_rovs(const bd::VG &g, const pvst::Tree &pvst,
 		// get the set of walks for the RoV
 		pt::status_t s = povu::genomics::graph::find_walks(g, r);
 
-		if (i == 1114)
-			std::cerr << "looked \n";
-
 		// no walks found, skip this RoV
 		if (r.get_walks().size() == 0 || s != 0)
 			continue;
@@ -266,9 +261,6 @@ void find_pvst_rovs(const bd::VG &g, const pvst::Tree &pvst,
 		find_hidden(r);
 		rs.emplace_back(std::move(r));
 	}
-
-	if (pv_cmp::contains(colored_vtxs, 1114))
-		std::cerr << "found 1114 b\n";
 }
 
 void eval_vertex(const bd::VG &g, const pvst::Tree &pvst, pt::u32 pvst_v_idx,
@@ -334,66 +326,6 @@ bool has_any_refs(const bd::VG &g, const std::set<pt::id_t> &to_call_ref_ids,
 	return true;
 }
 
-// given a vertex go up the tree until you find the flubble leaf which
-// has all to call ref ids
-std::optional<pt::u32> find_vertex(const bd::VG &g, const pvst::Tree &pvst,
-				   const std::set<pt::id_t> &to_call_ref_ids,
-				   pt::u32 pvst_v_idx)
-{
-	std::string s = ">3597>3600";
-	std::string ss = pvst.get_vertex(pvst_v_idx).as_str();
-
-	auto dbg = (ss == s) ? true : false;
-
-	auto is_parent_valid = [&](pt::u32 pvst_v_idx)
-	{
-		return pvst_v_idx != pvst.root_idx() &&
-		       pvst_v_idx != pc::INVALID_IDX &&
-		       // if the parent has too many children, skip
-		       // avoids going too far up the tree
-		       pvst.get_children(pvst_v_idx).size() < 20;
-	};
-
-	do {
-		const pvst::VertexBase *v =
-			pvst.get_vertex_const_ptr(pvst_v_idx);
-
-		if (v->get_route_params() == std::nullopt)
-			return std::nullopt;
-
-		auto [l, r, _] = v->get_route_params().value();
-		auto [start_id, __] = l;
-		auto [stop_id, ___] = r;
-
-		pt::u32 s_v_idx = g.v_id_to_idx(start_id);
-		pt::u32 t_v_idx = g.v_id_to_idx(stop_id);
-
-		if (has_all_refs(g, to_call_ref_ids, s_v_idx, t_v_idx)) {
-			if (dbg) {
-				std::cerr << "f " << pvst_v_idx << " "
-					  << v->as_str() << "\n";
-			}
-			return pvst_v_idx;
-		}
-
-		pvst_v_idx = pvst.get_parent_idx(pvst_v_idx);
-	} while (is_parent_valid(pvst_v_idx));
-
-	return std::nullopt;
-}
-
-std::set<pt::u32> color_pvst(const bd::VG &g, const pvst::Tree &pvst,
-			     const std::set<pt::id_t> &to_call_ref_ids)
-{
-	std::set<pt::u32> colored_vtxs;
-	for (pt::u32 i{}; i < pvst.vtx_count(); i++) // i is pvst_v_idx
-		if (pvst.is_leaf(i))
-			if (auto j = find_vertex(g, pvst, to_call_ref_ids, i))
-				colored_vtxs.insert(*j);
-
-	return colored_vtxs;
-}
-
 /**
  * find walks in the graph based on the leaves of the pvst
  * initialize RoVs from flubbles
@@ -428,7 +360,7 @@ std::vector<RoV> gen_rov(const std::vector<pvst::Tree> &pvsts, const bd::VG &g,
 		// const pt::idx_t total = pvst.vtx_count();
 
 		std::set<pt::u32> colored_vtxs =
-			color_pvst(g, pvst, to_call_ref_ids);
+			pvc::color_pvst(g, pvst, to_call_ref_ids);
 
 		// std::cerr << "clrd " << colored_vtxs.size() << "\n";
 
@@ -454,4 +386,4 @@ std::vector<RoV> gen_rov(const std::vector<pvst::Tree> &pvsts, const bd::VG &g,
 	return rs;
 }
 
-} // namespace povu::genomics::rov
+} // namespace povu::var::rov
