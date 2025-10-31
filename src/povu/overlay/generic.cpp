@@ -1,29 +1,30 @@
+#include "povu/common/constants.hpp"
 #include "povu/overlay/overlay.hpp"
 
+// #include <csignal> // for raise, SIGINT
+// #include <cstdint>
+// #include <cstdio>
+// #include <string>
+
 #include <algorithm>
-#include <csignal> // for raise, SIGINT
-#include <cstdint>
-#include <cstdio>
 #include <cstdlib> // for exit, EXIT_FAILURE
 #include <iostream>
 #include <liteseq/refs.h> // for ref_walk, ref
 #include <map>		  // for map
-#include <string>
 #include <utility>
 #include <vector> // for vector
 
-#include "povu/common/compat.hpp"
-#include "povu/common/constants.hpp"
+// #include "povu/common/compat.hpp"
+// #include "povu/common/constants.hpp"
+// #include "povu/common/utils.hpp"
+
 #include "povu/common/core.hpp"
 #include "povu/common/log.hpp"
-#include "povu/common/utils.hpp"
-
 #include "povu/genomics/allele.hpp"
-
 #include "povu/graph/types.hpp"
 #include "povu/variation/rov.hpp"
 
-namespace povu::overlay
+namespace povu::overlay::generic
 {
 namespace lq = liteseq;
 
@@ -532,17 +533,150 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 	}
 }
 
+using vtx_pos = pt::op_t<pt::u32>;
+
+// struct vtx_pos {
+//	pt::u32 walk_idx;
+//	pt::u32 step_idx;
+// };
+
+// use to look up walks by vertex id and position
+struct walks_guide {
+	// v id to walks that contain it
+	std::map<pt::u32, std::set<pt::u32>> v_to_walks;
+	std::map<pt::u32, std::set<vtx_pos>> walks_idxs;
+
+	walks_guide(std::map<pt::u32, std::set<pt::u32>> &&v_to_walks,
+		    std::map<pt::u32, std::set<vtx_pos>> &&walks_idxs)
+	    : v_to_walks(std::move(v_to_walks)),
+	      walks_idxs(std::move(walks_idxs))
+	{}
+
+	/**
+	 * set intersection of walks containing u and v
+	 */
+	[[nodiscard]]
+	std::set<pt::u32> shared_walks(pt::u32 u, pt::u32 v) const
+	{
+		std::set<pt::u32> shared;
+		const std::set<pt::u32> &u_walks = v_to_walks.at(u);
+		const std::set<pt::u32> &v_walks = v_to_walks.at(v);
+		std::set_intersection(u_walks.begin(), u_walks.end(),
+				      v_walks.begin(), v_walks.end(),
+				      std::inserter(shared, shared.begin()));
+		return shared;
+	}
+
+	[[nodiscard]]
+	pt::u32 get_step_in_walk(pt::u32 w_idx, pt::u32 v_id) const
+	{
+		if (!pv_cmp::contains(walks_idxs, v_id))
+			return pc::INVALID_IDX;
+
+		for (const auto &vp : walks_idxs.at(v_id)) {
+			auto [walk_idx, step_idx] = vp;
+			if (walk_idx == w_idx)
+				return step_idx;
+		}
+
+		return pc::INVALID_IDX;
+	}
+};
+
+walks_guide index_rov_walks(const std::vector<pgt::walk_t> &walks)
+{
+	std::map<pt::u32, std::set<vtx_pos>> walks_idxs;
+	// v id to walks that contain it
+	std::map<pt::u32, std::set<pt::u32>> v_to_walks;
+
+	for (pt::u32 i{}; i < walks.size(); i++) {
+		const pgt::walk_t &w = walks[i];
+		for (pt::u32 s{}; s < w.size(); s++) {
+			auto [v_id, _] = w[s];
+
+			walks_idxs[v_id].insert({i, s});
+			v_to_walks[v_id].insert(i);
+		}
+	}
+
+	return {std::move(v_to_walks), std::move(walks_idxs)};
+}
+
+/**
+ * for a given walk, find all overlays to refs in the given slice
+ *
+ * g: [in] variation graph
+ * w: [in] walk to search overlays in
+ * [out] ref_loop_count: map of ref idx to number of times it was found
+ * [out] e: expedition to update with found overlays
+ */
+void prefix_sum_overlay(const bd::VG &g, const pgt::walk_t &w,
+			const Overlays &ov, pt::u32 W_IDX,
+			const pt::u32 WALK_START, const pt::u32 LEN,
+			std::map<pt::u32, pt::u32> &ref_loop_count, pga::Exp &e)
+{
+	const pvr::var_type_e DEFAULT_VT = sub;
+	try {
+		w.at(WALK_START);
+	}
+	catch (const std::out_of_range &e) {
+		ERR("prefix_sum_overlay: WALK_START {} out of range for walk "
+		    "of "
+		    "length {}",
+		    WALK_START, w.size());
+		std::exit(EXIT_FAILURE);
+	}
+
+	auto [v_id, o] = w[WALK_START];
+	// const std::vector<std::vector<pt::idx_t>> &vtx_ref_idxs =
+	//	g.get_vertex_refs(v_id);
+
+	for (pt::u32 r_idx{}; r_idx < g.ref_count(); r_idx++) {
+		const std::vector<overlay_prefix_sum_t> &walk_prefix_sums =
+			ov.get_ps(W_IDX, r_idx);
+
+		const lq::ref_walk *ref_w = g.get_ref_vec(r_idx)->walk;
+
+		for (const auto &[r_start_idx, ps_f, ps_r] : walk_prefix_sums) {
+			pt::u32 N = WALK_START + LEN - 1;
+			pt::u32 i = WALK_START;
+
+			bool is_right = (ps_f[N] - ps_f[i]) + ps_f[N] == 0;
+			bool is_left = (ps_r[N] - ps_r[i]) + ps_r[N] == 0;
+
+			if (!is_right && !is_left)
+				continue;
+
+			pgt::or_e at_or = is_right ? fo : ro;
+
+			pt::u32 ref_start_idx =
+				is_right ? r_start_idx + WALK_START
+					 : r_start_idx - WALK_START;
+
+			pga::allele_slice_t at{&w,    W_IDX, WALK_START,
+					       ref_w, r_idx, ref_start_idx,
+					       LEN,   at_or, DEFAULT_VT};
+
+			shared::update_exp(r_idx, W_IDX, std::move(at), e);
+
+			ref_loop_count[r_idx]++;
+		}
+	}
+}
+
 /**
  * [out] rov_exps: vector of expeditions, one per pairwise variant set
  */
 std::pair<std::vector<pga::Exp>, std::vector<sub_inv>>
-comp_overlays3(const bd::VG &g, const pvr::RoV &rov,
-	       const std::set<pt::id_t> &to_call_ref_ids)
+overlay_generic(const bd::VG &g, const pvr::RoV &rov,
+		const std::set<pt::id_t> &to_call_ref_ids)
 {
 	std::vector<pga::Exp> rov_exps;
 
 	const std::vector<pgt::walk_t> &walks = rov.get_walks();
 	const std::vector<pvr::pairwise_variants> &pv = rov.get_irreducibles();
+
+	// std::cerr << rov.as_str() << "\n";
 
 	// if (walks.size() > 500) {
 	//	std::cerr << "Skipping " << rov.as_str() << " ---- "
@@ -551,7 +685,7 @@ comp_overlays3(const bd::VG &g, const pvr::RoV &rov,
 	// }
 
 #ifdef DEBUG
-	if (pv.empty()) {
+	if (rov.get_flanks().empty()) {
 		ERR("No pairwise variants in RoV {}", rov.as_str());
 		std::exit(EXIT_FAILURE);
 	}
@@ -559,74 +693,68 @@ comp_overlays3(const bd::VG &g, const pvr::RoV &rov,
 
 	Overlays ov = overlay_walks(g, walks);
 
-	return {{}, {}};
+	// for (auto [v1, v2] : rov.get_flanks()) {
+	//	std::cerr << "Flanks: " << pgt::to_string(walks[v1]) << " | "
+	//		  << pgt::to_string(walks[v2]) << "\n";
+	// }
 
-	for (const pvr::pairwise_variants &p : pv) {
+	walks_guide walks_guide = index_rov_walks(walks);
 
-		auto [wa_idx, wb_idx, variants] = p;
+	// const std::set<pt::up_t<pt::u32>> flanks = rov.get_flanks();
+	for (auto [u, v] : rov.get_flanks()) {
+		pga::Exp e(&rov);
+		std::map<pt::u32, pt::u32> ref_loop_count;
 
-		for (pt::u32 i{}; i < p.size(); i++) {
-			pga::Exp e(&rov);
-			std::map<pt::id_t, pga::itn_t> &ref_map =
-				e.get_ref_itns_mut();
-			std::map<pt::idx_t, std::set<pt::idx_t>> &walk_to_refs =
-				e.get_walk_to_ref_idxs_mut();
+		// get all positions of u and v in the walks
+		std::set<pt::u32> shared_walks = walks_guide.shared_walks(u, v);
 
-			bool is_tangled = false;
-			pop_exp(g, walks, ov, variants.at(i), wa_idx, wb_idx,
-				ref_map, walk_to_refs, is_tangled);
+		// TODO: a ref can reverse in one walk and forward in another
+		// need to account for that when building expeditions
+		if (shared_walks.size() < 2)
+			continue;
 
-			std::set<pt::id_t> exp_refs = e.get_ref_ids();
+		for (pt::u32 w_idx : shared_walks) {
+			pt::u32 u_idx = walks_guide.get_step_in_walk(w_idx, u);
+			pt::u32 v_idx = walks_guide.get_step_in_walk(w_idx, v);
 
-			// get set intersection with to_call_ref_ids
-			std::set<pt::id_t> intersect_refs;
-			std::set_intersection(
-				exp_refs.begin(), exp_refs.end(),
-				to_call_ref_ids.begin(), to_call_ref_ids.end(),
-				std::inserter(intersect_refs,
-					      intersect_refs.begin()));
+#ifdef DEBUG
+			if (u_idx == pc::INVALID_IDX ||
+			    v_idx == pc::INVALID_IDX) {
+				ERR("Could not find u {} or v {} in "
+				    "walk "
+				    "{}",
+				    u, v, w_idx);
+				std::exit(EXIT_FAILURE);
+			}
+#endif
+			pt::u32 w_start = std::min(u_idx, v_idx);
+			pt::u32 w_end = std::max(u_idx, v_idx);
+			pt::u32 len = w_end - w_start + 1;
+			const pgt::walk_t &w = walks[w_idx];
 
-			if (intersect_refs.empty())
-				continue;
-
-			e.set_tangled(is_tangled);
-
-			rov_exps.emplace_back(std::move(e));
+			prefix_sum_overlay(g, w, ov, w_idx, w_start, len,
+					   ref_loop_count, e);
 		}
+
+		for (auto &[_, count] : ref_loop_count)
+			if (count > 1) {
+				// std::cerr << "(" << u << ", " << v << ") in "
+				//	  << rov.as_str()
+				//	  << " is tangled on ref(s)\n";
+				// // print shared walks
+				// for (pt::u32 w_idx : shared_walks) {
+				//	std::cerr << w_idx << ", ";
+				// }
+				// std::cerr << "\n";
+
+				e.set_tangled(true);
+				break;
+			}
+
+		rov_exps.emplace_back(std::move(e));
 	}
 
 	return {rov_exps, {}};
 }
 
-std::pair<std::vector<pga::Exp>, std::vector<sub_inv>>
-comp_itineraries3(const bd::VG &g, const pvr::RoV &rov,
-		  const std::set<pt::id_t> &to_call_ref_ids)
-{
-	// auto can_be_non_planar = [](const pvst::vf_e fam) -> bool
-	// {
-	//	return fam == pvst::vf_e::flubble;
-	// };
-
-	if (!rov.can_be_non_planar())
-		return overlay_tiny(g, rov, to_call_ref_ids);
-
-	return generic::overlay_generic(g, rov, to_call_ref_ids);
-}
-
-} // namespace povu::overlay
-
-namespace povu::overlay::shared
-{
-void update_exp(pt::u32 r_idx, pt::u32 w_idx, pga::allele_slice_t &&at,
-		pga::Exp &e)
-{
-	std::map<pt::id_t, pga::itn_t> &ref_map = e.get_ref_itns_mut();
-	pga::itn_t &itn = ref_map[r_idx];
-
-	std::map<pt::idx_t, std::set<pt::idx_t>> &walk_to_refs =
-		e.get_walk_to_ref_idxs_mut();
-
-	itn.append_at_sorted(std::move(at));
-	walk_to_refs[w_idx].insert(r_idx);
-}
-} // namespace povu::overlay::shared
+} // namespace povu::overlay::generic

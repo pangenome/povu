@@ -176,28 +176,37 @@ pairwise_variants compare_pair(const RoV &r, pt::u32 i, pt::u32 j)
 
 void find_hidden(RoV &r)
 {
-	// bool dbg = r.as_str() == ">1546>1551" ? true : false;
-	// dbg = false;
+	// std::cerr << "RoV: " << r.as_str() << "\n";
 	// for (int i = 0; i < r.get_walks().size(); i++) {
+	//	std::cerr << i << "\t" << pgt::to_string(r.get_walk(i)) << "\n";
+	// }
+
+	//
+	//  bool dbg = r.as_str() == ">1546>1551" ? true : false;
+	//  dbg = false;
+	//  for (int i = 0; i < r.get_walks().size(); i++) {
 	//	if (dbg) {
 	//		const ptg::walk_t &w = r.get_walk(i);
 	//		std::cerr << i << ": " << pgt::to_string(w) << "\n";
 	//	}
+	//  }
+
+	// const pt::u32 WC = r.walk_count();
+	// std::set<pt::up_t<pt::u32>> seen;
+	// for (pt::u32 i{}; i < WC; i++) {
+	//	for (pt::u32 j{}; j < WC; j++) {
+	//		auto p = pt::up_t<pt::u32>{i, j};
+
+	//		if (i == j || pv_cmp::contains(seen, p))
+	//			continue; // skip self or already seen
+
+	//		r.add_irreducible(compare_pair(r, i, j));
+	//		seen.insert(p);
+	//	}
 	// }
 
-	const pt::u32 WC = r.walk_count();
-	std::set<pt::up_t<pt::u32>> seen;
-	for (pt::u32 i{}; i < WC; i++) {
-		for (pt::u32 j{}; j < WC; j++) {
-			auto p = pt::up_t<pt::u32>{i, j};
-
-			if (i == j || pv_cmp::contains(seen, p))
-				continue; // skip self or already seen
-
-			r.add_irreducible(compare_pair(r, i, j));
-			seen.insert(p);
-		}
-	}
+	std::set<pt::up_t<pt::u32>> flanks = find_non_planar(r.get_walks());
+	r.extend_flanks(flanks);
 
 	// if (dbg)
 	//	for (auto &pv : r.get_irreducibles())
@@ -246,10 +255,20 @@ bool should_call(const pvst::Tree &pvst, const pvst::VertexBase *pvst_v_ptr,
 void find_pvst_rovs(const bd::VG &g, const pvst::Tree &pvst,
 		    const std::set<pt::u32> &colored_vtxs, std::vector<RoV> &rs)
 {
+	// auto can_be_non_planar = [](const pvst::vf_e fam) -> bool
+	// {
+	//	return fam == pvst::vf_e::flubble;
+	// };
+
 	for (pt::u32 i : colored_vtxs) { // i is pvst_v_idx
 		// std::cout << "Colored pvst vertex idx: " << v_idx << "\n";
 		const pvst::VertexBase *v = pvst.get_vertex_const_ptr(i);
 		RoV r{v};
+
+		if (r.as_str() == ">2597>2621") {
+			std::cerr << "Found target RoV\n";
+			std::exit(EXIT_FAILURE);
+		}
 
 		// get the set of walks for the RoV
 		pt::status_t s = povu::genomics::graph::find_walks(g, r);
@@ -258,15 +277,21 @@ void find_pvst_rovs(const bd::VG &g, const pvst::Tree &pvst,
 		if (r.get_walks().size() == 0 || s != 0)
 			continue;
 
-		find_hidden(r);
+		if (r.can_be_non_planar())
+			find_hidden(r);
+
+		// if (r.get_pvst_vtx()->get_fam() != pvst::vf_e::tiny ||
+		//     r.get_pvst_vtx()->get_fam() != pvst::vf_e::parallel)
+		//	find_hidden(r);
+
 		rs.emplace_back(std::move(r));
 	}
 }
 
+// TODO: remove this function (unused)
 void eval_vertex(const bd::VG &g, const pvst::Tree &pvst, pt::u32 pvst_v_idx,
 		 std::vector<RoV> &rs)
 {
-
 	std::string s = ">3597>3600";
 	const pvst::VertexBase *pvst_v_ptr =
 		pvst.get_vertex_const_ptr(pvst_v_idx);

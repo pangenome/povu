@@ -24,6 +24,22 @@ struct sub_inv {
 	std::vector<pt::u32> rev_refs;
 };
 
+namespace generic
+{
+std::pair<std::vector<pga::Exp>, std::vector<sub_inv>>
+overlay_generic(const bd::VG &g, const pvr::RoV &rov,
+		const std::set<pt::id_t> &to_call_ref_ids);
+};
+
+namespace shared
+{
+void update_exp(pt::u32 r_idx, pt::u32 w_idx, pga::allele_slice_t &&at,
+		pga::Exp &e);
+}
+
+// expose fn as if it were in this namespace
+// using generic::overlays_generic;
+
 std::pair<std::vector<pga::Exp>, std::vector<sub_inv>>
 comp_itineraries3(const bd::VG &g, const pvr::RoV &rov,
 		  const std::set<pt::id_t> &to_call_ref_ids);

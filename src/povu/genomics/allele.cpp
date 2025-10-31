@@ -24,6 +24,28 @@ constexpr pvr::var_type_e ins = pvr::var_type_e::ins;
 constexpr pvr::var_type_e del = pvr::var_type_e::del;
 constexpr pvr::var_type_e sub = pvr::var_type_e::sub;
 
+bool operator!=(const allele_slice_t &lhs, const allele_slice_t &rhs)
+{
+	return !(lhs == rhs);
+}
+
+bool operator==(const allele_slice_t &lhs, const allele_slice_t &rhs)
+{
+	if (lhs.len != rhs.len)
+		return false;
+
+	pt::u32 N = lhs.len;
+	for (pt::u32 i{}; i < N; i++) {
+		auto [lhs_v_id, lhs_o] = (*lhs.walk)[lhs.walk_start_idx + i];
+		auto [rhs_v_id, rhs_o] = (*rhs.walk)[rhs.walk_start_idx + i];
+
+		if (lhs_v_id != rhs_v_id || lhs_o != rhs_o)
+			return false;
+	}
+
+	return true;
+}
+
 bool is_contained(const std::vector<pt::slice_t> &ref_slices,
 		  pt::slice_t ref_slice)
 {

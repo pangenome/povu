@@ -33,6 +33,9 @@ inline match_res_t eq_at(const pga::itn_t &a, pt::idx_t a_idx,
 	const pga::allele_slice_t &a_at = a.get_at(a_idx);
 	const pga::allele_slice_t &b_at = b.get_at(b_idx);
 
+	return a_at == b_at ? match_res_t{1, 1, true}
+			    : match_res_t{1, 1, false};
+
 	pt::idx_t a_jmp = a_at.step_count();
 	pt::idx_t b_jmp = b_at.step_count();
 
@@ -212,10 +215,10 @@ std::string align(const pga::itn_t &i_itn, const pga::itn_t &j_itn,
     switch (level) {
     case aln_level_e::at:
       return aln_args{i_itn.at_count(),
-                      j_itn.at_count(),
-                      eq_at,
-                      {0, 1, 2, 1},
-                      aln_level_e::at};
+		      j_itn.at_count(),
+		      eq_at,
+		      {0, 1, 2, 1},
+		      aln_level_e::at};
     default:
       ERR("invalid alignment level {}", static_cast<int>(level));
       std::exit(1);

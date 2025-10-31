@@ -117,6 +117,7 @@ class RoV
 {
 	std::vector<pgt::walk_t> walks_;
 	std::vector<pairwise_variants> irr_;
+	std::set<pt::up_t<pt::u32>> flanks;
 	const pvst::VertexBase *pvst_vtx;
 
 public:
@@ -182,6 +183,22 @@ public:
 		return this->walks_.at(idx);
 	}
 
+	[[nodiscard]]
+	const std::set<pt::up_t<pt::u32>> get_flanks() const
+	{
+		return this->flanks;
+	}
+
+	[[nodiscard]]
+	bool can_be_non_planar() const
+	{
+		pvst::vf_e fam = this->pvst_vtx->get_fam();
+		if (fam == pvst::vf_e::tiny || fam == pvst::vf_e::parallel)
+			return false;
+
+		return true;
+	}
+
 	// ---------
 	// setter(s)
 	// ---------
@@ -194,6 +211,11 @@ public:
 	void add_irreducible(pairwise_variants &&irr_rov)
 	{
 		this->irr_.emplace_back(irr_rov);
+	}
+
+	void extend_flanks(const std::set<pt::up_t<pt::u32>> &f)
+	{
+		this->flanks.insert(f.begin(), f.end());
 	}
 
 	// --------
@@ -214,6 +236,9 @@ public:
 std::vector<RoV> gen_rov(const std::vector<pvst::Tree> &pvsts, const bd::VG &g,
 			 const std::set<pt::id_t> &to_call_ref_ids,
 			 const core::config &app_config);
+
+std::set<pt::up_t<pt::u32>>
+find_non_planar(const std::vector<pgt::walk_t> &walks);
 
 #ifdef TESTING
 void find_hidden(RoV &r);

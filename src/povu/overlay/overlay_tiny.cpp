@@ -150,8 +150,10 @@ overlay_tiny(const bd::VG &g, const pvr::RoV &rov,
 	}
 
 	for (auto &[_, count] : ref_loop_count)
-		if (count > 1)
+		if (count > 1) {
 			e.set_tangled(true);
+			break;
+		}
 
 	return {{e}, {}};
 }
