@@ -8,10 +8,12 @@
 #include <iostream>
 #include <liteseq/refs.h> // for ref_walk, ref
 #include <map>		  // for map
+#include <string>
 #include <utility>
 #include <vector> // for vector
 
 #include "povu/common/compat.hpp"
+#include "povu/common/constants.hpp"
 #include "povu/common/core.hpp"
 #include "povu/common/log.hpp"
 #include "povu/common/utils.hpp"
@@ -28,6 +30,8 @@ namespace lq = liteseq;
 constexpr pvr::var_type_e ins = pvr::var_type_e::ins;
 constexpr pvr::var_type_e del = pvr::var_type_e::del;
 constexpr pvr::var_type_e sub = pvr::var_type_e::sub;
+constexpr pgt::or_e fo = pgt::or_e::forward;
+constexpr pgt::or_e ro = pgt::or_e::reverse;
 
 const pt::u8 SLICE_A_IDX{0};
 const pt::u8 SLICE_B_IDX{1};
@@ -535,7 +539,7 @@ std::pair<std::vector<pga::Exp>, std::vector<sub_inv>>
 comp_overlays3(const bd::VG &g, const pvr::RoV &rov,
 	       const std::set<pt::id_t> &to_call_ref_ids)
 {
-
+	return {{}, {}};
 	std::vector<pga::Exp> rov_exps;
 
 	const std::vector<pgt::walk_t> &walks = rov.get_walks();
@@ -597,6 +601,8 @@ std::pair<std::vector<pga::Exp>, std::vector<sub_inv>>
 comp_itineraries3(const bd::VG &g, const pvr::RoV &rov,
 		  const std::set<pt::id_t> &to_call_ref_ids)
 {
+	if (rov.get_pvst_vtx()->get_fam() == pvst::vf_e::tiny)
+		return overlay_tiny(g, rov, to_call_ref_ids);
 
 	return comp_overlays3(g, rov, to_call_ref_ids);
 }

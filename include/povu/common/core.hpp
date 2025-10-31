@@ -22,10 +22,10 @@ using status_t = int8_t;			 // return status of a fn
 using Time = std::chrono::high_resolution_clock; // C++ timer
 
 struct slice_t {
-	idx_t start;
-	idx_t len;
+	u32 start;
+	u32 len;
 
-	slice_t(idx_t start, idx_t len) : start{start}, len{len}
+	slice_t(u32 start, u32 len) : start{start}, len{len}
 	{}
 
 	friend bool operator==(const slice_t &s1, const slice_t &s2)

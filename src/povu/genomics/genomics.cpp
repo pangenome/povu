@@ -233,6 +233,17 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 			const pt::idx_t end = std::min(base + CHUNK_SIZE, N);
 			const pt::idx_t count = end - base;
 
+			pt::idx_t chunk_num = (base / CHUNK_SIZE) + 1;
+
+			// if (chunk_num < 20)
+			//	continue;
+
+			// prog_msg =
+			//	pv_cmp::format("Processing RoV Chunk ({}/{})",
+			//		       chunk_num, CHUNK_COUNT);
+
+			// std::cerr << prog_msg << "\n";
+
 			if (prog) {
 				pt::idx_t chunk_num = (base / CHUNK_SIZE) + 1;
 

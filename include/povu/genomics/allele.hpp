@@ -85,8 +85,9 @@ struct allele_slice_t {
 	}
 
 	[[nodiscard]]
-	std::string as_str() const
+	std::string as_str(pvr::var_type_e vt) const
 	{
+		// TODO: pass variant type as param this method is prone to bugs
 		bool is_fwd = this->get_or() == pgt::or_e::forward;
 
 		// pt::idx_t ref_step_idx = is_fwd ? this->ref_start_idx
@@ -106,13 +107,15 @@ struct allele_slice_t {
 		pt::u32 i = is_fwd ? ref_start_idx : ref_start_idx - len + 1;
 		pt::u32 N = is_fwd ? ref_start_idx + len : ref_start_idx + 1;
 
+		// std::cerr << "i " << i << " N " << N << "vt" << this->vt
+		//	  << "\n";
 		// INFO("allele_slice_t::as_str()");
 		// std::cerr << " or " << this->get_or() << "\n";
 		// std::cerr << " s " << this->ref_start_idx << " r idx "
 		//	  << this->ref_idx << "\n";
 		// std::cerr << "i " << i << " N " << N << "\n";
 
-		switch (this->vt) {
+		switch (vt) {
 		case pvr::var_type_e::sub:
 			i++;
 			N--;
@@ -172,6 +175,31 @@ struct itn_t {
 	void append_at(allele_slice_t &&s)
 	{
 		this->it_.emplace_back(s);
+	}
+
+	void append_at_sorted(allele_slice_t &&s)
+	{
+		if (this->it_.empty()) {
+			this->it_.emplace_back(s);
+			return;
+		}
+
+		// sort in ascending order based on ref_start_idx
+		pt::idx_t insert_idx = 0;
+		for (const auto &at : this->it_) {
+			if (s.ref_start_idx < at.ref_start_idx) {
+				break;
+			}
+			insert_idx++;
+		}
+		this->it_.insert(this->it_.begin() + insert_idx, s);
+	}
+
+	void sort()
+	{
+		std::sort(this->it_.begin(), this->it_.end(),
+			  [](const allele_slice_t &a, const allele_slice_t &b)
+			  { return a.ref_start_idx < b.ref_start_idx; });
 	}
 };
 

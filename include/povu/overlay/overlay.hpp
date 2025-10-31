@@ -11,7 +11,7 @@
 
 namespace povu::overlay
 {
-inline constexpr std::string_view MODULE = "povu::genomics::allele";
+inline constexpr std::string_view MODULE = "povu::overlay";
 
 namespace lq = liteseq;
 
@@ -27,6 +27,10 @@ struct sub_inv {
 std::pair<std::vector<pga::Exp>, std::vector<sub_inv>>
 comp_itineraries3(const bd::VG &g, const pvr::RoV &rov,
 		  const std::set<pt::id_t> &to_call_ref_ids);
+
+std::pair<std::vector<pga::Exp>, std::vector<sub_inv>>
+overlay_tiny(const bd::VG &g, const pvr::RoV &rov,
+	     const std::set<pt::id_t> &to_call_ref_ids);
 
 } // namespace povu::overlay
 

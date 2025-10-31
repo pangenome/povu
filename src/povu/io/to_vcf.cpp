@@ -85,9 +85,9 @@ void init_vcfs(bd::VG &g, const std::vector<std::string> &ref_name_prefixes,
 void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 	       std::ostream &os)
 {
-	std::string s = ">288>292";
-	// s = ">181>185";
+	std::string s = ">6>8";
 	bool dbg = (r.get_id() == s) ? true : false;
+	dbg = false;
 
 	pvr::var_type_e var_typ = r.get_var_type();
 
@@ -113,10 +113,11 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 		pt::u32 N = is_fwd ? as.ref_start_idx + as.len
 				   : as.ref_start_idx - as.len;
 
-		if (dbg) {
-			std::cerr << "s " << as.ref_start_idx << " len "
-				  << as.len << "\n";
-		}
+		// if (dbg) {
+		//	std::cerr << "s " << as.ref_start_idx << " len "
+		//		  << as.len << "start " << as.get_step(i)
+		//		  << "\n";
+		// }
 
 		// 1) Anchor base for deletions & insertions
 		if (var_typ == pvr::var_type_e::del ||
@@ -136,11 +137,11 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 		// }
 		// }
 
-		if (dbg) {
-			std::cerr << i << " " << N << "("
-				  << as.get_step(i).as_str() << ", "
-				  << as.get_step(N).as_str() << ")\n";
-		}
+		// if (dbg) {
+		//	std::cerr << i << " " << N << "("
+		//		  << as.get_step(i).as_str() << ", "
+		//		  << as.get_step(N).as_str() << ")\n";
+		// }
 
 		// 2) Middle steps (for all types) does nothing for deletions
 
@@ -173,14 +174,14 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 		return dna_strs;
 	};
 
-	auto slices_as_at_str =
-		[&](const std::vector<pt::idx_t> &idxs) -> std::string
+	auto slices_as_at_str = [&](const std::vector<pt::idx_t> &idxs,
+				    pvr::var_type_e vt) -> std::string
 	{
 		std::string str = "";
 		std::string sep = ""; // no leading comma
 		for (auto i : idxs) {
 			str += sep;
-			str += r.get_slice(i).as_str();
+			str += r.get_slice(i).as_str(var_typ);
 			sep = ",";
 		}
 		return str;
@@ -189,9 +190,10 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 	auto allele_traversals = [&]() -> std::string
 	{
 		std::string s;
-		s += slices_as_at_str(std::vector<pt::idx_t>{REF_AT_IDX});
+		s += slices_as_at_str(std::vector<pt::idx_t>{REF_AT_IDX},
+				      var_typ);
 		s += ",";
-		s += slices_as_at_str(alts);
+		s += slices_as_at_str(alts, pvr::covariant(var_typ));
 		return s;
 	};
 
@@ -230,8 +232,11 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 
 	// std::exit(1);
 
-	if (dbg)
-		std::cerr << "====\n";
+	// if (dbg)
+	//	std::exit(1);
+	// else {
+	//	std::cerr << "\n----------\n";
+	// }
 
 	return;
 }
