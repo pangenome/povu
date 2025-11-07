@@ -1,7 +1,11 @@
 #include "povu/genomics/vcf.hpp"
 
+#include <iostream>
 #include <iterator> // for pair
+#include <vector>
 
+#include "povu/common/core.hpp"
+#include "povu/common/utils.hpp"
 #include "povu/genomics/allele.hpp" // for Exp, allele_slice_t, itn_t
 #include "povu/genomics/graph.hpp"  // for RoV
 #include "povu/graph/pvst.hpp"	    // for VertexBase
@@ -11,22 +15,26 @@ namespace povu::genomics::vcf
 namespace pvst = povu::pvst;
 namespace pgg = povu::genomics::graph;
 
-var_type_e det_var_type(const pga::allele_slice_t &ref_allele_slice,
-			const pga::allele_slice_t &alt_allele_slice)
+constexpr pvr::var_type_e ins = pvr::var_type_e::ins;
+constexpr pvr::var_type_e del = pvr::var_type_e::del;
+constexpr pvr::var_type_e sub = pvr::var_type_e::sub;
+
+pvr::var_type_e det_var_type(const pga::allele_slice_t &ref_allele_slice,
+			     const pga::allele_slice_t &alt_allele_slice)
 {
 	if (ref_allele_slice.len < alt_allele_slice.len) {
-		return var_type_e::del;
+		return ins;
 	}
 	else if (ref_allele_slice.len > alt_allele_slice.len) {
-		return var_type_e::ins;
+		return del;
 	}
 	else {
-		return var_type_e::sub;
+		return sub;
 	}
 }
 
 pt::idx_t comp_pos(const pga::allele_slice_t &ref_allele_slice,
-		   var_type_e variant_type)
+		   pvr::var_type_e variant_type)
 {
 	// const pgt::ref_walk_t rw = *ref_allele_slice.ref_walk;
 	// pt::idx_t locus = rw[ref_allele_slice.ref_start_idx + 1].locus;
@@ -35,8 +43,8 @@ pt::idx_t comp_pos(const pga::allele_slice_t &ref_allele_slice,
 		ref_allele_slice.get_locus(ref_allele_slice.ref_start_idx + 1);
 
 	switch (variant_type) {
-	case var_type_e::del:
-	case var_type_e::ins:
+	case del:
+	case ins:
 		return locus - 1;
 	default:
 		return locus;
@@ -82,46 +90,66 @@ std::vector<pt::op_t<pt::idx_t>> get_call_itn_idxs(const pga::Exp &exp,
 	return idxs_to_call;
 }
 
+std::vector<pt::op_t<pt::u32>>
+pre_comp_ref_pairs(const pga::Exp &exp, const std::set<pt::u32> &call_ref_ids)
+{
+	std::vector<pt::op_t<pt::id_t>> ref_pairs;
+	std::set<pt::u32> exp_ref_ids = exp.get_ref_ids();
+
+	for (pt::id_t ref_ref_id : exp_ref_ids) {
+		if (!pv_cmp::contains(call_ref_ids, ref_ref_id))
+			continue;
+
+		for (pt::id_t alt_ref_id : exp_ref_ids)
+			if (ref_ref_id != alt_ref_id)
+				ref_pairs.emplace_back(ref_ref_id, alt_ref_id);
+	}
+
+	return ref_pairs;
+}
+
+bool non_varying(const pga::allele_slice_t &ref_allele_slice,
+		 const pga::allele_slice_t &alt_allele_slice)
+{
+	pt::idx_t ref_walk_idx = ref_allele_slice.walk_idx;
+	pt::idx_t alt_walk_idx = alt_allele_slice.walk_idx;
+
+	auto ref_sl_or = ref_allele_slice.slice_or;
+	auto alt_sl_or = alt_allele_slice.slice_or;
+
+	return (ref_walk_idx == alt_walk_idx && ref_sl_or == alt_sl_or);
+}
+
 // ref id to a list of vcf records for that ref
 std::map<pt::idx_t, std::vector<VcfRec>>
 gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 		 const std::set<pt::id_t> &to_call_ref_ids)
 {
-	std::map<pt::idx_t, std::vector<VcfRec>> exp_vcf_recs;
-
+#ifdef DEBUG
 	if (exp.get_rov() == nullptr) {
 		ERR("RoV pointer is null");
 		std::exit(EXIT_FAILURE);
 	}
-	const pgg::RoV &rov = *(exp.get_rov());
 
 	if (exp.get_pvst_vtx_const_ptr() == nullptr) {
 		ERR("pvst vertex pointer is null");
 		std::exit(EXIT_FAILURE);
 	}
+#endif
+
+	std::map<pt::idx_t, std::vector<VcfRec>> exp_vcf_recs;
+	const pvr::RoV &rov = *(exp.get_rov());
 	const pvst::VertexBase *pvst_vtx_ptr = exp.get_pvst_vtx_const_ptr();
 
-	auto pre_comp_ref_pairs = [&]() -> std::vector<pt::op_t<pt::id_t>>
-	{
-		std::vector<pt::op_t<pt::id_t>> ref_pairs;
-		std::set<pt::id_t> exp_ref_ids = exp.get_ref_ids();
-		for (pt::id_t ref_ref_id : exp_ref_ids) {
-			if (!pv_cmp::contains(to_call_ref_ids, ref_ref_id)) {
-				continue;
-			}
-			for (pt::id_t alt_ref_id : exp_ref_ids) {
-				if (ref_ref_id != alt_ref_id) {
-					ref_pairs.emplace_back(ref_ref_id,
-							       alt_ref_id);
-				}
-			}
-		}
-		return ref_pairs;
-	};
+	std::map<std::tuple<pt::idx_t, pt::u32, pvr::var_type_e>, VcfRec>
+		var_type_to_vcf_rec;
 
-	std::map<std::pair<pt::idx_t, var_type_e>, VcfRec> var_type_to_vcf_rec;
+	std::tuple<pt::idx_t, pt::u32, pvr::var_type_e> key;
 
-	for (auto [ref_ref_id, alt_ref_id] : pre_comp_ref_pairs()) {
+	std::vector<pt::op_t<pt::id_t>> ref_pairs =
+		pre_comp_ref_pairs(exp, to_call_ref_ids);
+	for (auto [ref_ref_id, alt_ref_id] : ref_pairs) {
+
 		const pga::itn_t &ref_itn = exp.get_itn(ref_ref_id);
 		const pga::itn_t &alt_itn = exp.get_itn(alt_ref_id);
 
@@ -130,16 +158,22 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 
 		for (auto [i, j] :
 		     get_call_itn_idxs(exp, ref_ref_id, alt_ref_id)) {
-			const pga::allele_slice_t &ref_allele_slice =
+			pga::allele_slice_t ref_allele_slice =
 				ref_itn.get_at(i);
-			const pga::allele_slice_t &alt_allele_slice =
+			pga::allele_slice_t alt_allele_slice =
 				alt_itn.get_at(j);
 
 			pt::idx_t ref_walk_idx = ref_allele_slice.walk_idx;
 			pt::idx_t alt_walk_idx = alt_allele_slice.walk_idx;
 
-			// TODO: check if start and len of the walks as well
-			// this means they are from the same walk, skip
+			if (non_varying(ref_allele_slice, alt_allele_slice))
+				continue;
+
+			if (ref_allele_slice == alt_allele_slice)
+				continue;
+			// TODO: check if start and len of the walks as
+			// well this means they are from the same walk,
+			// skip
 			if (ref_walk_idx == alt_walk_idx)
 				continue;
 
@@ -148,17 +182,18 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 			pt::idx_t alt_walk_ref_count =
 				exp.get_ref_idxs_for_walk(alt_walk_idx).size();
 
-			var_type_e variant_type = det_var_type(
+			pvr::var_type_e variant_type = det_var_type(
 				ref_allele_slice, alt_allele_slice);
 
-			std::pair<pt::idx_t, var_type_e> key =
-				std::make_pair(ref_ref_id, variant_type);
+			key = {ref_ref_id, ref_walk_idx, variant_type};
 
 			// if it does not exist create a variant type for it and
 			// add to var_type_to_vcf_rec
 			if (!pv_cmp::contains(var_type_to_vcf_rec, key)) {
+
 				pt::idx_t pos = comp_pos(ref_allele_slice,
 							 variant_type);
+
 				VcfRec vcf_rec{ref_ref_id,
 					       pos,
 					       exp.id(),
@@ -181,7 +216,7 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 	}
 
 	for (auto &[k, r] : var_type_to_vcf_rec) {
-		auto [ref_ref_id, _] = k;
+		auto [ref_ref_id, _, __] = k;
 		exp_vcf_recs[ref_ref_id].emplace_back(std::move(r));
 	}
 

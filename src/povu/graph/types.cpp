@@ -53,11 +53,6 @@ std::ostream &operator<<(std::ostream &os, const color_e &c)
 	return os << to_str(c);
 }
 
-or_e flip(or_e o)
-{
-	return o == or_e::forward ? or_e::reverse : or_e::forward;
-}
-
 /*
  * Side and SideID
  * ----
@@ -97,6 +92,11 @@ std::string_view to_str(or_e o)
 std::ostream &operator<<(std::ostream &os, const or_e &o)
 {
 	return os << to_str(o);
+}
+
+or_e flip(or_e o)
+{
+	return o == or_e::forward ? or_e::reverse : or_e::forward;
 }
 
 /*

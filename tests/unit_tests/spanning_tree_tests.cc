@@ -1,7 +1,4 @@
 #include <gtest/gtest.h>
-// #include <vector>
-// #include "povu/algorithms/flubbles.hpp"
-// #include "povu/common/app.hpp"
 
 #include "povu/graph/bidirected.hpp"
 #include "povu/graph/pvst.hpp"
@@ -13,7 +10,7 @@ namespace povu::unit_tests_spanning_tree
 
 bd::VG *create_test_vg()
 {
-	bd::VG *vg = new bd::VG(7, 9, 0); // 7 vertices, 10 edges, 0 references
+	auto *vg = new bd::VG(7, 9, 0); // 7 vertices, 10 edges, 0 references
 
 	// Add vertices
 	vg->add_vertex(1, "AAT");

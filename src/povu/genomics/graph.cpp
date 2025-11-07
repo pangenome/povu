@@ -123,9 +123,9 @@ pgt::walk_t walk_from_stack(const bd::VG &g, const std::deque<idx_or_t> &dq,
 // Runs in O((V+E)·(P+1)) time where P = number of paths found.
 // when a vertex has been explored we unblock its neighbours and the current
 // vertex
-void comp_walks(const bd::VG &g, pvst::route_e route, idx_or_t src,
-		idx_or_t snk, std::vector<pgt::walk_t> &walks,
-		const std::string_view &rov_label)
+pt::status_t comp_walks(const bd::VG &g, pvst::route_e route, idx_or_t src,
+			idx_or_t snk, std::vector<pgt::walk_t> &walks,
+			const std::string_view &rov_label)
 {
 
 	// default is source to sink
@@ -176,12 +176,12 @@ void comp_walks(const bd::VG &g, pvst::route_e route, idx_or_t src,
 
 		if (dq.size() > MAX_FLUBBLE_STEPS) {
 			WARN("max steps reached for {}", rov_label);
-			return;
+			return -1;
 		}
 
-		if (unblock_counter > 1000) {
+		if (unblock_counter > MAX_UNBLOCK_CTR) {
 			WARN("unblock counter too high for {}", rov_label);
-			return;
+			return -2;
 		}
 
 		auto [v_idx, o] = curr;
@@ -224,10 +224,10 @@ void comp_walks(const bd::VG &g, pvst::route_e route, idx_or_t src,
 		}
 	}
 
-	return;
+	return 0;
 }
 
-void find_walks(const bd::VG &g, RoV &rov)
+pt::status_t find_walks(const bd::VG &g, pvr::RoV &rov)
 {
 	// Assume route parameters are already set.
 	// Use structured bindings to unpack the pvst::route_params_t object.
@@ -238,9 +238,8 @@ void find_walks(const bd::VG &g, RoV &rov)
 	idx_or_t src = {g.v_id_to_idx(start_id), start_o};
 	idx_or_t snk = {g.v_id_to_idx(stop_id), stop_o};
 
-	comp_walks(g, route, src, snk, rov.get_walks_mut(),
-		   rov.get_pvst_vtx()->as_str());
-	return;
+	return comp_walks(g, route, src, snk, rov.get_walks_mut(),
+			  rov.get_pvst_vtx()->as_str());
 }
 
 } // namespace povu::genomics::graph

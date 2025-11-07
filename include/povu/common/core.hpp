@@ -4,48 +4,43 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
+#include <ostream>
 #include <sys/types.h>
 #include <tuple>
 
 namespace povu::types::core
 {
-
-typedef std::chrono::high_resolution_clock Time; // C++ timer
-
+[[deprecated("Deprecated: use u32")]]
 typedef u_int32_t id_t;
+[[deprecated("Deprecated: use u32")]]
 typedef u_int32_t idx_t;
-typedef int8_t status_t; // return status of a fn
+
+/* type aliases for fixed width types */
+using u8 = u_int8_t;
+using u32 = u_int32_t;
+using status_t = int8_t;			 // return status of a fn
+using Time = std::chrono::high_resolution_clock; // C++ timer
 
 struct slice_t {
-	idx_t start;
-	idx_t len;
+	u32 start;
+	u32 len;
 
-	slice_t(idx_t start, idx_t len) : start{start}, len{len}
+	slice_t(u32 start, u32 len) : start{start}, len{len}
 	{}
-};
 
-class Config
-{
-	unsigned int requested_threads_{1};
-	uint8_t log_level_{0};
-
-	Config() = default;
-
-public:
-	Config(unsigned int reqested_theads, uint8_t log_level)
+	friend bool operator==(const slice_t &s1, const slice_t &s2)
 	{
-		this->requested_threads_ = reqested_theads;
-		this->log_level_ = log_level;
+		return s1.start == s2.start && s1.len == s2.len;
 	}
 
-	unsigned int requested_threads() const
+	friend bool operator!=(const slice_t &s1, const slice_t &s2)
 	{
-		return this->requested_threads_;
+		return !(s1 == s2);
 	}
 
-	uint8_t log_level() const
+	friend std::ostream &operator<<(std::ostream &os, const slice_t &s)
 	{
-		return this->log_level_;
+		return os << "(" << s.start << "," << s.len << ")";
 	}
 };
 
@@ -53,7 +48,8 @@ public:
  * an ordered pair type similar to std::pair but with same type on both sides
  * for less typing
  */
-template <typename T> using op_t = std::pair<T, T>;
+template <typename T>
+using op_t = std::pair<T, T>;
 
 /**
  * unordered pair with same type on both sides
@@ -61,7 +57,8 @@ template <typename T> using op_t = std::pair<T, T>;
  * we prefer (a,b) over (l,r) to avoid confusion with (left, right) in unordered
  * pairs
  */
-template <typename T> struct unordered_pair {
+template <typename T>
+struct unordered_pair {
 	T a_;
 	T b_;
 
@@ -94,7 +91,8 @@ template <typename T> struct unordered_pair {
 	}
 };
 
-template <typename T> using up_t = unordered_pair<T>;
+template <typename T>
+using up_t = unordered_pair<T>;
 } // namespace povu::types::core
 
 // NOLINTNEXTLINE(misc-unused-alias-decls)

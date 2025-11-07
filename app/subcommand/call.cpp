@@ -129,11 +129,6 @@ void do_call(core::config &app_config)
 
 	read_pvsts_async.join(); // make sure pvsts are read
 
-	DynamicProgress<ProgressBar> bars;
-	ProgressBar chunks_prog_bar;
-	set_progress_bar_common_opts(&chunks_prog_bar);
-	std::size_t chunks_prog_bar_idx = bars.push_back(chunks_prog_bar);
-
 	// if running out of memory, reduce the capacity and/or the chunk size
 	const std::size_t QUEUE_CAPACITY = app_config.get_queue_len();
 	pbq::bounded_queue<pgv::VcfRecIdx> q(QUEUE_CAPACITY);
@@ -144,7 +139,6 @@ void do_call(core::config &app_config)
 		{
 			try {
 				pg::gen_vcf_rec_map(pvsts, *g, vcf_ref_ids, q,
-						    bars, chunks_prog_bar_idx,
 						    app_config);
 			}
 			catch (...) {
@@ -159,6 +153,8 @@ void do_call(core::config &app_config)
 		piv::write_vcfs(*opt_rec_idx, *g, vcf_ref_ids, vout,
 				app_config);
 	}
+
+	std::cerr << "Finished consuming VCF records\n";
 
 	// make sure VCF are initialised before producer finishes
 	init_vcfs_async.join();

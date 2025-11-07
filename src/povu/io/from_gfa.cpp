@@ -55,7 +55,7 @@ bd::VG *to_bd(const core::config &app_config)
 {
 	bool show_prog = app_config.show_progress();
 
-	IndeterminateProgressBar prep_bar;
+	IndeterminateProgressBar prep_bar{option::Stream{std::cerr}};
 	prep_bar.set_option(
 		indicators::option::PostfixText{"Preparing GFA..."});
 	set_progress_bar_ind(&prep_bar);
@@ -93,31 +93,20 @@ bd::VG *to_bd(const core::config &app_config)
 	pt::idx_t ref_count = gfa->ref_count;
 
 	/* initialize a povu bidirected graph */
-	bd::VG *vg = new bd::VG(gfa);
+	auto vg = new bd::VG(gfa); // vg is bd::VG *
 
 	/* set up progress bars */
-	const std::size_t PROG_BAR_COUNT{3};
-	ProgressBar vtx_bar, edge_bar, ref_bar;
-	{
-		set_progress_bar_common_opts(&vtx_bar, vtx_count);
-		set_progress_bar_common_opts(&edge_bar, edge_count);
-		set_progress_bar_common_opts(&ref_bar, ref_count);
-	}
-	MultiProgress<ProgressBar, PROG_BAR_COUNT> bars(vtx_bar, edge_bar,
-							ref_bar);
-	const size_t VTX_BAR_IDX{0};
-	const size_t EDGE_BAR_IDX{1};
-	const size_t REF_BAR_IDX{2};
+	ProgressBar vtx_bar{option::Stream{std::cerr}};
+	set_progress_bar_common_opts(&vtx_bar, vtx_count);
 
 	/* add vertices */
 	for (pt::idx_t i{}; i < vtx_count; ++i) {
 		if (show_prog) { // update progress bar
-			std::string prog_msg = fmt::format(
+			std::string prog_msg = pv_cmp::format(
 				"Loading vertices ({}/{})", i + 1, vtx_count);
 			vtx_bar.set_option(
 				indicators::option::PostfixText{prog_msg});
-			bars.set_progress<VTX_BAR_IDX>(
-				static_cast<size_t>(i + 1));
+			vtx_bar.set_progress(static_cast<size_t>(i + 1));
 		}
 
 		lq::vtx *v = lq::get_vtx(gfa, i);
@@ -132,14 +121,18 @@ bd::VG *to_bd(const core::config &app_config)
 	}
 
 	/* add edges */
+	ProgressBar edge_bar{option::Stream{std::cerr}};
+	if (show_prog) {
+
+		set_progress_bar_common_opts(&edge_bar, edge_count);
+	}
 	for (std::size_t i{}; i < edge_count; ++i) {
 		if (show_prog) { // update progress bar
-			std::string prog_msg = fmt::format(
+			std::string prog_msg = pv_cmp::format(
 				"Loading edges ({}/{})", i + 1, edge_count);
 			edge_bar.set_option(
 				indicators::option::PostfixText{prog_msg});
-			bars.set_progress<EDGE_BAR_IDX>(
-				static_cast<size_t>(i + 1));
+			edge_bar.set_progress(static_cast<size_t>(i + 1));
 		}
 
 		std::size_t v1 = gfa->e[i].v1_id;

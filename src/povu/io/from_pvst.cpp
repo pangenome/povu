@@ -1,13 +1,15 @@
 #include <algorithm> // for find
-#include <cctype>    // for isspace
-#include <cstdlib>   // for exit, size_t, strtol
-#include <fstream>   // for basic_ifstream, basic_ostream
-#include <map>	     // for map
-#include <memory>    // for make_unique
-#include <sstream>   // for basic_stringstream
-#include <string>    // for basic_string, char_traits, string
-#include <utility>   // for get, pair
-#include <vector>    // for vector
+#include <array>
+#include <cctype>  // for isspace
+#include <cstdlib> // for exit, size_t, strtol
+#include <fstream> // for basic_ifstream, basic_ostream
+#include <map>	   // for map
+#include <memory>  // for make_unique
+#include <sstream> // for basic_stringstream
+#include <string>  // for basic_string, char_traits, string
+#include <string_view>
+#include <utility> // for get, pair
+#include <vector>  // for vector
 
 #include "fmt/core.h"		     // for format
 #include "povu/common/compat.hpp"    // for format, pv_cmp
@@ -26,6 +28,10 @@ namespace pgt = povu::types::graph;
 namespace pvst = povu::pvst;
 namespace pc = povu::constants;
 namespace pu = povu::utils;
+
+// constexpr std::vector<std::string_view> PVST_SUPPORTED_VERSIONS{"0.0.3"};
+
+const std::vector<std::string> PVST_SUPPORTED_VERSIONS = {"0.0.3"};
 
 /**
  * @brief Get the size of a file
@@ -48,16 +54,20 @@ std::size_t get_file_size(const std::string &fp)
 	return end - begin;
 }
 
+template <typename Iterable, typename U>
+bool in_vector(const Iterable &c, const U &e)
+{
+	return !(std::find(c.begin(), c.end(), e) == c.end());
+}
+
 void check_pvst_version_support(const std::string &fp,
 				const std::string &pvst_version)
 {
-	std::vector<std::string> supported_versions{"0.0.3"};
-
-	if (std::find(supported_versions.begin(), supported_versions.end(),
-		      pvst_version) == supported_versions.end()) {
+	if (!in_vector(PVST_SUPPORTED_VERSIONS, pvst_version)) {
 		ERR("Unsupported PVST version in file {}, got {}. Supported "
 		    "versions are: {}.",
-		    fp, pvst_version, pu::concat_with(supported_versions, ','));
+		    fp, pvst_version,
+		    pu::concat_with(PVST_SUPPORTED_VERSIONS, ','));
 
 		std::exit(1);
 	}
@@ -137,8 +147,6 @@ void read_lines_to_vector_str(const std::string &fp,
  */
 std::pair<pgt::id_or_t, pgt::id_or_t> str_to_id_or_t(const std::string &s)
 {
-	std::string fn_name = pv_cmp::format("[povu::main::{}]", __func__);
-
 	// find the first > or <
 	auto first = s.find_first_of("><");
 	auto last = s.find_last_of("><");
@@ -180,6 +188,10 @@ tokens_to_route_params(const std::vector<std::string> &tokens)
 
 pvst::Tree read_pvst(const std::string &fp)
 {
+	bool dbg = "frst_dir/9.pvst" == fp ? true : false;
+
+	// std::cerr << "Reading PVST file: " << fp << "\n";
+
 	pvst::Tree pvst;
 
 	// lines in the PVST
@@ -193,6 +205,8 @@ pvst::Tree read_pvst(const std::string &fp)
 
 	// map file vertex index to pvst vertex index
 	std::map<pt::idx_t, pt::idx_t> file_v_idx_to_pvst_idx;
+
+	pt::u32 x;
 
 	for (pt::idx_t line_idx{}; line_idx < lines.size(); line_idx++) {
 		const std::string &line = lines[line_idx];
@@ -215,7 +229,7 @@ pvst::Tree read_pvst(const std::string &fp)
 		pt::idx_t id = std::stoul(tokens[1]);
 
 		pt::idx_t v_idx{pc::INVALID_IDX};
-		// const std::string &pvst_label = tokens[2];
+		const std::string &pvst_label = tokens[2];
 
 		switch (typ) {
 		case pc::PVST_DUMMY_SYMBOL: {
@@ -237,6 +251,7 @@ pvst::Tree read_pvst(const std::string &fp)
 			auto rp = tokens_to_route_params(tokens);
 			pvst::Flubble v =
 				pvst::Flubble::parse(pvst::vf_e::tiny, rp);
+
 			v_idx = pvst.add_vertex(v);
 			file_v_idx_to_pvst_idx[id] = v_idx;
 			break;
@@ -282,9 +297,8 @@ pvst::Tree read_pvst(const std::string &fp)
 		}
 		}
 
-		if (v_idx != pc::INVALID_IDX) {
+		if (v_idx != pc::INVALID_IDX)
 			line_idx_to_pvst_idx[line_idx] = v_idx;
-		}
 
 		tokens.clear();
 	}
@@ -306,6 +320,7 @@ pvst::Tree read_pvst(const std::string &fp)
 		for (const pt::idx_t &c_idx : split_numbers(ch)) {
 			// pt::idx_t ch_pvst_idx = line_idx_to_pvst_idx[c_idx];
 			pt::idx_t ch_pvst_idx = file_v_idx_to_pvst_idx[c_idx];
+
 			pvst.add_edge(p_pvst_idx, ch_pvst_idx);
 		}
 	}
