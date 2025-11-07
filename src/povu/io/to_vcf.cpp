@@ -1,12 +1,10 @@
 #include "povu/io/to_vcf.hpp"
 
-#include <cstdlib>
 #include <sstream> // for basic_ostringstream
 #include <sys/types.h>
 
 #include "fmt/core.h" // for format
 #include "povu/common/core.hpp"
-#include "povu/common/log.hpp"
 #include "povu/genomics/allele.hpp" // for allele_slice_t
 #include "povu/graph/types.hpp"	    // for step_t, or_e
 #include "povu/refs/refs.hpp"	    // for Ref, pr
@@ -113,12 +111,6 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 		pt::u32 N = is_fwd ? as.ref_start_idx + as.len
 				   : as.ref_start_idx - as.len;
 
-		// if (dbg) {
-		//	std::cerr << "s " << as.ref_start_idx << " len "
-		//		  << as.len << "start " << as.get_step(i)
-		//		  << "\n";
-		// }
-
 		// 1) Anchor base for deletions & insertions
 		if (var_typ == pvr::var_type_e::del ||
 		    var_typ == pvr::var_type_e::ins) {
@@ -127,21 +119,6 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 			auto lbl = get_label(s);
 			dna_str.push_back(is_fwd ? lbl.back() : lbl.front());
 		}
-		// switch (var_typ) {
-		// case pvr::var_type_e::del:
-		// case pvr::var_type_e::ins: {
-
-		//	// step_idx++;
-		//	// end--;
-		//	break;
-		// }
-		// }
-
-		// if (dbg) {
-		//	std::cerr << i << " " << N << "("
-		//		  << as.get_step(i).as_str() << ", "
-		//		  << as.get_step(N).as_str() << ")\n";
-		// }
 
 		// 2) Middle steps (for all types) does nothing for deletions
 
@@ -229,14 +206,6 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 	   << r.get_format() << "\t"
 	   << r.get_genotype_fields() << "\n";
 	// clang-format on
-
-	// std::exit(1);
-
-	// if (dbg)
-	//	std::exit(1);
-	// else {
-	//	std::cerr << "\n----------\n";
-	// }
 
 	return;
 }

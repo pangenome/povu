@@ -80,59 +80,8 @@ struct allele_slice_t {
 		pgt::or_e ref_o = ref_w->strands[idx] == lq::strand::STRAND_FWD
 					  ? pgt::or_e::forward
 					  : pgt::or_e::reverse;
-		// auto [v_id, o_, _] = this->ref_walk->at(idx);
+
 		return {ref_v_id, ref_o};
-	}
-
-	[[nodiscard]]
-	std::string as_str() const
-	{
-		// TODO: pass variant type as param this method is prone to bugs
-		bool is_fwd = this->get_or() == pgt::or_e::forward;
-
-		// pt::idx_t ref_step_idx = is_fwd ? this->ref_start_idx
-		//				: this->ref_start_idx - len + 1;
-
-		// pt::idx_t end = this->get_or() == pgt::or_e::forward
-		//			? ref_step_idx + this->len
-		//			: this->ref_start_idx;
-		std::string at_str = "";
-
-		// if (this->get_or() == pgt::or_e::reverse &&
-		//     this->vt == pgr::var_type_e::sub) {
-		//	ref_step_idx = this->ref_start_idx - len;
-		//	end = this->ref_start_idx;
-		// }
-
-		pt::u32 i = is_fwd ? ref_start_idx : ref_start_idx - len + 1;
-		pt::u32 N = is_fwd ? ref_start_idx + len : ref_start_idx + 1;
-
-		// std::cerr << "i " << i << " N " << N << "vt" << this->vt
-		//	  << "\n";
-		// INFO("allele_slice_t::as_str()");
-		// std::cerr << " or " << this->get_or() << "\n";
-		// std::cerr << " s " << this->ref_start_idx << " r idx "
-		//	  << this->ref_idx << "\n";
-		// std::cerr << "i " << i << " N " << N << "\n";
-
-		// switch (vt) {
-		// case pvr::var_type_e::sub:
-		//	i++;
-		//	N--;
-		//	break;
-		// case pvr::var_type_e::ins:
-		// case pvr::var_type_e::del:
-		//	N--;
-		//	break;
-		// }
-
-		// for (i; i < N; i++)
-		//	at_str += this->walk->at(i).as_str();
-		// this->walk->at(i);
-		for (i; i < N; i++)
-			at_str += this->get_step(i).as_str();
-
-		return at_str;
 	}
 
 	[[nodiscard]]
@@ -140,31 +89,10 @@ struct allele_slice_t {
 	{
 		// TODO: pass variant type as param this method is prone to bugs
 		bool is_fwd = this->get_or() == pgt::or_e::forward;
-
-		// pt::idx_t ref_step_idx = is_fwd ? this->ref_start_idx
-		//				: this->ref_start_idx - len + 1;
-
-		// pt::idx_t end = this->get_or() == pgt::or_e::forward
-		//			? ref_step_idx + this->len
-		//			: this->ref_start_idx;
 		std::string at_str = "";
-
-		// if (this->get_or() == pgt::or_e::reverse &&
-		//     this->vt == pgr::var_type_e::sub) {
-		//	ref_step_idx = this->ref_start_idx - len;
-		//	end = this->ref_start_idx;
-		// }
 
 		pt::u32 i = is_fwd ? ref_start_idx : ref_start_idx - len + 1;
 		pt::u32 N = is_fwd ? ref_start_idx + len : ref_start_idx + 1;
-
-		// std::cerr << "i " << i << " N " << N << "vt" << this->vt
-		//	  << "\n";
-		// INFO("allele_slice_t::as_str()");
-		// std::cerr << " or " << this->get_or() << "\n";
-		// std::cerr << " s " << this->ref_start_idx << " r idx "
-		//	  << this->ref_idx << "\n";
-		// std::cerr << "i " << i << " N " << N << "\n";
 
 		switch (vt) {
 		case pvr::var_type_e::sub:
@@ -177,9 +105,6 @@ struct allele_slice_t {
 			break;
 		}
 
-		// for (i; i < N; i++)
-		//	at_str += this->walk->at(i).as_str();
-		// this->walk->at(i);
 		for (i; i < N; i++)
 			at_str += this->get_step(i).as_str();
 

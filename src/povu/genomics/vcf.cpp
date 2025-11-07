@@ -120,51 +120,11 @@ bool non_varying(const pga::allele_slice_t &ref_allele_slice,
 	return (ref_walk_idx == alt_walk_idx && ref_sl_or == alt_sl_or);
 }
 
-bool foo(const pga::allele_slice_t &lhs, const pga::allele_slice_t &rhs)
-{
-	if (lhs.len != rhs.len)
-		return false;
-
-	pt::u32 N = lhs.len;
-
-	for (pt::u32 i{}; i < N; i++) {
-		// auto [lhs_v_id, lhs_o] = (*lhs.walk)[lhs.walk_start_idx + i];
-		//  auto [rhs_v_id, rhs_o] = (*rhs.walk)[rhs.walk_start_idx +
-		//  i];
-		std::cerr << (*lhs.walk)[lhs.walk_start_idx + i];
-		// std::cerr << (*lhs.walk)[lhs.walk_start_idx + i] << ", "
-		//	  << (*rhs.walk)[rhs.walk_start_idx + i] << "\n";
-
-		// if (lhs_v_id != rhs_v_id || lhs_o != rhs_o)
-		//	return false;
-	}
-	std::cerr << "\n";
-
-	for (pt::u32 i{}; i < N; i++) {
-		// auto [lhs_v_id, lhs_o] = (*lhs.walk)[lhs.walk_start_idx + i];
-		// auto [rhs_v_id, rhs_o] = (*rhs.walk)[rhs.walk_start_idx + i];
-
-		std::cerr << (*rhs.walk)[rhs.walk_start_idx + i];
-
-		// if (lhs_v_id != rhs_v_id || lhs_o != rhs_o)
-		//	return false;
-	}
-	std::cerr << "\n";
-
-	return true;
-}
-
 // ref id to a list of vcf records for that ref
 std::map<pt::idx_t, std::vector<VcfRec>>
 gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 		 const std::set<pt::id_t> &to_call_ref_ids)
 {
-	bool dbg = ((exp.id() == ">2615>2597")) ? true : false;
-
-	// if (exp.id() == ">6>8") {
-	//	volatile int i = 0;
-	// }
-
 #ifdef DEBUG
 	if (exp.get_rov() == nullptr) {
 		ERR("RoV pointer is null");
@@ -225,43 +185,7 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 			pvr::var_type_e variant_type = det_var_type(
 				ref_allele_slice, alt_allele_slice);
 
-			// if (variant_type == del) {
-			//	ref_allele_slice.vt = pvr::var_type_e::del;
-			//	alt_allele_slice.vt = pvr::var_type_e::ins;
-			// }
-			// else if (variant_type == ins) {
-			//	ref_allele_slice.vt = pvr::var_type_e::ins;
-			//	alt_allele_slice.vt = pvr::var_type_e::del;
-			// }
-			// else {
-			//	ref_allele_slice.vt = pvr::var_type_e::sub;
-			//	alt_allele_slice.vt = pvr::var_type_e::sub;
-			// }
-
-			// if (dbg) {
-
-			//	foo(ref_allele_slice, alt_allele_slice);
-			//	std::cerr
-			//		<< (ref_allele_slice == alt_allele_slice
-			//			    ? "equal"
-			//			    : "not equal")
-			//		<< "\n";
-
-			//	std::cerr << ref_allele_slice.as_str() << "\n"
-			//		  << alt_allele_slice.as_str() << "\n";
-			// }
-
 			key = {ref_ref_id, ref_walk_idx, variant_type};
-
-			// if (dbg) {
-			//	std::cerr << (pv_cmp::contains(
-			//			      var_type_to_vcf_rec, key)
-			//			      ? "found"
-			//			      : "not found")
-			//		  << "\n";
-			// }
-			// std::pair<pt::idx_t, pvr::var_type_e> key{ref_ref_id,
-			//					  variant_type};
 
 			// if it does not exist create a variant type for it and
 			// add to var_type_to_vcf_rec
@@ -269,9 +193,6 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 
 				pt::idx_t pos = comp_pos(ref_allele_slice,
 							 variant_type);
-
-				// if (dbg)
-				//	std::cerr << "pos " << pos << "\n";
 
 				VcfRec vcf_rec{ref_ref_id,
 					       pos,
@@ -286,21 +207,6 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 				var_type_to_vcf_rec.emplace(key,
 							    std::move(vcf_rec));
 			}
-
-			// if (dbg) {
-			//	std::cerr << "walk idx" << "ref "
-			//		  << ref_allele_slice.walk_idx
-			//		  << " alt "
-			//		  << alt_allele_slice.walk_idx << "\n";
-			//	std::cerr << "start idx " << "ref "
-			//		  << ref_allele_slice.ref_start_idx
-			//		  << " alt "
-			//		  << alt_allele_slice.ref_start_idx
-			//		  << "\n";
-			//	std::cerr << "len" << "ref "
-			//		  << ref_allele_slice.len << " alt "
-			//		  << alt_allele_slice.len << "\n";
-			// }
 
 			VcfRec &curr_vcf_rec = var_type_to_vcf_rec.at(key);
 			const pt::idx_t alt_allele_col_idx =
