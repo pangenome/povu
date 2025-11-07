@@ -154,8 +154,6 @@ void do_call(core::config &app_config)
 				app_config);
 	}
 
-	std::cerr << "Finished consuming VCF records\n";
-
 	// make sure VCF are initialised before producer finishes
 	init_vcfs_async.join();
 

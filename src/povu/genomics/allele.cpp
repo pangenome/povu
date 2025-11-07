@@ -29,6 +29,37 @@ bool operator!=(const allele_slice_t &lhs, const allele_slice_t &rhs)
 	return !(lhs == rhs);
 }
 
+bool ref_eq(const allele_slice_t &lhs, const allele_slice_t &rhs)
+{
+	if (lhs.len != rhs.len)
+		return false;
+
+	pt::u32 N = lhs.len;
+	for (pt::u32 i{}; i < N; i++) {
+
+		auto lhs_ref_idx = lhs.slice_or == pgt::or_e::forward
+					   ? lhs.ref_start_idx + i
+					   : lhs.ref_start_idx - i;
+		auto rhs_ref_idx = rhs.slice_or == pgt::or_e::forward
+					   ? rhs.ref_start_idx + i
+					   : rhs.ref_start_idx - i;
+
+		auto lhs_v_id = lhs.ref_w->v_ids[lhs_ref_idx];
+		auto rhs_v_id = rhs.ref_w->v_ids[rhs_ref_idx];
+
+		auto rhs_o = lhs.ref_w->strands[lhs_ref_idx];
+		auto lhs_o = rhs.ref_w->strands[rhs_ref_idx];
+
+		// auto [lhs_v_id, lhs_o] = (*lhs.walk)[lhs.walk_start_idx + i];
+		// auto [rhs_v_id, rhs_o] = (*rhs.walk)[rhs.walk_start_idx + i];
+
+		if (lhs_v_id != rhs_v_id || lhs_o != rhs_o)
+			return false;
+	}
+
+	return true;
+}
+
 bool operator==(const allele_slice_t &lhs, const allele_slice_t &rhs)
 {
 	if (lhs.len != rhs.len)

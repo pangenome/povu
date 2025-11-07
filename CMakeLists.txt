@@ -184,6 +184,8 @@ ADD_LIBRARY(povulib
   ${POVULIB_SOURCES_DIR}/overlay/overlay.cpp
   ${POVULIB_SOURCES_DIR}/overlay/generic.cpp
   ${POVULIB_SOURCES_DIR}/overlay/overlay_tiny.cpp
+  ${POVULIB_SOURCES_DIR}/overlay/sne.cpp
+  ${POVULIB_SOURCES_DIR}/overlay/shared.cpp
 
   ${POVULIB_SOURCES_DIR}/variation/rov.cpp
   ${POVULIB_SOURCES_DIR}/variation/non_planar.cpp

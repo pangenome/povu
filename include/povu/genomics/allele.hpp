@@ -1,23 +1,24 @@
 #ifndef POVU_GENOMICS_ALLELE_HPP
 #define POVU_GENOMICS_ALLELE_HPP
 
-#include <cstdlib>     // for exit, EXIT_FAILURE
-#include <map>	       // for map
-#include <set>	       // for set, operator!=
-#include <string>      // for basic_string, string
-#include <string_view> // for string_view
-#include <utility>     // for move, pair
-#include <vector>      // for vector
-
-#include "liteseq/refs.h"	     // for ref_walk
-#include "liteseq/types.h"	     // for strand
+#include <cstdlib>		     // for exit, EXIT_FAILURE
+#include <liteseq/refs.h>	     // for ref_walk
+#include <liteseq/types.h>	     // for strand
+#include <map>			     // for map
+#include <set>			     // for set, operator!=
+#include <string>		     // for basic_string, string
+#include <string_view>		     // for string_view
+#include <utility>		     // for move, pair
+#include <vector>		     // for vector
+				     //
 #include "povu/common/compat.hpp"    // for contains, pv_cmp
 #include "povu/common/core.hpp"	     // for pt, idx_t, id_t, op_t
 #include "povu/common/log.hpp"	     // for ERR
 #include "povu/graph/bidirected.hpp" // for bd, VG
 #include "povu/graph/pvst.hpp"	     // for VertexBase
 #include "povu/graph/types.hpp"	     // for or_e, id_or_t, walk_t
-#include "povu/variation/rov.hpp"    // for RoV
+// #include "povu/overlay/overlay.hpp"
+#include "povu/variation/rov.hpp" // for RoV
 
 namespace povu::genomics::allele
 {
@@ -27,10 +28,28 @@ namespace lq = liteseq;
 namespace pgt = povu::types::graph;
 namespace pvst = povu::pvst;
 
+struct ref_needle {
+	pt::u32 r_idx;
+	pt::u32 start;
+	pt::u32 limit_left{pc::INVALID_IDX};
+	pt::u32 limit_right{pc::INVALID_IDX};
+
+	ref_needle(pt::u32 r_idx_, pt::u32 start_)
+	    : r_idx(r_idx_), start(start_)
+	{}
+
+	void set_limits(pt::u32 left, pt::u32 right)
+	{
+		limit_left = left;
+		limit_right = right;
+	}
+};
+
 struct sub_inv {
-	pt::u32 walk_idx;
-	std::vector<pt::u32> fwd_refs;
-	std::vector<pt::u32> rev_refs;
+	std::vector<ref_needle> rev_needles;
+	std::vector<ref_needle> fwd_needles;
+	pt::u32 len;
+	const pvr::RoV *rov_;
 };
 
 struct allele_slice_t {
@@ -112,6 +131,7 @@ struct allele_slice_t {
 	}
 };
 
+bool ref_eq(const allele_slice_t &lhs, const allele_slice_t &rhs);
 bool operator==(const allele_slice_t &lhs, const allele_slice_t &rhs);
 bool operator!=(const allele_slice_t &lhs, const allele_slice_t &rhs);
 
@@ -372,10 +392,15 @@ public:
 	}
 };
 
-std::pair<std::vector<Exp>, std::vector<sub_inv>>
-comp_itineraries3(const bd::VG &g, const pvr::RoV &rov,
-		  const std::set<pt::id_t> &to_call_ref_ids);
-std::vector<Exp> comp_itineraries2(const bd::VG &g, const pvr::RoV &rov);
+// std::pair<std::vector<Exp>, std::vector<sub_inv>>
+// comp_itineraries3(const bd::VG &g, const pvr::RoV &rov,
+//		  const std::set<pt::id_t> &to_call_ref_ids);
+
+// std::pair<std::vector<Exp>, std::vector<pos::pin_cushion>>
+// comp_itineraries3(const bd::VG &g, const pvr::RoV &rov,
+//		  const std::set<pt::id_t> &to_call_ref_ids);
+
+// std::vector<Exp> comp_itineraries2(const bd::VG &g, const pvr::RoV &rov);
 void comp_itineraries(const bd::VG &g, Exp &exp);
 
 } // namespace povu::genomics::allele

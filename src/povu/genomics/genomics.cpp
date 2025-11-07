@@ -4,34 +4,29 @@
 #include <atomic>    // for atomic, memory_order
 #include <cmath>     // for ceil
 #include <cstddef>   // for size_t
-#include <cstdlib>
-#include <iterator> // for back_insert_iterator, bac...
-#include <memory>
-#include <optional> // for optional, operator==
-#include <string>   // for basic_string, string
-#include <utility>  // for move
+#include <cstdlib>   // for std::max
+#include <optional>  // for optional, operator==
+#include <string>    // for basic_string, string
+#include <utility>   // for move
 #include <vector>
 
-#include "fmt/core.h"			   // for format_to
-#include "fmt/format.h"			   // for vformat_to
-#include "indicators/dynamic_progress.hpp" // for DynamicProgress
+#include "fmt/core.h" // for format_to
 #include "indicators/progress_bar.hpp"
-#include "indicators/setting.hpp"   // for PostfixText
-#include "povu/common/app.hpp"	    // for config
-#include "povu/common/thread.hpp"   // for thread_pool, task_group
-#include "povu/common/utils.hpp"    // for comp_prog, pu
-#include "povu/genomics/allele.hpp" // for Exp, comp_itineraries
-// #include "povu/genomics/graph.hpp"	   // for RoV, find_walks, pgt
+#include "indicators/setting.hpp" // for PostfixText
+#include "povu/common/app.hpp"	  // for config
+#include "povu/common/core.hpp"
+#include "povu/common/thread.hpp"     // for thread_pool, task_group
+#include "povu/genomics/allele.hpp"   // for Exp, comp_itineraries
 #include "povu/genomics/untangle.hpp" // for untangle_ref_walks
 #include "povu/genomics/vcf.hpp"      // for VcfRecIdx, gen_vcf_records
 #include "povu/overlay/overlay.hpp"   // for comp_itineraries3, sub_inv
+#include "povu/overlay/sne.hpp"	      // for sne
 #include "povu/variation/rov.hpp"     // for RoV, gen_rov
 
 namespace povu::genomics
 {
 using namespace povu::progress;
 namespace pga = povu::genomics::allele;
-// namespace pgg = povu::genomics::graph;
 namespace pgv = povu::genomics::vcf;
 namespace put = povu::genomics::untangle;
 namespace pvst = povu::pvst;
@@ -49,24 +44,23 @@ pga::Exp exp_frm_rov(const bd::VG &g, const pvr::RoV &rov)
 	return exp;
 }
 
-std::pair<std::vector<pga::Exp>, std::vector<po::sub_inv>>
+std::vector<pga::Exp>
 comp_expeditions_serial(const bd::VG &g, const std::vector<pvr::RoV> &all_rovs,
 			pt::idx_t start, pt::idx_t count,
 			const std::set<pt::id_t> &to_call_ref_ids)
 {
 	const std::size_t N = all_rovs.size();
 	std::vector<pga::Exp> all_exp;
-	std::vector<po::sub_inv> all_sub_invs;
+	std::vector<pos::pin_cushion> pcushions;
 	all_exp.reserve(N * 2);
 
 	for (pt::idx_t i = start; i < start + count && i < N; ++i) {
 		const pvr::RoV &rov = all_rovs[i];
-		auto [rov_exps, sub_invs] =
+		auto [rov_exps, pcs] =
 			po::comp_itineraries3(g, rov, to_call_ref_ids);
 
-		for (auto &si : sub_invs) {
-			all_sub_invs.emplace_back(std::move(si));
-		}
+		for (auto &si : pcs)
+			pcushions.emplace_back(std::move(si));
 
 		for (auto &e : rov_exps) {
 			if (e.is_tangled())
@@ -76,19 +70,12 @@ comp_expeditions_serial(const bd::VG &g, const std::vector<pvr::RoV> &all_rovs,
 		}
 	}
 
-	// for (const auto &rov : all_rovs) {
-	//	std::vector<pga::Exp> rov_exps = pga::comp_itineraries2(g, rov);
-	//	for (auto &e : rov_exps) {
-	//		if (e.is_tangled())
-	//			put::untangle_ref_walks(e);
-
-	//		all_exp.emplace_back(std::move(e));
-	//	}
-	// }
+	if (!pcushions.empty())
+		pos::sne(g, pcushions, to_call_ref_ids, all_exp);
 
 	all_exp.shrink_to_fit();
 
-	return {all_exp, all_sub_invs};
+	return all_exp;
 }
 
 std::vector<pga::Exp> comp_expeditions_work_steal(
@@ -96,8 +83,8 @@ std::vector<pga::Exp> comp_expeditions_work_steal(
 	pt::idx_t count, povu::thread::thread_pool &pool,
 	std::size_t outer_concurrency, std::size_t reserve_for_inner)
 {
-	const std::size_t base = static_cast<std::size_t>(start);
-	const std::size_t want = static_cast<std::size_t>(count);
+	auto base = static_cast<std::size_t>(start);
+	auto want = static_cast<std::size_t>(count);
 
 	const std::size_t N = count;
 	std::vector<pga::Exp> all_exp(N);
@@ -129,36 +116,43 @@ std::vector<pga::Exp> comp_expeditions_work_steal(
 						break;
 					}
 
-					// global index range [g_begin, g_end)
+					// global index range [g_begin,
+					// g_end)
 					const std::size_t g_begin = base + off;
 					const std::size_t g_end = std::min(
 						g_begin + block, base + N);
 
-					// fill results; local index = global -
-					// base
+					// fill results; local index =
+					// global - base
 					for (std::size_t gi = g_begin;
 					     gi < g_end; ++gi) {
 						const std::size_t li =
 							gi - base;
 						// IMPORTANT:
-						// - Pass the RoV element
-						// directly: do NOT make a local
-						// copy like
+						// - Pass the RoV
+						// element directly: do
+						// NOT make a local copy
+						// like
 						//   `pvr::RoV rov =
-						//   all_rovs[gi];` and then
-						//   take &rov — that would
-						//   dangle.
-						// - `exp_frm_rov(...)` returns
-						// an Exp prvalue. Inside that
+						//   all_rovs[gi];` and
+						//   then take &rov —
+						//   that would dangle.
+						// - `exp_frm_rov(...)`
+						// returns an Exp
+						// prvalue. Inside that
 						// function,
-						//   the return is elided (RVO),
-						//   and here the assignment
-						//   uses move-assignment. No
-						//   extra copy is performed; no
-						//   `std::move` is needed on
-						//   the RHS.
-						// - Ensure `all_rovs` outlives
-						// all Exp objects that store
+						//   the return is
+						//   elided (RVO), and
+						//   here the assignment
+						//   uses
+						//   move-assignment. No
+						//   extra copy is
+						//   performed; no
+						//   `std::move` is
+						//   needed on the RHS.
+						// - Ensure `all_rovs`
+						// outlives all Exp
+						// objects that store
 						// pointers
 						//   into it.
 						all_exp[li] = exp_frm_rov(
@@ -233,17 +227,6 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 			const pt::idx_t end = std::min(base + CHUNK_SIZE, N);
 			const pt::idx_t count = end - base;
 
-			pt::idx_t chunk_num = (base / CHUNK_SIZE) + 1;
-
-			// if (chunk_num < 20)
-			//	continue;
-
-			// prog_msg =
-			//	pv_cmp::format("Processing RoV Chunk ({}/{})",
-			//		       chunk_num, CHUNK_COUNT);
-
-			// std::cerr << prog_msg << "\n";
-
 			if (prog) {
 				pt::idx_t chunk_num = (base / CHUNK_SIZE) + 1;
 
@@ -256,21 +239,14 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 					static_cast<size_t>(chunk_num));
 			}
 
-			// std::cerr << "Computing expeditions...\n";
-			auto [exps, sub_invs] = comp_expeditions_serial(
+			auto exps = comp_expeditions_serial(
 				g, all_rovs, base, count, to_call_ref_ids);
 
-			// exps = comp_expeditions_work_steal(
-			//	g, all_rovs, base, count, pool, outer, inner);
-
-			// continue;
-
-			// std::cerr << "Generating VCF records...\n";
+			if (exps.empty())
+				continue;
 
 			pgv::VcfRecIdx rs =
 				pgv::gen_vcf_records(g, exps, to_call_ref_ids);
-
-			// std::cerr << "Generated VCF records for variants\n";
 
 			if (!q.push(std::move(rs)))
 				break; // queue was closed early
@@ -282,8 +258,6 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 		q.close(); // make sure consumers wake up on errors
 		throw;
 	}
-
-	// std::cerr << "Finished producing VCF records\n";
 
 	q.close(); // we're done
 }

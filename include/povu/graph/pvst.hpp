@@ -59,6 +59,7 @@ enum class vertex_family_e {
 	concealed,
 	smothered,
 	midi,
+	sne_exp, // special vertex for sne expedition
 };
 typedef vertex_family_e vt_e;
 typedef vertex_family_e vf_e;
@@ -197,16 +198,15 @@ const bounds_t INVALID_BOUNDS{pc::INVALID_IDX, pc::INVALID_IDX};
 /* an abstract class for vertices  */
 class VertexBase
 {
-	pt::id_t idx_;	   // idx of the vertex in the pvst
-	pt::idx_t height_; // height of the vertex in the pvst
+	pt::id_t idx_;			    // idx of the vertex in the pvst
+	pt::idx_t height_{pc::INVALID_IDX}; // height of the vertex in the pvst
 	vf_e fam_;
 
 public:
 	// --------------
 	// constructor(s)
 	// --------------
-	VertexBase(pt::id_t idx, vf_e fam)
-	    : idx_(idx), height_(pc::INVALID_IDX), fam_(fam)
+	VertexBase(pt::id_t idx, vf_e fam) : idx_(idx), fam_(fam)
 	{}
 
 	// -------
@@ -277,7 +277,32 @@ public:
 	}
 };
 
+class SnE : public VertexBase
+{
+
+public:
+	SnE() : VertexBase(pc::INVALID_IDX, vf_e::sne_exp)
+	{}
+
+	// --------------
+	// getters
+	// --------------
+
+	[[nodiscard]]
+	std::string as_str() const override
+	{
+		return "SnE";
+	}
+
+	[[nodiscard]]
+	std::optional<route_params_t> get_route_params() const override
+	{
+		return std::nullopt; // dummy vertex does not have route params
+	}
+};
+
 class Flubble : public VertexBase
+
 {
 	pgt::id_or_t a_; // start
 	pgt::id_or_t z_; // end
@@ -827,7 +852,8 @@ public:
 	 * @param v Vertex to be added
 	 * @return Index of the added vertex
 	 */
-	template <typename T> pt::idx_t add_vertex(T v)
+	template <typename T>
+	pt::idx_t add_vertex(T v)
 	{
 		pt::idx_t v_idx = this->vertices.size();
 		v.set_idx(v_idx); // set the index of the vertex

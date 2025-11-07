@@ -19,7 +19,8 @@
 #include "povu/common/utils.hpp"     // for concat_with, pu
 #include "povu/genomics/allele.hpp"  // for allele_slice_t, Exp
 #include "povu/graph/bidirected.hpp" // for VG
-#include "povu/variation/rov.hpp"    // for var_type_e
+#include "povu/graph/types.hpp"
+#include "povu/variation/rov.hpp" // for var_type_e
 
 namespace povu::genomics::vcf
 {
@@ -77,13 +78,14 @@ class VcfRec
 
 	void comp_unique_alt_ats()
 	{
-		std::map<std::tuple<pt::idx_t, pt::idx_t, pt::idx_t>, pt::idx_t>
+		std::map<std::tuple<pt::idx_t, pt::idx_t, pt::idx_t, pgt::or_e>,
+			 pt::idx_t>
 			seen;
 		for (pt::idx_t i{}; i < this->ats_.size(); ++i) {
 			const auto &alt_at = this->ats_.at(i);
 			auto key = std::make_tuple(alt_at.walk_idx,
 						   alt_at.walk_start_idx,
-						   alt_at.len);
+						   alt_at.len, alt_at.slice_or);
 			if (!pv_cmp::contains(seen, key)) {
 				this->unique_alts_.emplace_back(i);
 				seen[key] = this->unique_alts_.size() - 1;
