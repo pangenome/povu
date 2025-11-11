@@ -8,6 +8,8 @@
 
 #include "args.hxx" // for ValueFlag, EitherFlag, Flag, get, Subparser
 
+#include "povu/common/core.hpp"
+
 namespace cli
 {
 
@@ -17,15 +19,11 @@ struct decomopose_opts {
 	args::Flag subflubbles;
 
 	explicit decomopose_opts(args::Subparser &p)
-	    : decompose(p, "Decompose options",
-			args::Group::Validators::DontCare),
-	      hairpins(decompose, "hairpins",
-		       "Find hairpins in the variation graph [default: false]",
-		       {'h', "hairpins"}),
-	      subflubbles(decompose, "subfubbles",
-			  "Find subflubbles in the variation graph [default: "
-			  "false]",
-			  {'s', "subflubbles"})
+	    // clang-format off
+	    : decompose(p, "Decompose options", args::Group::Validators::DontCare),
+	      hairpins(decompose, "hairpins", "Find hairpins in the variation graph [default: false]", {'h', "hairpins"}),
+	      subflubbles(decompose, "subfubbles", "Find subflubbles in the variation graph [default: false]", {'s', "subflubbles"})
+	// clang-format on
 	{}
 };
 
@@ -35,15 +33,11 @@ struct streaming_opts {
 	args::ValueFlag<std::size_t> queue_length;
 
 	explicit streaming_opts(args::Subparser &p)
-	    : streaming(p, "Streaming options",
-			args::Group::Validators::DontCare),
-	      chunk_size(streaming, "chunk_size",
-			 "Number of variants to process in each chunk "
-			 "[default: 100]",
-			 {'c', "chunk-size"}),
-	      queue_length(streaming, "queue_length",
-			   "Number of chunks to buffer [default: 4]",
-			   {'q', "queue-length"})
+	    // clang-format off
+	    : streaming(p, "Streaming options", args::Group::Validators::DontCare),
+	      chunk_size(streaming, "chunk_size", "Number of variants to process in each chunk [default: 100]", {'c', "chunk-size"}),
+	      queue_length(streaming, "queue_length", "Number of chunks to buffer [default: 4]", {'q', "queue-length"})
+	// clang-format on
 	{}
 };
 
@@ -52,8 +46,8 @@ struct output_opts {
 	args::ValueFlag<std::string> output_dir;
 	args::Flag stdout_vcf;
 
-	// clang-format off
 	explicit output_opts(args::Subparser &p)
+	    // clang-format off
 	    : outsel(p, "Output destination [default: stdout]", args::Group::Validators::DontCare),
 	      output_dir(outsel, "output_dir", "Output directory for VCF files", {'o', "output-dir"}),
 	      stdout_vcf(outsel, "stdout_vcf", "Output single VCF to stdout instead of separate files", {"stdout"})
@@ -70,20 +64,13 @@ struct reference_opts {
 
 	/* One of ref_list, path_prefixes, or list of references must be
 	 * set—never multiple, and never none */
+	// clang-format off
 	explicit reference_opts(args::Subparser &p)
-	    : refsel(p, "Reference source (choose exactly one)",
-		     args::Group::Validators::Xor),
-	      prefix_list(refsel, "prefix_list",
-			  "path to file containing reference name prefixes "
-			  "[optional]",
-			  {'r', "prefix-list"}),
-	      path_prefixes(refsel, "path_prefix",
-			    "All paths beginning with NAME used as reference "
-			    "(multiple allowed) [optional]",
-			    {'P', "path-prefix"}),
-	      refs_positional(
-		      refsel, "refs",
-		      "list of refs to use as reference haplotypes [optional]")
+	    : refsel(p, "Reference source (choose exactly one)", args::Group::Validators::Xor),
+	      prefix_list(refsel, "prefix_list", "path to file containing reference name prefixes [optional]", {'r', "prefix-list"}),
+	      path_prefixes(refsel, "path_prefix", "All paths beginning with NAME used as reference (multiple allowed) [optional]", {'P', "path-prefix"}),
+	      refs_positional(refsel, "refs", "list of refs to use as reference haplotypes [optional]")
+	// clang-format on
 	{}
 };
 
@@ -110,13 +97,10 @@ void populate_ref_ops(reference_opts &ref_opts, core::config &app_config)
 void call_handler(args::Subparser &parser, core::config &app_config)
 {
 	args::Group arguments("arguments");
-	args::ValueFlag<std::string> input_gfa(
-		parser, "gfa", "path to input gfa [required]",
-		{'i', "input-gfa"}, args::Options::Required);
-	args::ValueFlag<std::string> forest_dir(
-		parser, "forest_dir",
-		"dir containing flubble forest [default: .]",
-		{'f', "forest-dir"});
+	// clang-format off
+	args::ValueFlag<std::string> input_gfa(parser, "gfa", "path to input gfa [required]",{'i', "input-gfa"}, args::Options::Required);
+	args::ValueFlag<std::string> forest_dir(parser, "forest_dir","dir containing flubble forest [default: .]",{'f', "forest-dir"});
+	// clang-format on
 	streaming_opts stream_opts(parser);
 	output_opts out_opts(parser);
 	reference_opts ref_opts(parser);
@@ -168,9 +152,9 @@ void call_handler(args::Subparser &parser, core::config &app_config)
 void gfa2vcf_handler(args::Subparser &parser, core::config &app_config)
 {
 	args::Group arguments("arguments");
-	args::ValueFlag<std::string> input_gfa(
-		parser, "gfa", "path to input gfa [required]",
-		{'i', "input-gfa"}, args::Options::Required);
+	// clang-format off
+	args::ValueFlag<std::string> input_gfa(parser, "gfa", "path to input gfa [required]", {'i', "input-gfa"}, args::Options::Required);
+	// clang-format on
 	decomopose_opts decomp_opts(parser);
 	streaming_opts stream_opts(parser);
 	output_opts out_opts(parser);
@@ -227,10 +211,10 @@ void gfa2vcf_handler(args::Subparser &parser, core::config &app_config)
 void info_handler(args::Subparser &parser, core::config &app_config)
 {
 	args::Group arguments("arguments");
-	args::ValueFlag<std::string> input_gfa(
-		parser, "gfa", "path to input gfa [required]",
-		{'i', "input-gfa"}, args::Options::Required);
+	// clang-format off
+	args::ValueFlag<std::string> input_gfa(parser, "gfa", "path to input gfa [required]", {'i', "input-gfa"}, args::Options::Required);
 	args::Flag tips(parser, "tips", "print the tips", {'t', "print_tips"});
+	// clang-format on
 
 	parser.Parse();
 	app_config.set_task(core::task_e::info);
@@ -246,12 +230,11 @@ void info_handler(args::Subparser &parser, core::config &app_config)
 void decompose_handler(args::Subparser &parser, core::config &app_config)
 {
 	args::Group arguments("arguments");
-	args::ValueFlag<std::string> input_gfa(
-		parser, "gfa", "path to input gfa [required]",
-		{'i', "input-gfa"}, args::Options::Required);
-	args::ValueFlag<std::string> output_dir(parser, "output_dir",
-						"Output directory [default: .]",
-						{'o', "output-dir"});
+	// clang-format off
+	args::ValueFlag<std::string> input_gfa(parser, "gfa", "path to input gfa [required]", {'i', "input-gfa"}, args::Options::Required);
+	args::ValueFlag<std::string> output_dir(parser, "output_dir", "Output directory [default: .]", {'o', "output-dir"});
+	// clang-format on
+
 	decomopose_opts decomp_opts(parser);
 
 	parser.Parse();
@@ -277,42 +260,32 @@ void decompose_handler(args::Subparser &parser, core::config &app_config)
 
 int cli(int argc, char **argv, core::config &app_config)
 {
-
-	args::ArgumentParser p(
-		"Explore genomic variation in a variation graph");
+	args::ArgumentParser p("Explore variation in a variation graph");
 	args::Group commands(p, "commands");
 
-	args::Command gfa2vcf(commands, "gfa2vcf",
-			      "Convert GFA to VCF (decompose + call)",
-			      [&](args::Subparser &parser)
-			      { gfa2vcf_handler(parser, app_config); });
-	args::Command decompose(commands, "decompose",
-				"Find regions of variation",
-				[&](args::Subparser &parser)
-				{ decompose_handler(parser, app_config); });
-	args::Command call(commands, "call",
-			   "Generate a VCF from regions of variation",
-			   [&](args::Subparser &parser)
-			   { call_handler(parser, app_config); });
-	args::Command info(commands, "info",
-			   "Print graph information [uses 1 thread]",
-			   [&](args::Subparser &parser)
-			   { info_handler(parser, app_config); });
+	// sub commands
+	// clang-format off
+	args::Command gfa2vcf(commands, "gfa2vcf", "Convert GFA to VCF (decompose + call)",
+			      [&](args::Subparser &parser) { gfa2vcf_handler(parser, app_config); });
+	args::Command decompose(commands, "decompose","Find regions of variation",
+				[&](args::Subparser &parser) { decompose_handler(parser, app_config); });
+	args::Command call(commands, "call", "Generate a VCF from regions of variation",
+			   [&](args::Subparser &parser) { call_handler(parser, app_config); });
+	args::Command info(commands, "info", "Print graph information [uses 1 thread]",
+			   [&](args::Subparser &parser) { info_handler(parser, app_config); });
+	// clang-format on
 
-	args::Group arguments(p, "arguments", args::Group::Validators::DontCare,
-			      args::Options::Global);
-	args::Flag version(arguments, "version", "The current version of povu",
-			   {"version"});
-	args::ValueFlag<int> verbosity(arguments, "verbosity",
-				       "Level of output [default: 0]",
-				       {'v', "verbosity"});
-	args::ValueFlag<int> thread_count(
-		arguments, "threads", "Number of threads to use [default: 1]",
-		{'t', "threads"});
-	args::Flag progress(arguments, "progress", "Show progress bars",
-			    {"progress"});
+	// shared options
+	// clang-format off
+	args::Group arguments(p, "arguments", args::Group::Validators::DontCare, args::Options::Global);
+	args::Flag version(arguments, "version", "The current version of povu", {"version"});
+	args::ValueFlag<int> verbosity(arguments, "verbosity", "Level of output [default: 0]", {'v', "verbosity"});
+	args::ValueFlag<int> thread_count( arguments, "threads", "Number of threads to use [default: 1]", {'t', "threads"});
+	args::Flag progress(arguments, "progress", "Show progress bars", {"progress"});
 	args::HelpFlag h(arguments, "help", "help", {'h', "help"});
+	// clang-format on
 
+	args::CompletionFlag completion(p, {"complete"});
 	try {
 		p.ParseCLI(argc, argv);
 	}
