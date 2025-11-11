@@ -9,7 +9,7 @@ if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
 endif()
 
 # === Project Metadata ===
-project(povu LANGUAGES C CXX)
+project(povu VERSION 0.0.1 LANGUAGES C CXX)
 
 # === C++ Standard Configuration ===
 # Require C++17 for all targets
