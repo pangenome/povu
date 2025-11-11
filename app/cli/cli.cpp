@@ -125,9 +125,6 @@ void call_handler(args::Subparser &parser, core::config &app_config)
 			app_config.set_output_dir(
 				args::get(out_opts.output_dir));
 		}
-		else if (out_opts.stdout_vcf) {
-			app_config.set_stdout_vcf(true);
-		}
 		else { // default to stdout
 			app_config.set_stdout_vcf(true);
 		}
@@ -183,9 +180,6 @@ void gfa2vcf_handler(args::Subparser &parser, core::config &app_config)
 		if (out_opts.output_dir) {
 			app_config.set_output_dir(
 				args::get(out_opts.output_dir));
-		}
-		else if (out_opts.stdout_vcf) {
-			app_config.set_stdout_vcf(true);
 		}
 		else { // default to stdout
 			app_config.set_stdout_vcf(true);
