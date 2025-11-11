@@ -83,9 +83,9 @@ void init_vcfs(bd::VG &g, const std::vector<std::string> &ref_name_prefixes,
 void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 	       std::ostream &os)
 {
-	std::string s = ">6>8";
-	bool dbg = (r.get_id() == s) ? true : false;
-	dbg = false;
+	// std::string s = ">185>188";
+	// bool dbg = (r.get_id() == s) ? true : false;
+	// dbg = false;
 
 	pvr::var_type_e var_typ = r.get_var_type();
 
@@ -174,6 +174,15 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 		return s;
 	};
 
+	// if (dbg) {
+	//	std::cerr << slices_as_at_str(
+	//			     std::vector<pt::idx_t>{REF_AT_IDX},
+	//			     var_typ)
+	//		  << "\n";
+	//	std::cerr << slices_as_at_str(alts, pvr::covariant(var_typ))
+	//		  << "\n";
+	// }
+
 	// Both ref_dna and alt_dna are plain std::string values over the DNA
 	// letters {A, C, G, T}.
 	//   ref_dna  is a single contiguous sequence.
@@ -224,6 +233,7 @@ void write_vcfs(pgv::VcfRecIdx &vcf_recs, const bd::VG &g,
 		std::string ref_tag = g.get_ref_by_id(ref_id).tag();
 		std::ostream &os =
 			to_stdout ? *stdout_os : vout.stream_for_ref_id(ref_id);
+
 		for (pgv::VcfRec &r : recs)
 			write_rec(g, r, ref_tag, os);
 	}

@@ -1,38 +1,23 @@
-#include "povu/common/constants.hpp"
-#include "povu/overlay/overlay.hpp"
-
-// #include <csignal> // for raise, SIGINT
-// #include <cstdint>
-// #include <cstdio>
-// #include <string>
+#include "povu/overlay/generic.hpp"
 
 #include <algorithm>
-#include <cstdlib> // for exit, EXIT_FAILURE
-#include <iostream>
+#include <cstdlib>	  // for exit, EXIT_FAILURE
 #include <liteseq/refs.h> // for ref_walk, ref
 #include <map>		  // for map
 #include <utility>
 #include <vector> // for vector
 
-// #include "povu/common/compat.hpp"
-// #include "povu/common/constants.hpp"
-// #include "povu/common/utils.hpp"
-
+#include "povu/common/constants.hpp"
 #include "povu/common/core.hpp"
 #include "povu/common/log.hpp"
 #include "povu/genomics/allele.hpp"
 #include "povu/graph/types.hpp"
+#include "povu/overlay/overlay.hpp"
+#include "povu/overlay/shared.hpp" // for update_exp
 #include "povu/variation/rov.hpp"
 
 namespace povu::overlay::generic
 {
-namespace lq = liteseq;
-
-constexpr pvr::var_type_e ins = pvr::var_type_e::ins;
-constexpr pvr::var_type_e del = pvr::var_type_e::del;
-constexpr pvr::var_type_e sub = pvr::var_type_e::sub;
-constexpr pgt::or_e fo = pgt::or_e::forward;
-constexpr pgt::or_e ro = pgt::or_e::reverse;
 
 const pt::u8 SLICE_A_IDX{0};
 const pt::u8 SLICE_B_IDX{1};
@@ -51,7 +36,7 @@ class Overlays
 	std::vector<std::vector<std::vector<overlay_prefix_sum_t>>>
 		prefix_sums_;
 
-	std::vector<sub_inv> sub_invs_;
+	std::vector<pga::sub_inv> sub_invs_;
 	// key is walk idx and value is idx in overlays vector
 	// std::map<pt::u32, pt::u32> walk_to_overlay_;
 
@@ -77,13 +62,13 @@ public:
 	}
 
 	[[nodiscard]]
-	std::vector<sub_inv> get_sub_invs_cpy() const
+	std::vector<pga::sub_inv> get_sub_invs_cpy() const
 	{
 		return sub_invs_;
 	}
 
 	[[nodiscard]]
-	const std::vector<sub_inv> &get_sub_invs() const
+	const std::vector<pga::sub_inv> &get_sub_invs() const
 	{
 		return sub_invs_;
 	}
@@ -94,7 +79,7 @@ public:
 		return !sub_invs_.empty();
 	}
 
-	void add_sub_inv(sub_inv &&si)
+	void add_sub_inv(pga::sub_inv &&si)
 	{
 		sub_invs_.emplace_back(std::move(si));
 	}
@@ -285,23 +270,23 @@ find_walk_sub_inv(const Overlays &overlays, const pt::u32 REF_COUNT,
 	return locs;
 }
 
-void find_sub_inv(Overlays &overlays, const pt::u32 REF_COUNT,
-		  const pt::u32 WALK_COUNT)
-{
+// void find_sub_inv(Overlays &overlays, const pt::u32 REF_COUNT,
+//		  const pt::u32 WALK_COUNT)
+// {
 
-	for (pt::u32 w_idx{}; w_idx < WALK_COUNT; ++w_idx) {
+//	for (pt::u32 w_idx{}; w_idx < WALK_COUNT; ++w_idx) {
 
-		auto locs_opt = find_walk_sub_inv(overlays, REF_COUNT, w_idx);
+//		auto locs_opt = find_walk_sub_inv(overlays, REF_COUNT, w_idx);
 
-		if (!locs_opt.has_value())
-			continue;
+//		if (!locs_opt.has_value())
+//			continue;
 
-		// has both fwd and rev
-		overlays.add_sub_inv(sub_inv{w_idx,
-					     locs_opt->at(pgt::or_e::forward),
-					     locs_opt->at(pgt::or_e::reverse)});
-	}
-}
+//		// has both fwd and rev
+//		overlays.add_sub_inv(sub_inv{w_idx,
+//					     locs_opt->at(pgt::or_e::forward),
+//					     locs_opt->at(pgt::or_e::reverse)});
+//	}
+// }
 
 /**
  * comp ps for each walk as maps to the ref
@@ -339,7 +324,7 @@ Overlays overlay_walks(const bd::VG &g, const std::vector<pgt::walk_t> &walks)
 		}
 	}
 
-	find_sub_inv(overlays, REF_COUNT, WALK_COUNT);
+	// find_sub_inv(overlays, REF_COUNT, WALK_COUNT);
 
 	return overlays;
 }
@@ -667,7 +652,7 @@ void prefix_sum_overlay(const bd::VG &g, const pgt::walk_t &w,
 /**
  * [out] rov_exps: vector of expeditions, one per pairwise variant set
  */
-std::pair<std::vector<pga::Exp>, std::vector<sub_inv>>
+std::pair<std::vector<pga::Exp>, std::vector<pga::sub_inv>>
 overlay_generic(const bd::VG &g, const pvr::RoV &rov,
 		const std::set<pt::id_t> &to_call_ref_ids)
 {

@@ -125,6 +125,7 @@ std::map<pt::idx_t, std::vector<VcfRec>>
 gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 		 const std::set<pt::id_t> &to_call_ref_ids)
 {
+
 #ifdef DEBUG
 	if (exp.get_rov() == nullptr) {
 		ERR("RoV pointer is null");
@@ -169,13 +170,14 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 			if (non_varying(ref_allele_slice, alt_allele_slice))
 				continue;
 
-			if (ref_allele_slice == alt_allele_slice)
-				continue;
 			// TODO: check if start and len of the walks as
 			// well this means they are from the same walk,
 			// skip
 			if (ref_walk_idx == alt_walk_idx)
 				continue;
+
+			// if (pga::ref_eq(ref_allele_slice, alt_allele_slice))
+			//	continue;
 
 			pt::idx_t ref_walk_ref_count =
 				exp.get_ref_idxs_for_walk(ref_walk_idx).size();
