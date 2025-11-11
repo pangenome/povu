@@ -52,15 +52,12 @@ struct output_opts {
 	args::ValueFlag<std::string> output_dir;
 	args::Flag stdout_vcf;
 
+	// clang-format off
 	explicit output_opts(args::Subparser &p)
-	    : outsel(p, "Output destination (choose exactly one)",
-		     args::Group::Validators::Xor),
-	      output_dir(outsel, "output_dir", "Output directory [default: .]",
-			 {'o', "output-dir"}),
-	      stdout_vcf(outsel, "stdout_vcf",
-			 "Output single VCF to stdout instead of separate "
-			 "files [default: false]",
-			 {"stdout"})
+	    : outsel(p, "Output destination [default: stdout]", args::Group::Validators::DontCare),
+	      output_dir(outsel, "output_dir", "Output directory for VCF files", {'o', "output-dir"}),
+	      stdout_vcf(outsel, "stdout_vcf", "Output single VCF to stdout instead of separate files", {"stdout"})
+	// clang-format on
 	{}
 };
 
@@ -147,6 +144,9 @@ void call_handler(args::Subparser &parser, core::config &app_config)
 		else if (out_opts.stdout_vcf) {
 			app_config.set_stdout_vcf(true);
 		}
+		else { // default to stdout
+			app_config.set_stdout_vcf(true);
+		}
 	}
 
 	{ // streaming options
@@ -201,6 +201,9 @@ void gfa2vcf_handler(args::Subparser &parser, core::config &app_config)
 				args::get(out_opts.output_dir));
 		}
 		else if (out_opts.stdout_vcf) {
+			app_config.set_stdout_vcf(true);
+		}
+		else { // default to stdout
 			app_config.set_stdout_vcf(true);
 		}
 	}
