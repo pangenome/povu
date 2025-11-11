@@ -18,16 +18,7 @@ namespace core
 {
 constexpr std::string_view MODULE = "povu::app::core";
 
-namespace pu = povu::utils;
-
-/*
- * =========
- * App types
- * =========
- */
-
-// rename to task_e
-enum class task_e {
+enum class task_e : uint8_t {
 	call,	   // call variants
 	decompose, // deconstruct a graph
 	gfa2vcf,   // convert GFA directly to VCF
@@ -56,169 +47,181 @@ inline std::ostream &operator<<(std::ostream &os, const task_e &t)
 	return os << to_str(t);
 }
 
-// rename to input_format_e
-enum class input_format_e {
+enum class input_format_e : uint8_t {
 	file_path,
 	params, // CLI params
 	unset	// unset
 };
 std::ostream &operator<<(std::ostream &os, const task_e &t);
 
-enum class subgraph_category {
-	bubble,
-	component,
-	unset
-};
-
 /**
  * @brief app config
  */
 struct config {
-	task_e task;
+	task_e task{task_e::unset};
 
-	bool inc_hairpins_;
-	bool find_subflubbles_;
-	std::string input_gfa;
-	std::filesystem::path forest_dir; // directory containing the flb files
-	std::string chrom;		  // TODO: remove or use
-	// std::optional<std::filesystem::path> pvst_path;
-	std::filesystem::path
-		output_dir; // output directory for task and deconstruct
+	/* graph decomposition */
+	bool inc_hairpins_{false};     // whether to include hairpins
+	bool find_subflubbles_{false}; // whether to find subflubbles
+	// directory containing the flb files (the forest)
+	std::filesystem::path forest_dir{"."};
 
-	// info
-	bool print_tips_; // whether to print tips
-
-	// graph
-	bool inc_vtx_labels_; // whether to include vertex labels
-	bool inc_refs_;	      // whether to include references/paths
+	/* variation graph config */
+	std::string input_gfa{};     // path to input gfa
+	bool inc_vtx_labels_{false}; // whether to include vertex labels
+	bool inc_refs_{false};	     // whether to include references/paths
 
 	std::size_t chunk_size_{100};
 	std::size_t queue_len_{4};
 
 	// general
-	bool prog_{false};	  // show progress bars
-	unsigned char verbosity_; // verbosity
-	bool print_dot_{true};	  // generate dot format graphs
+	bool prog_{false};	     // show progress bars
+	unsigned char verbosity_{0}; // verbosity
+
+	// generate dot format graphs
+#ifdef DEBUG
+	bool print_dot_{true};
+	bool print_tips_{false}; // whether to print tips
+#else
+	bool print_dot_{false};
+	bool print_tips_{false}; // whether to print tips
+#endif
 
 	unsigned int thread_count_{1}; // number of threads to use
 
-	// references
-	std::string references_txt; // the path to the file containing the
-				    // reference paths
-	input_format_e ref_input_format;
-	std::vector<std::string>
-		ref_name_prefixes_; // path prefixes for reference selection
-	bool stdout_vcf; // output single VCF to stdout instead of separate
-			 // files
+	/* ref handling */
+
+	// the path to the file containing the reference paths
+	std::string references_txt{""};
+	input_format_e ref_input_format{input_format_e::unset};
+	// path prefixes for reference selection
+	std::vector<std::string> ref_name_prefixes_{};
+
+	/* VCF file generation */
+
+	// when true, generate a single VCF & write to stdout
+	bool stdout_vcf{false};
+	// output directory for VCF separate files per ref chosen
+	std::filesystem::path output_dir{"."};
 
 	// -------------
 	// Contructor(s)
 	// -------------
 
-	config()
-	    : task(task_e::unset), inc_hairpins_(false),
-	      find_subflubbles_(false), forest_dir("."),
-	      chrom(""),       // default is empty string
-	      output_dir("."), // default is current directory
-	      print_tips_(false), inc_vtx_labels_(false), inc_refs_(false),
-	      verbosity_(0), thread_count_(1), references_txt(""),
-	      ref_input_format(input_format_e::unset),
-	      ref_name_prefixes_(std::vector<std::string>{}), stdout_vcf(false)
-	{}
+	config() = default;
 
 	// ---------
 	// getter(s)
 	// ---------
+	[[nodiscard]]
 	bool inc_hairpins() const
 	{
 		return this->inc_hairpins_;
 	}
 
+	[[nodiscard]]
 	bool find_subflubbles() const
 	{
 		return this->find_subflubbles_;
 	}
 
+	[[nodiscard]]
 	std::string get_input_gfa() const
 	{
 		return this->input_gfa;
 	}
 
+	[[nodiscard]]
 	std::filesystem::path get_forest_dir() const
 	{
 		return this->forest_dir;
 	}
 
+	[[nodiscard]]
 	std::filesystem::path get_output_dir() const
 	{
 		return this->output_dir;
 	}
 
+	[[nodiscard]]
 	bool print_tips() const
 	{
 		return this->print_tips_;
 	}
 
+	[[nodiscard]]
 	bool inc_vtx_labels() const
 	{
 		return this->inc_vtx_labels_;
 	}
 
+	[[nodiscard]]
 	bool inc_refs() const
 	{
 		return this->inc_refs_;
 	}
 
+	[[nodiscard]]
 	std::size_t get_chunk_size() const
 	{
 		return this->chunk_size_;
 	}
 
+	[[nodiscard]]
 	std::size_t get_queue_len() const
 	{
 		return this->queue_len_;
 	}
 
+	[[nodiscard]]
 	std::vector<std::string> const &get_ref_name_prefixes() const
 	{
 		return this->ref_name_prefixes_;
 	}
 
+	[[nodiscard]]
 	input_format_e get_refs_input_fmt() const
 	{
 		return this->ref_input_format;
 	}
 
+	[[nodiscard]]
 	const std::string &get_references_txt() const
 	{
 		return this->references_txt;
 	}
 
+	[[nodiscard]]
 	bool show_progress() const
 	{
 		return this->prog_;
 	}
 
+	[[nodiscard]]
 	std::size_t verbosity() const
 	{
 		return this->verbosity_;
 	} // can we avoid this being a size_t?
 
+	[[nodiscard]]
 	unsigned int thread_count() const
 	{
 		return this->thread_count_;
 	}
 
+	[[nodiscard]]
 	bool print_dot() const
 	{
 		return this->print_dot_;
 	}
 
+	[[nodiscard]]
 	bool get_stdout_vcf() const
 	{
 		return this->stdout_vcf;
 	}
 
+	[[nodiscard]]
 	task_e get_task() const
 	{
 		return this->task;
@@ -268,7 +271,7 @@ struct config {
 		this->ref_input_format = f;
 	}
 
-	void add_ref_name_prefix(std::string s)
+	void add_ref_name_prefix(const std::string &s)
 	{
 		this->ref_name_prefixes_.push_back(s);
 	}
@@ -283,7 +286,7 @@ struct config {
 		this->references_txt = std::move(s);
 	}
 
-	void set_references_txt(std::string s)
+	void set_references_txt(const std::string &s)
 	{
 		this->references_txt = s;
 	}
@@ -308,24 +311,24 @@ struct config {
 		this->print_dot_ = b;
 	}
 
-	void set_input_gfa(std::string s)
+	void set_input_gfa(const std::string &s)
 	{
 		this->input_gfa = s;
 	}
 
-	void set_forest_dir(std::string s)
+	void set_forest_dir(const std::string &s)
 	{
 		this->forest_dir = s;
-	}
-
-	void set_output_dir(std::string s)
-	{
-		this->output_dir = s;
 	}
 
 	void set_task(task_e t)
 	{
 		this->task = t;
+	}
+
+	void set_output_dir(const std::string &s)
+	{
+		this->output_dir = s;
 	}
 
 	void set_stdout_vcf(bool b)
@@ -338,32 +341,29 @@ struct config {
 	// --------
 	void dbg_print()
 	{
-
 		const std::string spc = "  "; // could use \t
 
 #ifdef DEBUG
 		INFO("povu is in debug mode");
 #endif
-		std::cerr << "CLI parameters: " << std::endl;
+		std::cerr << "CLI parameters:\n";
 
 		/* common for all tasks */
-		std::cerr << spc << "task: " << this->task << std::endl;
+		std::cerr << spc << "task: " << this->task << "\n";
 		std::cerr << spc << "verbosity: " << this->verbosity() << "\n";
 		std::cerr << spc << "thread count: " << this->thread_count()
 			  << "\n";
-		std::cerr << spc << "input gfa: " << this->input_gfa
-			  << std::endl;
-		std::cerr << spc << "output dir: " << this->output_dir
-			  << std::endl;
+		std::cerr << spc << "input gfa: " << this->input_gfa << "\n";
+		std::cerr << spc << "output dir: " << this->output_dir << "\n";
 
 		if (this->get_task() == task_e::call) {
 			std::cerr << spc << "forest dir: " << this->forest_dir
-				  << std::endl;
+				  << "\n";
 
 			if (this->ref_input_format ==
 			    input_format_e::file_path) {
 				std::cerr << spc << "Reference paths file: "
-					  << this->references_txt << std::endl;
+					  << this->references_txt << "\n";
 			}
 
 			if (!this->ref_name_prefixes_.empty()) {
@@ -373,7 +373,7 @@ struct config {
 				pu::print_with_comma(std::cerr,
 						     this->ref_name_prefixes_,
 						     ',');
-				std::cerr << std::endl;
+				std::cerr << "\n";
 			}
 		}
 		else if (this->get_task() == task_e::decompose) {
@@ -392,7 +392,7 @@ struct config {
 			//
 		}
 
-		std::cerr << std::endl;
+		std::cerr << "\n" << std::flush;
 	}
 };
 } // namespace core
