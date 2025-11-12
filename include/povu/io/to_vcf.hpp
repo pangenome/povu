@@ -141,8 +141,8 @@ public:
 		if (pv_cmp::contains(ref_id_to_ofs_idx_, ref_id))
 			return this->all_ofs_[ref_id_to_ofs_idx_[ref_id]];
 
-		throw std::runtime_error(
-			"[VcfOutput::stream_for] Unknown ref id: " + ref_id);
+		throw std::runtime_error(pv_cmp::format(
+			"[VcfOutput::stream_for] Unknown ref id: {}", ref_id));
 	}
 
 	/**

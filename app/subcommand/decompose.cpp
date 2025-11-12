@@ -109,8 +109,11 @@ void do_decompose(const core::config &app_config)
 		std::cerr << pv_cmp::format("{} Found {} components\n", fn_name,
 					    components.size());
 
-	auto [num_threads, chunk_size] =
+	std::pair<pt::u32, pt::u32> thread_config =
 		thread_count(app_config, components.size());
+
+	pt::u32 num_threads = thread_config.first;
+	pt::u32 chunk_size = thread_config.second;
 
 	/* Create and launch threads */
 	std::vector<std::thread> threads(num_threads);

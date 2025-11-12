@@ -1,4 +1,4 @@
-#include <string_view> // for string_view
+// #include <string_view> // for string_view
 
 #include "./cli/cli.hpp"	      // for cli
 #include "./subcommand/call.hpp"      // for do_call
@@ -7,7 +7,7 @@
 #include "./subcommand/info.hpp"      // for do_info
 #include "povu/common/app.hpp"	      // for task_e, config
 
-constexpr std::string_view MODULE = "povu::main";
+// constexpr std::string_view MODULE = "povu::main";
 namespace pv = povu::subcommands;
 
 int main(int argc, char *argv[])

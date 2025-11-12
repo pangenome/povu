@@ -84,9 +84,23 @@ set(DEBUG_WARNINGS
   -Wmissing-field-initializers
   -Wunused-local-typedefs
   -Wuninitialized
-  -Wmaybe-uninitialized
+  # -Wmaybe-uninitialized
   # -Wpadded # Uncomment or gate by compiler if needed
 )
+
+# Add GCC-specific warnings
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  list(APPEND DEBUG_WARNINGS
+    -Wmaybe-uninitialized)
+endif()
+
+# Add Clang-specific suppressions (especially for macOS)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+  list(APPEND DEBUG_WARNINGS
+    -Wno-uninitialized
+    -Wno-gnu-zero-variadic-macro-arguments
+  )
+endif()
 
 # --- CI Mode Configuration ---
 # CI is a build environment, not a build type.
