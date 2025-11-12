@@ -10,24 +10,24 @@
 #include <utility>    // for move
 #include <vector>     // for vector
 
-#include "indicators/dynamic_progress.hpp" // for DynamicProgress
-#include "indicators/progress_bar.hpp"	   // for ProgressBar
-#include "povu/common/bounded_queue.hpp"   // for pbq, bounded_queue
-#include "povu/common/core.hpp"		   // for pt, id_t
-#include "povu/common/log.hpp"		   // for ERR
-#include "povu/common/progress.hpp"	   // for set_progress_bar_common_opts
-#include "povu/genomics/genomics.hpp"	   // for gen_vcf_rec_map
-#include "povu/genomics/vcf.hpp"	   // for VcfRecIdx
-#include "povu/graph/bidirected.hpp"	   // for VG, bd
-#include "povu/graph/pvst.hpp"		   // for Tree
-#include "povu/io/common.hpp"		   // for get_files, read_lines_to_...
-#include "povu/io/from_gfa.hpp"		   // for to_bd
-#include "povu/io/from_pvst.hpp"	   // for read_pvst
-#include "povu/io/to_vcf.hpp"		   // for VcfOutput, init_vcfs, wri...
+// #include "indicators/dynamic_progress.hpp" // for DynamicProgress
+// #include "indicators/progress_bar.hpp"	   // for ProgressBar
+#include "povu/common/bounded_queue.hpp" // for pbq, bounded_queue
+#include "povu/common/core.hpp"		 // for pt, id_t
+#include "povu/common/log.hpp"		 // for ERR
+// #include "povu/common/progress.hpp"	   // for set_progress_bar_common_opts
+#include "povu/genomics/genomics.hpp" // for gen_vcf_rec_map
+#include "povu/genomics/vcf.hpp"      // for VcfRecIdx
+#include "povu/graph/bidirected.hpp"  // for VG, bd
+#include "povu/graph/pvst.hpp"	      // for Tree
+#include "povu/io/common.hpp"	      // for get_files, read_lines_to_...
+#include "povu/io/from_gfa.hpp"	      // for to_bd
+#include "povu/io/from_pvst.hpp"      // for read_pvst
+#include "povu/io/to_vcf.hpp"	      // for VcfOutput, init_vcfs, wri...
 
 namespace povu::subcommands::call
 {
-using namespace povu::progress;
+// using namespace povu::progress;
 namespace fs = std::filesystem;
 namespace pgv = povu::genomics::vcf;
 namespace pg = povu::genomics;
@@ -75,7 +75,6 @@ void get_ref_prefixes_from_file(core::config &app_config)
 
 void do_call(core::config &app_config)
 {
-
 	// ----------------------------------------------------
 	// parallel read for the graph, flubbles and references
 	// ----------------------------------------------------
@@ -149,10 +148,8 @@ void do_call(core::config &app_config)
 		});
 
 	// consumer on this thread
-	while (auto opt_rec_idx = q.pop()) {
-		piv::write_vcfs(*opt_rec_idx, *g, vcf_ref_ids, vout,
-				app_config);
-	}
+	while (auto opt_rec_idx = q.pop())
+		piv::write_vcfs(*opt_rec_idx, *g, vout, app_config);
 
 	// make sure VCF are initialised before producer finishes
 	init_vcfs_async.join();

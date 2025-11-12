@@ -66,9 +66,9 @@ struct extension {
 	void dbg_print(const bd::VG &g) const
 	{
 		auto print = [](const lq::ref_walk *ref_w, pt::u32 ref_start,
-				pt::u32 len)
+				pt::u32 N)
 		{
-			for (pt::u32 i = 0; i < len; i++) {
+			for (pt::u32 i = 0; i < N; i++) {
 				pt::idx_t ref_v_id =
 					ref_w->v_ids[ref_start + i];
 				pgt::or_e ref_o =

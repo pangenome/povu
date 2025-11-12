@@ -29,8 +29,8 @@ namespace pgt = povu::types::graph;
 using pga::ref_needle;
 using pga::sub_inv;
 
-constexpr pgt::or_e fo = pgt::or_e::forward;
-constexpr pgt::or_e ro = pgt::or_e::reverse;
+// constexpr pgt::or_e fo = pgt::or_e::forward;
+// constexpr pgt::or_e ro = pgt::or_e::reverse;
 
 /**
  * @brief match ref walks at index i and j in ref walk 1 and ref walk 2
@@ -165,7 +165,7 @@ extension stitch(const std::vector<extension> &extensions,
 
 // merge overlapping extensions
 std::vector<extension>
-merge_extensions(const std::vector<extension> &extensions, const bd::VG &g)
+merge_extensions(const std::vector<extension> &extensions)
 {
 	// std::vector<extension> filtered = extensions;
 	std::vector<extension> filtered = filter_overlaps(extensions);
@@ -347,8 +347,7 @@ void set_chain_link_limits(chain_t &c)
 }
 
 std::optional<extension> extend_link(const bd::VG &g, const link_pair &lp,
-				     pt::u32 lidx, pt::u32 ref_r_id,
-				     pt::u32 alt_r_id)
+				     pt::u32 ref_r_id, pt::u32 alt_r_id)
 {
 	auto [ref_link, alt_link] = lp;
 
@@ -361,8 +360,8 @@ std::optional<extension> extend_link(const bd::VG &g, const link_pair &lp,
 					? std::make_pair(ref_r_id, alt_r_id)
 					: std::make_pair(alt_r_id, ref_r_id);
 
-	const lq::ref_walk *ref_w1 = g.get_ref_vec(ref_r_id)->walk;
-	const lq::ref_walk *ref_w2 = g.get_ref_vec(alt_r_id)->walk;
+	// const lq::ref_walk *ref_w1 = g.get_ref_vec(ref_r_id)->walk;
+	// const lq::ref_walk *ref_w2 = g.get_ref_vec(alt_r_id)->walk;
 
 	const lq::ref_walk *f_ref_w = g.get_ref_vec(f_r_id)->walk;
 	const lq::ref_walk *r_ref_w = g.get_ref_vec(r_r_id)->walk;
@@ -421,7 +420,7 @@ std::vector<extension> extend_links(const bd::VG &g, const chain_t &c,
 	std::vector<extension> extensions;
 	for (pt::u32 i{}; i < c.len(); ++i) {
 		const auto &lp = c.links[i];
-		auto opt_ext = extend_link(g, lp, i, ref_r_id, alt_r_id);
+		auto opt_ext = extend_link(g, lp, ref_r_id, alt_r_id);
 		if (opt_ext)
 			extensions.push_back(opt_ext.value());
 	}
@@ -456,8 +455,7 @@ void sne(const bd::VG &g, const std::vector<pin_cushion> &pcushions,
 		if (e.empty())
 			continue;
 
-		std::vector<extension> merged_extensions =
-			merge_extensions(e, g);
+		std::vector<extension> merged_extensions = merge_extensions(e);
 
 		comp_expeditions(g, merged_extensions, exps);
 	}

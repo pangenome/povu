@@ -9,6 +9,7 @@
 #include "povu/genomics/allele.hpp" // for Exp, allele_slice_t, itn_t
 #include "povu/genomics/graph.hpp"  // for RoV
 #include "povu/graph/pvst.hpp"	    // for VertexBase
+#include "povu/variation/rov.hpp"
 
 namespace povu::genomics::vcf
 {
@@ -139,7 +140,7 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 #endif
 
 	std::map<pt::idx_t, std::vector<VcfRec>> exp_vcf_recs;
-	const pvr::RoV &rov = *(exp.get_rov());
+	// const pvr::RoV &rov = *(exp.get_rov());
 	const pvst::VertexBase *pvst_vtx_ptr = exp.get_pvst_vtx_const_ptr();
 
 	std::map<std::tuple<pt::idx_t, pt::u32, pvr::var_type_e>, VcfRec>
@@ -189,6 +190,9 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 
 			key = {ref_ref_id, ref_walk_idx, variant_type};
 
+			ref_allele_slice.set_vt(variant_type);
+			alt_allele_slice.set_vt(pvr::covariant(variant_type));
+
 			// if it does not exist create a variant type for it and
 			// add to var_type_to_vcf_rec
 			if (!pv_cmp::contains(var_type_to_vcf_rec, key)) {
@@ -211,9 +215,8 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 			}
 
 			VcfRec &curr_vcf_rec = var_type_to_vcf_rec.at(key);
-			const pt::idx_t alt_allele_col_idx =
-				curr_vcf_rec.append_alt_at(alt_allele_slice,
-							   alt_walk_ref_count);
+			curr_vcf_rec.append_alt_at(alt_allele_slice,
+						   alt_walk_ref_count);
 		}
 	}
 

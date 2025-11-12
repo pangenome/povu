@@ -66,9 +66,8 @@ void Edge::set_class(pt::idx_t c)
  * BackEdge
  * --------
  */
-BackEdge::BackEdge(pt::id_t id, pt::idx_t src, pt::idx_t tgt, be_type_e t,
-		   pgt::color_e c)
-    : id_(id), src_(src), tgt_(tgt), class_(INVALID_CLS), type_(t), color_(c)
+BackEdge::BackEdge(pt::id_t id, pt::idx_t src, pt::idx_t tgt, be_type_e t)
+    : id_(id), src_(src), tgt_(tgt), class_(INVALID_CLS), type_(t)
 {}
 
 /* getters */
@@ -377,7 +376,7 @@ Tree Tree::from_bd(const bd::VG &g)
 			//  - not a parent child relationship
 			//  - a backedge does not already exist
 			t.add_be(p_idx, be_idx_to_ctr[o_be_idx],
-				 be_type_e::back_edge, pgt::color_e::gray);
+				 be_type_e::back_edge);
 			connect(p_idx, be_idx_to_ctr[o_be_idx]);
 		}
 		else if (__builtin_expect(
@@ -386,7 +385,7 @@ Tree Tree::from_bd(const bd::VG &g)
 				 0)) {
 			// add a self loop backedge, a parent-child relationship
 			t.add_be(p_idx, be_idx_to_ctr[o_be_idx],
-				 be_type_e::back_edge, pgt::color_e::gray);
+				 be_type_e::back_edge);
 			self_loops.insert(bd_v_idx);
 		}
 
@@ -429,8 +428,7 @@ Tree Tree::from_bd(const bd::VG &g)
 		if (__builtin_expect((neighbours.empty() &&
 				      !are_connected(p_idx, root_idx)),
 				     0)) {
-			t.add_be(p_idx, root_idx, be_type_e::back_edge,
-				 pgt::color_e::gray);
+			t.add_be(p_idx, root_idx, be_type_e::back_edge);
 			connect(p_idx, root_idx);
 		}
 
@@ -785,11 +783,11 @@ void Tree::add_tree_edge(pt::idx_t frm, pt::idx_t to, pgt::color_e c)
 	this->nodes[to].set_parent_e_idx(edge_idx);
 }
 
-pt::idx_t Tree::add_be(pt::idx_t frm, pt::idx_t to, be_type_e t, pgt::color_e c)
+pt::idx_t Tree::add_be(pt::idx_t frm, pt::idx_t to, be_type_e t)
 {
 	pt::idx_t back_edge_idx = this->back_edges.size();
 	pt::idx_t edge_count = back_edge_idx + this->tree_edges.size();
-	this->back_edges.push_back(BackEdge(edge_count, frm, to, t, c));
+	this->back_edges.push_back(BackEdge(edge_count, frm, to, t));
 	this->nodes[frm].add_obe(back_edge_idx);
 	this->nodes[to].add_ibe(back_edge_idx);
 

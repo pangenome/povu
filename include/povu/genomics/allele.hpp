@@ -104,7 +104,7 @@ struct allele_slice_t {
 	}
 
 	[[nodiscard]]
-	std::string as_str(pvr::var_type_e vt) const
+	std::string as_str() const
 	{
 		// TODO: pass variant type as param this method is prone to bugs
 		bool is_fwd = this->get_or() == pgt::or_e::forward;
@@ -113,7 +113,7 @@ struct allele_slice_t {
 		pt::u32 i = is_fwd ? ref_start_idx : ref_start_idx - len + 1;
 		pt::u32 N = is_fwd ? ref_start_idx + len : ref_start_idx + 1;
 
-		switch (vt) {
+		switch (this->vt) {
 		case pvr::var_type_e::sub:
 			i++;
 			N--;
@@ -122,12 +122,20 @@ struct allele_slice_t {
 		case pvr::var_type_e::del:
 			N--;
 			break;
+		case pvr::var_type_e::und: // undefined
+			ERR("Undefined variant type in allele_slice_t::as_str");
+			std::exit(EXIT_FAILURE);
 		}
 
-		for (i; i < N; i++)
+		for (; i < N; i++)
 			at_str += this->get_step(i).as_str();
 
 		return at_str;
+	}
+
+	void set_vt(pvr::var_type_e vt_)
+	{
+		this->vt = vt_;
 	}
 };
 
@@ -401,7 +409,7 @@ public:
 //		  const std::set<pt::id_t> &to_call_ref_ids);
 
 // std::vector<Exp> comp_itineraries2(const bd::VG &g, const pvr::RoV &rov);
-void comp_itineraries(const bd::VG &g, Exp &exp);
+// void comp_itineraries(const bd::VG &g, Exp &exp);
 
 } // namespace povu::genomics::allele
 

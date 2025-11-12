@@ -10,39 +10,15 @@
 
 namespace povu::types::core
 {
-[[deprecated("Deprecated: use u32")]]
-typedef u_int32_t id_t;
-[[deprecated("Deprecated: use u32")]]
-typedef u_int32_t idx_t;
-
 /* type aliases for fixed width types */
 using u8 = u_int8_t;
 using u32 = u_int32_t;
 using status_t = int8_t;			 // return status of a fn
 using Time = std::chrono::high_resolution_clock; // C++ timer
 
-struct slice_t {
-	u32 start;
-	u32 len;
-
-	slice_t(u32 start, u32 len) : start{start}, len{len}
-	{}
-
-	friend bool operator==(const slice_t &s1, const slice_t &s2)
-	{
-		return s1.start == s2.start && s1.len == s2.len;
-	}
-
-	friend bool operator!=(const slice_t &s1, const slice_t &s2)
-	{
-		return !(s1 == s2);
-	}
-
-	friend std::ostream &operator<<(std::ostream &os, const slice_t &s)
-	{
-		return os << "(" << s.start << "," << s.len << ")";
-	}
-};
+// TODO: deprecate and replace id_t and idx_ types with u32
+using id_t = u32;
+using idx_t = u32;
 
 /**
  * an ordered pair type similar to std::pair but with same type on both sides
@@ -93,6 +69,59 @@ struct unordered_pair {
 
 template <typename T>
 using up_t = unordered_pair<T>;
+
+struct slice_t {
+private:
+	u32 start_;
+	u32 len_;
+
+public:
+	// -----------
+	// constructor
+	// -----------
+	slice_t(u32 s, u32 l) : start_{s}, len_{l}
+	{}
+
+	// -------
+	// getter(s)
+	// -------
+	[[nodiscard]]
+	op_t<u32> data() const
+	{
+		return {start_, len_};
+	}
+
+	[[nodiscard]]
+	u32 start() const
+	{
+		return start_;
+	}
+
+	[[nodiscard]]
+	u32 len() const
+	{
+		return len_;
+	}
+
+	// -------
+	// friends
+	// -------
+	friend bool operator==(const slice_t &s1, const slice_t &s2)
+	{
+		return s1.start_ == s2.start_ && s1.len_ == s2.len_;
+	}
+
+	friend bool operator!=(const slice_t &s1, const slice_t &s2)
+	{
+		return !(s1 == s2);
+	}
+
+	friend std::ostream &operator<<(std::ostream &os, const slice_t &s)
+	{
+		return os << "(" << s.start_ << "," << s.len_ << ")";
+	}
+};
+
 } // namespace povu::types::core
 
 // NOLINTNEXTLINE(misc-unused-alias-decls)

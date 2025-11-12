@@ -13,7 +13,6 @@
 namespace povu::overlay::generic
 {
 std::pair<std::vector<pga::Exp>, std::vector<pga::sub_inv>>
-overlay_generic(const bd::VG &g, const pvr::RoV &rov,
-		const std::set<pt::id_t> &to_call_ref_ids);
+overlay_generic(const bd::VG &g, const pvr::RoV &rov);
 };
 #endif // POVU_OVERLAY_GENERIC_HPP

@@ -149,13 +149,13 @@ VariationGraph::VariationGraph(pt::idx_t vtx_count, pt::idx_t edge_count,
 		vec.resize(ref_count);
 }
 
-VariationGraph::VariationGraph(lq::gfa_props *gfa)
+VariationGraph::VariationGraph(lq::gfa_props *gfa_props)
 {
-	pt::idx_t vtx_count = gfa->vtx_arr_size;
-	pt::idx_t edge_count = gfa->l_line_count;
-	pt::idx_t ref_count = gfa->ref_count;
+	pt::idx_t vtx_count = gfa_props->vtx_arr_size;
+	pt::idx_t edge_count = gfa_props->l_line_count;
+	pt::idx_t ref_count = gfa_props->ref_count;
 
-	this->gfa = gfa;
+	this->gfa = gfa_props;
 	this->vertices.reserve(vtx_count);
 	this->edges.reserve(edge_count);
 	this->vertex_to_step_matrix_.resize(vtx_count);
