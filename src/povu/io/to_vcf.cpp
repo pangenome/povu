@@ -15,8 +15,9 @@ namespace povu::io::to_vcf
 namespace pgt = povu::types::graph;
 namespace pga = povu::genomics::allele;
 
-// clang-format off
-void write_header_common(std::ostream &os) {
+void write_header_common(std::ostream &os)
+{
+	// clang-format off
 	os << "##fileformat=VCFv4.2\n";
 	os << pv_cmp::format("##fileDate={}\n", pu::today());
 	os << "##source=povu\n";
@@ -30,9 +31,8 @@ void write_header_common(std::ostream &os) {
 	os << "##INFO=<ID=TANGLED,Number=1,Type=String,Description=\"Variant lies in a tangled region of the graph: T or F\">\n";
 	os << "##INFO=<ID=LV,Number=1,Type=Integer,Description=\"Level in the PVST (0=top level)\">\n";
 	os << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
+	// clang-format on
 }
-
-// clang-format on
 
 void write_header_contig_line(const pr::Ref &r, std::ostream &os)
 {
@@ -83,10 +83,6 @@ void init_vcfs(bd::VG &g, const std::vector<std::string> &ref_name_prefixes,
 void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 	       std::ostream &os)
 {
-	// std::string s = ">185>188";
-	// bool dbg = (r.get_id() == s) ? true : false;
-	// dbg = false;
-
 	pvr::var_type_e var_typ = r.get_var_type();
 
 	r.gen_rec_data_lookups(g); // ensure lookups are generated
@@ -151,14 +147,14 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 		return dna_strs;
 	};
 
-	auto slices_as_at_str = [&](const std::vector<pt::idx_t> &idxs,
-				    pvr::var_type_e vt) -> std::string
+	auto slices_as_at_str =
+		[&](const std::vector<pt::idx_t> &idxs) -> std::string
 	{
 		std::string str = "";
 		std::string sep = ""; // no leading comma
 		for (auto i : idxs) {
 			str += sep;
-			str += r.get_slice(i).as_str(var_typ);
+			str += r.get_slice(i).as_str();
 			sep = ",";
 		}
 		return str;
@@ -167,10 +163,9 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 	auto allele_traversals = [&]() -> std::string
 	{
 		std::string s;
-		s += slices_as_at_str(std::vector<pt::idx_t>{REF_AT_IDX},
-				      var_typ);
+		s += slices_as_at_str(std::vector<pt::idx_t>{REF_AT_IDX});
 		s += ",";
-		s += slices_as_at_str(alts, pvr::covariant(var_typ));
+		s += slices_as_at_str(alts);
 		return s;
 	};
 
@@ -222,7 +217,6 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 void write_vcfs(pgv::VcfRecIdx &vcf_recs, const bd::VG &g, VcfOutput &vout,
 		const core::config &app_config)
 {
-
 	// Cache stdout stream once to avoid repeatedly asking for it.
 	const bool to_stdout = app_config.get_stdout_vcf();
 	std::ostream *stdout_os =

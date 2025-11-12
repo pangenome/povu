@@ -9,6 +9,7 @@
 #include "povu/genomics/allele.hpp" // for Exp, allele_slice_t, itn_t
 #include "povu/genomics/graph.hpp"  // for RoV
 #include "povu/graph/pvst.hpp"	    // for VertexBase
+#include "povu/variation/rov.hpp"
 
 namespace povu::genomics::vcf
 {
@@ -188,6 +189,9 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 				ref_allele_slice, alt_allele_slice);
 
 			key = {ref_ref_id, ref_walk_idx, variant_type};
+
+			ref_allele_slice.set_vt(variant_type);
+			alt_allele_slice.set_vt(pvr::covariant(variant_type));
 
 			// if it does not exist create a variant type for it and
 			// add to var_type_to_vcf_rec

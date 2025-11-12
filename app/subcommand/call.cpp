@@ -75,7 +75,6 @@ void get_ref_prefixes_from_file(core::config &app_config)
 
 void do_call(core::config &app_config)
 {
-
 	// ----------------------------------------------------
 	// parallel read for the graph, flubbles and references
 	// ----------------------------------------------------

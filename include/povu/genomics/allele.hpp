@@ -104,7 +104,7 @@ struct allele_slice_t {
 	}
 
 	[[nodiscard]]
-	std::string as_str(pvr::var_type_e variant_type) const
+	std::string as_str() const
 	{
 		// TODO: pass variant type as param this method is prone to bugs
 		bool is_fwd = this->get_or() == pgt::or_e::forward;
@@ -113,7 +113,7 @@ struct allele_slice_t {
 		pt::u32 i = is_fwd ? ref_start_idx : ref_start_idx - len + 1;
 		pt::u32 N = is_fwd ? ref_start_idx + len : ref_start_idx + 1;
 
-		switch (variant_type) {
+		switch (this->vt) {
 		case pvr::var_type_e::sub:
 			i++;
 			N--;
@@ -131,6 +131,11 @@ struct allele_slice_t {
 			at_str += this->get_step(i).as_str();
 
 		return at_str;
+	}
+
+	void set_vt(pvr::var_type_e vt_)
+	{
+		this->vt = vt_;
 	}
 };
 
