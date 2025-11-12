@@ -215,8 +215,8 @@ gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
 			}
 
 			VcfRec &curr_vcf_rec = var_type_to_vcf_rec.at(key);
-			const pt::idx_t _ = curr_vcf_rec.append_alt_at(
-				alt_allele_slice, alt_walk_ref_count);
+			curr_vcf_rec.append_alt_at(alt_allele_slice,
+						   alt_walk_ref_count);
 		}
 	}
 

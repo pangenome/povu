@@ -20,9 +20,9 @@ namespace povu::genomics::allele
 {
 namespace lq = liteseq;
 
-constexpr pvr::var_type_e ins = pvr::var_type_e::ins;
-constexpr pvr::var_type_e del = pvr::var_type_e::del;
-constexpr pvr::var_type_e sub = pvr::var_type_e::sub;
+// constexpr pvr::var_type_e ins = pvr::var_type_e::ins;
+// constexpr pvr::var_type_e del = pvr::var_type_e::del;
+// constexpr pvr::var_type_e sub = pvr::var_type_e::sub;
 
 bool operator!=(const allele_slice_t &lhs, const allele_slice_t &rhs)
 {

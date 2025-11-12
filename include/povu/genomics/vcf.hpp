@@ -58,8 +58,8 @@ class VcfRec
 	std::vector<pt::idx_t> allele_counts_; // count for each allele (ref at
 					       // idx 0, alts at idx 1+)
 	std::vector<double> af_; // allele frequency for each alt allele
-	pt::idx_t an_ = 0;	 // total number of alleles in called genotypes
-	// pt::idx_t ns_ = 0;       // number of samples with data
+	// pt::idx_t an_ = 0;	 // total number of alleles in called genotypes
+	//  pt::idx_t ns_ = 0;       // number of samples with data
 	std::map<pt::idx_t, pt::idx_t>
 		col_to_allele_count_; // genotype column idx to allele count
 
@@ -136,7 +136,7 @@ public:
 	// constructor(s)
 	// --------------
 
-	VcfRec(pt::id_t ref_id, pt::idx_t pos, std::string id,
+	VcfRec(pt::id_t ref_id, pt::idx_t pos, const std::string &id,
 	       pga::allele_slice_t ref_at, pt::idx_t height,
 	       pvr::var_type_e var_typ, bool is_tangled,
 	       pt::idx_t ref_at_ref_count,

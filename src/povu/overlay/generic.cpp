@@ -370,11 +370,11 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 			auto [start, len] = sl_a.data();
 
 			// add context for subs and insertions
-			pt::u32 i;
-			pt::u32 N;
-			pt::u32 as_walk_start_idx;
-			pt::u32 as_ref_start_idx;
-			pt::u32 as_len;
+			pt::u32 i{pc::INVALID_IDX};
+			pt::u32 N{pc::INVALID_IDX};
+			pt::u32 as_walk_start_idx{pc::INVALID_IDX};
+			pt::u32 as_ref_start_idx{pc::INVALID_IDX};
+			pt::u32 as_len{pc::INVALID_IDX};
 
 			switch (vt) {
 			case pvr::var_type_e::del:
@@ -450,11 +450,11 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 			auto [start, len] = sl_b.data();
 			auto vt_ = pvr::covariant(vt);
 
-			pt::u32 i;
-			pt::u32 N;
-			pt::u32 as_walk_start_idx;
-			pt::u32 as_ref_start_idx;
-			pt::u32 as_len;
+			pt::u32 i{pc::INVALID_IDX};
+			pt::u32 N{pc::INVALID_IDX};
+			pt::u32 as_walk_start_idx{pc::INVALID_IDX};
+			pt::u32 as_ref_start_idx{pc::INVALID_IDX};
+			pt::u32 as_len{pc::INVALID_IDX};
 
 			switch (vt_) {
 			case pvr::var_type_e::del:
