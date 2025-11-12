@@ -188,7 +188,7 @@ tokens_to_route_params(const std::vector<std::string> &tokens)
 
 pvst::Tree read_pvst(const std::string &fp)
 {
-	bool dbg = "frst_dir/9.pvst" == fp ? true : false;
+	// bool dbg = "frst_dir/9.pvst" == fp ? true : false;
 
 	// std::cerr << "Reading PVST file: " << fp << "\n";
 
@@ -206,7 +206,7 @@ pvst::Tree read_pvst(const std::string &fp)
 	// map file vertex index to pvst vertex index
 	std::map<pt::idx_t, pt::idx_t> file_v_idx_to_pvst_idx;
 
-	pt::u32 x;
+	// pt::u32 x;
 
 	for (pt::idx_t line_idx{}; line_idx < lines.size(); line_idx++) {
 		const std::string &line = lines[line_idx];
@@ -229,7 +229,7 @@ pvst::Tree read_pvst(const std::string &fp)
 		pt::idx_t id = std::stoul(tokens[1]);
 
 		pt::idx_t v_idx{pc::INVALID_IDX};
-		const std::string &pvst_label = tokens[2];
+		// const std::string &pvst_label = tokens[2];
 
 		switch (typ) {
 		case pc::PVST_DUMMY_SYMBOL: {

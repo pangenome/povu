@@ -19,7 +19,7 @@ comp_itineraries3(const bd::VG &g, const pvr::RoV &rov,
 		  const std::set<pt::id_t> &to_call_ref_ids)
 {
 	if (rov.can_be_non_planar())
-		generic::overlay_generic(g, rov, to_call_ref_ids);
+		generic::overlay_generic(g, rov);
 
 	auto [e, opt_pc] = overlay_tiny(g, rov, to_call_ref_ids);
 	if (opt_pc.has_value())

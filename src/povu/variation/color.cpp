@@ -9,13 +9,13 @@
 #include <utility>  // for move
 #include <vector>   // for vector
 
-#include "fmt/core.h"		  // for format_to
-#include "indicators/setting.hpp" // for PostfixText
-#include "povu/common/app.hpp"	  // for config
+// #include "fmt/core.h"		  // for format_to
+// #include "indicators/setting.hpp" // for PostfixText
+// #include "povu/common/app.hpp"	  // for config
 #include "povu/common/constants.hpp"
 #include "povu/common/core.hpp" // for pt
 // #include "povu/common/log.hpp"
-#include "povu/common/progress.hpp" // for set_progress_bar_com...
+// #include "povu/common/progress.hpp" // for set_progress_bar_com...
 // #include "povu/common/utils.hpp"
 // #include "povu/genomics/graph.hpp" // for RoV, find_walks, pgt
 // #include "povu/genomics/vcf.hpp"
@@ -72,18 +72,17 @@ std::optional<pt::u32> find_vertex(const bd::VG &g, const pvst::Tree &pvst,
 				   const std::set<pt::id_t> &to_call_ref_ids,
 				   pt::u32 pvst_v_idx)
 {
-	std::string s = ">3597>3600";
-	std::string ss = pvst.get_vertex(pvst_v_idx).as_str();
+	// std::string s = ">3597>3600";
+	// std::string ss = pvst.get_vertex(pvst_v_idx).as_str();
+	// auto dbg = (ss == s) ? true : false;
 
-	auto dbg = (ss == s) ? true : false;
-
-	auto is_parent_valid = [&](pt::u32 pvst_v_idx)
+	auto is_parent_valid = [&](pt::u32 parent_pvst_v_idx)
 	{
-		return pvst_v_idx != pvst.root_idx() &&
-		       pvst_v_idx != pc::INVALID_IDX &&
+		return parent_pvst_v_idx != pvst.root_idx() &&
+		       parent_pvst_v_idx != pc::INVALID_IDX &&
 		       // if the parent has too many children, skip
 		       // avoids going too far up the tree
-		       pvst.get_children(pvst_v_idx).size() < 20;
+		       pvst.get_children(parent_pvst_v_idx).size() < 20;
 	};
 
 	do {

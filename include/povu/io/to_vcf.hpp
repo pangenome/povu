@@ -177,8 +177,7 @@ public:
 
 void init_vcfs(bd::VG &g, const std::vector<std::string> &sample_names,
 	       VcfOutput &vout);
-void write_vcfs(pgv::VcfRecIdx &vcf_recs, const bd::VG &g,
-		const std::set<pt::id_t> &vcf_ref_ids, VcfOutput &vout,
+void write_vcfs(pgv::VcfRecIdx &vcf_recs, const bd::VG &g, VcfOutput &vout,
 		const core::config &app_config);
 } // namespace povu::io::to_vcf
 

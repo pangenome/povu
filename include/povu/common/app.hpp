@@ -75,7 +75,6 @@ struct config {
 	std::size_t queue_len_{4};
 
 	// general
-	bool prog_{false};	     // show progress bars
 	unsigned char verbosity_{0}; // verbosity
 
 	// generate dot format graphs
@@ -192,12 +191,6 @@ struct config {
 	}
 
 	[[nodiscard]]
-	bool show_progress() const
-	{
-		return this->prog_;
-	}
-
-	[[nodiscard]]
 	std::size_t verbosity() const
 	{
 		return this->verbosity_;
@@ -289,11 +282,6 @@ struct config {
 	void set_references_txt(const std::string &s)
 	{
 		this->references_txt = s;
-	}
-
-	void set_progress(bool b)
-	{
-		this->prog_ = b;
 	}
 
 	void set_verbosity(unsigned char v)

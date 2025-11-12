@@ -9,13 +9,13 @@
 #include <utility>  // for move
 #include <vector>   // for vector
 
-#include "fmt/core.h"		  // for format_to
-#include "indicators/setting.hpp" // for PostfixText
-#include "povu/common/app.hpp"	  // for config
+// #include "fmt/core.h"		  // for format_to
+// #include "indicators/setting.hpp" // for PostfixText
+// #include "povu/common/app.hpp"	  // for config
 #include "povu/common/constants.hpp"
 #include "povu/common/core.hpp" // for pt
 // #include "povu/common/log.hpp"
-#include "povu/common/progress.hpp" // for set_progress_bar_com...
+// #include "povu/common/progress.hpp" // for set_progress_bar_com...
 // #include "povu/common/utils.hpp"
 #include "povu/genomics/graph.hpp" // for RoV, find_walks, pgt
 // #include "povu/genomics/vcf.hpp"
@@ -102,7 +102,7 @@ void find_rovs(const std::vector<pt::u32> &lu, pairwise_variants &pv)
 {
 	auto is_ins = [&](pt::u32 i, const pt::slice_t &sl) -> bool
 	{
-		return (i > 0) && (lu[i + sl.len] - lu[i - 1] == 1);
+		return (i > 0) && (lu[i + sl.len()] - lu[i - 1] == 1);
 	};
 
 	auto is_del = [&](pt::u32 i) -> bool
@@ -114,7 +114,7 @@ void find_rovs(const std::vector<pt::u32> &lu, pairwise_variants &pv)
 	auto find_alt_start = [&](const pt::slice_t &sl, var_type_e t,
 				  pt::u32 i) -> pt::slice_t
 	{
-		pt::u32 alt_len = t == ins ? 0 : lu[i + sl.len] - lu[i - 1];
+		pt::u32 alt_len = t == ins ? 0 : lu[i + sl.len()] - lu[i - 1];
 		pt::u32 alt_start = lu[i - 1];
 
 		if (t == sub || alt_start == 0) {
@@ -135,7 +135,7 @@ void find_rovs(const std::vector<pt::u32> &lu, pairwise_variants &pv)
 			var_type_e t = is_ins(i, sl) ? ins : sub;
 			pt::slice_t alt_sl = find_alt_start(sl, t, i);
 			pv.add_variant({sl, alt_sl, covariant(t)});
-			i += sl.len;
+			i += sl.len();
 			continue;
 		}
 
@@ -265,10 +265,10 @@ void find_pvst_rovs(const bd::VG &g, const pvst::Tree &pvst,
 		const pvst::VertexBase *v = pvst.get_vertex_const_ptr(i);
 		RoV r{v};
 
-		if (r.as_str() == ">2597>2621") {
-			std::cerr << "Found target RoV\n";
-			std::exit(EXIT_FAILURE);
-		}
+		// if (r.as_str() == ">2597>2621") {
+		//	std::cerr << "Found target RoV\n";
+		//	std::exit(EXIT_FAILURE);
+		// }
 
 		// get the set of walks for the RoV
 		pt::status_t s = povu::genomics::graph::find_walks(g, r);
@@ -292,15 +292,15 @@ void find_pvst_rovs(const bd::VG &g, const pvst::Tree &pvst,
 void eval_vertex(const bd::VG &g, const pvst::Tree &pvst, pt::u32 pvst_v_idx,
 		 std::vector<RoV> &rs)
 {
-	std::string s = ">3597>3600";
+	// std::string s = ">3597>3600";
 	const pvst::VertexBase *pvst_v_ptr =
 		pvst.get_vertex_const_ptr(pvst_v_idx);
 
 	std::string ss = pvst_v_ptr->as_str();
 
-	if (s == ss) {
-		std::cerr << "Evaluating pvst vertex: " << ss << "\n";
-	}
+	// if (s == ss) {
+	//	std::cerr << "Evaluating pvst vertex: " << ss << "\n";
+	// }
 
 	if (should_call(pvst, pvst_v_ptr, pvst_v_idx)) {
 		RoV r{pvst_v_ptr};
@@ -356,8 +356,7 @@ bool has_any_refs(const bd::VG &g, const std::set<pt::id_t> &to_call_ref_ids,
  * initialize RoVs from flubbles
  */
 std::vector<RoV> gen_rov(const std::vector<pvst::Tree> &pvsts, const bd::VG &g,
-			 const std::set<pt::id_t> &to_call_ref_ids,
-			 const core::config &app_config)
+			 const std::set<pt::id_t> &to_call_ref_ids)
 {
 	// the set of RoVs to return
 	std::vector<RoV> rs;

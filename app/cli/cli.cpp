@@ -275,7 +275,6 @@ int cli(int argc, char **argv, core::config &app_config)
 	args::Flag version(arguments, "version", "The current version of povu", {"version"});
 	args::ValueFlag<int> verbosity(arguments, "verbosity", "Level of output [default: 0]", {'v', "verbosity"});
 	args::ValueFlag<int> thread_count( arguments, "threads", "Number of threads to use [default: 1]", {'t', "threads"});
-	args::Flag progress(arguments, "progress", "Show progress bars", {"progress"});
 	args::HelpFlag h(arguments, "help", "help", {'h', "help"});
 	// clang-format on
 
@@ -306,10 +305,6 @@ int cli(int argc, char **argv, core::config &app_config)
 
 	if (thread_count) {
 		app_config.set_thread_count(args::get(thread_count));
-	}
-
-	if (progress) {
-		app_config.set_progress(true);
 	}
 
 	return 0;

@@ -234,8 +234,7 @@ public:
  * initialize RoVs from flubbles
  */
 std::vector<RoV> gen_rov(const std::vector<pvst::Tree> &pvsts, const bd::VG &g,
-			 const std::set<pt::id_t> &to_call_ref_ids,
-			 const core::config &app_config);
+			 const std::set<pt::id_t> &to_call_ref_ids);
 
 std::set<pt::up_t<pt::u32>>
 find_non_planar(const std::vector<pgt::walk_t> &walks);

@@ -4,7 +4,7 @@
 #include <fmt/color.h>
 #include <fmt/format.h>
 
-#include "compat.hpp"
+#include "povu/common/compat.hpp" // pv_cmp
 
 #define FN() pv_cmp::format("[{}::{}]", MODULE, __func__)
 
@@ -31,8 +31,9 @@
 
 #define INFO(fmt_str, ...) LOG("INFO", fmt::color::cyan, fmt_str, ##__VA_ARGS__)
 
-#define SUCCESS(fmt_str, ...)                                                  \
-	LOG("INFO", fmt::color::lime_green, fmt_str, ##__VA_ARGS__)
+// #define SUCCESS(fmt_str, ...) \	LOG("INFO", fmt::color::lime_green,
+// fmt_str,
+// ##__VA_ARGS__)
 
 #define DBG(fmt_str, ...)                                                      \
 	LOG("DEBUG", fmt::color::orange, fmt_str, ##__VA_ARGS__)

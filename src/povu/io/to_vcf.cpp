@@ -126,8 +126,8 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 		pt::u32 start = is_fwd ? ++i : --i;
 		pt::u32 end = is_fwd ? --N : ++N;
 
-		for (pt::u32 i{start}; i != end; i += step) {
-			const pgt::step_t &s = as.get_step(i);
+		for (pt::u32 j{start}; j != end; j += step) {
+			const pgt::step_t &s = as.get_step(j);
 			dna_str += get_label(s);
 		}
 
@@ -219,8 +219,7 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 	return;
 }
 
-void write_vcfs(pgv::VcfRecIdx &vcf_recs, const bd::VG &g,
-		const std::set<pt::id_t> &vcf_ref_ids, VcfOutput &vout,
+void write_vcfs(pgv::VcfRecIdx &vcf_recs, const bd::VG &g, VcfOutput &vout,
 		const core::config &app_config)
 {
 

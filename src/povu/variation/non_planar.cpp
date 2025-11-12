@@ -34,9 +34,9 @@ namespace povu::var::rov
 // namespace pvst = povu::pvst;
 // using namespace povu::progress;
 
-constexpr var_type_e ins = var_type_e::ins;
-constexpr var_type_e del = var_type_e::del;
-constexpr var_type_e sub = var_type_e::sub;
+// constexpr var_type_e ins = var_type_e::ins;
+// constexpr var_type_e del = var_type_e::del;
+// constexpr var_type_e sub = var_type_e::sub;
 
 struct walk_matrix {
 private:
@@ -146,7 +146,6 @@ public:
 		return walk_idx * vtx_count + col_idx;
 	}
 
-	[[nodiscard]]
 	void set_val(pt::u32 walk_idx, pt::u32 v_id)
 	{
 		pt::u32 col_idx = vid_to_col[v_id];
@@ -257,14 +256,14 @@ public:
 		return true;
 	}
 
-	[[nodiscard]]
-	std::set<pt::u32> shared_walks_deep(pt::u32 a, pt::u32 b) const
-	{
-		auto [u, v] = comp_u_v(a, b);
-		std::set<pt::u32> all_vertices;
+	// [[nodiscard]]
+	// std::set<pt::u32> shared_walks_deep(pt::u32 a, pt::u32 b) const
+	// {
+	//	auto [u, v] = comp_u_v(a, b);
+	//	std::set<pt::u32> all_vertices;
 
-		return all_vertices;
-	}
+	//	return all_vertices;
+	// }
 };
 
 struct walk_guide {
@@ -323,7 +322,7 @@ find_non_planar(const std::vector<pgt::walk_t> &walks)
 	pt::u32 vtx_count = wg.vtx_count();
 
 	// walk idx, v id
-	using matrix_idx = std::pair<pt::u32, pt::u32>;
+	// using matrix_idx = std::pair<pt::u32, pt::u32>;
 
 	walk_matrix wm = walk_matrix::create_blank(walks.size(), vtx_count,
 						   all_vertices);
@@ -333,7 +332,7 @@ find_non_planar(const std::vector<pgt::walk_t> &walks)
 	std::set<pt::up_t<pt::u32>> all_bounds;
 	for (pt::u32 u : flanks) {
 		for (pt::u32 v : flanks) {
-			pt::up_t k{u, v};
+			pt::up_t<pt::u32> k{u, v};
 			if (u == v || pv_cmp::contains(all_bounds, k))
 				continue;
 

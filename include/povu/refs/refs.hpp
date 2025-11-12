@@ -17,7 +17,7 @@ namespace povu::refs
 inline constexpr std::string_view MODULE = "povu::refs";
 namespace lq = liteseq;
 
-enum class ref_format_e {
+enum class ref_format_e : pt::u8 {
 	PANSN = 1,
 	UNDEFINED = 0,
 };
@@ -79,7 +79,7 @@ public:
 
 class Refs
 {
-	lq::ref **refs;
+	lq::ref **refs_ptr_ptr;
 
 	pt::idx_t ref_count_;
 
@@ -115,7 +115,7 @@ public:
 	[[nodiscard]]
 	const lq::ref *get_lq_ref_ptr(pt::idx_t ref_idx) const
 	{
-		return refs[ref_idx];
+		return refs_ptr_ptr[ref_idx];
 	}
 
 	[[nodiscard]]
@@ -137,7 +137,7 @@ public:
 	std::optional<pt::id_t> get_ref_id(std::string_view tag) const
 	{
 		for (pt::id_t ref_id{}; ref_id < this->ref_count(); ref_id++) {
-			const char *t = lq::get_tag(this->refs[ref_id]);
+			const char *t = lq::get_tag(this->refs_ptr_ptr[ref_id]);
 			if (tag == t)
 				return ref_id;
 		}
@@ -152,7 +152,7 @@ public:
 	{
 		std::set<pt::id_t> in_sample;
 		for (pt::id_t ref_id{}; ref_id < this->ref_count(); ref_id++) {
-			const lq::ref *r = this->refs[ref_id];
+			const lq::ref *r = this->refs_ptr_ptr[ref_id];
 			const char *r_sn = lq::get_sample_name(r);
 			lq::ref_id_type rt = lq::get_ref_id_type(r);
 			if (rt == lq::ref_id_type::REF_ID_PANSN) {
@@ -175,7 +175,7 @@ public:
 	[[nodiscard]]
 	std::set<pt::id_t> get_shared_samples(pt::id_t ref_id) const
 	{
-		const lq::ref *r = this->refs[ref_id];
+		const lq::ref *r = this->refs_ptr_ptr[ref_id];
 		const char *sample_name = lq::get_sample_name(r);
 		return this->get_refs_in_sample(sample_name);
 	}
@@ -205,9 +205,9 @@ public:
 	void add_all_refs(lq::ref **refs, pt::idx_t ref_count)
 	{
 		this->ref_count_ = ref_count;
-		this->refs = refs;
+		this->refs_ptr_ptr = refs;
 		for (pt::idx_t ref_idx{}; ref_idx < ref_count; ++ref_idx) {
-			Ref ref = Ref::from_lq_ref(refs[ref_idx]);
+			Ref ref = Ref::from_lq_ref(refs_ptr_ptr[ref_idx]);
 			this->refs_.emplace_back(ref);
 		}
 	}
@@ -227,7 +227,7 @@ public:
 			const std::set<pt::id_t> &sample_refs =
 				this->get_shared_samples(ref_id);
 
-			const lq::ref *r = this->refs[ref_id];
+			const lq::ref *r = this->refs_ptr_ptr[ref_id];
 			const char *col_name = lq::get_sample_name(r);
 			// std::string col_name =
 			// this->get_ref(ref_id).get_sample_name();
@@ -248,14 +248,14 @@ public:
 							.size()),
 					0};
 				this->ref_id_to_col_idx[ref_id] = x;
-				this->genotype_col_names.push_back(col_name);
+				this->genotype_col_names.emplace_back(col_name);
 			}
 			else if (sample_refs.size() > 1) {
 				pt::idx_t col_idx =
 					this->genotype_col_names.size();
 				pt::idx_t col_col_idx{};
 
-				this->blank_genotype_cols.push_back(
+				this->blank_genotype_cols.emplace_back(
 					std::vector<std::string>(
 						sample_refs.size(),
 						BLANK_GT_VALUE));
@@ -266,7 +266,7 @@ public:
 					this->ref_id_to_col_idx[ref_id_] = x;
 					handled.insert(ref_id_);
 				}
-				this->genotype_col_names.push_back(col_name);
+				this->genotype_col_names.emplace_back(col_name);
 			}
 		}
 	}

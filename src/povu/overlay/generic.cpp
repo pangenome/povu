@@ -18,9 +18,8 @@
 
 namespace povu::overlay::generic
 {
-
-const pt::u8 SLICE_A_IDX{0};
-const pt::u8 SLICE_B_IDX{1};
+// const pt::u8 SLICE_A_IDX{0};
+// const pt::u8 SLICE_B_IDX{1};
 using prefix_sum = std::vector<pt::u32>;
 using rs_to_ps = std::pair<pt::u32, prefix_sum>; // ref start to prefix sum
 
@@ -329,30 +328,30 @@ Overlays overlay_walks(const bd::VG &g, const std::vector<pgt::walk_t> &walks)
 	return overlays;
 }
 
-std::set<pt::u32> find_refs_in_slice(const bd::VG &g, const pgt::walk_t &walk,
-				     const pt::slice_t &sl,
-				     pvr::var_type_e var_type)
-{
-	auto [start, len] = sl;
-	auto [s_v_id, s_o] = walk[start];
-	auto [t_v_id, t_o] = len == 0 ? walk[start] : walk[len - 1];
+// std::set<pt::u32> find_refs_in_slice(const bd::VG &g, const pgt::walk_t
+// &walk,				     const pt::slice_t &sl,
+// pvr::var_type_e var_type)
+// {
+//	auto [start, len] = sl.data();
+//	auto [s_v_id, s_o] = walk[start];
+//	auto [t_v_id, t_o] = len == 0 ? walk[start] : walk[len - 1];
 
-	const std::vector<std::vector<pt::idx_t>> &s_vtx_refs =
-		g.get_vertex_refs(s_v_id);
-	const std::vector<std::vector<pt::idx_t>> &t_vtx_refs =
-		g.get_vertex_refs(t_v_id);
+//	const std::vector<std::vector<pt::idx_t>> &s_vtx_refs =
+//		g.get_vertex_refs(s_v_id);
+//	const std::vector<std::vector<pt::idx_t>> &t_vtx_refs =
+//		g.get_vertex_refs(t_v_id);
 
-	std::set<pt::id_t> graph_walk_refs;
+//	std::set<pt::id_t> graph_walk_refs;
 
-	for (pt::u32 ref_idx{}; ref_idx < g.ref_count(); ref_idx++) {
-		if (s_vtx_refs[ref_idx].empty() || t_vtx_refs[ref_idx].empty())
-			continue;
+//	for (pt::u32 ref_idx{}; ref_idx < g.ref_count(); ref_idx++) {
+//		if (s_vtx_refs[ref_idx].empty() || t_vtx_refs[ref_idx].empty())
+//			continue;
 
-		graph_walk_refs.insert(ref_idx);
-	}
+//		graph_walk_refs.insert(ref_idx);
+//	}
 
-	return graph_walk_refs;
-}
+//	return graph_walk_refs;
+// }
 
 void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 	     const Overlays &ov, const pvr::raw_variant &pv, pt::u32 wa_idx,
@@ -368,7 +367,7 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 		const std::vector<overlay_prefix_sum_t> &wa_pss =
 			ov.get_ps(wa_idx, ref_idx);
 		for (const auto &[ref_start_idx, ps_f, ps_r] : wa_pss) {
-			auto [start, len] = sl_a;
+			auto [start, len] = sl_a.data();
 
 			// add context for subs and insertions
 			pt::u32 i;
@@ -399,6 +398,9 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 				as_ref_start_idx = ref_start_idx;
 				as_len = 1 + 1;
 				break;
+			case pvr::var_type_e::und: // undefined
+				ERR("Undefined variant type in pv");
+				std::exit(EXIT_FAILURE);
 			}
 
 			// Check prefix sums in one step
@@ -445,7 +447,7 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 		const std::vector<overlay_prefix_sum_t> &wb_pss =
 			ov.get_ps(wb_idx, ref_idx);
 		for (const auto &[ref_start_idx, ps_f, ps_r] : wb_pss) {
-			auto [start, len] = sl_b;
+			auto [start, len] = sl_b.data();
 			auto vt_ = pvr::covariant(vt);
 
 			pt::u32 i;
@@ -476,6 +478,9 @@ void pop_exp(const bd::VG &g, const std::vector<pgt::walk_t> &walks,
 				as_ref_start_idx = ref_start_idx;
 				as_len = 1 + 1;
 				break;
+			case pvr::var_type_e::und: // undefined
+				ERR("Undefined variant type in pv");
+				std::exit(EXIT_FAILURE);
 			}
 
 			// Check prefix sums in one step
@@ -527,14 +532,16 @@ using vtx_pos = pt::op_t<pt::u32>;
 
 // use to look up walks by vertex id and position
 struct walks_guide {
+private:
 	// v id to walks that contain it
-	std::map<pt::u32, std::set<pt::u32>> v_to_walks;
-	std::map<pt::u32, std::set<vtx_pos>> walks_idxs;
+	std::map<pt::u32, std::set<pt::u32>> v_to_walks_;
+	std::map<pt::u32, std::set<vtx_pos>> walks_idxs_;
 
+public:
 	walks_guide(std::map<pt::u32, std::set<pt::u32>> &&v_to_walks,
 		    std::map<pt::u32, std::set<vtx_pos>> &&walks_idxs)
-	    : v_to_walks(std::move(v_to_walks)),
-	      walks_idxs(std::move(walks_idxs))
+	    : v_to_walks_(std::move(v_to_walks)),
+	      walks_idxs_(std::move(walks_idxs))
 	{}
 
 	/**
@@ -544,8 +551,8 @@ struct walks_guide {
 	std::set<pt::u32> shared_walks(pt::u32 u, pt::u32 v) const
 	{
 		std::set<pt::u32> shared;
-		const std::set<pt::u32> &u_walks = v_to_walks.at(u);
-		const std::set<pt::u32> &v_walks = v_to_walks.at(v);
+		const std::set<pt::u32> &u_walks = v_to_walks_.at(u);
+		const std::set<pt::u32> &v_walks = v_to_walks_.at(v);
 		std::set_intersection(u_walks.begin(), u_walks.end(),
 				      v_walks.begin(), v_walks.end(),
 				      std::inserter(shared, shared.begin()));
@@ -555,10 +562,10 @@ struct walks_guide {
 	[[nodiscard]]
 	pt::u32 get_step_in_walk(pt::u32 w_idx, pt::u32 v_id) const
 	{
-		if (!pv_cmp::contains(walks_idxs, v_id))
+		if (!pv_cmp::contains(walks_idxs_, v_id))
 			return pc::INVALID_IDX;
 
-		for (const auto &vp : walks_idxs.at(v_id)) {
+		for (const auto &vp : walks_idxs_.at(v_id)) {
 			auto [walk_idx, step_idx] = vp;
 			if (walk_idx == w_idx)
 				return step_idx;
@@ -601,19 +608,8 @@ void prefix_sum_overlay(const bd::VG &g, const pgt::walk_t &w,
 			std::map<pt::u32, pt::u32> &ref_loop_count, pga::Exp &e)
 {
 	const pvr::var_type_e DEFAULT_VT = sub;
-	try {
-		w.at(WALK_START);
-	}
-	catch (const std::out_of_range &e) {
-		ERR("prefix_sum_overlay: WALK_START {} out of range for walk "
-		    "of "
-		    "length {}",
-		    WALK_START, w.size());
-		std::exit(EXIT_FAILURE);
-	}
-
-	auto [v_id, o] = w[WALK_START];
-	// const std::vector<std::vector<pt::idx_t>> &vtx_ref_idxs =
+	// auto [v_id, o] = w[WALK_START];
+	//  const std::vector<std::vector<pt::idx_t>> &vtx_ref_idxs =
 	//	g.get_vertex_refs(v_id);
 
 	for (pt::u32 r_idx{}; r_idx < g.ref_count(); r_idx++) {
@@ -653,13 +649,13 @@ void prefix_sum_overlay(const bd::VG &g, const pgt::walk_t &w,
  * [out] rov_exps: vector of expeditions, one per pairwise variant set
  */
 std::pair<std::vector<pga::Exp>, std::vector<pga::sub_inv>>
-overlay_generic(const bd::VG &g, const pvr::RoV &rov,
-		const std::set<pt::id_t> &to_call_ref_ids)
+overlay_generic(const bd::VG &g, const pvr::RoV &rov)
 {
 	std::vector<pga::Exp> rov_exps;
 
 	const std::vector<pgt::walk_t> &walks = rov.get_walks();
-	const std::vector<pvr::pairwise_variants> &pv = rov.get_irreducibles();
+	// const std::vector<pvr::pairwise_variants> &pv =
+	// rov.get_irreducibles();
 
 	// std::cerr << rov.as_str() << "\n";
 
@@ -705,10 +701,8 @@ overlay_generic(const bd::VG &g, const pvr::RoV &rov,
 #ifdef DEBUG
 			if (u_idx == pc::INVALID_IDX ||
 			    v_idx == pc::INVALID_IDX) {
-				ERR("Could not find u {} or v {} in "
-				    "walk "
-				    "{}",
-				    u, v, w_idx);
+				ERR("Could not find u {} or v {} in walk {}", u,
+				    v, w_idx);
 				std::exit(EXIT_FAILURE);
 			}
 #endif

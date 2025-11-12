@@ -12,7 +12,6 @@ endif()
 project(povu VERSION 0.0.1 LANGUAGES C CXX)
 
 # === C++ Standard Configuration ===
-# Require C++17 for all targets
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -89,20 +88,6 @@ set(DEBUG_WARNINGS
   # -Wpadded # Uncomment or gate by compiler if needed
 )
 
-# Apply compiler flags per build type
-# Define macros for use in #ifdef DEBUG / #ifdef RELEASE
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  add_compile_options(-g)
-  add_compile_options(${COMMON_WARNINGS})
-  add_compile_options(${DEBUG_WARNINGS})
-  add_compile_definitions(DEBUG)
-elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
-  add_compile_options(${COMMON_WARNINGS})
-  add_compile_options(-O3)
-  add_compile_definitions(RELEASE)
-endif()
-
-
 # --- CI Mode Configuration ---
 # CI is a build environment, not a build type.
 # Enable stricter checks (e.g., -Werror) using -DCI=ON or if ENV{CI} is set
@@ -125,23 +110,6 @@ include(cmake/sanitizers.cmake)
 
 # --- Depds from CPM.cmake --
 include(cmake/deps.cmake)
-
-# --- Silence compiler warnings for dependencies ---
-function(silence_warnings target)
-  if(TARGET ${target})
-    get_target_property(type ${target} TYPE)
-    if(type STREQUAL "INTERFACE_LIBRARY")
-      target_compile_options(${target} INTERFACE -w)
-    else()
-      target_compile_options(${target} PRIVATE -w)
-    endif()
-  endif()
-endfunction()
-
-silence_warnings(fmt)
-silence_warnings(liteseq)
-silence_warnings(args)
-silence_warnings(indicators)
 
 # ============================ povu config =============================
 
@@ -191,7 +159,6 @@ ADD_LIBRARY(povulib
   ${POVULIB_SOURCES_DIR}/variation/non_planar.cpp
   ${POVULIB_SOURCES_DIR}/variation/color.cpp
 
-
   # genomics
   ${POVULIB_SOURCES_DIR}/genomics/allele.cpp
   ${POVULIB_SOURCES_DIR}/genomics/genomics.cpp
@@ -228,9 +195,28 @@ add_executable(povu
   ${APP_DIR}/subcommand/info.cpp
   ${APP_DIR}/subcommand/call.cpp
   ${APP_DIR}/subcommand/gfa2vcf.cpp
-
   ${APP_DIR}/main.cpp
 )
+
+function(add_compile_options_for_build_type target)
+  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_options(${target} PRIVATE
+      ${COMMON_WARNINGS}
+      ${DEBUG_WARNINGS}
+      -g -Wno-system-headers)
+    target_compile_definitions(${target} PRIVATE DEBUG)
+  elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_compile_options(${target} PRIVATE
+      ${COMMON_WARNINGS}
+      -O3 -Wno-system-headers)
+    target_compile_definitions(${target} PRIVATE RELEASE)
+  endif()
+endfunction()
+
+# Apply compile options only to your own targets
+add_compile_options_for_build_type(povulib)
+add_compile_options_for_build_type(povu)
+
 
 target_include_directories(povulib
   PUBLIC
@@ -242,9 +228,8 @@ target_include_directories(povulib
 
 target_link_libraries(povulib
   PRIVATE
-  fmt::fmt
-  liteseq     # gfa handling
-  indicators  # progress bars
+  fmt::fmt # formatting
+  liteseq  # gfa handling
 )
 
 target_link_libraries(povu
@@ -253,7 +238,6 @@ target_link_libraries(povu
   liteseq      # gfa handling
   fmt::fmt     # formatting
   taywee::args # argument parsing
-  indicators   # progress bars
 )
 
 # =================== Set Build-Time Output Directory ========================
