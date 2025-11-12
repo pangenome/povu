@@ -61,7 +61,6 @@ void do_gfa2vcf(const core::config &app_config)
 	core::config call_config = app_config;
 	call_config.set_task(core::task_e::call);
 	call_config.set_forest_dir(temp_dir_str);
-	call_config.set_stdout_vcf(true); // Always output to stdout for gfa2vcf
 
 	// Run call (it will handle everything including stdout output)
 	call::do_call(call_config);
