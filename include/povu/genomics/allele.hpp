@@ -1,19 +1,22 @@
 #ifndef POVU_GENOMICS_ALLELE_HPP
 #define POVU_GENOMICS_ALLELE_HPP
 
-#include <cstdlib>		     // for exit, EXIT_FAILURE
-#include <liteseq/refs.h>	     // for ref_walk
-#include <liteseq/types.h>	     // for strand
-#include <map>			     // for map
-#include <set>			     // for set, operator!=
-#include <string>		     // for basic_string, string
-#include <string_view>		     // for string_view
-#include <utility>		     // for move, pair
-#include <vector>		     // for vector
-				     //
-#include "povu/common/compat.hpp"    // for contains, pv_cmp
-#include "povu/common/core.hpp"	     // for pt, idx_t, id_t, op_t
-#include "povu/common/log.hpp"	     // for ERR
+// #include <cstdlib> // for exit, EXIT_FAILURE
+// #include <functional>
+#include <liteseq/refs.h>	  // for ref_walk
+#include <liteseq/types.h>	  // for strand
+#include <map>			  // for map
+#include <set>			  // for set, operator!=
+#include <string>		  // for basic_string, string
+#include <string_view>		  // for string_view
+#include <utility>		  // for move, pair
+#include <vector>		  // for vector
+				  //
+#include "povu/common/compat.hpp" // for contains, pv_cmp
+#include "povu/common/constants.hpp"
+#include "povu/common/core.hpp" // for pt, idx_t, id_t, op_t
+// #include "povu/common/log.hpp"	  // for ERR
+#include "povu/common/utils.hpp"
 #include "povu/graph/bidirected.hpp" // for bd, VG
 #include "povu/graph/pvst.hpp"	     // for VertexBase
 #include "povu/graph/types.hpp"	     // for or_e, id_or_t, walk_t
@@ -28,68 +31,49 @@ namespace lq = liteseq;
 namespace pgt = povu::types::graph;
 namespace pvst = povu::pvst;
 
-struct ref_needle {
-	pt::u32 r_idx;
-	pt::u32 start;
-	pt::u32 limit_left{pc::INVALID_IDX};
-	pt::u32 limit_right{pc::INVALID_IDX};
+// idx_in_hap, v_id, or_e
+using extended_step = std::tuple<pt::u32, pt::u32, pgt::or_e>;
+using extended_walk = std::vector<extended_step>;
 
-	ref_needle(pt::u32 r_idx_, pt::u32 start_)
-	    : r_idx(r_idx_), start(start_)
-	{}
+using broad_step = extended_step;
+using broad_walk = extended_walk; // a lap?
+using ext_lap = std::vector<extended_step>;
+using race = std::vector<broad_walk>;
 
-	void set_limits(pt::u32 left, pt::u32 right)
-	{
-		limit_left = left;
-		limit_right = right;
-	}
-};
-
-struct sub_inv {
-	std::vector<ref_needle> rev_needles;
-	std::vector<ref_needle> fwd_needles;
-	pt::u32 len;
-	const pvr::RoV *rov_;
-};
-
-struct allele_slice_t {
-	const pgt::walk_t *walk;
-	pt::idx_t walk_idx;
-	pt::idx_t walk_start_idx;
-
+struct hap_slice {
 	const lq::ref_walk *ref_w;
 	pt::idx_t ref_idx;
 	pt::idx_t ref_start_idx;
+	pt::idx_t len;
 
-	pt::idx_t len; // total step count in the itinerary
-	ptg::or_e slice_or;
-	pvr::var_type_e vt;
+	// --------------
+	// constructor(s)
+	// --------------
+	static hap_slice create_null()
+	{
+		return hap_slice{nullptr, pc::INVALID_IDX, pc::INVALID_IDX,
+				 pc::INVALID_IDX};
+	}
+
+	hap_slice(const lq::ref_walk *ref_w_, pt::idx_t ref_idx_,
+		  pt::idx_t ref_start_idx_, pt::idx_t len_)
+	    : ref_w(ref_w_), ref_idx(ref_idx_), ref_start_idx(ref_start_idx_),
+	      len(len_)
+	{}
+
+	hap_slice() = delete;
 
 	// ---------
 	// getter(s)
 	// ---------
-	[[nodiscard]]
-	pt::idx_t step_count() const
-	{
-		return this->len;
-	}
 
 	[[nodiscard]]
-	ptg::or_e get_or() const
+	bool is_null() const
 	{
-		return this->slice_or;
-	}
-
-	[[nodiscard]]
-	bd::id_or_t get_walk_step(pt::idx_t idx) const
-	{
-		return this->walk->at(idx);
-	}
-
-	[[nodiscard]]
-	pt::idx_t get_locus(pt::idx_t idx) const
-	{
-		return this->ref_w->loci[idx];
+		return this->ref_w == nullptr ||
+		       this->ref_idx == pc::INVALID_IDX ||
+		       this->ref_start_idx == pc::INVALID_IDX ||
+		       this->len == pc::INVALID_IDX;
 	}
 
 	[[nodiscard]]
@@ -104,16 +88,59 @@ struct allele_slice_t {
 	}
 
 	[[nodiscard]]
-	std::string as_str() const
+	std::string dbg_str() const
 	{
-		// TODO: pass variant type as param this method is prone to bugs
-		bool is_fwd = this->get_or() == pgt::or_e::forward;
 		std::string at_str = "";
 
-		pt::u32 i = is_fwd ? ref_start_idx : ref_start_idx - len + 1;
-		pt::u32 N = is_fwd ? ref_start_idx + len : ref_start_idx + 1;
+		pt::u32 i = ref_start_idx;
+		pt::u32 N = ref_start_idx + len;
 
-		switch (this->vt) {
+		for (; i < N; i++)
+			at_str += this->get_step(i).as_str();
+
+		return at_str;
+	}
+
+	[[nodiscard]]
+	pgt::walk_t to_walk() const
+	{
+		pgt::walk_t w;
+		pt::u32 i = ref_start_idx;
+		pt::u32 N = ref_start_idx + len;
+
+		for (; i < N; i++)
+			w.emplace_back(this->get_step(i));
+
+		return w;
+	}
+
+	[[nodiscard]]
+	std::string get_step_label(const pgt::step_t &s, const bd::VG &g) const
+	{
+		auto [v_id, o] = s;
+		return (o == pgt::or_e::forward)
+			       ? g.get_vertex_by_id(v_id).get_label()
+			       : g.get_vertex_by_id(v_id).get_rc_label();
+	}
+
+	// void append_step_label(const pgt::step_t &s, const bd::VG &g,
+	//		       std::string &dna_str) const
+	// {
+	//	auto [v_id, o] = s;
+	//	dna_str += (o == pgt::or_e::forward)
+	//			   ? g.get_vertex_by_id(v_id).get_label()
+	//			   : g.get_vertex_by_id(v_id).get_rc_label();
+	// }
+
+	[[nodiscard]]
+	std::string as_str(pvr::var_type_e vt) const
+	{
+		std::string at_str = "";
+
+		pt::u32 i = ref_start_idx;
+		pt::u32 N = ref_start_idx + len;
+
+		switch (vt) {
 		case pvr::var_type_e::sub:
 			i++;
 			N--;
@@ -122,9 +149,8 @@ struct allele_slice_t {
 		case pvr::var_type_e::del:
 			N--;
 			break;
-		case pvr::var_type_e::und: // undefined
-			ERR("Undefined variant type in allele_slice_t::as_str");
-			std::exit(EXIT_FAILURE);
+		case pvr::var_type_e::inv:
+			break;
 		}
 
 		for (; i < N; i++)
@@ -133,29 +159,68 @@ struct allele_slice_t {
 		return at_str;
 	}
 
-	void set_vt(pvr::var_type_e vt_)
+	[[nodiscard]]
+	pt::u32 comp_pos(pvr::var_type_e vt) const
 	{
-		this->vt = vt_;
+		pt::idx_t locus = ref_w->loci[ref_start_idx + 1];
+
+		switch (vt) {
+		case pvr::var_type_e::del:
+		case pvr::var_type_e::ins:
+			return locus - 1;
+		case pvr::var_type_e::sub:
+		case pvr::var_type_e::inv:
+			return locus;
+		}
+
+		ERR("Unknown variant type");
+
+		return pc::INVALID_IDX;
+	}
+
+	[[nodiscard]]
+	std::string as_dna_str(const bd::VG &g, pvr::var_type_e vt) const
+	{
+		std::string dna_str = "";
+
+		pt::u32 i = ref_start_idx;
+		pt::u32 N = ref_start_idx + len;
+
+		switch (vt) {
+		case pvr::var_type_e::inv:
+		case pvr::var_type_e::sub:
+			break;
+		case pvr::var_type_e::ins:
+		case pvr::var_type_e::del:;
+			const pgt::step_t &s = this->get_step(i);
+			dna_str += get_step_label(s, g).back();
+			break;
+		}
+
+		if (vt != pvr::var_type_e::inv) {
+			i++;
+			N--;
+		}
+
+		for (; i < N; i++)
+			dna_str += get_step_label(this->get_step(i), g);
+
+		return dna_str;
 	}
 };
 
-bool ref_eq(const allele_slice_t &lhs, const allele_slice_t &rhs);
-bool operator==(const allele_slice_t &lhs, const allele_slice_t &rhs);
-bool operator!=(const allele_slice_t &lhs, const allele_slice_t &rhs);
-
-/**
- * Ref Itinerary or just Itinerary
- * an interrupted
- * sequence of looped walks in a RoV for a given ref
- * useful for repeats
- */
-struct itn_t {
-	std::vector<allele_slice_t> it_;
+// used for untangle
+// TODO: rename to allele traversal
+struct at_itn {
+	std::vector<pgt::walk_t> it_;
 
 	// --------------
 	// constructor(s)
 	// --------------
-	itn_t() : it_()
+	at_itn() : it_()
+	{}
+
+	at_itn(std::vector<pgt::walk_t> &&itn) : it_(itn)
 	{}
 
 	// ---------
@@ -168,112 +233,308 @@ struct itn_t {
 	}
 
 	[[nodiscard]]
-	const std::vector<allele_slice_t> &get_ats() const
+	const std::vector<pgt::walk_t> &get_ats() const
 	{
 		return this->it_;
 	}
 
 	[[nodiscard]]
-	const allele_slice_t &get_at(pt::idx_t at_idx) const
+	const pgt::walk_t &get_at(pt::idx_t at_idx) const
 	{
 		return this->it_[at_idx];
 	}
 
-	// ---------
-	// setter(s)
-	// ---------
-	void append_at(allele_slice_t &&s)
+	std::string to_string()
 	{
-		this->it_.emplace_back(s);
-	}
+		std::string res = "";
+		for (const pgt::walk_t &w : this->it_)
+			res += pv_cmp::format("{{ {} }}", pgt::to_string(w));
 
-	void append_at_sorted(allele_slice_t &&s)
-	{
-		if (this->it_.empty()) {
-			this->it_.emplace_back(s);
-			return;
-		}
-
-		// sort in ascending order based on ref_start_idx
-		pt::idx_t insert_idx = 0;
-		for (const auto &at : this->it_) {
-			if (s.ref_start_idx < at.ref_start_idx) {
-				break;
-			}
-			insert_idx++;
-		}
-		this->it_.insert(this->it_.begin() + insert_idx, s);
-	}
-
-	void sort()
-	{
-		std::sort(this->it_.begin(), this->it_.end(),
-			  [](const allele_slice_t &a, const allele_slice_t &b)
-			  { return a.ref_start_idx < b.ref_start_idx; });
+		return res;
 	}
 };
 
-/**
- * Exp, short for expedition: a journey undertaken by a group of people with
- * a particular purpose, especially that of exploration, research, or war.
- *
- * A collection of itineraries for each reference in a region of variation
- * map of ref_id to the itn of the ref in a RoV
- */
-class Exp
-{
-	// pointer to the RoV from which the expedition is made
-	const pvr::RoV *rov_;
-
-	// map of ref_id to the itinerary (set of walks) of the ref in a RoV
-	// when tangled, a ref can have multiple walks in a RoV
-	std::map<pt::id_t, itn_t> ref_itns_;
-
-	// walk idx to ref idxs that take the walk
-	std::map<pt::idx_t, std::set<pt::idx_t>> walk_idx_to_ref_idxs_;
-
-	// alignment between two refs
-	std::map<pt::op_t<pt::id_t>, std::string> aln_;
-
-	// is true when tangling exists.
-	// tangling exists when a walk traverses an RoV more than once
-	bool is_tangled_{false};
+struct rov_boundaries {
+private:
+	pgt::id_or_t l_;
+	pgt::id_or_t r_;
 
 public:
-	// ---------------------
-	// public constructor(s)
-	// ---------------------
+	rov_boundaries() = delete;
 
-	Exp() : rov_(nullptr), ref_itns_(), walk_idx_to_ref_idxs_(), aln_()
+	rov_boundaries(pgt::id_or_t l, pgt::id_or_t r) : l_(l), r_(r)
 	{}
 
-	Exp(const pvr::RoV *rov)
-	    : rov_(rov), ref_itns_(), walk_idx_to_ref_idxs_(), aln_()
+	[[nodiscard]]
+	pt::op_t<pgt::id_or_t> get_bounds() const
 	{
-		if (this->rov_ == nullptr) {
-			ERR("RoV pointer is null");
-			std::exit(EXIT_FAILURE);
-		}
+		return pt::op_t<pgt::id_or_t>{this->l_, this->r_};
 	}
 
-	// // disable copy constructor
-	// Exp(const Exp &other) = delete;
-	// Exp &operator=(const Exp &other) = delete;
+	[[nodiscard]]
+	std::string to_string() const
+	{
+		return pv_cmp::format("{}{}", this->l_.as_str(),
+				      this->r_.as_str());
+	}
 
-	// // move constructor
-	// Exp(Exp &&other) noexcept = default;
-	// Exp &operator=(Exp &&other) noexcept = default;
+	static rov_boundaries create_null()
+	{
+		return rov_boundaries{
+			pgt::id_or_t{pc::INVALID_IDX, pgt::or_e::forward},
+			pgt::id_or_t{pc::INVALID_IDX, pgt::or_e::forward}};
+	}
 
-	// ~Exp() = default;
+	bool friend operator<(const rov_boundaries &lhs,
+			      const rov_boundaries &rhs)
+	{
+		return std::make_pair(lhs.l_, lhs.r_) <
+		       std::make_pair(rhs.l_, rhs.r_);
+	}
+
+	std::ostream friend &operator<<(std::ostream &os,
+					const rov_boundaries &cxt)
+	{
+		return os << cxt.to_string();
+	}
+};
+
+using walk_to_alts_map = std::map<pgt::walk_t, std::vector<hap_slice>>;
+
+struct alt_set {
+private:
+	walk_to_alts_map ins;
+	walk_to_alts_map dels;
+	walk_to_alts_map subs;
+
+public:
+	alt_set() = default;
+
+	void add_del(hap_slice &&s)
+	{
+		this->dels[s.to_walk()].emplace_back(s);
+	}
+
+	[[nodiscard]]
+	const walk_to_alts_map &get_ins() const
+	{
+		return this->ins;
+	}
+
+	[[nodiscard]]
+	const walk_to_alts_map &get_dels() const
+	{
+		return this->dels;
+	}
+
+	[[nodiscard]]
+	const walk_to_alts_map &get_subs() const
+	{
+		return this->subs;
+	}
+
+	void add_ins(hap_slice &&s)
+	{
+		this->ins[s.to_walk()].emplace_back(s);
+	}
+
+	void add_sub(hap_slice &&s)
+	{
+		this->subs[s.to_walk()].emplace_back(s);
+	}
+
+	void print_alt(std::ostream &os, pvr::var_type_e vt) const
+	{
+		const walk_to_alts_map *alt = nullptr;
+
+		switch (vt) {
+		case pvr::var_type_e::sub:
+			alt = &this->subs;
+			break;
+		case pvr::var_type_e::ins:
+			alt = &this->ins;
+			break;
+		case pvr::var_type_e::del:
+			alt = &this->dels;
+			break;
+		case pvr::var_type_e::inv:
+			return;
+		}
+
+		for (const auto &[w, alts] : *alt) {
+			os << "Walk: " << pgt::to_string(w) << "\t Alts Haps: ";
+			for (auto it = alts.begin(); it != alts.end(); ++it) {
+				os << it->ref_idx;
+				if (std::next(it) != alts.end())
+					os << ", ";
+			}
+			os << "\n";
+		}
+	}
+};
+
+struct minimal_rov {
+private:
+	rov_boundaries cxt_ = rov_boundaries::create_null(); // context
+	hap_slice ref_as_ = hap_slice::create_null(); // reference allele slice
+	std::set<pt::u32> haps_matching_ref;
+	std::set<pt::u32> alt_haps;
+
+	alt_set alts_; // alternative allele slices
+
+public:
+	// --------------
+	// constructor(s)
+	// --------------
+
+	minimal_rov() = delete;
+
+	minimal_rov(const rov_boundaries cxt, hap_slice &&ref_as)
+	    : cxt_(cxt), ref_as_(ref_as), alts_()
+	{}
 
 	// ---------
 	// getter(s)
 	// ---------
-	[[nodiscard]]
-	pt::idx_t ref_count() const
+
+	[[nodiscard]] bool ref_as_is_null() const
 	{
-		return this->ref_itns_.size();
+		return this->ref_as_.is_null();
 	}
+
+	[[nodiscard]] hap_slice get_ref_as() const
+	{
+		return this->ref_as_;
+	}
+
+	[[nodiscard]] rov_boundaries get_context() const
+	{
+		return this->cxt_;
+	}
+
+	[[nodiscard]] pt::u32 get_ref_len() const
+	{
+		return this->get_ref_as().len;
+	}
+
+	[[nodiscard]]
+	const std::set<pt::u32> &get_haps_matching_ref() const
+	{
+		return this->haps_matching_ref;
+	}
+
+	[[nodiscard]]
+	const std::set<pt::u32> &get_alt_haps() const
+	{
+		return this->alt_haps;
+	}
+
+	[[nodiscard]]
+	pt::u32 get_ref_at_ref_count() const
+	{
+		return this->haps_matching_ref.size();
+	}
+
+	void add_haps_match_ref(pt::u32 h_idx)
+	{
+		this->haps_matching_ref.insert(h_idx);
+	}
+
+	[[nodiscard]]
+	const walk_to_alts_map &get_subs() const
+	{
+		return this->alts_.get_subs();
+	}
+
+	[[nodiscard]]
+	const walk_to_alts_map &get_ins() const
+	{
+		return this->alts_.get_ins();
+	}
+
+	[[nodiscard]]
+	const walk_to_alts_map &get_dels() const
+	{
+		return this->alts_.get_dels();
+	}
+
+	// rename to add_alt_slice
+	void add_alt(hap_slice &&alt_as)
+	{
+		this->alt_haps.insert(alt_as.ref_idx);
+
+		if (alt_as.len == this->get_ref_len()) {
+			this->alts_.add_sub(std::move(alt_as));
+		}
+		else if (alt_as.len > this->get_ref_len()) { // insertion
+			this->alts_.add_ins(std::move(alt_as));
+		}
+		else { // deletion
+			this->alts_.add_del(std::move(alt_as));
+		}
+	}
+
+	void print(std::ostream &os) const
+	{
+		os << "minimal Rov:\n";
+		os << this->get_context() << "\n";
+		os << "Ref " << this->get_ref_as().dbg_str();
+		os << "\t alts: ";
+		this->alts_.print_alt(os, pvr::var_type_e::sub);
+		this->alts_.print_alt(os, pvr::var_type_e::ins);
+		this->alts_.print_alt(os, pvr::var_type_e::del);
+	}
+};
+
+using cxt_to_min_rov_map = std::map<rov_boundaries, minimal_rov>;
+
+struct trek {
+private:
+	// pointer to the RoV from which the expedition is made
+	const pvr::RoV *rov_;
+
+	// hap idx to context to minimal Rov map
+	// std::vector<cxt_to_min_rov_map *> data;
+	std::map<pt::u32, cxt_to_min_rov_map> data_;
+
+	// key is the ref and value is the set of haps that do not cover the RoV
+	std::map<pt::u32, std::set<pt::u32>> no_cov; // do not cover at all
+
+	// key is the ref and value is the set of haps that match the ref
+	std::map<pt::u32, std::set<pt::u32>> matches_ref;
+
+	bool tangled_{false}; // is true when tangling exists
+	const pt::u32 HAP_COUNT{pc::INVALID_IDX};
+
+	// ----------------------
+	// private constructor(s)
+	// ----------------------
+	// trek(const pvr::RoV *rov, std::vector<cxt_to_min_rov_map *> d,
+	//      pt::u32 hap_count, bool tangled = false)
+	//     : rov_(rov), data(std::move(d)), tangled_(tangled),
+	//       HAP_COUNT(hap_count)
+	// {}
+
+	trek(const pvr::RoV *rov, pt::u32 hap_count, bool tangled = false)
+	    : rov_(rov), tangled_(tangled), HAP_COUNT(hap_count)
+	{}
+
+public:
+	// --------------
+	// constructor(s)
+	// --------------
+	trek() = delete;
+
+	[[nodiscard]]
+	static trek create_new(const pvr::RoV *rov, pt::u32 hap_count,
+			       bool tangled)
+	{
+		return {rov, hap_count, tangled};
+	}
+
+	// ---------
+	// getter(s)
+	// ---------
 
 	[[nodiscard]]
 	const pvst::VertexBase *get_pvst_vtx_const_ptr() const
@@ -282,134 +543,392 @@ public:
 	}
 
 	[[nodiscard]]
-	std::string id() const
+	cxt_to_min_rov_map &get_min_rov(pt::u32 h_idx)
 	{
-		return this->rov_->as_str();
+		return this->data_[h_idx];
 	}
+
+	// [[nodiscard]]
+	// bool has_context(pt::u32 ref_h_idx, const rov_boundaries cxt)
+	// {
+	//	cxt_to_min_rov_map *d = data[ref_h_idx];
+	//	return pv_cmp::contains(*d, cxt);
+	// };
 
 	[[nodiscard]]
-	std::set<pt::id_t> get_walk_idxs() const
+	bool has_data() const
 	{
-		std::set<pt::id_t> walk_idxs;
-		for (const auto &p : this->walk_idx_to_ref_idxs_) {
-			walk_idxs.insert(p.first);
-		}
-		return walk_idxs;
+		return !this->data_.empty();
 	}
 
-	[[nodiscard]]
-	std::set<pt::id_t> get_ref_ids() const
-	{
-		std::set<pt::id_t> ref_ids;
-		for (const auto &p : this->ref_itns_) {
-			ref_ids.insert(p.first);
-		}
-		return ref_ids;
-	}
+	// [[nodiscard]]
+	// bool has_data() const
+	// {
+	//	for (auto d : data)
+	//		if (d != nullptr)
+	//			return true;
 
-	[[nodiscard]]
-	const itn_t &get_itn(pt::id_t ref_id) const
-	{
-		return this->ref_itns_.at(ref_id);
-	}
-
-	[[nodiscard]]
-	itn_t &get_itn_mut(pt::id_t ref_id)
-	{
-		return this->ref_itns_.at(ref_id);
-	}
-
-	[[nodiscard]]
-	const pvr::RoV *get_rov() const
-	{
-		return this->rov_;
-	}
-
-	[[nodiscard]]
-	pt::idx_t walk_count() const
-	{
-		return this->rov_->walk_count();
-	}
-
-	std::map<pt::idx_t, std::set<pt::idx_t>> &get_walk_to_ref_idxs_mut()
-	{
-		return this->walk_idx_to_ref_idxs_;
-	}
-
-	[[nodiscard]]
-	const std::set<pt::idx_t> &
-	get_ref_idxs_for_walk(const pt::idx_t walk_idx) const
-	{
-		return this->walk_idx_to_ref_idxs_.at(walk_idx);
-	}
-
-	[[nodiscard]]
-	const std::map<pt::id_t, itn_t> &get_ref_itns() const
-	{
-		return this->ref_itns_;
-	}
-
-	[[nodiscard]]
-	std::map<pt::id_t, itn_t> &get_ref_itns_mut()
-	{
-		return this->ref_itns_;
-	}
-
-	[[nodiscard]]
-	const std::string &get_aln(pt::id_t ref_id1, pt::id_t ref_id2) const
-	{
-		return this->aln_.at(pt::op_t<pt::id_t>{ref_id1, ref_id2});
-	}
-
-	[[nodiscard]]
-	bool has_aln(pt::id_t ref_id1, pt::id_t ref_id2) const
-	{
-		return pv_cmp::contains(this->aln_,
-					pt::op_t<pt::id_t>{ref_id1, ref_id2});
-	}
-
-	[[nodiscard]]
-	const std::map<pt::op_t<pt::id_t>, std::string> &get_alns() const
-	{
-		return this->aln_;
-	}
+	//	return false;
+	// }
 
 	[[nodiscard]]
 	bool is_tangled() const
 	{
-		return this->is_tangled_;
+		return this->tangled_;
 	}
 
 	[[nodiscard]]
-	bool has_ref(pt::id_t ref_id) const
+	pt::u32 get_hap_count() const
 	{
-		return pv_cmp::contains(this->ref_itns_, ref_id);
+		return this->HAP_COUNT;
+	}
+
+	// TODO: replace with a set member of the struct
+	[[nodiscard]]
+	std::set<pt::u32> get_ref_haps() const
+	{
+		std::set<pt::u32> ref_haps;
+		for (const auto &[ref_h_idx, _] : this->data_)
+			ref_haps.insert(ref_h_idx);
+
+		// for (pt::u32 ref_h_idx{}; ref_h_idx < HAP_COUNT; ref_h_idx++)
+		//	if (data[ref_h_idx] != nullptr)
+		//		ref_haps.insert(ref_h_idx);
+
+		return ref_haps;
+	}
+
+	[[nodiscard]]
+	const cxt_to_min_rov_map &get_ref_recs(pt::u32 ref_h_idx) const
+	{
+		return this->data_.at(ref_h_idx);
+	}
+
+	[[nodiscard]]
+	cxt_to_min_rov_map &get_ref_recs_mut(pt::u32 ref_h_idx)
+	{
+		return this->data_.at(ref_h_idx);
+	}
+
+	[[nodiscard]]
+	const std::set<pt::u32> get_match_ref(pt::u32 ref_h_idx) const
+	{
+		// TODO: handle key not existing
+		return this->matches_ref.at(ref_h_idx);
+	}
+
+	[[nodiscard]]
+	const std::set<pt::u32> get_no_cov(pt::u32 ref_h_idx) const
+	{
+		// TODO: handle key not existing
+		return this->no_cov.at(ref_h_idx);
 	}
 
 	// ---------
 	// setter(s)
 	// ---------
-	void add_aln(pt::id_t ref_id1, pt::id_t ref_id2, std::string &&aln)
+
+	// void init_ref_idx(pt::u32 ref_h_idx)
+	// {
+	//	// TODO: [A] memory leak
+	//	if (data[ref_h_idx] == nullptr)
+	//		data[ref_h_idx] = new cxt_to_min_rov_map();
+	// }
+
+	void add_no_cov(pt::u32 ref_h_idx, pt::u32 h_idx)
 	{
-		this->aln_[pt::op_t<pt::id_t>{ref_id1, ref_id2}] = aln;
+		this->no_cov[ref_h_idx].insert(h_idx);
 	}
 
-	void set_tangled(bool is_tangled)
+	void add_match_ref(pt::u32 ref_h_idx, pt::u32 h_idx)
 	{
-		this->is_tangled_ = is_tangled;
+		this->matches_ref[ref_h_idx].insert(h_idx);
+	}
+
+	void set_tangled(bool t)
+	{
+		this->tangled_ = t;
+	}
+
+	// ---------
+	// debug
+	// ---------
+
+	void dbg_print(std::ostream &os) const
+	{
+		for (const auto &[ref_h_idx, d] : this->data_) {
+			os << "Ref hap idx " << ref_h_idx << "\n";
+
+			os << "No coverage: ";
+			if (pv_cmp::contains(no_cov, ref_h_idx)) {
+				os << "{";
+				std::cerr << pu::concat_with(
+					no_cov.at(ref_h_idx), ',');
+				std::cerr << "}\n";
+			}
+			else {
+				os << "none\n";
+			}
+
+			os << "Records:\n";
+			for (const auto &[cxt, min_rov] : d) {
+				min_rov.print(os);
+				os << "\n";
+			}
+		}
+
+		// for (pt::u32 ref_h_idx{}; ref_h_idx < data.size();
+		//      ref_h_idx++) {
+		//	cxt_to_min_rov_map *d = data[ref_h_idx];
+		//	if (d == nullptr)
+		//		continue;
+
+		//	os << "Ref hap idx " << ref_h_idx << "\n";
+
+		//	os << "No coverage: ";
+		//	if (pv_cmp::contains(no_cov, ref_h_idx)) {
+		//		os << "{";
+		//		std::cerr << pu::concat_with(
+		//			no_cov.at(ref_h_idx), ',');
+		//		std::cerr << "}\n";
+		//	}
+		//	else {
+		//		os << "none\n";
+		//	}
+
+		//	os << "Records:\n";
+		//	for (const auto &[cxt, min_rov] : *d) {
+		//		min_rov.print(os);
+		//		os << "\n";
+		//	}
+		// }
 	}
 };
 
-// std::pair<std::vector<Exp>, std::vector<sub_inv>>
-// comp_itineraries3(const bd::VG &g, const pvr::RoV &rov,
-//		  const std::set<pt::id_t> &to_call_ref_ids);
+// precense absence matrix
+struct depth_matrix {
+private:
+	std::vector<pt::u32> data;
 
-// std::pair<std::vector<Exp>, std::vector<pos::pin_cushion>>
-// comp_itineraries3(const bd::VG &g, const pvr::RoV &rov,
-//		  const std::set<pt::id_t> &to_call_ref_ids);
+	pt::u32 I; // haps (rows)
+	pt::u32 J; // vertices in BFS tree (cols)
 
-// std::vector<Exp> comp_itineraries2(const bd::VG &g, const pvr::RoV &rov);
-// void comp_itineraries(const bd::VG &g, Exp &exp);
+	pt::u32 max_depth{0};
+
+	std::map<pt::u32, pt::u32> hap_idx_to_loop_no;
+
+	std::vector<pt::u32> sorted_vertices;
+
+	bool is_tangled{false};
+
+public:
+	// --------------
+	// constructor(s)
+	// --------------
+	// store in row major order
+
+	depth_matrix() = delete;
+
+	[[nodiscard]]
+	depth_matrix(pt::u32 i, pt::u32 j)
+	    : data(i * j, 0), I(i), J(j)
+	{}
+
+	// use this for debugging especially
+	[[nodiscard]]
+	depth_matrix(pt::u32 i, pt::u32 j, const std::vector<pt::u32> &sv)
+	    : data(i * j, 0), I(i), J(j), sorted_vertices(sv)
+	{}
+
+	// ---------
+	// getter(s)
+	// ---------
+
+	[[nodiscard]]
+	const std::vector<pt::u32> &get_header() const
+	{
+		return this->sorted_vertices;
+	}
+
+	[[nodiscard]]
+	std::vector<pt::u32> get_col_data(pt::u32 j) const
+	{
+		std::vector<pt::u32> col_data(I, 0);
+		for (pt::u32 i{}; i < I; i++)
+			col_data[i] = data[i * J + j];
+
+		return col_data;
+	}
+
+	[[nodiscard]]
+	std::vector<pt::u32> get_row_data(pt::u32 i) const
+	{
+		std::vector<pt::u32> row_data;
+		row_data.reserve(J);
+		for (pt::u32 j{}; j < J; j++)
+			row_data.push_back(data[i * J + j]);
+
+		return row_data;
+	}
+
+	void set_loop_no(pt::u32 h_idx, pt::u32 loop_no)
+	{
+		this->hap_idx_to_loop_no[h_idx] = loop_no;
+	}
+
+	[[nodiscard]]
+	pt::u32 get_loop_no(pt::u32 h_idx) const
+	{
+		if (!this->is_tangled)
+			return 0;
+
+		if (pv_cmp::contains(this->hap_idx_to_loop_no, h_idx))
+			return this->hap_idx_to_loop_no.at(h_idx);
+
+		return pc::INVALID_IDX;
+	}
+
+	[[nodiscard]]
+	pt::u32 row_count() const
+	{
+		return I;
+	}
+
+	[[nodiscard]]
+	pt::u32 col_count() const
+	{
+		return J;
+	}
+
+	bool tangled()
+	{
+		return is_tangled;
+	}
+
+	[[nodiscard]]
+	pt::u32 get_depth(pt::u32 i, pt::u32 j) const
+	{
+		return this->get_data()[i * J + j];
+	}
+
+	[[nodiscard]]
+	pt::u32 get_max_depth() const
+	{
+		return this->max_depth;
+	}
+
+	// -----------
+	// modifier(s)
+	// -----------
+
+	void set_tangled(bool t)
+	{
+		this->is_tangled = t;
+	}
+
+	void fill(const bd::VG &g, const pvr::RoV &rov)
+	{
+		// fill column-wise
+		// row wise is more cache friendly, but needs
+		// a method in bd::VG to get haplotypes per haplotype
+		for (pt::u32 h_idx{}; h_idx < I; h_idx++) {
+			for (pt::u32 j{}; j < J; j++) {
+				pt::u32 v_id = rov.get_sorted_vertex(j);
+
+				pt::u32 v_idx = g.v_id_to_idx(v_id);
+				const std::vector<pt::idx_t> &ref_idxs =
+					g.get_vertex_ref_idxs(v_idx, h_idx);
+				pt::u32 depth = ref_idxs.size();
+
+				if (depth == 0)
+					continue;
+
+				if (depth == 1) {
+					const lq::ref_walk *h_w =
+						g.get_ref_vec(h_idx)
+							->walk;	 // the hap walk
+					pt::u32 k = ref_idxs[0]; // index in the
+								 // hap walk
+					pgt::or_e orn =
+						h_w->strands[k] ==
+								lq::strand::
+									STRAND_FWD
+							? pgt::or_e::forward
+							: pgt::or_e::reverse;
+
+					switch (orn) {
+					case pgt::or_e::forward:
+						this->set_data(
+							h_idx,
+							rov.get_sorted_pos(
+								v_id),
+							1);
+						break;
+					case pgt::or_e::reverse:
+						this->set_data(
+							h_idx,
+							rov.get_sorted_pos(
+								v_id),
+							2);
+						break;
+					}
+					continue;
+				}
+
+				if (depth > 1 && (j == 0 || j == J - 1))
+					this->is_tangled = true;
+
+				if (depth > this->max_depth)
+					this->max_depth = depth;
+
+				this->set_data(h_idx, j, depth);
+			}
+		}
+	}
+
+	[[nodiscard]]
+	const std::vector<pt::u32> get_data() const
+	{
+		return this->data;
+	}
+
+	[[nodiscard]]
+	std::vector<pt::u32> &get_data_mut()
+	{
+		return this->data;
+	}
+
+	void set_data(pt::u32 i, pt::u32 j, pt::u32 d)
+	{
+		this->data[i * J + j] = d;
+	}
+
+	// other
+	void print(std::ostream &os) const
+	{
+		os << "is tangled " << (this->is_tangled ? "true" : "false")
+		   << "\n";
+
+		// print hap_idx_to_loop_no map
+		os << "#HapIdxToLoopNo\n";
+		for (const auto &[h_idx, loop_no] : this->hap_idx_to_loop_no)
+			os << pv_cmp::format("[hap {}, loop {}] ", h_idx,
+					     loop_no);
+
+		os << "\n";
+
+		// print header
+		os << "-\t" << pu::concat_with(this->sorted_vertices, '\t');
+		os << "\n";
+
+		// print rows
+		for (pt::u32 i{}; i < I; i++) {
+			os << i << "\t"
+			   << pu::concat_with(get_row_data(i), '\t');
+			os << "\n";
+		}
+	}
+};
 
 } // namespace povu::genomics::allele
 

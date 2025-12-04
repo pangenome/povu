@@ -77,7 +77,7 @@ public:
 	}
 };
 
-std::string align(const pga::itn_t &iw, const pga::itn_t &jw,
+std::string align(const pga::at_itn &iw, const pga::at_itn &jw,
 		  aln_level_e level);
 
 } // namespace povu::align

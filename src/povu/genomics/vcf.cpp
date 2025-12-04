@@ -1,250 +1,252 @@
 #include "povu/genomics/vcf.hpp"
 
-#include <iostream>
-#include <iterator> // for pair
+#include <string>
 #include <vector>
 
+#include <liteseq/refs.h> // for ref_walk, ref
+
 #include "povu/common/core.hpp"
-#include "povu/common/utils.hpp"
 #include "povu/genomics/allele.hpp" // for Exp, allele_slice_t, itn_t
-#include "povu/genomics/graph.hpp"  // for RoV
 #include "povu/graph/pvst.hpp"	    // for VertexBase
 #include "povu/variation/rov.hpp"
 
 namespace povu::genomics::vcf
 {
+namespace lq = liteseq;
 namespace pvst = povu::pvst;
-namespace pgg = povu::genomics::graph;
 
-constexpr pvr::var_type_e ins = pvr::var_type_e::ins;
-constexpr pvr::var_type_e del = pvr::var_type_e::del;
-constexpr pvr::var_type_e sub = pvr::var_type_e::sub;
-
-pvr::var_type_e det_var_type(const pga::allele_slice_t &ref_allele_slice,
-			     const pga::allele_slice_t &alt_allele_slice)
+std::pair<pt::u32, std::vector<std::vector<std::string>>>
+gen_gt_data(const bd::VG &g, const std::set<pt::u32> &ref_haps,
+	    const std::vector<poi::alt> &alts)
 {
-	if (ref_allele_slice.len < alt_allele_slice.len) {
-		return ins;
+	std::vector<std::vector<std::string>> gt_cols =
+		g.get_blank_genotype_cols();
+
+	for (std::vector<std::string> &col : gt_cols)
+		for (std::string &gt : col)
+			gt = ".";
+
+	// number of samples with data. cols that that are non-zero
+	std::set<pt::u32> ns_cols;
+
+	for (pt::u32 h_idx : ref_haps) {
+		auto [col_idx, row_idx] = g.get_ref_gt_col_idx(h_idx);
+		ns_cols.insert(col_idx);
+		gt_cols[col_idx][row_idx] = "0";
 	}
-	else if (ref_allele_slice.len > alt_allele_slice.len) {
-		return del;
+
+	// 1 because 0 is reserved for reference allele
+	// pt::u32 i{1};
+	for (auto [alt_h_idx, _, __] : alts) {
+		auto [col_idx, row_idx] = g.get_ref_gt_col_idx(alt_h_idx);
+		gt_cols[col_idx][row_idx] = std::to_string(1);
+		ns_cols.insert(col_idx);
+		// i++;
 	}
-	else {
-		return sub;
-	}
+
+	return {ns_cols.size(), gt_cols};
 }
 
-pt::idx_t comp_pos(const pga::allele_slice_t &ref_allele_slice,
-		   pvr::var_type_e variant_type)
+std::pair<pt::u32, std::vector<std::vector<std::string>>>
+gen_gt_data(const bd::VG &g, const pga::minimal_rov &min_rov,
+	    const pga::walk_to_alts_map &wta)
 {
-	// const pgt::ref_walk_t rw = *ref_allele_slice.ref_walk;
-	// pt::idx_t locus = rw[ref_allele_slice.ref_start_idx + 1].locus;
+	std::vector<std::vector<std::string>> gt_cols =
+		g.get_blank_genotype_cols();
 
-	pt::idx_t locus =
-		ref_allele_slice.get_locus(ref_allele_slice.ref_start_idx + 1);
+	for (std::vector<std::string> &col : gt_cols)
+		for (std::string &gt : col)
+			gt = ".";
 
-	switch (variant_type) {
-	case del:
-	case ins:
-		return locus - 1;
-	default:
-		return locus;
-	}
-}
+	// number of samples with data. cols that that are non-zero
+	std::set<pt::u32> ns_cols;
 
-std::vector<pt::op_t<pt::idx_t>> get_call_itn_idxs(const pga::Exp &exp,
-						   pt::id_t ref_w_ref_id,
-						   pt::id_t alt_w_ref_id)
-{
-	std::vector<pt::op_t<pt::idx_t>> idxs_to_call;
-
-	if (!exp.is_tangled() || !exp.has_aln(ref_w_ref_id, alt_w_ref_id)) {
-		idxs_to_call.emplace_back(0, 0);
-		return idxs_to_call;
+	for (pt::u32 h_idx : min_rov.get_haps_matching_ref()) {
+		auto [col_idx, row_idx] = g.get_ref_gt_col_idx(h_idx);
+		ns_cols.insert(col_idx);
+		gt_cols[col_idx][row_idx] = "0";
 	}
 
-	const std::string &aln = exp.get_aln(ref_w_ref_id, alt_w_ref_id);
-
-	for (pt::idx_t i{}, j{}, k{}; k < aln.size(); k++) {
-		char edit_op = aln[k];
-		switch (edit_op) {
-		case 'M':
-			i++;
-			j++;
-			break;
-		case 'D':
-			j++; // skip deletion
-			break;
-		case 'I':
-			i++; // skip insertion
-			break;
-		case 'X':
-		default:
-			// we only care about the positions that are 'X'
-			idxs_to_call.emplace_back(i, j);
-			i++;
-			j++;
-			break;
+	// 1 because 0 is reserved for reference allele
+	pt::u32 i{1};
+	for (const auto &[_, slices] : wta) {
+		for (const pga::hap_slice &alt_as : slices) {
+			auto [col_idx, row_idx] =
+				g.get_ref_gt_col_idx(alt_as.ref_idx);
+			gt_cols[col_idx][row_idx] = std::to_string(i);
+			ns_cols.insert(col_idx);
 		}
+		i++;
 	}
 
-	return idxs_to_call;
+	return {ns_cols.size(), gt_cols};
 }
 
-std::vector<pt::op_t<pt::u32>>
-pre_comp_ref_pairs(const pga::Exp &exp, const std::set<pt::u32> &call_ref_ids)
+void append_record(const bd::VG &g, pt::u32 ref_h_idx,
+		   const pga::rov_boundaries &cxt,
+		   const pvst::VertexBase *pvst_vtx_ptr, bool is_tangled,
+		   const pga::minimal_rov &min_rov,
+		   const pga::walk_to_alts_map &wta, pvr::var_type_e vt,
+		   std::vector<VcfRec> &recs)
 {
-	std::vector<pt::op_t<pt::id_t>> ref_pairs;
-	std::set<pt::u32> exp_ref_ids = exp.get_ref_ids();
+	if (wta.empty())
+		return;
 
-	for (pt::id_t ref_ref_id : exp_ref_ids) {
-		if (!pv_cmp::contains(call_ref_ids, ref_ref_id))
-			continue;
+	pt::u32 pos = min_rov.get_ref_as().comp_pos(vt);
 
-		for (pt::id_t alt_ref_id : exp_ref_ids)
-			if (ref_ref_id != alt_ref_id)
-				ref_pairs.emplace_back(ref_ref_id, alt_ref_id);
-	}
+	std::set<pt::u32> ref_at_haps = min_rov.get_haps_matching_ref();
 
-	return ref_pairs;
-}
+	VcfRec vcf_rec{ref_h_idx,
+		       pos,
+		       cxt.to_string(),
+		       pvst_vtx_ptr->as_str(),
+		       min_rov.get_ref_as(),
+		       pvst_vtx_ptr->get_height(),
+		       std::move(ref_at_haps),
+		       vt,
+		       is_tangled};
 
-bool non_varying(const pga::allele_slice_t &ref_allele_slice,
-		 const pga::allele_slice_t &alt_allele_slice)
+	for (const auto &[_, slices] : wta)
+		vcf_rec.add_alt_set(slices);
+
+	auto [ns, gt_data] = gen_gt_data(g, min_rov, wta);
+
+	vcf_rec.add_gt_cols(std::move(gt_data));
+
+	vcf_rec.set_ns(ns);
+
+	recs.emplace_back(std::move(vcf_rec));
+};
+
+void gen_inv_recs(const bd::VG &g, const poi::it &it_,
+		  std::vector<VcfRec> &recs)
 {
-	pt::idx_t ref_walk_idx = ref_allele_slice.walk_idx;
-	pt::idx_t alt_walk_idx = alt_allele_slice.walk_idx;
+	pt::u32 ref_h_idx = it_.get_ref_hap_idx();
 
-	auto ref_sl_or = ref_allele_slice.slice_or;
-	auto alt_sl_or = alt_allele_slice.slice_or;
+	for (const auto &[_, v] : it_.get_vertices()) {
+		// const poi::vertex &v = it_.get_vertex(it_v_idx);
+		pt::u32 ref_h_start = v.ref_h_start;
 
-	return (ref_walk_idx == alt_walk_idx && ref_sl_or == alt_sl_or);
-}
+		for (auto &[len, alts] : v.get_same_len_alts()) {
 
-// ref id to a list of vcf records for that ref
-std::map<pt::idx_t, std::vector<VcfRec>>
-gen_exp_vcf_recs(const bd::VG &g, const pga::Exp &exp,
-		 const std::set<pt::id_t> &to_call_ref_ids)
-{
+			const lq::ref_walk *ref_h_w =
+				g.get_ref_vec(ref_h_idx)->walk;
 
-#ifdef DEBUG
-	if (exp.get_rov() == nullptr) {
-		ERR("RoV pointer is null");
-		std::exit(EXIT_FAILURE);
-	}
+			pt::u32 s = ref_h_start;
+			pt::u32 t = ref_h_start + len - 1;
 
-	if (exp.get_pvst_vtx_const_ptr() == nullptr) {
-		ERR("pvst vertex pointer is null");
-		std::exit(EXIT_FAILURE);
-	}
-#endif
+			std::string id =
+				pv_cmp::format("|{}|{}|", ref_h_w->v_ids[s],
+					       ref_h_w->v_ids[t]);
 
-	std::map<pt::idx_t, std::vector<VcfRec>> exp_vcf_recs;
-	// const pvr::RoV &rov = *(exp.get_rov());
-	const pvst::VertexBase *pvst_vtx_ptr = exp.get_pvst_vtx_const_ptr();
+			pga::hap_slice ref_sl = {g.get_ref_vec(ref_h_idx)->walk,
+						 ref_h_idx, ref_h_start, len};
+			pt::u32 pos = ref_sl.comp_pos(pvr::var_type_e::inv);
 
-	std::map<std::tuple<pt::idx_t, pt::u32, pvr::var_type_e>, VcfRec>
-		var_type_to_vcf_rec;
+			pt::u32 h = 0; // height
 
-	std::tuple<pt::idx_t, pt::u32, pvr::var_type_e> key;
+			std::set<pt::u32> ref_haps = {ref_h_idx};
 
-	std::vector<pt::op_t<pt::id_t>> ref_pairs =
-		pre_comp_ref_pairs(exp, to_call_ref_ids);
-	for (auto [ref_ref_id, alt_ref_id] : ref_pairs) {
+			VcfRec vcf_rec{ref_h_idx,
+				       pos,
+				       id,
+				       "",
+				       ref_sl,
+				       h,
+				       std::move(ref_haps),
+				       pvr::var_type_e::inv,
+				       false};
 
-		const pga::itn_t &ref_itn = exp.get_itn(ref_ref_id);
-		const pga::itn_t &alt_itn = exp.get_itn(alt_ref_id);
-
-		if (!exp.has_ref(ref_ref_id))
-			continue;
-
-		for (auto [i, j] :
-		     get_call_itn_idxs(exp, ref_ref_id, alt_ref_id)) {
-			pga::allele_slice_t ref_allele_slice =
-				ref_itn.get_at(i);
-			pga::allele_slice_t alt_allele_slice =
-				alt_itn.get_at(j);
-
-			pt::idx_t ref_walk_idx = ref_allele_slice.walk_idx;
-			pt::idx_t alt_walk_idx = alt_allele_slice.walk_idx;
-
-			if (non_varying(ref_allele_slice, alt_allele_slice))
-				continue;
-
-			// TODO: check if start and len of the walks as
-			// well this means they are from the same walk,
-			// skip
-			if (ref_walk_idx == alt_walk_idx)
-				continue;
-
-			// if (pga::ref_eq(ref_allele_slice, alt_allele_slice))
-			//	continue;
-
-			pt::idx_t ref_walk_ref_count =
-				exp.get_ref_idxs_for_walk(ref_walk_idx).size();
-			pt::idx_t alt_walk_ref_count =
-				exp.get_ref_idxs_for_walk(alt_walk_idx).size();
-
-			pvr::var_type_e variant_type = det_var_type(
-				ref_allele_slice, alt_allele_slice);
-
-			key = {ref_ref_id, ref_walk_idx, variant_type};
-
-			ref_allele_slice.set_vt(variant_type);
-			alt_allele_slice.set_vt(pvr::covariant(variant_type));
-
-			// if it does not exist create a variant type for it and
-			// add to var_type_to_vcf_rec
-			if (!pv_cmp::contains(var_type_to_vcf_rec, key)) {
-
-				pt::idx_t pos = comp_pos(ref_allele_slice,
-							 variant_type);
-
-				VcfRec vcf_rec{ref_ref_id,
-					       pos,
-					       exp.id(),
-					       ref_allele_slice,
-					       pvst_vtx_ptr->get_height(),
-					       variant_type,
-					       exp.is_tangled(),
-					       ref_walk_ref_count,
-					       g.get_blank_genotype_cols()};
-
-				var_type_to_vcf_rec.emplace(key,
-							    std::move(vcf_rec));
+			std::vector<pga::hap_slice> alt_set;
+			for (auto a : alts) {
+				pga::hap_slice alt_sl = {
+					g.get_ref_vec(a.h_idx)->walk, a.h_idx,
+					a.h_start, len};
+				alt_set.emplace_back(alt_sl);
 			}
+			vcf_rec.add_alt_set(alt_set);
 
-			VcfRec &curr_vcf_rec = var_type_to_vcf_rec.at(key);
-			curr_vcf_rec.append_alt_at(alt_allele_slice,
-						   alt_walk_ref_count);
+			auto [ns, gt_data] = gen_gt_data(g, {ref_h_idx}, alts);
+
+			vcf_rec.add_gt_cols(std::move(gt_data));
+			vcf_rec.set_ns(ns);
+
+			recs.emplace_back(std::move(vcf_rec));
 		}
 	}
-
-	for (auto &[k, r] : var_type_to_vcf_rec) {
-		auto [ref_ref_id, _, __] = k;
-		exp_vcf_recs[ref_ref_id].emplace_back(std::move(r));
-	}
-
-	return exp_vcf_recs;
 }
 
-VcfRecIdx gen_vcf_records(const bd::VG &g, const std::vector<pga::Exp> &exps,
-			  const std::set<pt::id_t> &to_call_ref_ids)
+std::map<pt::idx_t, std::vector<VcfRec>> gen_exp_vcf_recs(const bd::VG &g,
+							  const pga::trek &tk)
+{
+
+	std::map<pt::idx_t, std::vector<VcfRec>> tk_vcf_recs;
+
+	const pvst::VertexBase *pvst_vtx_ptr = tk.get_pvst_vtx_const_ptr();
+
+	for (pt::u32 ref_h_idx : tk.get_ref_haps()) {
+		std::vector<VcfRec> recs;
+		const pga::cxt_to_min_rov_map &d = tk.get_ref_recs(ref_h_idx);
+		for (const auto &[cxt, min_rov] : d) {
+			append_record(g, ref_h_idx, cxt, pvst_vtx_ptr,
+				      tk.is_tangled(), min_rov,
+				      min_rov.get_ins(), pvr::var_type_e::ins,
+				      recs);
+
+			append_record(g, ref_h_idx, cxt, pvst_vtx_ptr,
+				      tk.is_tangled(), min_rov,
+				      min_rov.get_subs(), pvr::var_type_e::sub,
+				      recs);
+
+			append_record(g, ref_h_idx, cxt, pvst_vtx_ptr,
+				      tk.is_tangled(), min_rov,
+				      min_rov.get_dels(), pvr::var_type_e::del,
+				      recs);
+		}
+
+		tk_vcf_recs.insert({ref_h_idx, std::move(recs)});
+	}
+
+	return tk_vcf_recs;
+}
+
+void context_bound(const bd::VG &g, const std::vector<pga::trek> &treks,
+		   VcfRecIdx &vcf_recs)
+{
+	for (pt::idx_t i{}; i < treks.size(); ++i) {
+		const pga::trek &tk = treks[i];
+		std::map<pt::idx_t, std::vector<VcfRec>> exp_vcf_recs =
+			gen_exp_vcf_recs(g, tk);
+		vcf_recs.ensure_append_recs(std::move(exp_vcf_recs));
+	}
+}
+
+void context_free(const bd::VG &g, const std::vector<poi::it> &its,
+		  VcfRecIdx &vcf_recs)
+{
+	for (const auto &it_ : its) {
+		pt::u32 ref_h_idx = it_.get_ref_hap_idx();
+		auto &recs = vcf_recs.ensure_recs_mut(ref_h_idx);
+		gen_inv_recs(g, it_, recs);
+		// auto &recs = vcf_recs.ensure_recs_mut(ref_h_idx);
+		//  recs.emplace_back(std::move(vcf_rec));
+	}
+}
+
+VcfRecIdx gen_vcf_records(const bd::VG &g, const std::vector<pga::trek> &treks,
+			  const std::vector<poi::it> &its)
 {
 	VcfRecIdx vcf_recs;
 
-	for (pt::idx_t i{}; i < exps.size(); ++i) {
-		const pga::Exp &exp = exps[i];
-		if (exp.get_pvst_vtx_const_ptr() == nullptr) {
-			ERR("pvst vertex pointer is null {}",
-			    exp.get_rov()->as_str());
-			std::exit(EXIT_FAILURE);
-		}
+	context_bound(g, treks, vcf_recs);
+	context_free(g, its, vcf_recs);
 
-		std::map<pt::idx_t, std::vector<VcfRec>> exp_vcf_recs =
-			gen_exp_vcf_recs(g, exp, to_call_ref_ids);
-		vcf_recs.ensure_append_recs(std::move(exp_vcf_recs));
-	}
+	// for (pt::idx_t i{}; i < treks.size(); ++i) {
+	//	const pga::trek &tk = treks[i];
+	//	std::map<pt::idx_t, std::vector<VcfRec>> exp_vcf_recs =
+	//		gen_exp_vcf_recs(g, tk);
+	//	vcf_recs.ensure_append_recs(std::move(exp_vcf_recs));
+	// }
 
 	return vcf_recs;
 }

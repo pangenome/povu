@@ -3,6 +3,7 @@
 #include <algorithm> // for min, max, reverse
 #include <cstdlib>   // for exit
 
+#include "povu/common/core.hpp"
 #include "povu/common/log.hpp" // for ERR
 
 namespace povu::align
@@ -25,39 +26,53 @@ inline pt::idx_t min(pt::idx_t a, pt::idx_t b, pt::idx_t c)
 }
 
 /*for RoV inc by the length of the walk*/
-inline match_res_t eq_at(const pga::itn_t &a, pt::idx_t a_idx,
-			 const pga::itn_t &b, pt::idx_t b_idx)
+inline match_res_t eq_at(const pga::at_itn &a, pt::idx_t a_idx,
+			 const pga::at_itn &b, pt::idx_t b_idx)
 {
 
 	// if any of the steps is not a match in the ROV then it is not a match
-	const pga::allele_slice_t &a_at = a.get_at(a_idx);
-	const pga::allele_slice_t &b_at = b.get_at(b_idx);
+	const pgt::walk_t &a_at = a.get_at(a_idx);
+	const pgt::walk_t &b_at = b.get_at(b_idx);
 
-	return a_at == b_at ? match_res_t{1, 1, true}
-			    : match_res_t{1, 1, false};
+	// if different lengths they must be unequal
+	if (a_at.size() != b_at.size())
+		return match_res_t{1, 1, false};
 
-	pt::idx_t a_jmp = a_at.step_count();
-	pt::idx_t b_jmp = b_at.step_count();
+	pt::u32 N = a_at.size();
 
-	if (a_jmp != b_jmp) {
-		return {1, 1, false};
-	}
-
-	// TODO: also compare loop no?
-	for (pt::idx_t i{}; i < a_jmp; i++) {
-		if (a_at.get_walk_step(i) != b_at.get_walk_step(i)) {
+	for (pt::idx_t i{}; i < N; i++)
+		if (a_at[i] != b_at[i])
 			return {1, 1, false};
-		}
-	}
 
-	return {1, 1, true};
+	return match_res_t{1, 1, true};
+
+	// return a_at == b_at ? match_res_t{1, 1, true}
+	//		    : match_res_t{1, 1, false};
+
+	// std::cerr << "called -------------\n";
+
+	// pt::idx_t a_jmp = a_at.step_count();
+	// pt::idx_t b_jmp = b_at.step_count();
+
+	// if (a_jmp != b_jmp) {
+	//	return {1, 1, false};
+	// }
+
+	// // TODO: also compare loop no?
+	// for (pt::idx_t i{}; i < a_jmp; i++) {
+	//	if (a_at.get_walk_step(i) != b_at.get_walk_step(i)) {
+	//		return {1, 1, false};
+	//	}
+	// }
+
+	// return {1, 1, true};
 }
 
-aln_result_t global_align(const pga::itn_t &str1, pt::idx_t str1_len,
-			  const pga::itn_t &str2, pt::idx_t str2_len,
+aln_result_t global_align(const pga::at_itn &str1, pt::idx_t str1_len,
+			  const pga::at_itn &str2, pt::idx_t str2_len,
 			  const aln_scores_t &scores,
-			  match_res_t (*eq)(const pga::itn_t &, pt::idx_t,
-					    const pga::itn_t &, pt::idx_t))
+			  match_res_t (*eq)(const pga::at_itn &, pt::idx_t,
+					    const pga::at_itn &, pt::idx_t))
 {
 	// Define the scoring parameters
 	const pt::idx_t a = scores.match;
@@ -198,37 +213,36 @@ aln_result_t global_align(const pga::itn_t &str1, pt::idx_t str1_len,
 	return {aln_score, et};
 }
 
-std::string align(const pga::itn_t &i_itn, const pga::itn_t &j_itn,
+std::string align(const pga::at_itn &i_itn, const pga::at_itn &j_itn,
 		  aln_level_e level)
 {
 
 	struct aln_args {
 		pt::idx_t i_len;
 		pt::idx_t j_len;
-		match_res_t (*eq)(const pga::itn_t &, pt::idx_t,
-				  const pga::itn_t &, pt::idx_t);
+		match_res_t (*eq)(const pga::at_itn &, pt::idx_t,
+				  const pga::at_itn &, pt::idx_t);
 		aln_scores_t scores;
 		aln_level_e level;
 	};
 
 	auto [il, jl, eq, s, l] = ([&]() -> aln_args {
-    switch (level) {
-    case aln_level_e::at:
-      return aln_args{i_itn.at_count(),
-		      j_itn.at_count(),
-		      eq_at,
-		      {0, 1, 2, 1},
-		      aln_level_e::at};
-    default:
-      ERR("invalid alignment level {}", static_cast<int>(level));
-      std::exit(1);
-    }
-  })();
+		switch (level) {
+		case aln_level_e::at:
+			return aln_args{i_itn.at_count(),
+				j_itn.at_count(),
+				eq_at,
+				{0, 1, 2, 1},
+				aln_level_e::at};
+		default:
+			ERR("invalid alignment level {}", static_cast<int>(level));
+			std::exit(1);
+		}
+	})();
 
 	if (il == 1 && jl == 1) {
-		if (eq(i_itn, 0, j_itn, 0).is_match) {
+		if (eq(i_itn, 0, j_itn, 0).is_match)
 			return "M";
-		}
 
 		return "X";
 	}

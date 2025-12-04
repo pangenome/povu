@@ -77,11 +77,13 @@ public:
 	// ---------
 	// getter(s)
 	// ---------
-	pt::id_t id() const;
-	const std::string &get_label() const;
-	std::string get_rc_label() const; // reverse complement of the label
-	const std::set<pt::idx_t> &get_edges_l() const;
-	const std::set<pt::idx_t> &get_edges_r() const;
+	[[nodiscard]] pt::id_t id() const;
+	[[nodiscard]] pt::u32 get_length() const; // length of the label
+	[[nodiscard]] const std::string &get_label() const;
+	// reverse complement of the label
+	[[nodiscard]] std::string get_rc_label() const;
+	[[nodiscard]] const std::set<pt::idx_t> &get_edges_l() const;
+	[[nodiscard]] const std::set<pt::idx_t> &get_edges_r() const;
 
 	// ---------
 	// setter(s)
@@ -153,7 +155,7 @@ public:
 	const pr::Ref &get_ref_by_id(pt::id_t ref_id) const;
 	pr::Ref &get_ref_by_id_mut(pt::id_t ref_id);
 	std::optional<pt::id_t> get_ref_id(std::string_view ref_tag) const;
-	pt::id_t ref_count() const;
+
 	bool has_refs() const;
 	/**
 	 * if PanSN the prefix will be in sample
@@ -163,6 +165,11 @@ public:
 	std::set<pt::id_t>
 	get_refs_in_sample(std::string_view sample_name) const;
 	const lq::ref *get_ref_vec(pt::id_t ref_id) const;
+
+	pt::u32 get_hap_count() const;
+	[[deprecated("Use get_hap_count instead")]]
+	pt::id_t ref_count() const;
+	[[deprecated("Use get_hap_count instead")]]
 	pt::idx_t get_ref_count() const;
 
 	const std::vector<pt::idx_t> &
@@ -196,6 +203,7 @@ public:
 	// -----
 	void summary(bool print_tips) const;
 	void print_dot(std::ostream &os) const;
+	void print_gfa(std::ostream &os) const;
 };
 
 typedef VariationGraph VG;

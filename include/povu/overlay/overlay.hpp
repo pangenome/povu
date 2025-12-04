@@ -1,9 +1,9 @@
 #ifndef POVU_OVERLAY_HPP
 #define POVU_OVERLAY_HPP
 
-#include <set>	   // for set
-#include <utility> // for pair
-#include <vector>  // for vector
+#include <set> // for set
+// #include <utility> // for pair
+#include <vector> // for vector
 
 // #include "povu/common/constants.hpp"
 #include "povu/common/core.hpp"	    // for pt, idx_t, id_t, op_t
@@ -25,13 +25,9 @@ constexpr pvr::var_type_e sub = pvr::var_type_e::sub;
 constexpr pgt::or_e fo = pgt::or_e::forward;
 constexpr pgt::or_e ro = pgt::or_e::reverse;
 
-std::pair<std::vector<pga::Exp>, std::vector<pos::pin_cushion>>
-comp_itineraries3(const bd::VG &g, const pvr::RoV &rov,
-		  const std::set<pt::id_t> &to_call_ref_ids);
-
-std::pair<pga::Exp, std::optional<pos::pin_cushion>>
-overlay_tiny(const bd::VG &g, const pvr::RoV &rov,
-	     const std::set<pt::id_t> &to_call_ref_ids);
+std::vector<pga::trek> overlay_generic(const bd::VG &g, pvr::RoV &rov,
+				       const std::set<pt::u32> &to_call_ref_ids,
+				       pos::pin_cushion &pcushion);
 
 } // namespace povu::overlay
 

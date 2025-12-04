@@ -44,15 +44,13 @@ std::string concat_with(const Container &v, char delim)
 template <typename T>
 void print_with_comma(std::ostream &os, const T &v, char delim)
 {
-	if (v.empty()) {
+	if (v.empty())
 		return;
-	}
 
 	for (auto it{v.begin()}; it != v.end(); ++it) {
 		os << *it;
-		if (std::next(it) != v.end()) {
+		if (std::next(it) != v.end())
 			os << delim << " ";
-		}
 	}
 }
 
