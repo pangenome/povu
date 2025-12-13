@@ -128,6 +128,9 @@ void do_call(core::config &app_config)
 
 	read_pvsts_async.join(); // make sure pvsts are read
 
+	// make sure VCF headers are written before starting to write records
+	init_vcfs_async.join();
+
 	// if running out of memory, reduce the capacity and/or the chunk size
 	const std::size_t QUEUE_CAPACITY = app_config.get_queue_len();
 	pbq::bounded_queue<pgv::VcfRecIdx> q(QUEUE_CAPACITY);
@@ -150,9 +153,6 @@ void do_call(core::config &app_config)
 	// consumer on this thread
 	while (auto opt_rec_idx = q.pop())
 		piv::write_vcfs(*opt_rec_idx, *g, vout, app_config);
-
-	// make sure VCF are initialised before producer finishes
-	init_vcfs_async.join();
 
 	producer.join();  // wait for producer to finish
 	vout.flush_all(); // just in case
