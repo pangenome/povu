@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <iostream>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <unistd.h>
@@ -102,6 +103,9 @@ struct config {
 	bool stdout_vcf{false};
 	// output directory for VCF separate files per ref chosen
 	std::filesystem::path output_dir{"."};
+
+	/* genomic region filtering */
+	std::optional<std::string> genomic_region_str_{std::nullopt};
 
 	// -------------
 	// Contructor(s)
@@ -220,6 +224,18 @@ struct config {
 		return this->task;
 	}
 
+	[[nodiscard]]
+	const std::optional<std::string> &get_genomic_region() const
+	{
+		return this->genomic_region_str_;
+	}
+
+	[[nodiscard]]
+	bool has_genomic_region() const
+	{
+		return this->genomic_region_str_.has_value();
+	}
+
 	// ---------
 	// setter(s)
 	// ---------
@@ -322,6 +338,11 @@ struct config {
 	void set_stdout_vcf(bool b)
 	{
 		this->stdout_vcf = b;
+	}
+
+	void set_genomic_region(const std::string &s)
+	{
+		this->genomic_region_str_ = s;
 	}
 
 	// --------
