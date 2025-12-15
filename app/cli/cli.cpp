@@ -100,6 +100,7 @@ void call_handler(args::Subparser &parser, core::config &app_config)
 	// clang-format off
 	args::ValueFlag<std::string> input_gfa(parser, "gfa", "path to input gfa [required]",{'i', "input-gfa"}, args::Options::Required);
 	args::ValueFlag<std::string> forest_dir(parser, "forest_dir","dir containing flubble forest [default: .]",{'f', "forest-dir"});
+	args::ValueFlag<std::string> restrict(parser, "restrict", "Restrict variant calling to a genomic region (format: ref:start-end)", {'g', "restrict"});
 	// clang-format on
 	streaming_opts stream_opts(parser);
 	output_opts out_opts(parser);
@@ -118,6 +119,9 @@ void call_handler(args::Subparser &parser, core::config &app_config)
 
 	if (forest_dir) {
 		app_config.set_forest_dir(args::get(forest_dir));
+	}
+	if (restrict) {
+		app_config.set_genomic_region(args::get(restrict));
 	}
 
 	{ // output options

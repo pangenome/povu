@@ -4,7 +4,7 @@
 // #include <atomic>    // for atomic, memory_order
 #include <cmath>   // for ceil
 #include <cstddef> // for size_t
-#include <cstdlib> // for std::max
+#include <cstdlib> // for std::max, exit, EXIT_FAILURE
 // #include <optional>  // for optional, operator==
 // #include <string>    // for basic_string, string
 #include <utility> // for move
@@ -15,6 +15,7 @@
 //  #include "indicators/setting.hpp" // for PostfixText
 #include "povu/common/app.hpp" // for config
 #include "povu/common/core.hpp"
+#include "povu/common/log.hpp" // for ERR
 #include "povu/common/thread.hpp"     // for thread_pool, task_group
 #include "povu/genomics/allele.hpp"   // for Exp, comp_itineraries
 #include "povu/genomics/untangle.hpp" // for untangle_ref_walks
@@ -202,8 +203,18 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 {
 	// bool prog = app_config.show_progress();
 
-	std::vector<pvr::RoV> all_rovs =
-		pvr::gen_rov(pvsts, g, to_call_ref_ids);
+	// Parse genomic region if specified
+	std::optional<pvr::genomic_region> region = std::nullopt;
+	if (app_config.has_genomic_region()) {
+		region = pvr::parse_genomic_region(
+			app_config.get_genomic_region().value());
+		if (!region.has_value()) {
+			ERR("Failed to parse genomic region");
+			std::exit(EXIT_FAILURE);
+		}
+	}
+
+	std::vector<pvr::RoV> all_rovs = pvr::gen_rov(pvsts, g, to_call_ref_ids, region);
 
 	const std::size_t CHUNK_SIZE = app_config.get_chunk_size();
 	const std::size_t N = all_rovs.size();

@@ -1,7 +1,9 @@
 #ifndef POVU_ROV_HPP
 #define POVU_ROV_HPP
 
-#include <vector> // for vector
+#include <optional> // for optional
+#include <string>   // for string
+#include <vector>   // for vector
 
 #include "povu/common/app.hpp" // for config
 // #include "povu/common/constants.hpp"
@@ -39,6 +41,36 @@ constexpr std::string_view to_string_view(var_type_e vt) noexcept
 
 std::ostream &operator<<(std::ostream &os, var_type_e vt);
 var_type_e covariant(var_type_e a) noexcept;
+
+/**
+ * Represents a genomic region for filtering RoVs
+ * Format: ref_name:start-end (e.g., "chr17:43044294-43125482")
+ */
+struct genomic_region {
+	std::string ref_name; // reference path name
+	pt::idx_t start;      // start position (0-based)
+	pt::idx_t end;	      // end position (exclusive)
+
+	genomic_region() : ref_name(""), start(0), end(0)
+	{}
+
+	genomic_region(const std::string &name, pt::idx_t s, pt::idx_t e)
+	    : ref_name(name), start(s), end(e)
+	{}
+
+	[[nodiscard]]
+	bool is_valid() const
+	{
+		return !ref_name.empty() && start < end;
+	}
+};
+
+/**
+ * Parse a genomic region string (format: ref:start-end)
+ * @param region_str The region string to parse
+ * @return Optional genomic_region if parsing succeeds, std::nullopt otherwise
+ */
+std::optional<genomic_region> parse_genomic_region(const std::string &region_str);
 
 struct raw_variant {
 	pt::slice_t slice_a;
@@ -232,9 +264,12 @@ public:
 /**
  * find walks in the graph based on the leaves of the pvst
  * initialize RoVs from flubbles
+ * @param region Optional genomic region to filter RoVs
  */
-std::vector<RoV> gen_rov(const std::vector<pvst::Tree> &pvsts, const bd::VG &g,
-			 const std::set<pt::id_t> &to_call_ref_ids);
+std::vector<RoV>
+gen_rov(const std::vector<pvst::Tree> &pvsts, const bd::VG &g,
+	const std::set<pt::id_t> &to_call_ref_ids,
+	const std::optional<genomic_region> &region = std::nullopt);
 
 std::set<pt::up_t<pt::u32>>
 find_non_planar(const std::vector<pgt::walk_t> &walks);
