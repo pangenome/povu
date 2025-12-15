@@ -23,7 +23,8 @@
 #include "povu/graph/spanning_tree.hpp"	 // for spanning_tree
 #include "povu/graph/tree_utils.hpp"	 // for tree_utils
 #include "povu/io/from_gfa.hpp"		 // for to_bd
-#include "povu/io/to_pvst.hpp"		 // for write_pvst, pv_to_pvst
+#include "povu/io/to_gfa.hpp"
+#include "povu/io/to_pvst.hpp" // for write_pvst, pv_to_pvst
 
 namespace povu::subcommands::decompose
 {
@@ -79,9 +80,7 @@ std::pair<uint32_t, uint32_t> thread_count(const core::config &app_config,
 	/* Divide the number of components into chunks for each thread */
 	unsigned int total_threads = std::thread::hardware_concurrency();
 
-	// std::cerr << pv_cmp::format("{} Max threads: {}\n", fn_name,
-	// total_threads);
-	std::size_t conf_num_threads =
+	pt::u32 conf_num_threads =
 		static_cast<std::size_t>(app_config.thread_count());
 	uint32_t num_threads = (conf_num_threads > total_threads)
 				       ? total_threads
@@ -93,21 +92,18 @@ std::pair<uint32_t, uint32_t> thread_count(const core::config &app_config,
 
 void do_decompose(const core::config &app_config)
 {
-	std::string fn_name = pv_cmp::format("[povu::decompose::{}]", __func__);
-	std::size_t ll = app_config.verbosity(); // ll for log level, to avoid
-						 // long names. good idea?
-
-	bd::VG *g = povu::io::from_gfa::to_bd(app_config);
+	std::size_t ll = app_config.verbosity();	   // ll for log level
+	bd::VG *g = povu::io::from_gfa::to_bd(app_config); // read graph
 
 	if (ll > 1)
-		std::cerr << pv_cmp::format("{} Finding components\n", fn_name);
+		INFO("Finding components");
+
 	std::vector<bd::VG *> components = bd::VG::componetize(*g);
 
 	delete g;
 
 	if (ll > 1)
-		std::cerr << pv_cmp::format("{} Found {} components\n", fn_name,
-					    components.size());
+		INFO("Found {} components", components.size());
 
 	std::pair<pt::u32, pt::u32> thread_config =
 		thread_count(app_config, components.size());
@@ -117,63 +113,47 @@ void do_decompose(const core::config &app_config)
 
 	/* Create and launch threads */
 	std::vector<std::thread> threads(num_threads);
-	std::size_t start, end;
-	for (unsigned int thread_idx{}; thread_idx < num_threads;
-	     ++thread_idx) {
+	pt::u32 start, end;
+	for (pt::u32 thread_idx{}; thread_idx < num_threads; ++thread_idx) {
 		start = thread_idx * chunk_size;
 		end = (thread_idx == num_threads - 1)
 			      ? components.size()
 			      : (thread_idx + 1) * chunk_size;
 
 		threads[thread_idx] = std::thread(
-			[start, end, fn_name, num_threads, app_config,
-			 &components]
+			[start, end, num_threads, app_config, ll, &components]
 			{
-				for (std::size_t i{start}; i < end; i++) {
+				for (pt::u32 i{start}; i < end; i++) {
 
-					std::size_t component_id{i + 1};
+					pt::u32 component_id{i + 1};
 
-					if (app_config.verbosity()) {
-						std::cerr << pv_cmp::format(
-							"{} Handling "
-							"component: {}\n",
-							fn_name, component_id);
-					}
+					if (app_config.verbosity())
+						INFO("Handling component: {}",
+						     component_id);
 
-					if (components[i]->vtx_count() < 3) {
-						if (app_config.verbosity() >
-						    2) {
-							std::cerr << pv_cmp::format(
-								"{} Skipping "
-								"component {} "
-								"because it is "
-								"too small. "
-								"(size: {})\n",
-								fn_name,
-								component_id,
-								components[i]
-									->vtx_count());
-						}
+					pt::u32 N = components[i]->vtx_count();
+					if (N < 3) {
+						// clang-format off
+						if (ll > 2)
+							INFO("Skipping component {} because it is too small. (size: {})", component_id, N);
+						// clang-format on
 						continue;
 					}
 
-					if (app_config.verbosity() > 3 &&
-					    num_threads == 1) {
+					if (ll > 3 && num_threads == 1)
 						components[i]->summary(false);
-					}
 
+					// pass app_config by reference
 					decompose_component(
 						components[i], component_id,
-						std::ref(
-							app_config)); // Pass by
-								      // reference
+						std::ref(app_config));
 				}
 			});
 	}
 
-	for (auto &thread : threads) {
+	// Wait for all threads to finish
+	for (auto &thread : threads)
 		thread.join();
-	} // Wait for all threads to finish
 
 	return;
 }

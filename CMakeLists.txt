@@ -189,6 +189,7 @@ ADD_LIBRARY(povulib
   ${POVULIB_SOURCES_DIR}/io/from_pvst.cpp
   ${POVULIB_SOURCES_DIR}/io/to_pvst.cpp
   ${POVULIB_SOURCES_DIR}/io/from_gfa.cpp
+  ${POVULIB_SOURCES_DIR}/io/to_gfa.cpp
   ${POVULIB_SOURCES_DIR}/io/common.cpp
   ${POVULIB_SOURCES_DIR}/io/to_vcf.cpp
 )
@@ -205,6 +206,7 @@ add_executable(povu
   ${APP_DIR}/subcommand/decompose.cpp
   ${APP_DIR}/subcommand/info.cpp
   ${APP_DIR}/subcommand/call.cpp
+  ${APP_DIR}/subcommand/prune.cpp
   ${APP_DIR}/subcommand/gfa2vcf.cpp
   ${APP_DIR}/main.cpp
 )
