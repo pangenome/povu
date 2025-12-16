@@ -11,7 +11,8 @@
 #include "liteseq/gfa.h"	     // for gfa_props
 #include "povu/common/compat.hpp"    // for contains, pv_cmp, format
 #include "povu/common/constants.hpp" // for UNDEFINED_ID
-#include "povu/graph/types.hpp"	     // for v_end_e, side_n_id_t, complement
+#include "povu/common/core.hpp"
+#include "povu/graph/types.hpp" // for v_end_e, side_n_id_t, complement
 
 namespace povu::bidirected
 {
@@ -99,6 +100,11 @@ pt::id_t Vertex::id() const
 const std::string &Vertex::get_label() const
 {
 	return this->label_;
+}
+
+pt::u32 Vertex::get_length() const
+{
+	return this->label_.length();
 }
 
 std::string Vertex::get_rc_label() const
@@ -242,19 +248,24 @@ std::set<pt::id_t> VG::get_refs_in_sample(std::string_view sample_name) const
 	return this->refs_.get_refs_in_sample(sample_name);
 }
 
-pt::id_t VG::ref_count() const
+pt::idx_t VG::get_hap_count() const
 {
 	return this->refs_.ref_count();
+}
+
+pt::id_t VG::ref_count() const
+{
+	return this->get_hap_count();
+}
+
+pt::idx_t VG::get_ref_count() const
+{
+	return this->get_hap_count();
 }
 
 const lq::ref *VG::get_ref_vec(pt::id_t ref_id) const
 {
 	return this->refs_.get_lq_ref_ptr(ref_id);
-}
-
-pt::idx_t VG::get_ref_count() const
-{
-	return this->refs_.ref_count();
 }
 
 const std::vector<pt::idx_t> &VG::get_vertex_ref_idxs(pt::idx_t v_idx,
@@ -405,6 +416,54 @@ graph G {
 
 	/* footer */
 	os << "}" << std::endl;
+}
+
+void VG::print_gfa(std::ostream &os) const
+{
+	/* helper fns */
+	// map v end left and right to dot west and east for rectangular
+	// vertices
+	auto v_end_to_gfa = [](pgt::v_end_e e) -> std::string
+	{
+		return e == pgt::v_end_e::r ? "+" : "-";
+	};
+
+	auto v_end_to_gfa2 = [](pgt::v_end_e e) -> std::string
+	{
+		return e == pgt::v_end_e::l ? "+" : "-";
+	};
+
+	/* header */
+	os << "H" << "\t" << "VN:Z:1.0\n";
+
+	/* vertices */
+	for (size_t v_idx{}; v_idx < this->vtx_count(); ++v_idx) {
+		const Vertex &v = this->get_vertex_by_idx(v_idx);
+		std::string v_id = v.id() == constants::UNDEFINED_ID
+					   ? "d"
+					   : std::to_string(v.id());
+
+		os << "S" << "\t" << v_id << "\t" << "A" << "\n";
+	}
+
+	/* edges */
+	for (const Edge &e : this->edges) {
+		pt::idx_t v1_idx = e.get_v1_idx();
+		std::string v1_e = v_end_to_gfa(e.get_v1_end());
+		pt::idx_t v2_idx = e.get_v2_idx();
+		std::string v2_e = v_end_to_gfa2(e.get_v2_end());
+
+		os << "L" << "\t" << this->v_idx_to_id(v1_idx) << "\t" << v1_e
+		   << "\t" << this->v_idx_to_id(v2_idx) << "\t" << v2_e << "\t"
+		   << "0M"
+		   << "\n";
+
+		// os << pv_cmp::format("L{}\t{}\t{}\t{}\n", v1_idx, v1_e,
+		// v2_idx,		     v2_e);
+	}
+
+	/* footer */
+	// os << "}" << std::endl;
 }
 
 // does not handle refs, should it?

@@ -83,108 +83,93 @@ void init_vcfs(bd::VG &g, const std::vector<std::string> &ref_name_prefixes,
 void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 	       std::ostream &os)
 {
-	pvr::var_type_e var_typ = r.get_var_type();
+	// pvr::var_type_e var_typ = r.get_var_type();
 
-	r.gen_rec_data_lookups(g); // ensure lookups are generated
-	const pt::idx_t REF_AT_IDX = 0;
-	std::vector<pt::idx_t> alts = r.get_unique_alt_idxs();
+	// r.gen_rec_data_lookups(g); // ensure lookups are generated
+	// const pt::idx_t REF_AT_IDX = 0;
+	// std::vector<pt::idx_t> alts = r.get_unique_alt_idxs();
 
-	auto get_label = [&](const pgt::step_t &s) -> std::string
-	{
-		auto [v_id, o] = s;
-		return (o == pgt::or_e::forward)
-			       ? g.get_vertex_by_id(v_id).get_label()
-			       : g.get_vertex_by_id(v_id).get_rc_label();
-	};
+	// auto get_label = [&](const pgt::step_t &s) -> std::string
+	// {
+	//	auto [v_id, o] = s;
+	//	return (o == pgt::or_e::forward)
+	//		       ? g.get_vertex_by_id(v_id).get_label()
+	//		       : g.get_vertex_by_id(v_id).get_rc_label();
+	// };
 
-	auto slice_to_dna_str =
-		[&](const pga::allele_slice_t &as) -> std::string
-	{
-		std::string dna_str = "";
-		bool is_fwd = as.get_or() == pgt::or_e::forward;
+	// auto slice_to_dna_str = [&](const pga::ref_slice &as) -> std::string
+	// {
+	//	std::string dna_str = "";
+	//	bool is_fwd = as.get_or() == pgt::or_e::forward;
 
-		pt::u32 i = as.ref_start_idx;
-		pt::u32 N = is_fwd ? as.ref_start_idx + as.len
-				   : as.ref_start_idx - as.len;
+	//	pt::u32 i = as.ref_start_idx;
+	//	pt::u32 N = is_fwd ? as.ref_start_idx + as.len
+	//			   : as.ref_start_idx - as.len;
 
-		// 1) Anchor base for deletions & insertions
-		if (var_typ == pvr::var_type_e::del ||
-		    var_typ == pvr::var_type_e::ins) {
-			// grab the first step’s label, take its last character
-			const pgt::step_t &s = as.get_step(i);
-			auto lbl = get_label(s);
-			dna_str.push_back(is_fwd ? lbl.back() : lbl.front());
-		}
+	//	// 1) Anchor base for deletions & insertions
+	//	if (var_typ == pvr::var_type_e::del ||
+	//	    var_typ == pvr::var_type_e::ins) {
+	//		// grab the first step’s label, take its last character
+	//		const pgt::step_t &s = as.get_step(i);
+	//		auto lbl = get_label(s);
+	//		dna_str.push_back(is_fwd ? lbl.back() : lbl.front());
+	//	}
 
-		// 2) Middle steps (for all types) does nothing for deletions
+	//	// 2) Middle steps (for all types) does nothing for deletions
 
-		int8_t step = is_fwd ? 1 : -1;
-		pt::u32 start = is_fwd ? ++i : --i;
-		pt::u32 end = is_fwd ? --N : ++N;
+	//	int8_t step = is_fwd ? 1 : -1;
+	//	pt::u32 start = is_fwd ? ++i : --i;
+	//	pt::u32 end = is_fwd ? --N : ++N;
 
-		for (pt::u32 j{start}; j != end; j += step) {
-			const pgt::step_t &s = as.get_step(j);
-			dna_str += get_label(s);
-		}
+	//	for (pt::u32 j{start}; j != end; j += step) {
+	//		const pgt::step_t &s = as.get_step(j);
+	//		dna_str += get_label(s);
+	//	}
 
-		// 3) If nothing got added, use “.”
-		return dna_str.empty() ? std::string{"."} : dna_str;
-	};
+	//	// 3) If nothing got added, use “.”
+	//	return dna_str.empty() ? std::string{"."} : dna_str;
+	// };
 
-	auto slices_to_dna_str =
-		[&](const std::vector<pt::idx_t> &idxs) -> std::string
-	{
-		std::string dna_strs = "";
-		std::string sep = "";
-		for (auto idx : idxs) {
-			const pga::allele_slice_t &as = r.get_slice(idx);
-			dna_strs += sep;
-			// convert to DNA string and takes care of indels
-			dna_strs += slice_to_dna_str(as);
-			sep = ",";
-		}
+	// auto slices_to_dna_str =
+	//	[&](const std::vector<pt::idx_t> &idxs) -> std::string
+	// {
+	//	std::string dna_strs = "";
+	//	std::string sep = "";
+	//	for (auto idx : idxs) {
+	//		const pga::ref_slice &as = r.get_slice(idx);
+	//		dna_strs += sep;
+	//		// convert to DNA string and takes care of indels
+	//		dna_strs += slice_to_dna_str(as);
+	//		sep = ",";
+	//	}
 
-		return dna_strs;
-	};
+	//	return dna_strs;
+	// };
 
-	auto slices_as_at_str =
-		[&](const std::vector<pt::idx_t> &idxs) -> std::string
-	{
-		std::string str = "";
-		std::string sep = ""; // no leading comma
-		for (auto i : idxs) {
-			str += sep;
-			str += r.get_slice(i).as_str();
-			sep = ",";
-		}
-		return str;
-	};
+	// auto slices_as_at_str =
+	//	[&](const std::vector<pt::idx_t> &idxs) -> std::string
+	// {
+	//	std::string str = "";
+	//	std::string sep = ""; // no leading comma
+	//	for (auto i : idxs) {
+	//		str += sep;
+	//		str += r.get_slice(i).as_str();
+	//		sep = ",";
+	//	}
+	//	return str;
+	// };
 
-	auto allele_traversals = [&]() -> std::string
-	{
-		std::string s;
-		s += slices_as_at_str(std::vector<pt::idx_t>{REF_AT_IDX});
-		s += ",";
-		s += slices_as_at_str(alts);
-		return s;
-	};
+	// auto allele_traversals = [&]() -> std::string
+	// {
+	//	std::string s;
+	//	s += r.get_ref_slice().as_str();
+	//	s += ",";
+	//	s += r.get_alts_as_str();
+	//	return s;
+	// };
 
-	// if (dbg) {
-	//	std::cerr << slices_as_at_str(
-	//			     std::vector<pt::idx_t>{REF_AT_IDX},
-	//			     var_typ)
-	//		  << "\n";
-	//	std::cerr << slices_as_at_str(alts, pvr::covariant(var_typ))
-	//		  << "\n";
-	// }
-
-	// Both ref_dna and alt_dna are plain std::string values over the DNA
-	// letters {A, C, G, T}.
-	//   ref_dna  is a single contiguous sequence.
-	//   alt_dna  may contain one or more such sequences, separated by
-	//   commas.
-	std::string ref_dna = slice_to_dna_str(r.get_slice(REF_AT_IDX));
-	std::string alt_dna = slices_to_dna_str(alts);
+	// std::string ref_dna = r.get_ref_as_dna_str(g);
+	// std::string alt_dna = r.get_alts_as_dna_str(g);
 
 	std::ostringstream info_field;
 	// clang-format off
@@ -192,18 +177,24 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 		   << ";AF=" << r.get_af()
 		   << ";AN=" << r.get_an()
 		   << ";NS=" << r.get_ns()
-		   << ";AT=" << allele_traversals()
-		   << ";VARTYPE=" << pvr::to_string_view(var_typ)
-		   << ";TANGLED=" << (r.is_tangled() ? "T" : "F")
-		   << ";LV=" << (r.get_height() - 1);
+		   << ";AT=" << r.get_at()
+		   << ";VARTYPE=" << pvr::to_string_view(r.get_var_type())
+		   << ";TANGLED=" << (r.is_tangled() ? "T" : "F");
 	// clang-format on
+
+	if (r.get_var_type() != pvr::var_type_e::inv) {
+		// clang-format off
+		info_field << ";ES=" << r.get_enc_flubble()
+			   << ";LV=" << (r.get_height() - 1);
+		// clang-format on
+	}
 
 	// clang-format off
 	os << chrom << "\t"
 	   << r.get_pos() << "\t"
 	   << r.get_id() << "\t"
-	   << ref_dna << "\t"
-	   << alt_dna << "\t"
+	   << r.get_ref_as_dna_str(g) << "\t"
+	   << r.get_alts_as_dna_str(g) << "\t"
 	   << r.get_qual() << "\t"
 	   << r.get_filter() << "\t"
 	   << info_field.str() << "\t"

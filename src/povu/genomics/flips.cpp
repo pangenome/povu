@@ -1,2 +1,0 @@
-namespace povu::genomics::flips
-{};

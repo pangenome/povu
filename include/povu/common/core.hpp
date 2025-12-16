@@ -122,9 +122,11 @@ public:
 	}
 };
 
+using slice = slice_t;
+
 } // namespace povu::types::core
 
 // NOLINTNEXTLINE(misc-unused-alias-decls)
 namespace pt = povu::types::core;
 
-#endif
+#endif // POVU_TYPES_CORE_HPP

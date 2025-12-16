@@ -1,173 +1,47 @@
 #include "povu/genomics/genomics.hpp"
 
 #include <algorithm> // for min, max
-// #include <atomic>    // for atomic, memory_order
-#include <cmath>   // for ceil
-#include <cstddef> // for size_t
-#include <cstdlib> // for std::max, exit, EXIT_FAILURE
-// #include <optional>  // for optional, operator==
-// #include <string>    // for basic_string, string
-#include <utility> // for move
+#include <cmath>     // for ceil
+#include <cstddef>   // for size_t
+#include <cstdlib>   // for std::max, exit, EXIT_FAILURE
+#include <utility>   // for move
 #include <vector>
 
-// #include "fmt/core.h" // for format_to
-//  #include "indicators/progress_bar.hpp"
-//  #include "indicators/setting.hpp" // for PostfixText
 #include "povu/common/app.hpp" // for config
 #include "povu/common/core.hpp"
-#include "povu/common/log.hpp" // for ERR
-#include "povu/common/thread.hpp"     // for thread_pool, task_group
-#include "povu/genomics/allele.hpp"   // for Exp, comp_itineraries
-#include "povu/genomics/untangle.hpp" // for untangle_ref_walks
-#include "povu/genomics/vcf.hpp"      // for VcfRecIdx, gen_vcf_records
-#include "povu/overlay/overlay.hpp"   // for comp_itineraries3, sub_inv
-#include "povu/overlay/sne.hpp"	      // for sne
-#include "povu/variation/rov.hpp"     // for RoV, gen_rov
+#include "povu/common/log.hpp"		  // for ERR
+#include "povu/common/thread.hpp"	  // for thread_pool, task_group
+#include "povu/genomics/allele.hpp"	  // for Exp, comp_itineraries
+#include "povu/genomics/vcf.hpp"	  // for VcfRecIdx, gen_vcf_records
+#include "povu/overlay/interval_tree.hpp" // for it
+#include "povu/overlay/overlay.hpp"	  // for comp_itineraries3, sub_inv
+#include "povu/overlay/sne.hpp"		  // for sne
+#include "povu/variation/rov.hpp"	  // for RoV, gen_rov
 
 namespace povu::genomics
 {
-// using namespace povu::progress;
 namespace pga = povu::genomics::allele;
 namespace pgv = povu::genomics::vcf;
-namespace put = povu::genomics::untangle;
 namespace pvst = povu::pvst;
 
-// /**
-//  * Associate walks in an RoV with references
-//  */
-// pga::Exp exp_frm_rov(const bd::VG &g, const pvr::RoV &rov)
-// {
-//	pga::Exp exp(&rov);
-//	pga::comp_itineraries(g, exp);
-//	if (exp.is_tangled())
-//		put::untangle_ref_walks(exp);
-
-//	return exp;
-// }
-
-std::vector<pga::Exp>
-comp_expeditions_serial(const bd::VG &g, const std::vector<pvr::RoV> &all_rovs,
-			pt::idx_t start, pt::idx_t count,
-			const std::set<pt::id_t> &to_call_ref_ids)
+void comp_expeditions_serial(const bd::VG &g, std::vector<pvr::RoV> &all_rovs,
+			     pt::idx_t start, pt::idx_t count,
+			     const std::set<pt::id_t> &to_call_ref_ids,
+			     pos::pin_cushion &pc,
+			     std::vector<pga::trek> &treks)
 {
 	const std::size_t N = all_rovs.size();
-	std::vector<pga::Exp> all_exp;
-	std::vector<pos::pin_cushion> pcushions;
-	all_exp.reserve(N * 2);
-
 	for (pt::idx_t i = start; i < start + count && i < N; ++i) {
-		const pvr::RoV &rov = all_rovs[i];
-		auto [rov_exps, pcs] =
-			po::comp_itineraries3(g, rov, to_call_ref_ids);
+		pvr::RoV &rov = all_rovs[i];
+		auto rov_treks =
+			po::overlay_generic(g, rov, to_call_ref_ids, pc);
 
-		for (auto &si : pcs)
-			pcushions.emplace_back(std::move(si));
-
-		for (auto &e : rov_exps) {
-			if (e.is_tangled())
-				put::untangle_ref_walks(e);
-
-			all_exp.emplace_back(std::move(e));
-		}
+		for (auto &tk : rov_treks)
+			treks.emplace_back(std::move(tk));
 	}
 
-	if (!pcushions.empty())
-		pos::sne(g, pcushions, to_call_ref_ids, all_exp);
-
-	all_exp.shrink_to_fit();
-
-	return all_exp;
+	return;
 }
-
-// std::vector<pga::Exp> comp_expeditions_work_steal(
-//	const bd::VG &g, const std::vector<pvr::RoV> &all_rovs, pt::idx_t start,
-//	pt::idx_t count, povu::thread::thread_pool &pool,
-//	std::size_t outer_concurrency, std::size_t reserve_for_inner)
-// {
-//	auto base = static_cast<std::size_t>(start);
-//	auto want = static_cast<std::size_t>(count);
-
-//	const std::size_t N = count;
-//	std::vector<pga::Exp> all_exp(N);
-
-//	// choose K workers; leave some for inner tasks
-//	const std::size_t pool_sz = pool.size();
-//	if (reserve_for_inner >= pool_sz) {
-//		reserve_for_inner = 0;
-//	}
-//	const std::size_t K = std::max<std::size_t>(
-//		1,
-//		std::min({outer_concurrency, pool_sz - reserve_for_inner, N}));
-
-//	std::atomic<std::size_t> next{0}; // counts *offsets* within [0, N)
-//	const std::size_t block = 64;
-
-//	povu::thread::task_group tg(pool);
-
-//	for (std::size_t k = 0; k < K; ++k) {
-//		tg.run(
-//			[&, base]
-//			{
-//				for (;;) {
-//					// offset within the chunk
-//					const std::size_t off = next.fetch_add(
-//						block,
-//						std::memory_order_relaxed);
-//					if (off >= N) {
-//						break;
-//					}
-
-//					// global index range [g_begin,
-//					// g_end)
-//					const std::size_t g_begin = base + off;
-//					const std::size_t g_end = std::min(
-//						g_begin + block, base + N);
-
-//					// fill results; local index =
-//					// global - base
-//					for (std::size_t gi = g_begin;
-//					     gi < g_end; ++gi) {
-//						// const std::size_t li =
-//						//	gi - base;
-//						// IMPORTANT:
-//						// - Pass the RoV
-//						// element directly: do
-//						// NOT make a local copy
-//						// like
-//						//   `pvr::RoV rov =
-//						//   all_rovs[gi];` and
-//						//   then take &rov —
-//						//   that would dangle.
-//						// - `exp_frm_rov(...)`
-//						// returns an Exp
-//						// prvalue. Inside that
-//						// function,
-//						//   the return is
-//						//   elided (RVO), and
-//						//   here the assignment
-//						//   uses
-//						//   move-assignment. No
-//						//   extra copy is
-//						//   performed; no
-//						//   `std::move` is
-//						//   needed on the RHS.
-//						// - Ensure `all_rovs`
-//						// outlives all Exp
-//						// objects that store
-//						// pointers
-//						//   into it.
-
-//						// all_exp[li] = exp_frm_rov(
-//						//	g, all_rovs[gi]);
-//					}
-//				}
-//			});
-//	}
-
-//	tg.wait(); // rethrows first exception if any
-
-//	return all_exp;
-// }
 
 struct ThreadSplit {
 	std::size_t outer;
@@ -214,7 +88,10 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 		}
 	}
 
-	std::vector<pvr::RoV> all_rovs = pvr::gen_rov(pvsts, g, to_call_ref_ids, region);
+	std::vector<pvr::RoV> all_rovs =
+		pvr::gen_rov(pvsts, g, to_call_ref_ids, region);
+
+	// std::cerr << "found " << all_rovs.size();
 
 	const std::size_t CHUNK_SIZE = app_config.get_chunk_size();
 	const std::size_t N = all_rovs.size();
@@ -231,16 +108,21 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 	povu::thread::thread_pool pool(thread_count);
 	// auto [outer, inner] = split_threads(pool.size());
 
-	std::vector<pga::Exp> exps;
-	exps.reserve(CHUNK_SIZE);
+	pos::pin_cushion pc;
+	std::vector<pga::trek> treks;
+
+	// std::vector<pga::Exp> exps;
+	// treks.reserve(CHUNK_SIZE);
 
 	try {
 		for (pt::idx_t base{}; base < N; base += CHUNK_SIZE) {
-			const pt::idx_t end = std::min(base + CHUNK_SIZE, N);
-			const pt::idx_t count = end - base;
+			pt::u32 end = std::min(base + CHUNK_SIZE, N);
+			pt::u32 count = end - base;
+			pt::u32 chunk_num = (base / CHUNK_SIZE) + 1;
 
 			// if (prog) {
-			//	pt::idx_t chunk_num = (base / CHUNK_SIZE) + 1;
+			//	pt::idx_t chunk_num = (base /
+			// CHUNK_SIZE) + 1;
 
 			//	prog_msg = pv_cmp::format(
 			//		"Processing RoV Chunk ({}/{})",
@@ -251,19 +133,25 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 			//		static_cast<size_t>(chunk_num));
 			// }
 
-			exps = comp_expeditions_serial(g, all_rovs, base, count,
-						       to_call_ref_ids);
+			// std::cerr << "A\n";
 
-			if (exps.empty())
+			comp_expeditions_serial(g, all_rovs, base, count,
+						to_call_ref_ids, pc, treks);
+
+			std::vector<poi::it> i_trees;
+			if (chunk_num == CHUNK_SIZE)
+				i_trees = pos::sne(g, pc, to_call_ref_ids);
+
+			if (treks.empty() && i_trees.empty())
 				continue;
 
 			pgv::VcfRecIdx rs =
-				pgv::gen_vcf_records(g, exps, to_call_ref_ids);
+				pgv::gen_vcf_records(g, treks, i_trees);
 
 			if (!q.push(std::move(rs)))
 				break; // queue was closed early
 
-			exps.clear();
+			treks.clear();
 		}
 	}
 	catch (...) {

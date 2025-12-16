@@ -1,111 +1,249 @@
 #include "povu/genomics/untangle.hpp"
 
+#include <iterator>
+#include <queue>   // for queue
 #include <set>	   // for set, operator!=
 #include <string>  // for basic_string, string
 #include <utility> // for move
 #include <vector>  // for vector
 
-#include "fmt/core.h"		    // for format
-#include "povu/align/align.hpp"	    // for align, aln_level_e
-#include "povu/common/compat.hpp"   // for format, pv_cmp
+// #include "fmt/core.h"		    // for format
+#include "povu/align/align.hpp" // for align, aln_level_e
+// #include "povu/common/compat.hpp"   // for format, pv_cmp
 #include "povu/common/core.hpp"	    // for pt, id_t, up_t, operator<
 #include "povu/genomics/allele.hpp" // for Exp, itn_t
+#include "povu/graph/types.hpp"
 
 namespace povu::genomics::untangle
 {
-namespace pa = povu::align;
+using namespace povu::genomics::allele;
 
-inline std::vector<pt::up_t<pt::id_t>> compute_pairs(const pga::Exp &rt)
+constexpr auto fwd = pgt::or_e::forward;
+constexpr auto rev = pgt::or_e::reverse;
+
+pgt::or_e lq_strand_to_or_e(lq::strand s)
 {
-	std::set<pt::id_t> ref_ids = rt.get_ref_ids();
-
-	std::set<pt::up_t<pt::id_t>> done;
-	std::vector<pt::up_t<pt::id_t>> aln_pairs;
-
-	// all vs all compare
-	for (pt::id_t ref_id1 : ref_ids) {
-		for (pt::id_t ref_id2 : ref_ids) {
-
-			if (ref_id1 == ref_id2) {
-				continue;
-			}
-
-			pt::up_t<pt::id_t> p{ref_id1, ref_id2};
-
-			if (done.find(p) != done.end()) {
-				continue;
-			}
-
-			done.insert(p);
-			aln_pairs.push_back(p);
-		}
-	}
-
-	return aln_pairs;
+	return s == lq::strand::STRAND_FWD ? fwd : rev;
 }
 
-// change I to D and D to I
-std::string invert_aln(const std::string &aln)
+broad_walk lineup(const bd::VG &g, const std::vector<pt::u32> &sorted_w,
+		  pt::u32 h_idx)
 {
-	std::string inverted_aln;
-	inverted_aln.reserve(aln.size());
+	broad_walk unrolled;
 
-	for (char c : aln) {
-		switch (c) {
-		case 'I':
-			inverted_aln += 'D';
-			break;
-		case 'D':
-			inverted_aln += 'I';
-			break;
-		default:
-			inverted_aln += c; // keep other characters unchanged
+	const pt::u32 J = sorted_w.size();
+
+	// add after the last position greater than current
+	auto add_unrolled = [&](pt::u32 pos, pt::u32 v_id, pgt::or_e o)
+	{
+		extended_step es{pos, v_id, o};
+		auto it = std::upper_bound(
+			unrolled.begin(), unrolled.end(), es,
+			[](const extended_step &a, const extended_step &b)
+			{ return std::get<0>(a) < std::get<0>(b); });
+		unrolled.insert(it, es);
+	};
+
+	const lq::ref_walk *h_w = g.get_ref_vec(h_idx)->walk; // the hap walk
+	for (pt::u32 j{}; j < J; j++) {
+		pt::u32 v_id = sorted_w[j];
+		const std::vector<pt::u32> &positions =
+			g.get_vertex_ref_idxs(g.v_id_to_idx(v_id), h_idx);
+
+		for (pt::u32 i : positions) { // index in the hap walk
+			pgt::or_e o = lq_strand_to_or_e(h_w->strands[i]);
+			add_unrolled(i, v_id, o);
 		}
 	}
 
-	return inverted_aln;
+	return unrolled;
 }
 
-/**
- * formerly untangle_flb
- * align the traversals of two refs
- */
-void untangle_ref_walks(pga::Exp &rt)
+race cluster(const broad_walk &unrolled)
 {
-	std::string et;
+	/* cluster by the ends of the walk w  */
+	race clusters;
+	std::queue<broad_step> q;
+	broad_walk cluster;
+	auto flush_q = [&]()
+	{
+		if (q.empty())
+			return;
 
-	for (pt::id_t ref_id1 : rt.get_ref_ids()) {
-		for (pt::id_t ref_id2 : rt.get_ref_ids()) {
-			if (ref_id1 == ref_id2) {
-				continue;
+		while (!q.empty()) {
+			cluster.emplace_back(q.front());
+			q.pop();
+		}
+		clusters.emplace_back(cluster);
+		cluster.clear();
+	};
+
+	for (auto it = unrolled.begin(); it != unrolled.end(); ++it) {
+		q.push(*it);
+		if (std::next(it) == unrolled.end()) { // last element
+			flush_q();
+			break; // TODO[C] return here?
+		}
+
+		auto [idx_in_hap_curr, v_id_curr, o] = *it;
+		auto [idx_in_hap_nxt, v_id_nxt, _] = *std::next(it);
+
+		if (idx_in_hap_curr + 1 != idx_in_hap_nxt)
+			flush_q();
+	}
+
+	return clusters;
+}
+
+race gen_race(const bd::VG &g, const std::vector<pt::u32> &sorted_w,
+	      pt::u32 h_idx)
+{
+	broad_walk bw = lineup(g, sorted_w, h_idx);
+	return cluster(bw);
+}
+
+// generate a pga::at_it from a race
+// narrow down an itn from a race
+pga::at_itn race_to_at_itn(const race &r)
+{
+	std::vector<pgt::walk_t> allele_traversals;
+	pgt::walk_t w;
+	for (const ext_lap &lap : r) {
+		for (auto &[_, v_id, o] : lap)
+			w.emplace_back(pgt::id_or_t{v_id, o});
+
+		allele_traversals.emplace_back(w);
+		w.clear();
+	}
+	pga::at_itn itn(std::move(allele_traversals));
+
+	return itn;
+};
+
+void fill_row(const pvr::RoV &rov, const race &r, pt::u32 loop_no,
+	      pt::u32 h_idx, depth_matrix &dm)
+{
+	const broad_walk &ref_at = r[loop_no];
+	dm.set_loop_no(h_idx, loop_no);
+	for (auto &[_, v_id, o] : ref_at) {
+		switch (o) {
+		case pgt::or_e::forward:
+			dm.set_data(h_idx, rov.get_sorted_pos(v_id), 1);
+			break;
+		case pgt::or_e::reverse:
+			dm.set_data(h_idx, rov.get_sorted_pos(v_id), 2);
+			break;
+		}
+	}
+}
+
+std::string do_align(const bd::VG &g, const std::vector<pt::u32> &sorted_w,
+		     pt::u32 ref_h_idx, pt::u32 alt_h_idx)
+{
+
+	race ref_race = gen_race(g, sorted_w, ref_h_idx);
+	pga::at_itn ref_itn = race_to_at_itn(ref_race);
+	race alt_race = gen_race(g, sorted_w, alt_h_idx);
+	pga::at_itn alt_itn = race_to_at_itn(alt_race);
+
+	auto lvl = povu::align::aln_level_e::at;
+
+	std::string et = povu::align::align(ref_itn, alt_itn, lvl);
+
+	return et;
+}
+
+bool col_has_mismatch(const std::map<pt::u32, std::string> &alns, pt::u32 j)
+{
+	for (const auto &[_, aln] : alns)
+		if (aln[j] == 'X')
+			return true;
+
+	return false;
+}
+
+pt::u32 comp_loop_no(pt::u32 loop_col_no, const std::string &et)
+{
+	pt::u32 loop_no{};
+	for (pt::u32 j{}; j < loop_col_no; j++) {
+		if (et[j] == 'I')
+			continue;
+
+		loop_no++; // increment loop no only on M, I, X
+	}
+
+	return loop_no;
+}
+
+std::vector<depth_matrix> unroll(const bd::VG &g, const pvr::RoV &rov,
+				 const std::vector<pt::id_t> &sorted_w,
+				 const std::map<pt::u32, std::string> &alns,
+				 const race &ref_race, pt::u32 ref_h_idx,
+				 const pt::u32 ref_loop_count, pt::u32 I,
+				 pt::u32 J)
+{
+	std::vector<depth_matrix> unrolled_dms;
+
+	for (pt::u32 j{}; j < ref_loop_count; j++) {
+		if (col_has_mismatch(alns, j)) {
+			// std::cerr << "col " << j << " has X\n";
+			depth_matrix dm(I, J);
+
+			fill_row(rov, ref_race, j, ref_h_idx, dm);
+			for (const auto &[h_idx, aln] : alns) {
+				if (aln[j] == 'D' || aln[j] == 'I')
+					continue;
+
+				pt::u32 ln = comp_loop_no(j, aln);
+				race r = gen_race(g, sorted_w, h_idx);
+				fill_row(rov, r, ln, h_idx, dm);
 			}
 
-			if (rt.has_aln(ref_id2, ref_id1)) {
-				// invert aln
-				et = invert_aln(rt.get_aln(ref_id2, ref_id1));
-			}
-			else {
-				const pga::itn_t &itn1 = rt.get_itn(ref_id1);
-				const pga::itn_t &itn2 = rt.get_itn(ref_id2);
+			dm.set_tangled(true);
 
-				et = pa::align(itn1, itn2, pa::aln_level_e::at);
-			}
-
-			rt.add_aln(ref_id1, ref_id2, std::move(et));
+			unrolled_dms.emplace_back(std::move(dm));
 		}
 	}
 
-	std::vector<pt::up_t<pt::id_t>> aln_pairs = compute_pairs(rt);
+	return unrolled_dms;
+}
 
-	// for (auto [ref_id1, ref_id2] : aln_pairs) {
+std::vector<depth_matrix> untangle(const bd::VG &g,
+				   const std::set<pt::u32> &to_call_ref_ids,
+				   const depth_matrix &dm, const pvr::RoV &rov)
+{
+	const pt::u32 I = dm.row_count();
+	const pt::u32 J = dm.col_count();
+	const std::vector<pt::u32> &sorted_w = rov.get_sorted_vertices();
 
-	//   const pga::Itn &itn1 = rt.get_itn(ref_id1);
-	//   const pga::Itn &itn2 = rt.get_itn(ref_id2);
+	// ref idx to unrolled dms
+	std::map<pt::u32, std::vector<depth_matrix>> ref_to_unrolled_dms;
 
-	//   std::string et = pa::align(itn1, itn2, pvt::aln_level_e::at);
+	for (pt::u32 ref_h_idx : to_call_ref_ids) {
 
-	//   rt.add_aln(ref_id1, ref_id2, std::move(et));
-	// }
+		race ref_race = gen_race(g, sorted_w, ref_h_idx);
+		pt::u32 ref_loop_count = ref_race.size();
+
+		std::map<pt::u32, std::string> alns;
+
+		for (pt::u32 h_idx{}; h_idx < I; h_idx++) {
+			if (ref_h_idx == h_idx)
+				continue;
+
+			alns[h_idx] = do_align(g, sorted_w, ref_h_idx, h_idx);
+		}
+
+		ref_to_unrolled_dms[ref_h_idx] =
+			unroll(g, rov, sorted_w, alns, ref_race, ref_h_idx,
+			       ref_loop_count, I, J);
+	}
+
+	for (auto [_, dms] : ref_to_unrolled_dms)
+		for (pt::u32 k{}; k < dms.size(); k++)
+			dms[k].set_tangled(true);
+
+	// return the first for now
+	return ref_to_unrolled_dms.begin()->second;
 }
 
 } // namespace povu::genomics::untangle
