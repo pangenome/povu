@@ -135,6 +135,9 @@ void do_call(core::config &app_config)
 	const std::size_t QUEUE_CAPACITY = app_config.get_queue_len();
 	pbq::bounded_queue<pgv::VcfRecIdx> q(QUEUE_CAPACITY);
 
+	// g->print_gfa(std::cerr);
+	// std::exit(1);
+
 	// start producer in its own thread
 	std::thread producer(
 		[&]

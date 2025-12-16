@@ -24,6 +24,7 @@ enum class task_e : uint8_t {
 	decompose, // deconstruct a graph
 	gfa2vcf,   // convert GFA directly to VCF
 	info,	   // print graph information
+	prune,	   // leave only the graph structure
 	unset	   // unset
 };
 
@@ -38,6 +39,8 @@ inline const char *to_str(task_e t)
 		return "gfa2vcf";
 	case task_e::info:
 		return "info";
+	case task_e::prune:
+		return "prune";
 	default:
 		return "unset";
 	}
@@ -405,4 +408,4 @@ struct config {
 	}
 };
 } // namespace core
-#endif
+#endif // CORE_HPP

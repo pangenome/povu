@@ -8,8 +8,6 @@
 
 #include "args.hxx" // for ValueFlag, EitherFlag, Flag, get, Subparser
 
-#include "povu/common/core.hpp"
-
 namespace cli
 {
 
@@ -18,8 +16,8 @@ struct decomopose_opts {
 	args::Flag hairpins;
 	args::Flag subflubbles;
 
+	// clang-format off
 	explicit decomopose_opts(args::Subparser &p)
-	    // clang-format off
 	    : decompose(p, "Decompose options", args::Group::Validators::DontCare),
 	      hairpins(decompose, "hairpins", "Find hairpins in the variation graph [default: false]", {'h', "hairpins"}),
 	      subflubbles(decompose, "subfubbles", "Find subflubbles in the variation graph [default: false]", {'s', "subflubbles"})
@@ -32,8 +30,8 @@ struct streaming_opts {
 	args::ValueFlag<std::size_t> chunk_size;
 	args::ValueFlag<std::size_t> queue_length;
 
+	// clang-format off
 	explicit streaming_opts(args::Subparser &p)
-	    // clang-format off
 	    : streaming(p, "Streaming options", args::Group::Validators::DontCare),
 	      chunk_size(streaming, "chunk_size", "Number of variants to process in each chunk [default: 100]", {'c', "chunk-size"}),
 	      queue_length(streaming, "queue_length", "Number of chunks to buffer [default: 4]", {'q', "queue-length"})
@@ -46,8 +44,8 @@ struct output_opts {
 	args::ValueFlag<std::string> output_dir;
 	args::Flag stdout_vcf;
 
+	// clang-format off
 	explicit output_opts(args::Subparser &p)
-	    // clang-format off
 	    : outsel(p, "Output destination [default: stdout]", args::Group::Validators::DontCare),
 	      output_dir(outsel, "output_dir", "Output directory for VCF files", {'o', "output-dir"}),
 	      stdout_vcf(outsel, "stdout_vcf", "Output single VCF to stdout instead of separate files", {"stdout"})
@@ -256,6 +254,24 @@ void decompose_handler(args::Subparser &parser, core::config &app_config)
 	}
 }
 
+void prune_handler(args::Subparser &parser, core::config &app_config)
+{
+	args::Group arguments("arguments");
+	// clang-format off
+	args::ValueFlag<std::string> input_gfa(parser, "gfa", "path to input gfa [required]", {'i', "input-gfa"}, args::Options::Required);
+	args::ValueFlag<std::string> output_dir(parser, "output_dir", "Output directory [default: .]", {'o', "output-dir"});
+	// clang-format on
+
+	parser.Parse();
+	app_config.set_task(core::task_e::prune);
+
+	// input gfa is already a c_str
+	app_config.set_input_gfa(args::get(input_gfa));
+
+	if (output_dir)
+		app_config.set_output_dir(args::get(output_dir));
+}
+
 int cli(int argc, char **argv, core::config &app_config)
 {
 	args::ArgumentParser p("Explore variation in a variation graph");
@@ -271,6 +287,8 @@ int cli(int argc, char **argv, core::config &app_config)
 			   [&](args::Subparser &parser) { call_handler(parser, app_config); });
 	args::Command info(commands, "info", "Print graph information [uses 1 thread]",
 			   [&](args::Subparser &parser) { info_handler(parser, app_config); });
+	args::Command prune(commands, "prune", "Reduce GFA to graph structure",
+			   [&](args::Subparser &parser) { prune_handler(parser, app_config); });
 	// clang-format on
 
 	// shared options
