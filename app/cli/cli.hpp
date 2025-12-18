@@ -8,6 +8,7 @@
 namespace cli
 {
 constexpr std::string_view VERSION = "0.0.1-alpha"; // app & lib version
+constexpr std::string_view MODULE = "povu::cli";
 
 int cli(int argc, char **argv, core::config &app_config);
 } // namespace cli

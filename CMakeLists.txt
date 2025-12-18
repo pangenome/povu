@@ -208,6 +208,7 @@ add_executable(povu
   ${APP_DIR}/subcommand/call.cpp
   ${APP_DIR}/subcommand/prune.cpp
   ${APP_DIR}/subcommand/gfa2vcf.cpp
+  ${APP_DIR}/subcommand/vcf.cpp
   ${APP_DIR}/main.cpp
 )
 

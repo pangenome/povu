@@ -237,21 +237,18 @@ void decompose_handler(args::Subparser &parser, core::config &app_config)
 	app_config.set_task(core::task_e::decompose);
 
 	{ // set decompose options
-		if (decomp_opts.hairpins) {
+		if (decomp_opts.hairpins)
 			app_config.set_hairpins(true);
-		}
 
-		if (decomp_opts.subflubbles) {
+		if (decomp_opts.subflubbles)
 			app_config.set_subflubbles(true);
-		}
 	}
 
 	// input gfa is already a c_str
 	app_config.set_input_gfa(args::get(input_gfa));
 
-	if (output_dir) {
+	if (output_dir)
 		app_config.set_output_dir(args::get(output_dir));
-	}
 }
 
 void prune_handler(args::Subparser &parser, core::config &app_config)
@@ -272,6 +269,49 @@ void prune_handler(args::Subparser &parser, core::config &app_config)
 		app_config.set_output_dir(args::get(output_dir));
 }
 
+void vcf_handler(args::Subparser &parser, core::config &app_config)
+{
+	args::Group arguments("arguments");
+	// clang-format off
+	args::ValueFlag<std::string> input_gfa(parser, "gfa", "path to input gfa [required]", {'i', "input-gfa"}, args::Options::Required);
+	args::ValueFlag<std::string> input_vcf(parser, "vcf", "path to input vcf [required]", {'c', "input-vcf"}, args::Options::Required);
+	args::ValueFlag<std::string> other_input_vcf(parser, "vcf", "path to other input vcf [required for compare]", {'d', "other-input-vcf"}, args::Options::Hidden);
+
+	/* VCF specific options */
+	// at for analysis type
+	args::Group at(parser, "Analysis type:", args::Group::Validators::Xor);
+	args::Flag verify(at, "verify", "Check for invalid VCF records", {"verify"});
+	args::Flag compare(at, "compare", "Check for invalid VCF records", {"compare"}, args::Options::Hidden);
+	// clang-format on
+
+	parser.Parse();
+	app_config.set_task(core::task_e::prune);
+
+	app_config.set_input_gfa(args::get(input_gfa));
+
+	/* set VCF subcommand options */
+	core::vcf_subcommand &vcf_opts = app_config.get_vcf_subcommand_mut();
+	vcf_opts.set_input_vcf(args::get(input_vcf));
+
+	if (verify)
+		app_config.get_vcf_subcommand_mut().set_vcf_options(
+			core::vcf_options::verify);
+
+	if (compare) {
+		// other input vcf should not be empty
+		if (!other_input_vcf) {
+			ERR("other input vcf must be provided when using "
+			    "--compare");
+
+			std::exit(EXIT_FAILURE);
+		}
+
+		vcf_opts.set_other_input_vcf(args::get(other_input_vcf));
+		app_config.get_vcf_subcommand_mut().set_vcf_options(
+			core::vcf_options::compare);
+	}
+}
+
 int cli(int argc, char **argv, core::config &app_config)
 {
 	args::ArgumentParser p("Explore variation in a variation graph");
@@ -288,7 +328,9 @@ int cli(int argc, char **argv, core::config &app_config)
 	args::Command info(commands, "info", "Print graph information [uses 1 thread]",
 			   [&](args::Subparser &parser) { info_handler(parser, app_config); });
 	args::Command prune(commands, "prune", "Reduce GFA to graph structure",
-			   [&](args::Subparser &parser) { prune_handler(parser, app_config); });
+			    [&](args::Subparser &parser) { prune_handler(parser, app_config); });
+	args::Command vcf(commands, "vcf", "Analyse a VCF file against the graph",
+			   [&](args::Subparser &parser) { vcf_handler(parser, app_config); });
 	// clang-format on
 
 	// shared options
@@ -321,13 +363,11 @@ int cli(int argc, char **argv, core::config &app_config)
 		std::exit(EXIT_SUCCESS);
 	}
 
-	if (args::get(verbosity)) {
+	if (args::get(verbosity))
 		app_config.set_verbosity(args::get(verbosity));
-	}
 
-	if (thread_count) {
+	if (thread_count)
 		app_config.set_thread_count(args::get(thread_count));
-	}
 
 	return 0;
 }

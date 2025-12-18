@@ -25,7 +25,67 @@ enum class task_e : uint8_t {
 	gfa2vcf,   // convert GFA directly to VCF
 	info,	   // print graph information
 	prune,	   // leave only the graph structure
+	vcf,	   // analyse a VCF against a graph
 	unset	   // unset
+};
+
+enum class vcf_options : uint8_t {
+	verify,
+	compare,
+};
+
+struct vcf_subcommand {
+private:
+	std::filesystem::path input_vcf;
+	std::filesystem::path other_input_vcf;
+	vcf_options vcf_opts;
+
+public:
+	// -------------
+	// Contructor(s)
+	// -------------
+	vcf_subcommand() = default;
+
+	// -------
+	// getters
+	// -------
+
+	[[nodiscard]]
+	const std::filesystem::path &get_input_vcf() const
+	{
+		return this->input_vcf;
+	}
+
+	[[nodiscard]]
+	const std::filesystem::path &get_other_input_vcf() const
+	{
+		return this->other_input_vcf;
+	}
+
+	[[nodiscard]]
+	vcf_options get_vcf_options() const
+	{
+		return this->vcf_opts;
+	}
+
+	// ---------
+	// modifiers
+	// ---------
+
+	void set_input_vcf(const std::filesystem::path &p)
+	{
+		this->input_vcf = p;
+	}
+
+	void set_other_input_vcf(const std::filesystem::path &p)
+	{
+		this->other_input_vcf = p;
+	}
+
+	void set_vcf_options(vcf_options o)
+	{
+		this->vcf_opts = o;
+	}
 };
 
 inline const char *to_str(task_e t)
@@ -41,9 +101,14 @@ inline const char *to_str(task_e t)
 		return "info";
 	case task_e::prune:
 		return "prune";
-	default:
+	case task_e::vcf:
+		return "vcf";
+	case task_e::unset:
 		return "unset";
 	}
+
+	ERR("unknown task");
+	std::exit(EXIT_FAILURE); // should not reach here
 }
 
 inline std::ostream &operator<<(std::ostream &os, const task_e &t)
@@ -62,6 +127,7 @@ std::ostream &operator<<(std::ostream &os, const task_e &t);
  * @brief app config
  */
 struct config {
+private:
 	task_e task{task_e::unset};
 
 	/* graph decomposition */
@@ -110,6 +176,10 @@ struct config {
 	/* genomic region filtering */
 	std::optional<std::string> genomic_region_str_{std::nullopt};
 
+	/* Subcommand VCF */
+	vcf_subcommand vcf_subcmd;
+
+public:
 	// -------------
 	// Contructor(s)
 	// -------------
@@ -239,9 +309,22 @@ struct config {
 		return this->genomic_region_str_.has_value();
 	}
 
+	[[nodiscard]]
+	const vcf_subcommand &get_vcf_subcommand() const
+	{
+		return this->vcf_subcmd;
+	}
+
 	// ---------
 	// setter(s)
 	// ---------
+
+	[[nodiscard]]
+	vcf_subcommand &get_vcf_subcommand_mut()
+	{
+		return this->vcf_subcmd;
+	}
+
 	// as it os from the user not the handlegraph stuff
 	void set_hairpins(bool b)
 	{

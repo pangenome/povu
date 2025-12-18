@@ -4,9 +4,11 @@
 #include "./subcommand/gfa2vcf.hpp"   // for do_gfa2vcf
 #include "./subcommand/info.hpp"      // for do_info
 #include "./subcommand/prune.hpp"     // for do_prune
+#include "./subcommand/vcf.hpp"	      // for do_vcf
 #include "povu/common/app.hpp"	      // for task_e, config
 
 namespace pv = povu::subcommands;
+constexpr std::string_view MODULE = "povu::main";
 
 int main(int argc, char *argv[])
 {
@@ -32,7 +34,10 @@ int main(int argc, char *argv[])
 	case core::task_e::prune:
 		pv::prune::do_prune(app_config);
 		break;
-	default: // the help text handles this case
+	case core::task_e::vcf:
+		pv::vcf::do_vcf(app_config);
+		break;
+	default:
 		break;
 	}
 

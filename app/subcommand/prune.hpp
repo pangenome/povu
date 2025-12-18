@@ -7,7 +7,7 @@
 
 namespace povu::subcommands::prune
 {
-constexpr std::string_view MODULE = "povu::subcommands::lighten";
+constexpr std::string_view MODULE = "povu::subcommands::prune";
 
 void do_prune(const core::config &app_config);
 } // namespace povu::subcommands::prune
