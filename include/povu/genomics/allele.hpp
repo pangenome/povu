@@ -1,8 +1,6 @@
 #ifndef POVU_GENOMICS_ALLELE_HPP
 #define POVU_GENOMICS_ALLELE_HPP
 
-// #include <cstdlib> // for exit, EXIT_FAILURE
-// #include <functional>
 #include <liteseq/refs.h>	  // for ref_walk
 #include <liteseq/types.h>	  // for strand
 #include <map>			  // for map
@@ -15,13 +13,11 @@
 #include "povu/common/compat.hpp" // for contains, pv_cmp
 #include "povu/common/constants.hpp"
 #include "povu/common/core.hpp" // for pt, idx_t, id_t, op_t
-// #include "povu/common/log.hpp"	  // for ERR
 #include "povu/common/utils.hpp"
 #include "povu/graph/bidirected.hpp" // for bd, VG
 #include "povu/graph/pvst.hpp"	     // for VertexBase
 #include "povu/graph/types.hpp"	     // for or_e, id_or_t, walk_t
-// #include "povu/overlay/overlay.hpp"
-#include "povu/variation/rov.hpp" // for RoV
+#include "povu/variation/rov.hpp"    // for RoV
 
 namespace povu::genomics::allele
 {
@@ -705,7 +701,6 @@ public:
 	}
 };
 
-// precense absence matrix
 struct depth_matrix {
 private:
 	std::vector<pt::u32> data;

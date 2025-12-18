@@ -36,14 +36,11 @@ class VcfRec
 	std::string id_;	 // start and end of a RoV e.g >1>4
 	std::string enc_flubble; // enclosing flubble string
 
-	// TODO: rename to hap_slices
-	// allele slices
-	// allele slice at idx 0 is always the ref allele
-	// subsequent indices are alt alleles
-	std::vector<pga::hap_slice> ats_;
-
-	pga::hap_slice ref_slice_;
+	pga::hap_slice ref_slice_;	// the ref allele slice
 	std::set<pt::u32> ref_at_haps_; // haps that contain the ref allele
+
+	// the set of alt allele slices
+	std::vector<pga::hap_slice> ats_;
 
 	// alt alleles grouped by alt allele idx
 	std::vector<std::vector<pga::hap_slice>> alt_slices_;
@@ -88,7 +85,7 @@ public:
 	// --------------
 	// constructor(s)
 	// --------------
-	// VcfRec() = delete;
+	VcfRec() = delete;
 
 	VcfRec(pt::u32 ref_h_idx, pt::u32 pos, std::string id,
 	       std::string en_flub, pga::hap_slice ref_sl, pt::u32 height,
