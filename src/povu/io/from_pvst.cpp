@@ -120,26 +120,6 @@ std::vector<pt::idx_t> split_numbers(std::string_view s)
 	return result;
 }
 
-/**
- * read the entire file into a string
- * should be faster for small inputs to read the entire file into a string and
- * process it at once
- * will perform whitespace normalization/formatting
- */
-void read_lines_to_vector_str(const std::string &fp,
-			      std::vector<std::string> *v)
-{
-	std::ifstream f{fp};
-	std::string temp;
-
-	if (!f)
-		FILE_ERROR(fp);
-
-	// read each line into a string
-	while (std::getline(f, temp))
-		v->push_back(temp);
-}
-
 // TODO: [c] CLEANUP move to utils
 /**
  * @brief split s based on > and < signs and using s.substr
@@ -165,15 +145,6 @@ std::pair<pgt::id_or_t, pgt::id_or_t> str_to_id_or_t(const std::string &s)
 	return {srt, end};
 }
 
-void fp_to_vector(const std::string &fp, std::vector<std::string> *v)
-{
-	std::size_t file_size = get_file_size(fp);
-
-	v->reserve(file_size);
-	read_lines_to_vector_str(fp, v);
-	v->shrink_to_fit();
-}
-
 pvst::route_params_t
 tokens_to_route_params(const std::vector<std::string> &tokens)
 {
@@ -196,7 +167,7 @@ pvst::Tree read_pvst(const std::string &fp)
 
 	// lines in the PVST
 	std::vector<std::string> lines;
-	fp_to_vector(fp, &lines);
+	povu::io::common::fp_to_vector(fp, &lines);
 
 	std::vector<std::string> tokens;
 

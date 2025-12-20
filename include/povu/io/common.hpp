@@ -25,6 +25,8 @@ std::vector<fs::path> get_files(const std::string &dir_path,
 void read_lines_to_vec_str(const std::string &fp, std::vector<std::string> *v);
 
 void create_dir_if_not_exists(const fs::path &out_dir);
+
+void fp_to_vector(const std::string &fp, std::vector<std::string> *v);
 }; // namespace povu::io::common
 
 #endif

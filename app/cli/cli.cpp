@@ -276,6 +276,7 @@ void vcf_handler(args::Subparser &parser, core::config &app_config)
 	args::ValueFlag<std::string> input_gfa(parser, "gfa", "path to input gfa [required]", {'i', "input-gfa"}, args::Options::Required);
 	args::ValueFlag<std::string> input_vcf(parser, "vcf", "path to input vcf [required]", {'c', "input-vcf"}, args::Options::Required);
 	args::ValueFlag<std::string> other_input_vcf(parser, "vcf", "path to other input vcf [required for compare]", {'d', "other-input-vcf"}, args::Options::Hidden);
+	args::ValueFlag<std::string> output_dir(parser, "output_dir", "Output directory [default: .]", {'o', "output-dir"});
 
 	/* VCF specific options */
 	// at for analysis type
@@ -285,9 +286,15 @@ void vcf_handler(args::Subparser &parser, core::config &app_config)
 	// clang-format on
 
 	parser.Parse();
-	app_config.set_task(core::task_e::prune);
+	app_config.set_task(core::task_e::vcf);
 
 	app_config.set_input_gfa(args::get(input_gfa));
+	// set opts for GFA required for VCF validation
+	app_config.set_inc_vtx_labels(true);
+	app_config.set_inc_refs(true);
+
+	if (output_dir)
+		app_config.set_output_dir(args::get(output_dir));
 
 	/* set VCF subcommand options */
 	core::vcf_subcommand &vcf_opts = app_config.get_vcf_subcommand_mut();

@@ -7,6 +7,7 @@
 #include <sys/types.h>
 
 #include "core.hpp"
+#include "liteseq/types.h"
 #include "povu/graph/types.hpp"
 
 namespace povu::constants

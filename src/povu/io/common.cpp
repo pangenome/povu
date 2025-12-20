@@ -61,7 +61,11 @@ void read_lines_to_vec_str(const std::string &fp, std::vector<std::string> *v)
 	if (!f)
 		FILE_ERROR(fp);
 
-	while (f >> temp)
+	// while (f >> temp)
+	//	v->push_back(temp);
+
+	// read line by line
+	while (std::getline(f, temp))
 		v->push_back(temp);
 }
 

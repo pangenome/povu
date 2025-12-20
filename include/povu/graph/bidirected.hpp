@@ -152,6 +152,7 @@ public:
 
 	// ref
 	std::string get_sample_name(pt::id_t ref_id) const;
+	std::string get_tag(pt::id_t ref_id) const;
 	const pr::Ref &get_ref_by_id(pt::id_t ref_id) const;
 	pr::Ref &get_ref_by_id_mut(pt::id_t ref_id);
 	std::optional<pt::id_t> get_ref_id(std::string_view ref_tag) const;
@@ -206,7 +207,8 @@ public:
 	void print_gfa(std::ostream &os) const;
 };
 
-typedef VariationGraph VG;
+using VG = VariationGraph;
+// typedef VariationGraph VG;
 } // namespace povu::bidirected
 
 // NOLINTNEXTLINE(misc-unused-alias-decls)

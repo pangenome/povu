@@ -53,6 +53,12 @@ public:
 	}
 
 	[[nodiscard]]
+	pt::id_t get_hap_id() const
+	{
+		return lq::get_hap_id(this->ref_ptr_);
+	}
+
+	[[nodiscard]]
 	ref_format_e get_format() const
 	{
 		lq::ref_id_type rt = lq::get_ref_id_type(this->ref_ptr_);
@@ -130,7 +136,13 @@ public:
 		const Ref &r = this->refs_.at(ref_id);
 		std::string sn = r.get_sample_name();
 		return sn;
-		// return lq::get_sample_name(this->refs[ref_id]);
+	}
+
+	[[nodiscard]]
+	std::string get_tag(pt::id_t ref_id) const
+	{
+		const Ref &r = this->refs_.at(ref_id);
+		return r.tag();
 	}
 
 	[[nodiscard]]
