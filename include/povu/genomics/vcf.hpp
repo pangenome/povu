@@ -1,6 +1,7 @@
 #ifndef POVU_GENOMICS_VCF_HPP
 #define POVU_GENOMICS_VCF_HPP
 
+#include <algorithm>
 #include <cstdlib> // for exit, EXIT_FAILURE
 #include <map>	   // for map, _Rb_tree_iterator, operator!=
 // #include <numeric>     // for reduce
@@ -318,6 +319,16 @@ public:
 		for (pt::idx_t i{}; i < this->genotype_cols_.size(); ++i) {
 			if (i > 0)
 				os << "\t";
+
+			auto it_b = this->genotype_cols_[i].begin();
+			auto it_e = this->genotype_cols_[i].end();
+			bool untraversed = std::all_of(it_b, it_e,
+						       [&](const std::string &s)
+						       { return s == "."; });
+			if (untraversed) {
+				os << ".";
+				continue;
+			}
 
 			os << pu::concat_with(this->genotype_cols_[i], '|');
 		}
