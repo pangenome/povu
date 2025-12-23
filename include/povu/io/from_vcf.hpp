@@ -10,7 +10,8 @@
 
 #include "povu/common/constants.hpp" // for TAB_CHAR
 #include "povu/common/core.hpp"	     // for pt
-#include "povu/common/utils.hpp"     // for split
+#include "povu/common/log.hpp"
+#include "povu/common/utils.hpp" // for split
 
 namespace povu::io::from_vcf
 {

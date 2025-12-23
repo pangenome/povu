@@ -15,13 +15,14 @@
 
 #include "fmt/core.h" // for format
 #include "povu/common/constants.hpp"
-#include "povu/common/core.hpp"		  // for pt, idx_t, id_t, op_t
-#include "povu/common/log.hpp"		  // for ERR
-#include "povu/common/utils.hpp"	  // for concat_with, pu
-#include "povu/genomics/allele.hpp"	  // for allele_slice_t, Exp
-#include "povu/graph/bidirected.hpp"	  // for VG
-#include "povu/overlay/interval_tree.hpp" // for it
-#include "povu/variation/rov.hpp"	  // for var_type_e
+#include "povu/common/core.hpp"	     // for pt, idx_t, id_t, op_t
+#include "povu/common/log.hpp"	     // for ERR
+#include "povu/common/utils.hpp"     // for concat_with, pu
+#include "povu/genomics/allele.hpp"  // for allele_slice_t, Exp
+#include "povu/graph/bidirected.hpp" // for VG
+// #include "povu/overlay/interval_tree.hpp" // for it
+#include "povu/tree/slice_tree.hpp" // for poi
+#include "povu/variation/rov.hpp"   // for var_type_e
 
 namespace povu::genomics::vcf
 {
@@ -116,7 +117,6 @@ public:
 	// ---------
 	[[nodiscard]]
 	pt::id_t get_ref_id() const
-
 	{
 		return this->ref_id_;
 	}
@@ -167,7 +167,7 @@ public:
 	std::string get_alts_as_str() const
 	{
 		std::string alt_str = "";
-		for (pt::u32 i{}; i < this->alt_slices_.size(); ++i) {
+		for (pt::u32 i{}; i < this->alt_slices_.size(); i++) {
 			pga::hap_slice alt = this->alt_slices_.at(i).front();
 			alt_str += alt.as_str(this->var_type_);
 			if (i != this->alt_slices_.size() - 1)
@@ -338,13 +338,6 @@ public:
 	// ---------
 	// setter(s)
 	// ---------
-	pt::idx_t append_alt_at(const pga::hap_slice &alt_at,
-				pt::idx_t alt_at_ref_count)
-	{
-		this->ats_.emplace_back(alt_at);
-		this->ref_count.emplace_back(alt_at_ref_count);
-		return this->ats_.size() - 1;
-	}
 
 	void add_alt_set(std::vector<pga::hap_slice> alt_set)
 	{

@@ -113,11 +113,6 @@ void read_vcf(const fs::path &fp, pt::u32 ll,
 	if (ll > 1)
 		INFO("VCF version: {}", vcf_version);
 
-	// pu::TwoWayMap<std::string, pt::u32> sns =
-	//	extract_sample_names(headers.back());
-	// INFO("Sample names ({}): {}", sns.size(), pu::concat_with(sns, ','));
-
-	// povu::io::from_vcf::VCFile vcf_file;
 	vcf_file.add_sample_names(headers.back());
 
 	pt::u32 i{static_cast<pt::u32>(headers.size())};
@@ -125,11 +120,7 @@ void read_vcf(const fs::path &fp, pt::u32 ll,
 		const std::string &line = lines[i];
 		auto rec = povu::io::from_vcf::VCFRecord::from_row(line);
 		vcf_file.add_record(std::move(rec));
-		// break;
 	}
-
-	// vcf_file.dbg_print(std::cerr);
-	// return;
 }
 
 } // namespace povu::io::from_vcf

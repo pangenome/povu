@@ -180,6 +180,9 @@ ADD_LIBRARY(povulib
   #validate
   ${POVULIB_SOURCES_DIR}/validate/vcf.cpp
 
+  # trees
+  ${POVULIB_SOURCES_DIR}/tree/slice_tree.cpp
+
   # graph
   ${POVULIB_SOURCES_DIR}/graph/types.cpp
   ${POVULIB_SOURCES_DIR}/graph/bidirected.cpp

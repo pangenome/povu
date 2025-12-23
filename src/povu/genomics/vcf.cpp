@@ -1,5 +1,6 @@
 #include "povu/genomics/vcf.hpp"
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -8,6 +9,7 @@
 #include "povu/common/core.hpp"
 #include "povu/genomics/allele.hpp" // for Exp, allele_slice_t, itn_t
 #include "povu/graph/pvst.hpp"	    // for VertexBase
+#include "povu/tree/slice_tree.hpp" // for poi
 #include "povu/variation/rov.hpp"
 
 namespace povu::genomics::vcf
@@ -17,7 +19,7 @@ namespace pvst = povu::pvst;
 
 std::pair<pt::u32, std::vector<std::vector<std::string>>>
 gen_gt_data(const bd::VG &g, const std::set<pt::u32> &ref_haps,
-	    const std::vector<poi::alt> &alts)
+	    const std::set<pt::u32> &alt_h_idxs)
 {
 	std::vector<std::vector<std::string>> gt_cols =
 		g.get_blank_genotype_cols();
@@ -37,7 +39,7 @@ gen_gt_data(const bd::VG &g, const std::set<pt::u32> &ref_haps,
 
 	// 1 because 0 is reserved for reference allele
 	// pt::u32 i{1};
-	for (auto [alt_h_idx, _, __] : alts) {
+	for (auto alt_h_idx : alt_h_idxs) {
 		auto [col_idx, row_idx] = g.get_ref_gt_col_idx(alt_h_idx);
 		gt_cols[col_idx][row_idx] = std::to_string(1);
 		ns_cols.insert(col_idx);
@@ -121,11 +123,29 @@ void append_record(const bd::VG &g, pt::u32 ref_h_idx,
 void gen_inv_recs(const bd::VG &g, const poi::it &it_,
 		  std::vector<VcfRec> &recs)
 {
+	auto comp_alt_hap_slices =
+		[&](const poi::vertex &v,
+		    pt::u32 len) -> std::vector<pga::hap_slice>
+	{
+		const std::set<pt::u32> *alt_haps = v.get_len_alts(len);
+		if (alt_haps == nullptr)
+			return {};
+
+		std::vector<pga::hap_slice> alt_set;
+		for (pt::u32 alt_h_idx : *alt_haps)
+			for (const poi::alt &a : v.get_alts(alt_h_idx))
+				if (a.len == len)
+					alt_set.emplace_back(
+						g.get_ref_vec(a.h_idx)->walk,
+						a.h_idx, a.h_start, len);
+
+		return alt_set;
+	};
+
 	pt::u32 ref_h_idx = it_.get_ref_hap_idx();
 
 	for (const auto &[_, v] : it_.get_vertices()) {
-		// const poi::vertex &v = it_.get_vertex(it_v_idx);
-		pt::u32 ref_h_start = v.ref_h_start;
+		pt::u32 ref_h_start = v.get_r_start();
 
 		for (auto &[len, alts] : v.get_same_len_alts()) {
 
@@ -157,14 +177,45 @@ void gen_inv_recs(const bd::VG &g, const poi::it &it_,
 				       pvr::var_type_e::inv,
 				       false};
 
-			std::vector<pga::hap_slice> alt_set;
-			for (auto a : alts) {
-				pga::hap_slice alt_sl = {
-					g.get_ref_vec(a.h_idx)->walk, a.h_idx,
-					a.h_start, len};
-				alt_set.emplace_back(alt_sl);
-			}
-			vcf_rec.add_alt_set(alt_set);
+			// TODO [A] actually fix this. Alts should always be
+			// present for INV
+			// if (alts.empty()) {
+			//	WARN("1. No alt haplotypes for INV at pos {} "
+			//	     " {}",
+			//	     ref_sl.comp_pos(pvr::var_type_e::inv),
+			//	     ref_h_start);
+			//	continue;
+			// }
+
+			// std::vector<poi::alt> alts_ =
+			//	v.get_alts(alt_h_idx, len);
+
+			// for (const poi::alt &a : v.get_alts(alt_h_idx, len))
+			// {
+			// }
+
+			// TODO [A] handle multiple alt haplotypes for
+			// INV
+			// std::vector<pga::hap_slice> alt_set;
+			// for (auto alt_h_idx : alts) {
+			//	for (const poi::alt &a :
+			//	     v.get_alts(alt_h_idx)) {
+			//		if (a.len == len) {
+			//			alt_set.emplace_back(
+			//				g.get_ref_vec(a.h_idx)
+			//					->walk,
+			//				a.h_idx, a.h_start,
+			//				len);
+			//		}
+			//	}
+			// }
+			std::vector<pga::hap_slice> alt_set =
+				comp_alt_hap_slices(v, len);
+
+			if (alt_set.empty()) // no alts at that len
+				continue;
+
+			vcf_rec.add_alt_set(std::move(alt_set));
 
 			auto [ns, gt_data] = gen_gt_data(g, {ref_h_idx}, alts);
 
@@ -224,12 +275,10 @@ void context_bound(const bd::VG &g, const std::vector<pga::trek> &treks,
 void context_free(const bd::VG &g, const std::vector<poi::it> &its,
 		  VcfRecIdx &vcf_recs)
 {
-	for (const auto &it_ : its) {
-		pt::u32 ref_h_idx = it_.get_ref_hap_idx();
+	for (const auto &i_tree : its) {
+		pt::u32 ref_h_idx = i_tree.get_ref_hap_idx();
 		auto &recs = vcf_recs.ensure_recs_mut(ref_h_idx);
-		gen_inv_recs(g, it_, recs);
-		// auto &recs = vcf_recs.ensure_recs_mut(ref_h_idx);
-		//  recs.emplace_back(std::move(vcf_rec));
+		gen_inv_recs(g, i_tree, recs);
 	}
 }
 
