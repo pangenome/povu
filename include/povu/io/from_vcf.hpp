@@ -202,6 +202,11 @@ public:
 		return this->records;
 	}
 
+	pt::u32 sample_count() const
+	{
+		return this->sns.get_keys().size();
+	}
+
 	[[nodiscard]]
 	pt::u32 get_sample_idx(const std::string &sample_name) const
 	{
@@ -212,6 +217,13 @@ public:
 	std::string get_sample_name(pt::u32 sample_idx) const
 	{
 		return this->sns.get_key(sample_idx);
+	}
+
+	void print_sample_names(std::ostream &os) const
+	{
+		for (pt::u32 i{}; i < this->sample_count(); i++)
+			os << i << " " << this->sns.get_key(i) << ", ";
+		os << "\n";
 	}
 
 	// ---------
@@ -235,11 +247,7 @@ public:
 
 	void dbg_print(std::ostream &os) const
 	{
-		pt::u32 i{};
-		for (const auto &sn : this->sns.get_keys())
-			os << i++ << " " << sn << ", ";
-
-		os << "\n";
+		this->print_sample_names(os);
 
 		for (const auto &rec : this->records)
 			rec.dbg_print(os);

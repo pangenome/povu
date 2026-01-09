@@ -67,7 +67,6 @@ ptg::or_e lq_strand_to_or_e(lq::strand s)
 
 bool check_at(const bd::VG &g, const std::string &at, pt::idx_t ref_id)
 {
-
 	if (at.empty())
 		return false;
 
@@ -101,22 +100,21 @@ bool check_at(const bd::VG &g, const std::string &at, pt::idx_t ref_id)
 		return true;
 	};
 
-	for (pt::u32 start_idx : positions) {
-
+	for (pt::u32 start_idx : positions)
 		any_of = any_of || check_at_loop(start_idx, rw, w, at_len);
-	}
 
 	// we should not reach here
 	return any_of;
 }
 
-std::set<pt::id_t> get_ref_ids(const bd::VG &g,
-			       const povu::io::from_vcf::VCFile &vcf_file,
-			       pt::u32 sample_idx, pt::u32 phase_idx)
+std::set<pt::id_t> get_ref_ids(const bd::VG &g, const std::string &sn,
+			       pt::u32 phase_idx)
 {
-	std::string sn = vcf_file.get_sample_name(sample_idx);
-
+	// std::string sn = vcf_file.get_sample_name(sample_idx);
 	std::set<pt::id_t> ref_ids = g.get_refs_in_sample(sn);
+
+	std::cerr << "All Ref IDs in sample " << sn << ": ["
+		  << pu::concat_with(ref_ids, ',') << "]\n";
 
 	std::set<pt::id_t> filtered_ref_ids;
 	for (pt::id_t r_id : ref_ids) {
@@ -156,13 +154,23 @@ bool validate_rec(const bd::VG &g, const povu::io::from_vcf::VCFile &vcf_file,
 	const povu::io::from_vcf::gt_data &d = rec.get_genotypes();
 	for (const auto &[at_idx, at_meta] : d.get_data()) {
 		const std::string &at = rec.get_at(at_idx);
-		// if (dbg)
-		//	std::cerr << at << "\n";
+
+		std::cerr << at_idx << "\n";
+		std::cerr << at << "\n";
 
 		for (const auto &[sample_idx, phase_idx] : at_meta) {
-			pt::u32 h_id = phase_idx + 1;
-			std::set<pt::id_t> ref_ids =
-				get_ref_ids(g, vcf_file, sample_idx, h_id);
+
+			std::string sn = vcf_file.get_sample_name(sample_idx);
+
+			std::cerr << "sn " << sn
+				  << " Sample idx: " << sample_idx
+				  << " Phase idx: " << phase_idx << "\n";
+
+			pt::u32 h_id = phase_idx;
+			std::set<pt::id_t> ref_ids = get_ref_ids(g, sn, h_id);
+
+			std::cerr << "Filtered Ref IDs: ["
+				  << pu::concat_with(ref_ids, ',') << "]\n";
 
 			// if (dbg) {
 			//	std::cerr << "Filtered Ref IDs\n";
@@ -171,8 +179,8 @@ bool validate_rec(const bd::VG &g, const povu::io::from_vcf::VCFile &vcf_file,
 			// }
 
 			if (!any_contig(g, at, ref_ids)) {
-				std::string sn =
-					vcf_file.get_sample_name(sample_idx);
+				// std::string sn =
+				//	vcf_file.get_sample_name(sample_idx);
 				// ERR("Validation failed.\n "
 				//     "Record {} id {} pos {} sample {} AT {}
 				//     {} "
@@ -197,14 +205,13 @@ bool validate_rec(const bd::VG &g, const povu::io::from_vcf::VCFile &vcf_file,
 	return true;
 }
 
-void write_report_header(std::ofstream &f)
-{
-	f << "rec_idx\tID\tPOS\tAT\tHap ID\tsample\n";
-}
+// void write_report_header(std::ofstream &f)
+// {
+//	f << "rec_idx\tID\tPOS\tAT\tHap ID\tsample\n";
+// }
 
 void write_summary(const core::config &app_config, pt::u32 err_recs, pt::u32 N)
 {
-
 	std::string summary_fp = pv_cmp::format(
 		"{}/summary.txt",
 		std::string{app_config.get_output_dir()}); // file path and name
@@ -233,22 +240,25 @@ void validate_vcf_records(const bd::VG &g,
 			  const povu::io::from_vcf::VCFile &vcf_file,
 			  const core::config &app_config)
 {
+	// file path & name
 	std::string report_fp = pv_cmp::format(
-		"{}/report.tsv",
-		std::string{app_config.get_output_dir()}); // file path and name
+		"{}/report.tsv", std::string{app_config.get_output_dir()});
 
-	std::ofstream report_os(report_fp);
+	std::ofstream report_os(report_fp); // report output stream
 	if (!report_os.is_open()) {
 		ERR("Could not open file {}", report_fp);
 		std::exit(EXIT_FAILURE);
 	}
 
-	write_report_header(report_os);
+	report_os << "rec_idx\tID\tPOS\tAT\tHap ID\tsample\n";
+	// write_report_header(report_os);
 
 	pt::u32 err_recs{};
 	const pt::u32 N = vcf_file.get_records().size();
-	for (pt::u32 rec_idx{}; rec_idx < N; rec_idx++)
+	for (pt::u32 rec_idx{}; rec_idx < N; rec_idx++) {
 		validate_rec(g, vcf_file, rec_idx, report_os, err_recs);
+		// std::exit(EXIT_FAILURE);
+	}
 
 	write_summary(app_config, err_recs, N);
 }

@@ -204,6 +204,12 @@ void find_pvst_rovs(const bd::VG &g, const pvst::Tree &pvst,
 
 		pt::status_t s = povu::genomics::graph::find_walks(g, r);
 
+		if (r.size() < 3) {
+			WARN("RoV too small (size={}): {}. Skipping.", r.size(),
+			     r.as_str());
+			continue;
+		}
+
 		if (s != 0) {
 			std::cerr << "Skipping RoV: " << r.as_str() << "\n";
 			continue;
