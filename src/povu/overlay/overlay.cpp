@@ -103,16 +103,17 @@ bool is_inverted(const std::vector<pt::u32> &ref_row,
 
 std::vector<pt::op_t<pt::u32>> comp_bounds(const std::vector<pt::u32> &ref_row,
 					   const std::vector<pt::u32> &alt_row,
-					   const pt::u32 J, bool dbg)
+					   const pt::u32 J)
 {
 	if (J == 1)
 		return {};
 
 	auto comp_bounds = [&](pt::u32 j) -> bool
 	{
-		return ref_row[j] > 0 && (ref_row[j] == alt_row[j] ||
-					  ref_row[j] == 1 && alt_row[j] == 2 ||
-					  ref_row[j] == 2 && alt_row[j] == 1);
+		return ref_row[j] > 0 &&
+		       (ref_row[j] == alt_row[j] ||
+			(ref_row[j] == 1 && alt_row[j] == 2) ||
+			(ref_row[j] == 2 && alt_row[j] == 1));
 	};
 
 	std::vector<pt::op_t<pt::u32>> bounds;
@@ -415,7 +416,7 @@ pga::trek comp_exps(const bd::VG &g, const pvr::RoV *rov,
 			}
 
 			std::vector<pt::op_t<pt::u32>> cxts =
-				comp_bounds(ref_row, alt_row, J, dbg);
+				comp_bounds(ref_row, alt_row, J);
 
 			bool is_inv = is_inverted(ref_row, alt_row, J);
 

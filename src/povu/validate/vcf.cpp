@@ -83,8 +83,7 @@ bool check_at(const bd::VG &g, const std::string &at, pt::idx_t ref_id)
 
 	bool any_of = false;
 
-	auto check_at_loop = [](pt::u32 start_idx, const lq::ref_walk *rw,
-				const ptg::walk_t &w, pt::u32 at_len) -> bool
+	auto check_at_loop = [at_len, rw, w](pt::u32 start_idx) -> bool
 	{
 		for (pt::u32 i{}; i < at_len; i++) {
 			pt::u32 si = start_idx + i;
@@ -101,7 +100,7 @@ bool check_at(const bd::VG &g, const std::string &at, pt::idx_t ref_id)
 	};
 
 	for (pt::u32 start_idx : positions)
-		any_of = any_of || check_at_loop(start_idx, rw, w, at_len);
+		any_of = any_of || check_at_loop(start_idx);
 
 	// we should not reach here
 	return any_of;

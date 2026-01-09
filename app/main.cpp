@@ -8,7 +8,6 @@
 #include "povu/common/app.hpp"	      // for task_e, config
 
 namespace pv = povu::subcommands;
-constexpr std::string_view MODULE = "povu::main";
 
 int main(int argc, char *argv[])
 {

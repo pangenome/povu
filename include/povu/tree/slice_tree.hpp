@@ -286,8 +286,7 @@ public:
 				   pt::u32 alt_h_start, pt::u32 len)
 	{
 
-		auto check_alt = [](const alt &a, pt::u32 alt_h_start,
-				    pt::u32 len) -> std::optional<comp_type>
+		auto check_alt = [&](const alt &a) -> std::optional<comp_type>
 		{
 			if (a.h_start == alt_h_start && a.len == len)
 				return comp_type::EXISTS; // already exists
@@ -328,8 +327,7 @@ public:
 			pt::u32 N = this->get_alts(alt_h_idx).size();
 			for (pt::u32 i{}; i < N; i++) {
 				const alt &a = this->get_alts(alt_h_idx).at(i);
-				std::optional<comp_type> opt_ct =
-					check_alt(a, alt_h_start, len);
+				std::optional<comp_type> opt_ct = check_alt(a);
 
 				if (opt_ct.has_value())
 					return {opt_ct.value(), i};
@@ -578,8 +576,7 @@ private:
 	}
 
 	void merge_replace(pt::u32 ref_h_start, pt::u32 alt_h_idx,
-			   pt::u32 alt_h_start, pt::u32 len,
-			   const update_params &up)
+			   pt::u32 alt_h_start, const update_params &up)
 	{
 		vertex &v = this->get_vertex_mut(up.existing_idx);
 
@@ -755,7 +752,7 @@ private:
 						  up);
 		case update_type::MERGE_REPLACE:
 			return this->merge_replace(ref_h_start, alt_h_idx,
-						   alt_h_start, len, up);
+						   alt_h_start, up);
 		}
 	}
 

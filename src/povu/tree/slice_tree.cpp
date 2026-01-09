@@ -24,6 +24,7 @@ std::string to_string(comp_type ct)
 	}
 
 	ERR("Unknown comp_type value: {}", static_cast<pt::u8>(ct));
+	return "UNDEFINED";
 }
 
 std::string to_string(update_type ut)
@@ -46,6 +47,7 @@ std::string to_string(update_type ut)
 	}
 
 	ERR("Unknown update_type value: {}", static_cast<pt::u8>(ut));
+	return "UNDEFINED";
 }
 
 } // namespace povu::tree::interval_tree
