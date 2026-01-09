@@ -3,8 +3,6 @@
 // std includes
 #include <algorithm> // for min, max
 #include <optional>
-#include <ostream>
-
 #include <set>
 #include <utility>
 #include <vector>
@@ -15,24 +13,14 @@
 // povu includes
 #include "povu/common/constants.hpp"
 #include "povu/common/core.hpp"
-#include "povu/genomics/allele.hpp"
 #include "povu/graph/pvst.hpp"
-#include "povu/graph/types.hpp" // pgt
-// #include "povu/overlay/shared.hpp"
-#include "povu/overlay/interval_tree.hpp"
-#include "povu/variation/rov.hpp"
+#include "povu/graph/types.hpp"	    // pgt
+#include "povu/tree/slice_tree.hpp" // for poi
 
 namespace povu::overlay::sne
 {
 namespace lq = liteseq;
 namespace pgt = povu::types::graph;
-
-// using pga::ref_needle;
-
-// using pga::sub_inv;
-
-// constexpr pgt::or_e fo = pgt::or_e::forward;
-// constexpr pgt::or_e ro = pgt::or_e::reverse;
 
 /**
  * @brief match ref walks at index i and j in ref walk 1 and ref walk 2
@@ -227,6 +215,9 @@ std::optional<extension> extend_link(const bd::VG &g, const link_pair &lp,
 void extend_links(const bd::VG &g, const chain_t &c, pt::u32 ref_r_id,
 		  pt::u32 alt_r_id, poi::it &it_)
 {
+	// bool dbg = (alt_r_id == 83) ? true : false;
+	// dbg = false;
+
 	std::vector<extension> extensions;
 	for (pt::u32 i{}; i < c.len(); ++i) {
 		const auto &lp = c.links[i];
@@ -236,23 +227,62 @@ void extend_links(const bd::VG &g, const chain_t &c, pt::u32 ref_r_id,
 			auto [_, r_r_idx, ref_h_start, r_ref_start, len] =
 				opt_ext.value();
 
-			// std::cerr << "EXTENDED LINK:\n";
-			// opt_ext.value().dbg_print(g);
-			// std::cerr << "\n";
-
 			pt::u32 alt_h_start = r_ref_start - len + 1;
 
-			// std::cerr << "ADDING TO ITREE: ref_h_start "
-			//	  << ref_h_start << ", alt_h_start "
-			//	  << alt_h_start << ", len " << len << "\n";
+			// if (true) {
+			//	std::cerr << "\n";
+			//	std::cerr << "ref start  " << ref_h_start
+			//		  << ", alt hap " << r_r_idx
+			//		  << ", alt start " << alt_h_start
+			//		  << ", len " << len << "\n";
+			//	opt_ext.value().dbg_print(g);
+			// }
 
-			// std::cerr << "ITREE BEFORE ADDING:\n";
-			// it_.dbg_print(std::cerr, g);
+			// for (const auto &[id, v] :
+			// it_.get_vertices()) {
+			//	if (!v.has_alts()) {
+			//		ERR("Vertex {} has no alts",
+			// id);		std::exit(EXIT_FAILURE);
+			//	}
+			// }
+
+			// if (dbg) {
+			//	std::cerr << "ADDING TO ITREE:
+			// ref_h_start "
+			//		  << ref_h_start << ",
+			// alt_h_start "
+			//		  << alt_h_start << ", len " <<
+			// len
+			//		  << "\n";
+
+			//	std::cerr << "ITREE BEFORE ADDING:\n";
+			//	it_.dbg_print(std::cerr, g);
+			// }
 
 			it_.add_vertex(ref_h_start, r_r_idx, alt_h_start, len);
 
-			// std::cerr << "ITREE AFTER ADDING:\n";
-			// it_.dbg_print(std::cerr, g);
+			// if (pv_cmp::contains(it_.get_vertices(), 63)) {
+			//	const poi::vertex &v =
+			//		it_.get_vertices().at(63);
+			//	INFO("Vertex 63 exists in itree");
+			//	if (!v.has_alts()) {
+			//		ERR("Vertex 63 has no alts");
+			//		std::exit(EXIT_FAILURE);
+			//	}
+			//	else {
+			//		for (auto &[len, alts] :
+			//		     v.get_same_len_alts()) {
+			//			INFO("Vertex 63 alt len {} "
+			//			     "count {}",
+			//			     len, alts.size());
+			//		}
+			//	}
+			// }
+
+			// if (dbg) {
+			//	std::cerr << "ITREE AFTER ADDING:\n";
+			//	it_.dbg_print(std::cerr, g);
+			// }
 		}
 	}
 
@@ -343,42 +373,43 @@ bool is_slice_in_hap(const bd::VG &g, pt::u32 ref_h_idx, pt::u32 ref_h_start,
 	return false;
 }
 
-void find_ref_haps(const bd::VG &g, poi::it &i_tree, pt::u32 I)
-{
-	// pt::u32 N = i_tree.size();
-	pt::u32 ref_h_idx = i_tree.get_ref_hap_idx();
+// void find_ref_haps(const bd::VG &g, poi::it &i_tree, pt::u32 I)
+// {
+//	// pt::u32 N = i_tree.size();
+//	pt::u32 ref_h_idx = i_tree.get_ref_hap_idx();
 
-	for (auto &[_, v] : i_tree.get_vertices_mut()) {
-		for (auto &[len, alts] : v.get_same_len_alts()) {
-			// INFO("LEN {}", len);
+//	for (const auto &[_, v] : i_tree.get_vertices()) {
+//		for (auto &[len, alts] : v.get_same_len_alts()) {
+//			// INFO("LEN {}", len);
 
-			v.add_len_haps(len, ref_h_idx);
+//			v.add_len_haps(len, ref_h_idx);
 
-			std::set<pt::u32> alt_haps;
-			for (const auto &a : alts)
-				alt_haps.insert(a.h_idx);
+//			std::set<pt::u32> alt_haps;
+//			for (const auto &a : alts)
+//				alt_haps.insert(a.h_idx);
 
-			for (pt::u32 h_idx{}; h_idx < I; ++h_idx) {
-				if (pv_cmp::contains(alt_haps, h_idx))
-					continue;
+//			for (pt::u32 h_idx{}; h_idx < I; ++h_idx) {
+//				if (pv_cmp::contains(alt_haps, h_idx))
+//					continue;
 
-				if (h_idx == ref_h_idx)
-					continue;
+//				if (h_idx == ref_h_idx)
+//					continue;
 
-				if (is_slice_in_hap(g, ref_h_idx, v.ref_h_start,
-						    len, h_idx)) {
-					v.add_len_haps(h_idx, len);
-				}
-			}
-		}
-	}
+//				if (is_slice_in_hap(g, ref_h_idx,
+// v.ref_h_start,						    len,
+// h_idx)) {					v.add_len_haps(h_idx,
+// len);
+//				}
+//			}
+//		}
+//	}
 
-	// for (pt::u32 it_v_idx{}; it_v_idx < N; it_v_idx++) {
-	//	poi::vertex &v = i_tree.get_vertex_mut(it_v_idx);
-	//	// std::set<pt::u32> alt_haps = v.get_alt_hap_indices();
+//	// for (pt::u32 it_v_idx{}; it_v_idx < N; it_v_idx++) {
+//	//	poi::vertex &v = i_tree.get_vertex_mut(it_v_idx);
+//	//	// std::set<pt::u32> alt_haps = v.get_alt_hap_indices();
 
-	// }
-}
+//	// }
+// }
 
 std::vector<poi::it> sne(const bd::VG &g, const pin_cushion &pcushions,
 			 const std::set<pt::u32> &to_call_ref_ids)
@@ -392,6 +423,10 @@ std::vector<poi::it> sne(const bd::VG &g, const pin_cushion &pcushions,
 
 			if (ref_h_idx == alt_h_idx)
 				continue;
+
+			// const povu::refs::Ref &r =
+			// g.get_ref_by_id(alt_h_idx); std::cerr <<
+			// "Tag: " << r.tag() << "\n";
 
 			std::optional<chain_t> opt_co_chain =
 				gen_colinear_chain(ref_h_idx, alt_h_idx,
@@ -411,11 +446,8 @@ std::vector<poi::it> sne(const bd::VG &g, const pin_cushion &pcushions,
 				     i_tree);
 		}
 
-		if (!i_tree.is_empty()) {
-			find_ref_haps(g, i_tree, I);
+		if (!i_tree.is_empty())
 			i_trees.emplace_back(std::move(i_tree));
-			// i_tree.dbg_print(std::cerr, g);
-		}
 	}
 
 	return i_trees;

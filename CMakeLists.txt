@@ -174,9 +174,14 @@ ADD_LIBRARY(povulib
   #${POVULIB_SOURCES_DIR}/genomics/allele.cpp
   ${POVULIB_SOURCES_DIR}/genomics/genomics.cpp
   ${POVULIB_SOURCES_DIR}/genomics/graph.cpp
-
   ${POVULIB_SOURCES_DIR}/genomics/untangle.cpp
   ${POVULIB_SOURCES_DIR}/genomics/vcf.cpp
+
+  #validate
+  ${POVULIB_SOURCES_DIR}/validate/vcf.cpp
+
+  # trees
+  ${POVULIB_SOURCES_DIR}/tree/slice_tree.cpp
 
   # graph
   ${POVULIB_SOURCES_DIR}/graph/types.cpp
@@ -192,6 +197,7 @@ ADD_LIBRARY(povulib
   ${POVULIB_SOURCES_DIR}/io/to_gfa.cpp
   ${POVULIB_SOURCES_DIR}/io/common.cpp
   ${POVULIB_SOURCES_DIR}/io/to_vcf.cpp
+  ${POVULIB_SOURCES_DIR}/io/from_vcf.cpp
 )
 
 # ..... executable .......
@@ -208,6 +214,7 @@ add_executable(povu
   ${APP_DIR}/subcommand/call.cpp
   ${APP_DIR}/subcommand/prune.cpp
   ${APP_DIR}/subcommand/gfa2vcf.cpp
+  ${APP_DIR}/subcommand/vcf.cpp
   ${APP_DIR}/main.cpp
 )
 

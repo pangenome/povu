@@ -53,6 +53,12 @@ public:
 	}
 
 	[[nodiscard]]
+	pt::id_t get_hap_id() const
+	{
+		return lq::get_hap_id(this->ref_ptr_);
+	}
+
+	[[nodiscard]]
 	ref_format_e get_format() const
 	{
 		lq::ref_id_type rt = lq::get_ref_id_type(this->ref_ptr_);
@@ -130,7 +136,13 @@ public:
 		const Ref &r = this->refs_.at(ref_id);
 		std::string sn = r.get_sample_name();
 		return sn;
-		// return lq::get_sample_name(this->refs[ref_id]);
+	}
+
+	[[nodiscard]]
+	std::string get_tag(pt::id_t ref_id) const
+	{
+		const Ref &r = this->refs_.at(ref_id);
+		return r.tag();
 	}
 
 	[[nodiscard]]
@@ -216,8 +228,7 @@ public:
 	{
 		std::set<pt::id_t> handled;
 
-		for (pt::id_t ref_id = 0; ref_id < this->ref_count();
-		     ++ref_id) {
+		for (pt::id_t ref_id{}; ref_id < this->ref_count(); ++ref_id) {
 			if (pv_cmp::contains(handled, ref_id)) {
 				continue;
 			}
@@ -229,11 +240,8 @@ public:
 
 			const lq::ref *r = this->refs_ptr_ptr[ref_id];
 			const char *col_name = lq::get_sample_name(r);
-			// std::string col_name =
-			// this->get_ref(ref_id).get_sample_name();
 
 			if (sample_refs.empty()) {
-
 				ERR("No sample names found for ref_id {}",
 				    ref_id);
 				std::exit(EXIT_FAILURE);
@@ -253,19 +261,28 @@ public:
 			else if (sample_refs.size() > 1) {
 				pt::idx_t col_idx =
 					this->genotype_col_names.size();
-				pt::idx_t col_col_idx{};
 
-				this->blank_genotype_cols.emplace_back(
-					std::vector<std::string>(
-						sample_refs.size(),
-						BLANK_GT_VALUE));
+				std::set<pt::u32> hap_count;
 
-				for (pt::id_t ref_id_ : sample_refs) {
-					pt::op_t<pt::idx_t> x{col_idx,
-							      col_col_idx++};
-					this->ref_id_to_col_idx[ref_id_] = x;
-					handled.insert(ref_id_);
+				for (pt::u32 r_id_ : sample_refs) {
+					const Ref &r_ = this->get_lq_ref(r_id_);
+					pt::u32 mc = r_.get_hap_id() - 1;
+					hap_count.insert(r_.get_hap_id());
+					pt::op_t<pt::idx_t> x{col_idx, mc};
+					this->ref_id_to_col_idx[r_id_] = x;
+					handled.insert(r_id_);
 				}
+
+				pt::u32 ploidy = hap_count.size();
+				this->blank_genotype_cols.emplace_back(
+					ploidy, BLANK_GT_VALUE);
+
+				// for (pt::id_t ref_id_ : sample_refs) {
+				//	pt::op_t<pt::idx_t> x{col_idx,
+				//			      col_col_idx++};
+				//	this->ref_id_to_col_idx[ref_id_] = x;
+				//	handled.insert(ref_id_);
+				// }
 				this->genotype_col_names.emplace_back(col_name);
 			}
 		}

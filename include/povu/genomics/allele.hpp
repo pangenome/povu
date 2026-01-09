@@ -1,27 +1,24 @@
 #ifndef POVU_GENOMICS_ALLELE_HPP
 #define POVU_GENOMICS_ALLELE_HPP
 
-// #include <cstdlib> // for exit, EXIT_FAILURE
-// #include <functional>
-#include <liteseq/refs.h>	  // for ref_walk
-#include <liteseq/types.h>	  // for strand
-#include <map>			  // for map
-#include <set>			  // for set, operator!=
-#include <string>		  // for basic_string, string
-#include <string_view>		  // for string_view
-#include <utility>		  // for move, pair
-#include <vector>		  // for vector
-				  //
+#include <map>	       // for map
+#include <set>	       // for set, operator!=
+#include <string>      // for basic_string, string
+#include <string_view> // for string_view
+#include <utility>     // for move, pair
+#include <vector>      // for vector
+
+#include <liteseq/refs.h>  // for ref_walk
+#include <liteseq/types.h> // for strand
+
 #include "povu/common/compat.hpp" // for contains, pv_cmp
 #include "povu/common/constants.hpp"
 #include "povu/common/core.hpp" // for pt, idx_t, id_t, op_t
-// #include "povu/common/log.hpp"	  // for ERR
 #include "povu/common/utils.hpp"
 #include "povu/graph/bidirected.hpp" // for bd, VG
 #include "povu/graph/pvst.hpp"	     // for VertexBase
 #include "povu/graph/types.hpp"	     // for or_e, id_or_t, walk_t
-// #include "povu/overlay/overlay.hpp"
-#include "povu/variation/rov.hpp" // for RoV
+#include "povu/variation/rov.hpp"    // for RoV
 
 namespace povu::genomics::allele
 {
@@ -494,7 +491,6 @@ private:
 	const pvr::RoV *rov_;
 
 	// hap idx to context to minimal Rov map
-	// std::vector<cxt_to_min_rov_map *> data;
 	std::map<pt::u32, cxt_to_min_rov_map> data_;
 
 	// key is the ref and value is the set of haps that do not cover the RoV
@@ -509,12 +505,6 @@ private:
 	// ----------------------
 	// private constructor(s)
 	// ----------------------
-	// trek(const pvr::RoV *rov, std::vector<cxt_to_min_rov_map *> d,
-	//      pt::u32 hap_count, bool tangled = false)
-	//     : rov_(rov), data(std::move(d)), tangled_(tangled),
-	//       HAP_COUNT(hap_count)
-	// {}
-
 	trek(const pvr::RoV *rov, pt::u32 hap_count, bool tangled = false)
 	    : rov_(rov), tangled_(tangled), HAP_COUNT(hap_count)
 	{}
@@ -548,28 +538,11 @@ public:
 		return this->data_[h_idx];
 	}
 
-	// [[nodiscard]]
-	// bool has_context(pt::u32 ref_h_idx, const rov_boundaries cxt)
-	// {
-	//	cxt_to_min_rov_map *d = data[ref_h_idx];
-	//	return pv_cmp::contains(*d, cxt);
-	// };
-
 	[[nodiscard]]
 	bool has_data() const
 	{
 		return !this->data_.empty();
 	}
-
-	// [[nodiscard]]
-	// bool has_data() const
-	// {
-	//	for (auto d : data)
-	//		if (d != nullptr)
-	//			return true;
-
-	//	return false;
-	// }
 
 	[[nodiscard]]
 	bool is_tangled() const
@@ -705,7 +678,6 @@ public:
 	}
 };
 
-// precense absence matrix
 struct depth_matrix {
 private:
 	std::vector<pt::u32> data;

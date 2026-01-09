@@ -1,6 +1,7 @@
 #ifndef POVU_GENOMICS_VCF_HPP
 #define POVU_GENOMICS_VCF_HPP
 
+#include <algorithm>
 #include <cstdlib> // for exit, EXIT_FAILURE
 #include <map>	   // for map, _Rb_tree_iterator, operator!=
 // #include <numeric>     // for reduce
@@ -14,13 +15,14 @@
 
 #include "fmt/core.h" // for format
 #include "povu/common/constants.hpp"
-#include "povu/common/core.hpp"		  // for pt, idx_t, id_t, op_t
-#include "povu/common/log.hpp"		  // for ERR
-#include "povu/common/utils.hpp"	  // for concat_with, pu
-#include "povu/genomics/allele.hpp"	  // for allele_slice_t, Exp
-#include "povu/graph/bidirected.hpp"	  // for VG
-#include "povu/overlay/interval_tree.hpp" // for it
-#include "povu/variation/rov.hpp"	  // for var_type_e
+#include "povu/common/core.hpp"	     // for pt, idx_t, id_t, op_t
+#include "povu/common/log.hpp"	     // for ERR
+#include "povu/common/utils.hpp"     // for concat_with, pu
+#include "povu/genomics/allele.hpp"  // for allele_slice_t, Exp
+#include "povu/graph/bidirected.hpp" // for VG
+// #include "povu/overlay/interval_tree.hpp" // for it
+#include "povu/tree/slice_tree.hpp" // for poi
+#include "povu/variation/rov.hpp"   // for var_type_e
 
 namespace povu::genomics::vcf
 {
@@ -36,14 +38,11 @@ class VcfRec
 	std::string id_;	 // start and end of a RoV e.g >1>4
 	std::string enc_flubble; // enclosing flubble string
 
-	// TODO: rename to hap_slices
-	// allele slices
-	// allele slice at idx 0 is always the ref allele
-	// subsequent indices are alt alleles
-	std::vector<pga::hap_slice> ats_;
-
-	pga::hap_slice ref_slice_;
+	pga::hap_slice ref_slice_;	// the ref allele slice
 	std::set<pt::u32> ref_at_haps_; // haps that contain the ref allele
+
+	// the set of alt allele slices
+	std::vector<pga::hap_slice> ats_;
 
 	// alt alleles grouped by alt allele idx
 	std::vector<std::vector<pga::hap_slice>> alt_slices_;
@@ -88,7 +87,7 @@ public:
 	// --------------
 	// constructor(s)
 	// --------------
-	// VcfRec() = delete;
+	VcfRec() = delete;
 
 	VcfRec(pt::u32 ref_h_idx, pt::u32 pos, std::string id,
 	       std::string en_flub, pga::hap_slice ref_sl, pt::u32 height,
@@ -118,7 +117,6 @@ public:
 	// ---------
 	[[nodiscard]]
 	pt::id_t get_ref_id() const
-
 	{
 		return this->ref_id_;
 	}
@@ -169,7 +167,7 @@ public:
 	std::string get_alts_as_str() const
 	{
 		std::string alt_str = "";
-		for (pt::u32 i{}; i < this->alt_slices_.size(); ++i) {
+		for (pt::u32 i{}; i < this->alt_slices_.size(); i++) {
 			pga::hap_slice alt = this->alt_slices_.at(i).front();
 			alt_str += alt.as_str(this->var_type_);
 			if (i != this->alt_slices_.size() - 1)
@@ -322,6 +320,16 @@ public:
 			if (i > 0)
 				os << "\t";
 
+			auto it_b = this->genotype_cols_[i].begin();
+			auto it_e = this->genotype_cols_[i].end();
+			bool untraversed = std::all_of(it_b, it_e,
+						       [&](const std::string &s)
+						       { return s == "."; });
+			if (untraversed) {
+				os << ".";
+				continue;
+			}
+
 			os << pu::concat_with(this->genotype_cols_[i], '|');
 		}
 		return os.str();
@@ -330,13 +338,6 @@ public:
 	// ---------
 	// setter(s)
 	// ---------
-	pt::idx_t append_alt_at(const pga::hap_slice &alt_at,
-				pt::idx_t alt_at_ref_count)
-	{
-		this->ats_.emplace_back(alt_at);
-		this->ref_count.emplace_back(alt_at_ref_count);
-		return this->ats_.size() - 1;
-	}
 
 	void add_alt_set(std::vector<pga::hap_slice> alt_set)
 	{

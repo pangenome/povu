@@ -16,6 +16,7 @@
 // #include "povu/common/constants.hpp"
 #include "povu/common/core.hpp"
 #include "povu/common/log.hpp" // for WARN, ERR
+#include "povu/common/utils.hpp"
 #include "povu/graph/types.hpp"
 // #include "povu/overlay/bst.hpp"
 
@@ -202,7 +203,210 @@ void find_laps(const bd::VG &g, pt::u32 h_idx, pt::id_t u, pt::id_t v,
 }
 
 std::list<pt::u32> gen_sort(const bd::VG &g, pvr::RoV &rov,
-			    const pt::u32 HAP_COUNT)
+			    const pt::u32 HAP_COUNT, bool dbg)
+{
+	INFO("Generating sort for RoV: {}", rov.as_str());
+	dbg = rov.as_str() == ">96686>96691" ? true : false;
+	dbg = false;
+
+	auto [l, r, route] = *rov.get_pvst_vtx()->get_route_params();
+	auto [start_id, _] = l;
+	auto [stop_id, __] = r;
+
+	std::list<pt::u32> sw;
+	std::map<pt::u32, std::list<pt::u32>::iterator> w_to_it;
+
+	std::vector<pt::slice> laps;
+	laps.reserve(1024);
+
+	// print each lap for each haplotype
+	if (dbg) {
+		for (pt::u32 h_idx{}; h_idx < HAP_COUNT; h_idx++) {
+			laps.clear();
+			find_laps(g, h_idx, start_id, stop_id, laps);
+
+			if (dbg && !laps.empty())
+				std::cerr << "\n" << h_idx << "\t";
+
+			const liteseq::ref_walk *rw =
+				g.get_ref_vec(h_idx)->walk;
+
+			for (const auto &lap : laps) {
+				auto [start, len] = lap.data();
+
+				for (pt::u32 j{start}; j < (start + len); j++) {
+					pt::u32 v_id = rw->v_ids[j];
+
+					if (dbg)
+						std::cerr << v_id << ",";
+				}
+			}
+		}
+
+		std::cerr << "\n---------------------\n";
+	}
+
+	auto comp_steps_cxt =
+		[&](const pt::slice &lap, const liteseq::ref_walk *rw,
+		    pt::op_t<std::map<pt::u32, std::list<pt::u32>::iterator>>
+			    &sw_cxt) -> void
+	{
+		auto &[left_cxt, right_cxt] = sw_cxt;
+
+		std::optional<std::list<pt::u32>::iterator> x;
+		std::optional<std::list<pt::u32>::iterator> y;
+
+		auto [start, len] = lap.data();
+		for (pt::u32 j{start}; j < (start + len); j++) {
+			pt::u32 v_id = rw->v_ids[j];
+
+			if (pv_cmp::contains(left_cxt, v_id))
+				continue;
+
+			if (pv_cmp::contains(w_to_it, v_id))
+				left_cxt[v_id] = w_to_it.at(v_id);
+			else if (j > start) {
+				if (pv_cmp::contains(w_to_it,
+						     rw->v_ids[j - 1])) {
+					x = w_to_it.at(rw->v_ids[j - 1]);
+				}
+
+				left_cxt[v_id] = x.value();
+			}
+			else
+				ERR("v_id {} has no left context", v_id);
+		}
+
+		for (pt::u32 j{start + len - 1}; j >= (start); j--) {
+			pt::u32 v_id = rw->v_ids[j];
+
+			if (pv_cmp::contains(right_cxt, v_id))
+				continue;
+
+			if (pv_cmp::contains(w_to_it, v_id))
+				right_cxt[v_id] = w_to_it.at(v_id);
+			else if (j + 1 < (start + len)) {
+				if (pv_cmp::contains(w_to_it,
+						     rw->v_ids[j + 1])) {
+					y = w_to_it.at(rw->v_ids[j + 1]);
+				}
+
+				right_cxt[v_id] = y.value();
+			}
+			else
+				ERR("v_id {} has no right context", v_id);
+		}
+	};
+
+	// fill sw with the first lap
+	auto init = [&](const pt::slice &lap, const liteseq::ref_walk *rw)
+	{
+		auto [start, len] = lap.data();
+		for (pt::u32 j{start}; j < (start + len); j++) {
+			pt::u32 v_id = rw->v_ids[j];
+
+			if (pv_cmp::contains(w_to_it, v_id))
+				continue;
+
+			auto it = sw.insert(sw.end(), v_id);
+			w_to_it[v_id] = it;
+		}
+	};
+
+	for (pt::u32 h_idx{}; h_idx < HAP_COUNT; h_idx++) {
+		laps.clear();
+		find_laps(g, h_idx, start_id, stop_id, laps);
+
+		// if (dbg && !laps.empty())
+		//	std::cerr << "->" << "\t";
+
+		const liteseq::ref_walk *rw = g.get_ref_vec(h_idx)->walk;
+
+		for (const auto &lap : laps) {
+			auto [start, len] = lap.data();
+
+			if (dbg) {
+				std::cerr << "Lap: " << h_idx << " ";
+				for (pt::u32 j{start}; j < (start + len); j++) {
+					pt::u32 v_id = rw->v_ids[j];
+					std::cerr << v_id << ",";
+				}
+				std::cerr << "\n";
+			}
+
+			pt::op_t<
+				std::map<pt::u32, std::list<pt::u32>::iterator>>
+				sw_cxt;
+
+			if (sw.empty()) {
+				init(lap, rw);
+				if (dbg) {
+					std::cerr << "~>\t"
+						  << pu::concat_with(sw, ',')
+						  << "\n";
+				}
+				continue;
+			}
+			else {
+				comp_steps_cxt(lap, rw, sw_cxt);
+			}
+
+			const auto &[left_cxt, right_cxt] = sw_cxt;
+
+			for (pt::u32 j{start}; j < (start + len); j++) {
+				pt::u32 v_id = rw->v_ids[j];
+
+				// if (dbg)
+				//	std::cerr << v_id << ",";
+
+				if (pv_cmp::contains(w_to_it, v_id))
+					continue;
+
+				/* v_id not in sw */
+
+				// std::cerr << "trying " << v_id
+				//	  << "left: " << *l_it
+				//	  << " right: " << *r_it << "\n";
+
+				auto l_it = left_cxt.at(v_id);
+				auto r_it = right_cxt.at(v_id);
+
+				// std::cerr << "trying " << v_id << " [" <<
+				// *l_it
+				//	  << ", " << *r_it << "]\n";
+
+				auto insert_point =
+					(std::distance(sw.begin(), l_it) <
+					 std::distance(sw.begin(), r_it))
+						? r_it
+						: l_it;
+				if (dbg) {
+					std::cerr << "trying " << v_id << " ["
+						  << *l_it << ", " << *r_it
+						  << "] ip " << *insert_point
+						  << "\n";
+				}
+
+				auto it = sw.insert(insert_point, v_id);
+				w_to_it[v_id] = it;
+			}
+
+			if (dbg)
+				std::cerr << "~>\t" << pu::concat_with(sw, ',')
+					  << "\n";
+		}
+	}
+
+	if (dbg) {
+		INFO("sw: {}", rov.as_str());
+		std::cerr << pu::concat_with(sw, ',') << "\n";
+	}
+
+	return sw;
+}
+
+std::list<pt::u32> gen_sort_old(const bd::VG &g, pvr::RoV &rov,
+				const pt::u32 HAP_COUNT, bool dbg)
 {
 	auto [l, r, route] = *rov.get_pvst_vtx()->get_route_params();
 	auto [start_id, _] = l;
@@ -218,6 +422,9 @@ std::list<pt::u32> gen_sort(const bd::VG &g, pvr::RoV &rov,
 		laps.clear();
 		find_laps(g, h_idx, start_id, stop_id, laps);
 
+		if (dbg && !laps.empty())
+			std::cerr << "->" << "\t";
+
 		const liteseq::ref_walk *rw = g.get_ref_vec(h_idx)->walk;
 
 		for (const auto &lap : laps) {
@@ -225,6 +432,9 @@ std::list<pt::u32> gen_sort(const bd::VG &g, pvr::RoV &rov,
 
 			for (pt::u32 j{start}; j < (start + len); j++) {
 				pt::u32 v_id = rw->v_ids[j];
+
+				if (dbg)
+					std::cerr << v_id << ",";
 
 				if (pv_cmp::contains(w_to_it, v_id)) {
 					// move v_id to the back of the list
@@ -237,6 +447,12 @@ std::list<pt::u32> gen_sort(const bd::VG &g, pvr::RoV &rov,
 					auto it = sw.insert(sw.end(), v_id);
 					w_to_it[v_id] = it;
 				}
+			}
+
+			if (dbg) {
+				std::cerr << "\n";
+				std::cerr << "sw:\t" << pu::concat_with(sw, ',')
+					  << "\n";
 			}
 		}
 	}
@@ -373,16 +589,57 @@ std::vector<pt::id_t> bfs_sort(const bd::VG &g, pvr::RoV &rov)
 
 pt::status_t find_walks(const bd::VG &g, pvr::RoV &rov)
 {
+	bool dbg = rov.as_str() == ">1>4" ? true : false;
+
+	// print each lap for each haplotype
+	if (dbg) {
+
+		auto [l, r, route] = *rov.get_pvst_vtx()->get_route_params();
+		auto [start_id, _] = l;
+		auto [stop_id, __] = r;
+
+		std::vector<pt::slice> laps;
+		laps.reserve(1024);
+
+		for (pt::u32 h_idx{}; h_idx < g.get_hap_count(); h_idx++) {
+			laps.clear();
+			find_laps(g, h_idx, start_id, stop_id, laps);
+
+			if (dbg && !laps.empty())
+				std::cerr << "\n" << h_idx << "\t";
+
+			const liteseq::ref_walk *rw =
+				g.get_ref_vec(h_idx)->walk;
+
+			for (const auto &lap : laps) {
+				auto [start, len] = lap.data();
+
+				for (pt::u32 j{start}; j < (start + len); j++) {
+					pt::u32 v_id = rw->v_ids[j];
+
+					if (dbg)
+						std::cerr << v_id << ",";
+				}
+			}
+		}
+
+		std::cerr << "\n---------------------\n";
+	}
+
 	// Attempt to sort with BFS
 	auto sorted_v_ids = bfs_sort(g, rov);
 	if (!sorted_v_ids.empty()) {
+		if (dbg)
+			INFO("called 1");
 		rov.add_sort_data(sorted_v_ids.begin(), sorted_v_ids.end());
 		return 0; // Success
 	}
 
 	// Fallback: Generate sort data
-	std::list<pt::u32> sw = gen_sort(g, rov, g.get_hap_count());
+	std::list<pt::u32> sw = gen_sort(g, rov, g.get_hap_count(), dbg);
 	if (!sw.empty()) {
+		if (dbg)
+			INFO("called 2");
 		rov.add_sort_data(sw.begin(), sw.end());
 		return 0; // Success
 	}

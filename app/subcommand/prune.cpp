@@ -1,6 +1,5 @@
 #include "./prune.hpp"
 
-#include <cstddef> // for size_t
 #include <string>
 #include <vector> // for vector
 

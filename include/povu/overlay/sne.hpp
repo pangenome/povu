@@ -13,7 +13,7 @@
 // #include "povu/genomics/allele.hpp"
 #include "povu/graph/bidirected.hpp"
 #include "povu/graph/types.hpp"
-#include "povu/overlay/interval_tree.hpp" // for it
+#include "povu/tree/slice_tree.hpp"
 
 // #include "povu/variation/rov.hpp"
 

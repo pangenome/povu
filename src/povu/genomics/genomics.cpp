@@ -9,14 +9,13 @@
 
 #include "povu/common/app.hpp" // for config
 #include "povu/common/core.hpp"
-#include "povu/common/log.hpp"		  // for ERR
-#include "povu/common/thread.hpp"	  // for thread_pool, task_group
-#include "povu/genomics/allele.hpp"	  // for Exp, comp_itineraries
-#include "povu/genomics/vcf.hpp"	  // for VcfRecIdx, gen_vcf_records
-#include "povu/overlay/interval_tree.hpp" // for it
-#include "povu/overlay/overlay.hpp"	  // for comp_itineraries3, sub_inv
-#include "povu/overlay/sne.hpp"		  // for sne
-#include "povu/variation/rov.hpp"	  // for RoV, gen_rov
+#include "povu/common/log.hpp"	    // for ERR
+#include "povu/common/thread.hpp"   // for thread_pool, task_group
+#include "povu/genomics/allele.hpp" // for Exp, comp_itineraries
+#include "povu/genomics/vcf.hpp"    // for VcfRecIdx, gen_vcf_records
+#include "povu/overlay/overlay.hpp" // for comp_itineraries3, sub_inv
+#include "povu/overlay/sne.hpp"	    // for sne
+#include "povu/variation/rov.hpp"   // for RoV, gen_rov
 
 namespace povu::genomics
 {

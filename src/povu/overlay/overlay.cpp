@@ -16,6 +16,7 @@
 #include "povu/common/constants.hpp"
 #include "povu/common/core.hpp"
 #include "povu/common/log.hpp"
+#include "povu/common/utils.hpp"
 #include "povu/genomics/allele.hpp"
 #include "povu/genomics/untangle.hpp"
 #include "povu/graph/types.hpp"
@@ -107,11 +108,22 @@ std::vector<pt::op_t<pt::u32>> comp_bounds(const std::vector<pt::u32> &ref_row,
 	if (J == 1)
 		return {};
 
+	auto comp_bounds = [&](pt::u32 j) -> bool
+	{
+		return ref_row[j] > 0 &&
+		       (ref_row[j] == alt_row[j] ||
+			(ref_row[j] == 1 && alt_row[j] == 2) ||
+			(ref_row[j] == 2 && alt_row[j] == 1));
+	};
+
 	std::vector<pt::op_t<pt::u32>> bounds;
 	std::queue<pt::u32> q; // a buffer to store similar cols
 	pt::u32 u{pc::INVALID_IDX}, v{pc::INVALID_IDX};
 	for (pt::u32 j{}; j < J; j++) {
-		if (ref_row[j] == alt_row[j] && ref_row[j] > 0)
+		// if (ref_row[j] == alt_row[j] && ref_row[j] > 0)
+		//	q.push(j);
+
+		if (comp_bounds(j))
 			q.push(j);
 
 		if (q.size() > 1) {
@@ -131,34 +143,157 @@ std::vector<pt::op_t<pt::u32>> comp_bounds(const std::vector<pt::u32> &ref_row,
 	return bounds;
 }
 
+bool slice_match(const pga::hap_slice &a, const pga::hap_slice &b)
+{
+	if (a.len != b.len)
+		return false;
+
+	for (pt::u32 i{}; i < a.len; i++) {
+		auto step_a = a.get_step(a.ref_start_idx + i);
+		auto step_b = b.get_step(b.ref_start_idx + i);
+
+		if (step_a != step_b)
+			return false;
+	}
+
+	return true;
+}
+
+bool is_inv_local(const pga::hap_slice &a, const pga::hap_slice &b)
+{
+	if (a.len != b.len)
+		return false;
+
+	for (pt::u32 i{}, j{b.len - 1}; i < a.len; i++, j--) {
+		auto step_a = a.get_step(a.ref_start_idx + i);
+		auto step_b = b.get_step(b.ref_start_idx + j);
+
+		// invert strand
+		auto [v_id_b, o_b] = step_b;
+		pgt::or_e o_b_inv = o_b == pgt::or_e::forward
+					    ? pgt::or_e::reverse
+					    : pgt::or_e::forward;
+
+		if (step_a != pgt::step_t{v_id_b, o_b_inv})
+			return false;
+	}
+
+	return true;
+}
+
 pga::hap_slice hap_sl_from_lap(const bd::VG &g, const pga::rov_boundaries &cxt,
-			       const ext_lap &lap, pt::u32 h_idx)
+			       const ext_lap &lap, pt::u32 h_idx, bool dbg)
 {
 	auto [u, v] = cxt.get_bounds();
 	auto [l_cxt_v_id, _] = u;
 	auto [r_cxt_v_id, __] = v;
 
-	std::optional<pt::u32> start_opt, end_opt;
+	std::vector<pt::u32> starts;
+	std::vector<pt::u32> ends;
+
+	auto update_q = [](pt::u32 idx_in_hap, std::vector<pt::u32> &q)
+	{
+		// insert in sorted order by min
+		auto it = std::lower_bound(q.begin(), q.end(), idx_in_hap);
+		q.insert(it, idx_in_hap);
+	};
+
+	// std::optional<pt::u32> start_opt, end_opt;
 	for (const auto &[idx_in_hap, v_id, ___] : lap) {
 		if (l_cxt_v_id == v_id)
-			start_opt = idx_in_hap;
+			update_q(idx_in_hap, starts);
+
+		// start_opt = idx_in_hap;
 
 		if (r_cxt_v_id == v_id)
-			end_opt = idx_in_hap;
+			update_q(idx_in_hap, ends);
+		// end_opt = idx_in_hap;
 
-		if (start_opt && end_opt) // done
-			break;
+		// if (start_opt && end_opt) // done
+		//	break;
 	}
 
-	if (!start_opt || !end_opt) {
+	if (starts.empty() || ends.empty()) {
 		ERR("Could not find pga::context nodes in haplotype {} {}",
 		    h_idx, cxt.to_string());
 		std::exit(EXIT_FAILURE);
 	}
 
-	pt::u32 start = std::min(*start_opt, *end_opt);
-	pt::u32 end = std::max(*start_opt, *end_opt);
+	if (starts.front() > ends.front()) // swap the starts and ends
+		std::swap(starts, ends);
+
+	pt::u32 start = starts.front();
+	pt::u32 end = ends.back();
+	// pt::u32 start = std::min(*start_opt, *end_opt);
+	// pt::u32 end = std::max(*start_opt, *end_opt);
 	pt::u32 len = end - start + 1;
+
+	if (dbg) {
+		std::cerr << "starts " << pu::concat_with(starts, ',') << "\n";
+		std::cerr << "ends " << pu::concat_with(ends, ',') << "\n";
+		INFO("hap_sl_from_lap for haplotype {} cxt {}: start "
+		     "{} end {} "
+		     "len {}",
+		     h_idx, cxt.to_string(), start, end, len);
+	}
+
+	return pga::hap_slice{g.get_ref_vec(h_idx)->walk, h_idx, start, len};
+}
+
+std::optional<pga::hap_slice>
+hap_sl_from_lap_alt(const bd::VG &g, const pga::rov_boundaries &cxt,
+		    const ext_lap &lap, pt::u32 h_idx, bool dbg)
+{
+	auto [u, v] = cxt.get_bounds();
+	auto [l_cxt_v_id, _] = u;
+	auto [r_cxt_v_id, __] = v;
+
+	std::vector<pt::u32> starts;
+	std::vector<pt::u32> ends;
+
+	auto update_q = [](pt::u32 idx_in_hap, std::vector<pt::u32> &q)
+	{
+		// insert in sorted order by min
+		auto it = std::lower_bound(q.begin(), q.end(), idx_in_hap);
+		q.insert(it, idx_in_hap);
+	};
+
+	// std::optional<pt::u32> start_opt, end_opt;
+	for (const auto &[idx_in_hap, v_id, ___] : lap) {
+		if (l_cxt_v_id == v_id)
+			update_q(idx_in_hap, starts);
+
+		// start_opt = idx_in_hap;
+
+		if (r_cxt_v_id == v_id)
+			update_q(idx_in_hap, ends);
+		// end_opt = idx_in_hap;
+
+		// if (start_opt && end_opt) // done
+		//	break;
+	}
+
+	if (starts.empty() || ends.empty()) {
+		return std::nullopt;
+	}
+
+	if (starts.front() > ends.front()) // swap the starts and ends
+		std::swap(starts, ends);
+
+	pt::u32 start = starts.front();
+	pt::u32 end = ends.back();
+	// pt::u32 start = std::min(*start_opt, *end_opt);
+	// pt::u32 end = std::max(*start_opt, *end_opt);
+	pt::u32 len = end - start + 1;
+
+	if (dbg) {
+		std::cerr << "starts " << pu::concat_with(starts, ',') << "\n";
+		std::cerr << "ends " << pu::concat_with(ends, ',') << "\n";
+		INFO("hap_sl_from_lap for haplotype {} cxt {}: start "
+		     "{} end {} "
+		     "len {}",
+		     h_idx, cxt.to_string(), start, end, len);
+	}
 
 	return pga::hap_slice{g.get_ref_vec(h_idx)->walk, h_idx, start, len};
 }
@@ -207,7 +342,7 @@ void print_race(std::ostream &os, const race &r)
 pga::trek comp_exps(const bd::VG &g, const pvr::RoV *rov,
 		    const std::set<pt::u32> &to_call_ref_ids,
 		    const depth_matrix &dm, bool tangled,
-		    pos::pin_cushion &pcushion)
+		    pos::pin_cushion &pcushion, bool dbg)
 {
 	const pt::u32 I = dm.row_count();
 	const pt::u32 J = rov->size();
@@ -228,16 +363,18 @@ pga::trek comp_exps(const bd::VG &g, const pvr::RoV *rov,
 			povu::genomics::untangle::gen_race(g, sorted_w, h_idx);
 
 		// print race
-		// std::cerr << __func__ << " computed race for haplotype "
-		//	  << h_idx << ":\n";
-		// for (const auto &r : h_idx_to_race_map.at(h_idx)) {
-		//	for (const auto &[_, v_id, o] : r) {
-		//		pgt::id_or_t v{v_id, o};
-		//		std::cerr << v;
-		//	}
-		//	//std::cerr << "\t";
-		// }
-		// std::cerr << "\n";
+		if (dbg) {
+			std::cerr << __func__ << " race for haps " << h_idx
+				  << ":\n";
+			for (const auto &lap : h_idx_to_race_map.at(h_idx)) {
+				for (const auto &[_, v_id, o] : lap) {
+					pgt::id_or_t v{v_id, o};
+					std::cerr << v << ",";
+				}
+				std::cerr << "\t";
+			}
+			std::cerr << "\n";
+		}
 
 		return h_idx_to_race_map.at(h_idx);
 	};
@@ -250,7 +387,8 @@ pga::trek comp_exps(const bd::VG &g, const pvr::RoV *rov,
 	//		tk.get_ref_recs_mut(ref_h_idx);
 
 	//	d.insert({cxt,
-	//		  {cxt, hap_sl_from_lap(g, cxt, ref_lap, ref_h_idx)}});
+	//		  {cxt, hap_sl_from_lap(g, cxt, ref_lap,
+	// ref_h_idx)}});
 	// };
 
 	// auto add_alt = [&](pt::u32 ref_h_idx, pt::u32 alt_h_idx,
@@ -260,7 +398,8 @@ pga::trek comp_exps(const bd::VG &g, const pvr::RoV *rov,
 	//	pga::minimal_rov &min_rov =
 	//		tk.get_ref_recs_mut(ref_h_idx).at(cxt);
 
-	//	min_rov.add_alt(hap_sl_from_lap(g, cxt, alt_lap, alt_h_idx));
+	//	min_rov.add_alt(hap_sl_from_lap(g, cxt, alt_lap,
+	// alt_h_idx));
 	// };
 
 	for (auto ref_h_idx : to_call_ref_ids) {
@@ -281,6 +420,15 @@ pga::trek comp_exps(const bd::VG &g, const pvr::RoV *rov,
 
 			bool is_inv = is_inverted(ref_row, alt_row, J);
 
+			if (dbg) {
+				INFO("ref {} alt {}", ref_h_idx, h_idx);
+				INFO("{}", is_inv);
+
+				// cxts
+				for (auto [u, v] : cxts)
+					INFO("  cxt: ({} , {})", u, v);
+			}
+
 			if (cxts.empty() && !is_inv) {
 				tk.add_match_ref(ref_h_idx, h_idx);
 				continue;
@@ -289,8 +437,8 @@ pga::trek comp_exps(const bd::VG &g, const pvr::RoV *rov,
 			const race &ref_race = h_idx_to_race(ref_h_idx);
 			const race &alt_race = h_idx_to_race(h_idx);
 
-			// does nothing if the ref idx is already initialised
-			// tk.init_ref_idx(ref_h_idx);
+			// does nothing if the ref idx is already
+			// initialised tk.init_ref_idx(ref_h_idx);
 
 			const ext_lap &ref_lap =
 				ref_race[dm.get_loop_no(ref_h_idx)];
@@ -305,9 +453,14 @@ pga::trek comp_exps(const bd::VG &g, const pvr::RoV *rov,
 				continue;
 			}
 
+			// if (dbg)
+			//	volatile int pause = 1;
+
 			// std::cerr << __func__
-			//	  << " found contexts for ref haplotype "
-			//	  << ref_h_idx << " and alt haplotype " << h_idx
+			//	  << " found contexts for ref haplotype
+			//"
+			//	  << ref_h_idx << " and alt haplotype "
+			//<< h_idx
 			//	  << ":\n";
 
 			for (auto b : cxts) {
@@ -319,27 +472,44 @@ pga::trek comp_exps(const bd::VG &g, const pvr::RoV *rov,
 				pga::cxt_to_min_rov_map &m =
 					tk.get_min_rov(ref_h_idx);
 
+				pga::hap_slice ref_sl = hap_sl_from_lap(
+					g, c, ref_lap, ref_h_idx, dbg);
+
+				pga::hap_slice alt_sl = hap_sl_from_lap(
+					g, c, alt_lap, h_idx, dbg);
+
+				// TODO: check locally
+				if (slice_match(ref_sl, alt_sl) ||
+				    is_inv_local(ref_sl, alt_sl)) {
+					continue;
+				}
+
 				if (!pv_cmp::contains(m, c)) { // init
+					// pga::hap_slice ref_sl =
+					// hap_sl_from_lap(	g, c, ref_lap,
+					// ref_h_idx, dbg);
+
 					m.insert({c,
 						  pga::minimal_rov(
 							  c,
-							  hap_sl_from_lap(
-								  g, c, ref_lap,
-								  ref_h_idx))});
+							  std::move(ref_sl))});
 					// m[c] = pga::minimal_rov(
 					//	c,
-					//	hap_sl_from_lap(g, c, ref_lap,
-					//			ref_h_idx));
+					//	hap_sl_from_lap(g, c,
+					// ref_lap,
+					// ref_h_idx));
 				}
 
 				pga::minimal_rov &min_rov = m.at(c);
-				min_rov.add_alt(
-					hap_sl_from_lap(g, c, alt_lap, h_idx));
+				// pga::hap_slice alt_sl = hap_sl_from_lap(
+				//	g, c, alt_lap, h_idx, dbg);
+				min_rov.add_alt(std::move(alt_sl));
 				// if (!tk.has_context(ref_h_idx, c))
 				//	init_context(ref_h_idx, c,
 				// ref_lap);
 
-				// add_alt(ref_h_idx, h_idx, c, alt_lap);
+				// add_alt(ref_h_idx, h_idx, c,
+				// alt_lap);
 			}
 		}
 
@@ -356,15 +526,47 @@ pga::trek comp_exps(const bd::VG &g, const pvr::RoV *rov,
 			pt::u32 j_u = std::min(j_u_, j_v_);
 			pt::u32 j_v = std::max(j_u_, j_v_);
 
-			for (pt::u32 h_idx{}; h_idx < I; h_idx++) {
+			const race &ref_race = h_idx_to_race(ref_h_idx);
+			const ext_lap &ref_lap =
+				ref_race[dm.get_loop_no(ref_h_idx)];
+			pga::hap_slice ref_sl = hap_sl_from_lap(g, cxt, ref_lap,
+								ref_h_idx, dbg);
 
+			for (pt::u32 h_idx{}; h_idx < I; h_idx++) {
 				std::vector<pt::u32> alt_row =
 					dm.get_row_data(h_idx);
 
-				if (match_in_cxt(ref_row, alt_row, j_u, j_v))
+				// check context match, cheap filter
+				if (!match_in_cxt(ref_row, alt_row, j_u, j_v))
+					continue;
+
+				const race &alt_race = h_idx_to_race(h_idx);
+
+				if (!(dm.get_loop_no(h_idx) < alt_race.size()))
+					continue;
+
+				// std::cerr << alt_race.size() << " "
+				//	  << dm.get_loop_no(h_idx) << "\n";
+
+				const ext_lap &alt_lap =
+					alt_race[dm.get_loop_no(h_idx)];
+				std::optional<pga::hap_slice> opt_alt_sl =
+					hap_sl_from_lap_alt(g, cxt, alt_lap,
+							    h_idx, dbg);
+
+				if (!opt_alt_sl)
+					continue;
+
+				pga::hap_slice alt_sl = opt_alt_sl.value();
+
+				if (slice_match(ref_sl, alt_sl))
 					min_rov.add_haps_match_ref(h_idx);
 			}
 		}
+	}
+
+	if (dbg) {
+		tk.dbg_print(std::cerr);
 	}
 
 	return tk;
@@ -377,6 +579,10 @@ std::vector<pga::trek> overlay_generic(const bd::VG &g, pvr::RoV &rov,
 				       const std::set<pt::u32> &to_call_ref_ids,
 				       pos::pin_cushion &pcushion)
 {
+	bool dbg = rov.as_str() == ">1>4" ? true : false;
+	if (dbg)
+		INFO("{}", rov.as_str());
+
 	std::vector<pga::trek> treks;
 
 	pt::u32 I = g.get_hap_count();	    // rows
@@ -386,6 +592,9 @@ std::vector<pga::trek> overlay_generic(const bd::VG &g, pvr::RoV &rov,
 
 	depth_matrix dm(I, J, sorted_vertices);
 	dm.fill(g, rov);
+
+	if (dbg)
+		dm.print(std::cerr);
 
 	if (dm.tangled()) {
 		std::vector<depth_matrix> unrolled_dms =
@@ -398,13 +607,14 @@ std::vector<pga::trek> overlay_generic(const bd::VG &g, pvr::RoV &rov,
 		for (pt::u32 i{}; i < unrolled_dms.size(); i++) {
 			const depth_matrix &dm_ = unrolled_dms.at(i);
 			pga::trek tk = comp_exps(g, &rov, to_call_ref_ids, dm_,
-						 true, pcushion);
+						 true, pcushion, dbg);
 			treks.emplace_back(std::move(tk));
 		}
 	}
 	else {
 		pga::trek tk = comp_exps(g, &rov, to_call_ref_ids, dm, false,
-					 pcushion);
+					 pcushion, dbg);
+
 		treks.emplace_back(std::move(tk));
 	}
 

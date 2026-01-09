@@ -228,6 +228,11 @@ std::string VG::get_sample_name(pt::id_t ref_id) const
 	return this->refs_.get_sample_name(ref_id);
 }
 
+std::string VG::get_tag(pt::id_t ref_id) const
+{
+	return this->refs_.get_tag(ref_id);
+}
+
 const pr::Ref &VG::get_ref_by_id(pt::id_t ref_id) const
 {
 	return this->refs_.get_lq_ref(ref_id);
