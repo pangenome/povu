@@ -112,8 +112,8 @@ std::set<pt::id_t> get_ref_ids(const bd::VG &g, const std::string &sn,
 	// std::string sn = vcf_file.get_sample_name(sample_idx);
 	std::set<pt::id_t> ref_ids = g.get_refs_in_sample(sn);
 
-	std::cerr << "All Ref IDs in sample " << sn << ": ["
-		  << pu::concat_with(ref_ids, ',') << "]\n";
+	// std::cerr << "All Ref IDs in sample " << sn << ": ["
+	// 	  << pu::concat_with(ref_ids, ',') << "]\n";
 
 	std::set<pt::id_t> filtered_ref_ids;
 	for (pt::id_t r_id : ref_ids) {
@@ -154,22 +154,22 @@ bool validate_rec(const bd::VG &g, const povu::io::from_vcf::VCFile &vcf_file,
 	for (const auto &[at_idx, at_meta] : d.get_data()) {
 		const std::string &at = rec.get_at(at_idx);
 
-		std::cerr << at_idx << "\n";
-		std::cerr << at << "\n";
+		// std::cerr << at_idx << "\n";
+		// std::cerr << at << "\n";
 
 		for (const auto &[sample_idx, phase_idx] : at_meta) {
 
 			std::string sn = vcf_file.get_sample_name(sample_idx);
 
-			std::cerr << "sn " << sn
-				  << " Sample idx: " << sample_idx
-				  << " Phase idx: " << phase_idx << "\n";
+			// std::cerr << "sn " << sn
+			//	  << " Sample idx: " << sample_idx
+			//	  << " Phase idx: " << phase_idx << "\n";
 
-			pt::u32 h_id = phase_idx;
+			pt::u32 h_id = phase_idx + 1;
 			std::set<pt::id_t> ref_ids = get_ref_ids(g, sn, h_id);
 
-			std::cerr << "Filtered Ref IDs: ["
-				  << pu::concat_with(ref_ids, ',') << "]\n";
+			// std::cerr << "Filtered Ref IDs: ["
+			//	  << pu::concat_with(ref_ids, ',') << "]\n";
 
 			// if (dbg) {
 			//	std::cerr << "Filtered Ref IDs\n";
