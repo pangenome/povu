@@ -1,15 +1,17 @@
 #ifndef POVU_REFS_HPP
 #define POVU_REFS_HPP
 
-#include <liteseq/gfa.h>
+#include <iostream>
 #include <map>
 #include <optional>
 #include <set>
 #include <string>
 #include <string_view>
 
+#include <liteseq/gfa.h>
+
+#include "povu/common/compat.hpp"
 #include "povu/common/core.hpp"
-#include "povu/common/log.hpp"
 #include "povu/common/utils.hpp"
 
 namespace povu::refs
@@ -48,7 +50,7 @@ public:
 	{
 		const char *t = lq::get_tag(this->ref_ptr_);
 		if (t == nullptr)
-			ERR("Failed to get tag for ref.");
+			std::cerr << "Failed to get tag for ref\n";
 		return t;
 	}
 
@@ -242,8 +244,8 @@ public:
 			const char *col_name = lq::get_sample_name(r);
 
 			if (sample_refs.empty()) {
-				ERR("No sample names found for ref_id {}",
-				    ref_id);
+				std::cerr << "No sample names found for ref_id "
+					  << ref_id;
 				std::exit(EXIT_FAILURE);
 			}
 			else if (sample_refs.size() == 1) {

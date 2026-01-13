@@ -135,6 +135,7 @@ set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(TESTS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests)
 set(BIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 set(POVULIB_SOURCES_DIR ${SRC_DIR}/povu)
+set(ZIENLIB_SOURCES_DIR ${SRC_DIR}/zien)
 
 # When set uses uses build dir for output binaries
 # set(BIN_DIR ${CMAKE_BINARY_DIR}/bin)
@@ -177,8 +178,6 @@ ADD_LIBRARY(povulib
   ${POVULIB_SOURCES_DIR}/genomics/untangle.cpp
   ${POVULIB_SOURCES_DIR}/genomics/vcf.cpp
 
-  #validate
-  ${POVULIB_SOURCES_DIR}/validate/vcf.cpp
 
   # trees
   ${POVULIB_SOURCES_DIR}/tree/slice_tree.cpp
@@ -198,6 +197,13 @@ ADD_LIBRARY(povulib
   ${POVULIB_SOURCES_DIR}/io/common.cpp
   ${POVULIB_SOURCES_DIR}/io/to_vcf.cpp
   ${POVULIB_SOURCES_DIR}/io/from_vcf.cpp
+)
+
+ADD_LIBRARY(zien
+  ${ZIENLIB_SOURCES_DIR}/tui/tui.cpp
+
+  #validate
+  ${ZIENLIB_SOURCES_DIR}/validate/validate.cpp
 )
 
 # ..... executable .......
@@ -252,12 +258,22 @@ target_link_libraries(povulib
   liteseq  # gfa handling
 )
 
+target_link_libraries(zien
+  PRIVATE
+  povulib
+  liteseq      # gfa handling
+  fmt::fmt     # formatting
+  ncurses
+)
+
 target_link_libraries(povu
   PRIVATE
   povulib      # internal library
   liteseq      # gfa handling
   fmt::fmt     # formatting
   taywee::args # argument parsing
+  zien        # zien library
+  ncurses
 )
 
 # =================== Set Build-Time Output Directory ========================

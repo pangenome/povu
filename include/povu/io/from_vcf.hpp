@@ -3,6 +3,7 @@
 
 #include <filesystem> // for path
 #include <map>	      // for map
+#include <optional>
 #include <ostream>
 #include <string>
 #include <string_view> // for string_view
@@ -10,8 +11,10 @@
 
 #include "povu/common/constants.hpp" // for TAB_CHAR
 #include "povu/common/core.hpp"	     // for pt
-#include "povu/common/log.hpp"
+// #include "povu/common/log.hpp"
 #include "povu/common/utils.hpp" // for split
+
+// #include "povu/variation/rov.hpp" // for var_type_e
 
 namespace povu::io::from_vcf
 {
@@ -50,6 +53,32 @@ public:
 	}
 };
 
+// unify with povu::var::rov::var_type_e
+enum class var_type_e : pt::u8 {
+	del, // deletion
+	ins, // insertion
+	sub, // substitution
+	inv, // inversion
+};
+
+constexpr std::string_view to_string_view(var_type_e vt) noexcept
+{
+	switch (vt) {
+	case var_type_e::del:
+		return "DEL";
+	case var_type_e::ins:
+		return "INS";
+	case var_type_e::sub:
+		return "SUB";
+	case var_type_e::inv:
+		return "INV";
+	}
+
+	// ERR("Unknown variant type");
+
+	return "UNKNOWN";
+}
+
 struct VCFRecord {
 private:
 	std::string chrom;
@@ -60,6 +89,8 @@ private:
 
 	std::vector<std::string> allele_traversals;
 	gt_data genotypes;
+
+	std::optional<var_type_e> var_type;
 
 	VCFRecord() = default;
 
@@ -73,6 +104,32 @@ private:
 				std::string ats_str = field.substr(3);
 				povu::utils::split(ats_str, ',',
 						   &this->allele_traversals);
+			}
+		}
+
+		return;
+	}
+
+	void extract_var_type(const std::string &s)
+	{
+		// not used
+		std::vector<std::string> info_fields;
+		povu::utils::split(s, ';', &info_fields);
+
+		for (const auto &field : info_fields) {
+			if (field.rfind("VARTYPE=", 0) == 0) {
+				std::string vt_str = field.substr(8);
+
+				if (vt_str == "DEL")
+					this->var_type = var_type_e::del;
+				else if (vt_str == "INS")
+					this->var_type = var_type_e::ins;
+				else if (vt_str == "SUB")
+					this->var_type = var_type_e::sub;
+				else if (vt_str == "INV")
+					this->var_type = var_type_e::inv;
+				else
+					this->var_type = std::nullopt;
 			}
 		}
 
@@ -131,6 +188,7 @@ public:
 		povu::utils::split(fields[4], ',', &rec.alts);
 
 		rec.extract_ats(fields[7]);
+		rec.extract_var_type(fields[7]);
 		rec.handle_genotypes(fields, 9);
 		return rec;
 	}
@@ -142,9 +200,27 @@ public:
 	}
 
 	[[nodiscard]]
+	const std::vector<std::string> &get_all_ats() const
+	{
+		return this->allele_traversals;
+	}
+
+	[[nodiscard]]
 	const std::string &get_at(pt::u32 at_idx) const
 	{
 		return this->allele_traversals[at_idx];
+	}
+
+	[[nodiscard]]
+	pt::u32 get_at_count() const
+	{
+		return this->allele_traversals.size();
+	}
+
+	[[nodiscard]]
+	pt::u32 get_alt_count() const
+	{
+		return this->alts.size();
 	}
 
 	[[nodiscard]]
@@ -157,6 +233,24 @@ public:
 	const std::string &get_id() const
 	{
 		return this->id;
+	}
+
+	void viewer(std::ostream &os) const
+	{
+		os << (this->var_type.has_value()
+			       ? to_string_view(this->var_type.value())
+			       : ".");
+		os << "\t";
+		os << this->pos << "\t";
+		os << this->id << "\t";
+		os << this->ref << "\t";
+		os << pu::concat_with(this->alts, ',') << "\t";
+
+		auto N = static_cast<pt::u32>(this->allele_traversals.size());
+		for (pt::u32 i = 0; i < N; i++) {
+			os << allele_traversals[i];
+			os << "\t";
+		}
 	}
 
 	void dbg_print(std::ostream &os) const
@@ -219,10 +313,24 @@ public:
 		return this->sns.get_key(sample_idx);
 	}
 
+	/**
+	 * return names in order of their indices
+	 */
+	[[nodiscard]]
+	std::vector<std::string> get_sample_names() const
+	{
+		std::vector<std::string> names;
+		for (pt::u32 i{}; i < this->sample_count(); i++)
+			names.emplace_back(this->sns.get_key(i));
+
+		return names;
+	}
+
 	void print_sample_names(std::ostream &os) const
 	{
 		for (pt::u32 i{}; i < this->sample_count(); i++)
 			os << i << " " << this->sns.get_key(i) << ", ";
+
 		os << "\n";
 	}
 
