@@ -15,20 +15,20 @@
 #include <utility>     // for get, move
 #include <vector>      // for vector
 
-#include "common.hpp"		     // for create_dir_if_not_exists
+#include "ita/genomics/vcf.hpp" // for VcfRecIdx
+
 #include "povu/common/app.hpp"	     // for config
 #include "povu/common/compat.hpp"    // for contains, pv_cmp
 #include "povu/common/core.hpp"	     // for id_t, pt
 #include "povu/common/log.hpp"	     // for ERR
 #include "povu/common/utils.hpp"     // for is_prefix
-#include "povu/genomics/vcf.hpp"     // for VcfRecIdx
 #include "povu/graph/bidirected.hpp" // for VG
+#include "povu/io/common.hpp"	     // for create_dir_if_not_exists
 
 namespace povu::io::to_vcf
 {
 inline constexpr std::string_view MODULE = "povu::io::to_vcf";
 namespace fs = std::filesystem;
-namespace pgv = povu::genomics::vcf;
 namespace bd = povu::bidirected;
 
 class VcfOutput
@@ -177,7 +177,7 @@ public:
 
 void init_vcfs(bd::VG &g, const std::vector<std::string> &sample_names,
 	       VcfOutput &vout);
-void write_vcfs(pgv::VcfRecIdx &vcf_recs, const bd::VG &g, VcfOutput &vout,
+void write_vcfs(iv::VcfRecIdx &vcf_recs, const bd::VG &g, VcfOutput &vout,
 		const core::config &app_config);
 } // namespace povu::io::to_vcf
 

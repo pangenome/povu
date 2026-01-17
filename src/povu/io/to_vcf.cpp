@@ -3,15 +3,16 @@
 #include <sstream> // for basic_ostringstream
 #include <sys/types.h>
 
-#include "fmt/core.h"		  // for format
-#include "povu/common/core.hpp"	  // for pt
-#include "povu/refs/refs.hpp"	  // for Ref, pr
-#include "povu/variation/rov.hpp" // for var_type_e
+#include "fmt/core.h" // for format
+
+#include "ita/variation/rov.hpp" // for var_type_e
+				 //
+#include "povu/common/core.hpp"	 // for pt
+#include "povu/refs/refs.hpp"	 // for Ref, pr
 
 namespace povu::io::to_vcf
 {
 namespace pgt = povu::types::graph;
-namespace pga = povu::genomics::allele;
 
 constexpr std::string_view VCF_VERSION = "4.2";
 
@@ -80,7 +81,7 @@ void init_vcfs(bd::VG &g, const std::vector<std::string> &ref_name_prefixes,
 /**
  * @brief write a VCF record to output stream
  */
-void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
+void write_rec(const bd::VG &g, iv::VcfRec &r, const std::string &chrom,
 	       std::ostream &os)
 {
 	std::ostringstream info_field;
@@ -90,11 +91,11 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 		   << ";AN=" << r.get_an()
 		   << ";NS=" << r.get_ns()
 		   << ";AT=" << r.get_at()
-		   << ";VARTYPE=" << pvr::to_string_view(r.get_var_type())
+		   << ";VARTYPE=" << ir::to_string_view(r.get_var_type())
 		   << ";TANGLED=" << (r.is_tangled() ? "T" : "F");
 	// clang-format on
 
-	if (r.get_var_type() != pvr::var_type_e::inv) {
+	if (r.get_var_type() != ir::var_type_e::inv) {
 		// clang-format off
 		info_field << ";ES=" << r.get_enc_flubble()
 			   << ";LV=" << (r.get_height() - 1);
@@ -117,7 +118,7 @@ void write_rec(const bd::VG &g, pgv::VcfRec &r, const std::string &chrom,
 	return;
 }
 
-void write_vcfs(pgv::VcfRecIdx &vcf_recs, const bd::VG &g, VcfOutput &vout,
+void write_vcfs(iv::VcfRecIdx &vcf_recs, const bd::VG &g, VcfOutput &vout,
 		const core::config &app_config)
 {
 	// Cache stdout stream once to avoid repeatedly asking for it.
@@ -130,7 +131,7 @@ void write_vcfs(pgv::VcfRecIdx &vcf_recs, const bd::VG &g, VcfOutput &vout,
 		std::ostream &os =
 			to_stdout ? *stdout_os : vout.stream_for_ref_id(ref_id);
 
-		for (pgv::VcfRec &r : recs)
+		for (iv::VcfRec &r : recs)
 			write_rec(g, r, ref_tag, os);
 	}
 
