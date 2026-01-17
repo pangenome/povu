@@ -30,8 +30,8 @@ enum class task_e : uint8_t {
 };
 
 enum class vcf_options : uint8_t {
-	verify,
-	compare,
+	tui,
+	report,
 };
 
 struct vcf_subcommand {

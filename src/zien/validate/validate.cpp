@@ -1,19 +1,19 @@
-#include "povu/validate/vcf.hpp"
+#include "zien/validate/validate.hpp"
 
 #include <cctype>
 #include <fstream>
 #include <string>
 
 #include <liteseq/refs.h> // for ref_walk, ref
+#include <vector>
 
 #include "povu/common/core.hpp"
-#include "povu/common/utils.hpp"
 #include "povu/graph/bidirected.hpp" // for bidirected
 #include "povu/graph/types.hpp"	     // for or_e
 #include "povu/io/from_vcf.hpp"	     // for read_vcf
 #include "povu/refs/refs.hpp"	     // for Ref
 
-namespace povu::validate::vcf
+namespace zien::validate
 {
 namespace lq = liteseq;
 
@@ -113,7 +113,7 @@ std::set<pt::id_t> get_ref_ids(const bd::VG &g, const std::string &sn,
 	std::set<pt::id_t> ref_ids = g.get_refs_in_sample(sn);
 
 	// std::cerr << "All Ref IDs in sample " << sn << ": ["
-	// 	  << pu::concat_with(ref_ids, ',') << "]\n";
+	//	  << pu::concat_with(ref_ids, ',') << "]\n";
 
 	std::set<pt::id_t> filtered_ref_ids;
 	for (pt::id_t r_id : ref_ids) {
@@ -140,7 +140,7 @@ bool any_contig(const bd::VG &g, const std::string &at,
 }
 
 bool validate_rec(const bd::VG &g, const povu::io::from_vcf::VCFile &vcf_file,
-		  pt::u32 rec_idx, std::ofstream &report_f, pt::u32 &err_recs)
+		  pt::u32 rec_idx, std::ofstream *report_f, pt::u32 &err_recs)
 {
 	const povu::io::from_vcf::VCFRecord &rec =
 		vcf_file.get_records()[rec_idx];
@@ -186,11 +186,11 @@ bool validate_rec(const bd::VG &g, const povu::io::from_vcf::VCFile &vcf_file,
 				//     "\n",
 				//     rec_idx, rec.get_id(), rec.get_pos(), sn,
 				//     at, h_id);
-
-				report_f << pv_cmp::format(
-					"{}\t{}\t{}\t{}\t{}\t{}\n", rec_idx,
-					rec.get_id(), rec.get_pos(), at, h_id,
-					sn);
+				if (report_f != nullptr)
+					*report_f << pv_cmp::format(
+						"{}\t{}\t{}\t{}\t{}\t{}\n",
+						rec_idx, rec.get_id(),
+						rec.get_pos(), at, h_id, sn);
 
 				err_recs++;
 				// std::cout << rec_idx << "\t" << rec.get_id()
@@ -235,30 +235,40 @@ void write_summary(const core::config &app_config, pt::u32 err_recs, pt::u32 N)
 	   << "%\n";
 }
 
-void validate_vcf_records(const bd::VG &g,
-			  const povu::io::from_vcf::VCFile &vcf_file,
-			  const core::config &app_config)
+std::vector<pt::u32>
+validate_vcf_records(const bd::VG &g,
+		     const povu::io::from_vcf::VCFile &vcf_file,
+		     const core::config &app_config, bool output_to_file)
 {
-	// file path & name
-	std::string report_fp = pv_cmp::format(
-		"{}/report.tsv", std::string{app_config.get_output_dir()});
+	std::ofstream file_stream; // Lives on the stack
+	std::ofstream *report_os = nullptr;
 
-	std::ofstream report_os(report_fp); // report output stream
-	if (!report_os.is_open()) {
-		ERR("Could not open file {}", report_fp);
-		std::exit(EXIT_FAILURE);
+	if (output_to_file) {
+		// file path & name
+		std::string report_fp = pv_cmp::format(
+			"{}/report.tsv",
+			std::string{app_config.get_output_dir()});
+
+		file_stream.open(report_fp);
+		if (!file_stream.is_open()) {
+			ERR("Could not open file {}", report_fp);
+			std::exit(EXIT_FAILURE);
+		}
+
+		report_os = &file_stream;
+		*report_os << "rec_idx\tID\tPOS\tAT\tHap ID\tsample\n";
 	}
 
-	report_os << "rec_idx\tID\tPOS\tAT\tHap ID\tsample\n";
-	// write_report_header(report_os);
+	std::vector<pt::u32> invalid_rec_indices;
 
 	pt::u32 err_recs{};
 	const pt::u32 N = vcf_file.get_records().size();
-	for (pt::u32 rec_idx{}; rec_idx < N; rec_idx++) {
-		validate_rec(g, vcf_file, rec_idx, report_os, err_recs);
-		// std::exit(EXIT_FAILURE);
-	}
+	for (pt::u32 rec_idx{}; rec_idx < N; rec_idx++)
+		if (!validate_rec(g, vcf_file, rec_idx, report_os, err_recs))
+			invalid_rec_indices.emplace_back(rec_idx);
 
 	write_summary(app_config, err_recs, N);
+
+	return invalid_rec_indices;
 }
-} // namespace povu::validate::vcf
+} // namespace zien::validate

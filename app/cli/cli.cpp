@@ -275,14 +275,15 @@ void vcf_handler(args::Subparser &parser, core::config &app_config)
 	// clang-format off
 	args::ValueFlag<std::string> input_gfa(parser, "gfa", "path to input gfa [required]", {'i', "input-gfa"}, args::Options::Required);
 	args::ValueFlag<std::string> input_vcf(parser, "vcf", "path to input vcf [required]", {'c', "input-vcf"}, args::Options::Required);
-	args::ValueFlag<std::string> other_input_vcf(parser, "vcf", "path to other input vcf [required for compare]", {'d', "other-input-vcf"}, args::Options::Hidden);
-	args::ValueFlag<std::string> output_dir(parser, "output_dir", "Output directory [default: .]", {'o', "output-dir"});
+	//args::ValueFlag<std::string> other_input_vcf(parser, "vcf", "path to other input vcf [required for compare]", {'d', "other-input-vcf"}, args::Options::Hidden);
+	args::ValueFlag<std::string> output_dir(parser, "output_dir", "Output directory for report [default: .]", {'o', "output-dir"});
 
 	/* VCF specific options */
 	// at for analysis type
 	args::Group at(parser, "Analysis type:", args::Group::Validators::Xor);
-	args::Flag verify(at, "verify", "Check for invalid VCF records", {"verify"});
-	args::Flag compare(at, "compare", "Check for invalid VCF records", {"compare"}, args::Options::Hidden);
+	args::Flag report(at, "report", "Check for invalid VCF records", {"report"});
+	args::Flag tui(at, "tui", "TUI viewer", {"tui"});
+	//args::Flag compare(at, "compare", "Check for invalid VCF records", {"compare"}, args::Options::Hidden);
 	// clang-format on
 
 	parser.Parse();
@@ -293,30 +294,21 @@ void vcf_handler(args::Subparser &parser, core::config &app_config)
 	app_config.set_inc_vtx_labels(true);
 	app_config.set_inc_refs(true);
 
-	if (output_dir)
-		app_config.set_output_dir(args::get(output_dir));
-
 	/* set VCF subcommand options */
 	core::vcf_subcommand &vcf_opts = app_config.get_vcf_subcommand_mut();
 	vcf_opts.set_input_vcf(args::get(input_vcf));
 
-	if (verify)
+	if (report) {
 		app_config.get_vcf_subcommand_mut().set_vcf_options(
-			core::vcf_options::verify);
+			core::vcf_options::report);
 
-	if (compare) {
-		// other input vcf should not be empty
-		if (!other_input_vcf) {
-			ERR("other input vcf must be provided when using "
-			    "--compare");
-
-			std::exit(EXIT_FAILURE);
-		}
-
-		vcf_opts.set_other_input_vcf(args::get(other_input_vcf));
-		app_config.get_vcf_subcommand_mut().set_vcf_options(
-			core::vcf_options::compare);
+		if (output_dir)
+			app_config.set_output_dir(args::get(output_dir));
 	}
+
+	if (tui)
+		app_config.get_vcf_subcommand_mut().set_vcf_options(
+			core::vcf_options::tui);
 }
 
 int cli(int argc, char **argv, core::config &app_config)
