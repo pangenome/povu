@@ -7,10 +7,11 @@
 #include <liteseq/refs.h> // for ref_walk, ref
 #include <vector>
 
+#include "mto/from_vcf.hpp" // for read_vcf
+
 #include "povu/common/core.hpp"
 #include "povu/graph/bidirected.hpp" // for bidirected
 #include "povu/graph/types.hpp"	     // for or_e
-#include "povu/io/from_vcf.hpp"	     // for read_vcf
 #include "povu/refs/refs.hpp"	     // for Ref
 
 namespace zien::validate
@@ -139,18 +140,17 @@ bool any_contig(const bd::VG &g, const std::string &at,
 	return false;
 }
 
-bool validate_rec(const bd::VG &g, const povu::io::from_vcf::VCFile &vcf_file,
+bool validate_rec(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 		  pt::u32 rec_idx, std::ofstream *report_f, pt::u32 &err_recs)
 {
-	const povu::io::from_vcf::VCFRecord &rec =
-		vcf_file.get_records()[rec_idx];
+	const mto::from_vcf::VCFRecord &rec = vcf_file.get_records()[rec_idx];
 
 	// bool dbg = rec.get_pos() == 10318131 ? true : false;
 
 	// if (dbg)
 	//	rec.dbg_print(std::cerr);
 
-	const povu::io::from_vcf::gt_data &d = rec.get_genotypes();
+	const mto::from_vcf::gt_data &d = rec.get_genotypes();
 	for (const auto &[at_idx, at_meta] : d.get_data()) {
 		const std::string &at = rec.get_at(at_idx);
 
@@ -235,10 +235,10 @@ void write_summary(const core::config &app_config, pt::u32 err_recs, pt::u32 N)
 	   << "%\n";
 }
 
-std::vector<pt::u32>
-validate_vcf_records(const bd::VG &g,
-		     const povu::io::from_vcf::VCFile &vcf_file,
-		     const core::config &app_config, bool output_to_file)
+std::vector<pt::u32> validate_vcf_records(const bd::VG &g,
+					  const mto::from_vcf::VCFile &vcf_file,
+					  const core::config &app_config,
+					  bool output_to_file)
 {
 	std::ofstream file_stream; // Lives on the stack
 	std::ofstream *report_os = nullptr;

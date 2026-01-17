@@ -136,6 +136,8 @@ set(TESTS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests)
 set(BIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 set(POVULIB_SOURCES_DIR ${SRC_DIR}/povu)
 set(ZIENLIB_SOURCES_DIR ${SRC_DIR}/zien)
+set(ITA_SOURCES_DIR ${SRC_DIR}/ita)
+set(MTO_SOURCES_DIR ${SRC_DIR}/mto)
 
 # When set uses uses build dir for output binaries
 # set(BIN_DIR ${CMAKE_BINARY_DIR}/bin)
@@ -157,30 +159,8 @@ ADD_LIBRARY(povulib
   ${POVULIB_SOURCES_DIR}/algorithms/tiny.cpp
   ${POVULIB_SOURCES_DIR}/algorithms/flubbles.cpp
 
-  # align
-  ${POVULIB_SOURCES_DIR}/align/align.cpp
-
   # common
   ${POVULIB_SOURCES_DIR}/common/utils.cpp
-
-  #overlays
-  ${POVULIB_SOURCES_DIR}/overlay/overlay.cpp
-  ${POVULIB_SOURCES_DIR}/overlay/sne.cpp
-
-  # variation
-  ${POVULIB_SOURCES_DIR}/variation/rov.cpp
-  ${POVULIB_SOURCES_DIR}/variation/color.cpp
-
-  # genomics
-  #${POVULIB_SOURCES_DIR}/genomics/allele.cpp
-  ${POVULIB_SOURCES_DIR}/genomics/genomics.cpp
-  ${POVULIB_SOURCES_DIR}/genomics/graph.cpp
-  ${POVULIB_SOURCES_DIR}/genomics/untangle.cpp
-  ${POVULIB_SOURCES_DIR}/genomics/vcf.cpp
-
-
-  # trees
-  ${POVULIB_SOURCES_DIR}/tree/slice_tree.cpp
 
   # graph
   ${POVULIB_SOURCES_DIR}/graph/types.cpp
@@ -188,16 +168,39 @@ ADD_LIBRARY(povulib
   ${POVULIB_SOURCES_DIR}/graph/bracket_list.cpp
   ${POVULIB_SOURCES_DIR}/graph/spanning_tree.cpp
   ${POVULIB_SOURCES_DIR}/graph/tree_utils.cpp
-
-  # io
-  ${POVULIB_SOURCES_DIR}/io/from_pvst.cpp
-  ${POVULIB_SOURCES_DIR}/io/to_pvst.cpp
-  ${POVULIB_SOURCES_DIR}/io/from_gfa.cpp
-  ${POVULIB_SOURCES_DIR}/io/to_gfa.cpp
-  ${POVULIB_SOURCES_DIR}/io/common.cpp
-  ${POVULIB_SOURCES_DIR}/io/to_vcf.cpp
-  ${POVULIB_SOURCES_DIR}/io/from_vcf.cpp
 )
+
+ADD_LIBRARY(mto # io library
+  ${MTO_SOURCES_DIR}/from_pvst.cpp
+  ${MTO_SOURCES_DIR}/to_pvst.cpp
+  ${MTO_SOURCES_DIR}/from_gfa.cpp
+  ${MTO_SOURCES_DIR}/to_gfa.cpp
+  ${MTO_SOURCES_DIR}/common.cpp
+  ${MTO_SOURCES_DIR}/to_vcf.cpp
+  ${MTO_SOURCES_DIR}/from_vcf.cpp
+)
+
+
+ADD_LIBRARY(ita
+  # align
+  ${ITA_SOURCES_DIR}/align/align.cpp
+
+  # genomics
+  ${ITA_SOURCES_DIR}/genomics/genomics.cpp
+  ${ITA_SOURCES_DIR}/genomics/untangle.cpp
+  ${ITA_SOURCES_DIR}/genomics/vcf.cpp
+
+  # trees
+  ${ITA_SOURCES_DIR}/graph/slice_tree.cpp
+  ${ITA_SOURCES_DIR}/graph/graph.cpp
+
+  # variation
+  ${ITA_SOURCES_DIR}/variation/overlay.cpp
+  ${ITA_SOURCES_DIR}/variation/sne.cpp
+  ${ITA_SOURCES_DIR}/variation/rov.cpp
+  ${ITA_SOURCES_DIR}/variation/color.cpp
+)
+
 
 ADD_LIBRARY(zien
   ${ZIENLIB_SOURCES_DIR}/tui/tui.cpp
@@ -258,6 +261,21 @@ target_link_libraries(povulib
   liteseq  # gfa handling
 )
 
+target_link_libraries(mto
+  PRIVATE
+  povulib
+  fmt::fmt     # formatting
+  liteseq      # gfa handling
+)
+
+
+target_link_libraries(ita
+  PRIVATE
+  povulib
+  fmt::fmt     # formatting
+  liteseq      # gfa handling
+)
+
 target_link_libraries(zien
   PRIVATE
   povulib
@@ -268,11 +286,16 @@ target_link_libraries(zien
 
 target_link_libraries(povu
   PRIVATE
-  povulib      # internal library
+  # internal libraries
+  povulib
+  zien
+  ita
+  mto
+
+  # external libraries
   liteseq      # gfa handling
   fmt::fmt     # formatting
   taywee::args # argument parsing
-  zien        # zien library
   ncurses
 )
 
