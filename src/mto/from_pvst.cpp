@@ -11,17 +11,19 @@
 #include <utility> // for get, pair
 #include <vector>  // for vector
 
-#include "fmt/core.h"		     // for format
+#include "fmt/core.h" // for format
+
+#include "mto/common.hpp" // for FILE_ERROR
+#include "mto/from_pvst.hpp"
+
 #include "povu/common/compat.hpp"    // for format, pv_cmp
 #include "povu/common/constants.hpp" // for INVALID_IDX, COL_SEP, EXPECTED_...
 #include "povu/common/core.hpp"	     // for pt, idx_t
 #include "povu/common/log.hpp"	     // for ERR
 #include "povu/common/utils.hpp"     // for split, concat_with
 #include "povu/graph/types.hpp"	     // for id_or_t, or_e
-#include "povu/io/common.hpp"	     // for FILE_ERROR
-#include "povu/io/from_pvst.hpp"
 
-namespace povu::io::from_pvst
+namespace mto::from_pvst
 {
 using povu::types::graph::id_or_t;
 namespace pgt = povu::types::graph;
@@ -167,7 +169,7 @@ pvst::Tree read_pvst(const std::string &fp)
 
 	// lines in the PVST
 	std::vector<std::string> lines;
-	povu::io::common::fp_to_vector(fp, &lines);
+	mto::common::fp_to_vector(fp, &lines);
 
 	std::vector<std::string> tokens;
 
@@ -299,4 +301,4 @@ pvst::Tree read_pvst(const std::string &fp)
 	return pvst;
 }
 
-} // namespace povu::io::from_pvst
+} // namespace mto::from_pvst

@@ -17,15 +17,16 @@
 
 #include "ita/genomics/vcf.hpp" // for VcfRecIdx
 
+#include "mto/common.hpp" // for create_dir_if_not_exists
+
 #include "povu/common/app.hpp"	     // for config
 #include "povu/common/compat.hpp"    // for contains, pv_cmp
 #include "povu/common/core.hpp"	     // for id_t, pt
 #include "povu/common/log.hpp"	     // for ERR
 #include "povu/common/utils.hpp"     // for is_prefix
 #include "povu/graph/bidirected.hpp" // for VG
-#include "povu/io/common.hpp"	     // for create_dir_if_not_exists
 
-namespace povu::io::to_vcf
+namespace mto::to_vcf
 {
 inline constexpr std::string_view MODULE = "povu::io::to_vcf";
 namespace fs = std::filesystem;
@@ -82,7 +83,7 @@ public:
 		       const std::map<std::string, std::set<pt::id_t>> &s_to_r)
 	{
 		VcfOutput v;
-		povu::io::common::create_dir_if_not_exists(out_dir);
+		mto::common::create_dir_if_not_exists(out_dir);
 
 		// open files for each ref label
 		for (const auto &[bn, ref_ids] : s_to_r) {
@@ -179,6 +180,6 @@ void init_vcfs(bd::VG &g, const std::vector<std::string> &sample_names,
 	       VcfOutput &vout);
 void write_vcfs(iv::VcfRecIdx &vcf_recs, const bd::VG &g, VcfOutput &vout,
 		const core::config &app_config);
-} // namespace povu::io::to_vcf
+} // namespace mto::to_vcf
 
 #endif // PV_IO_VCF_HPP

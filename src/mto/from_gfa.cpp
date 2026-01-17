@@ -9,12 +9,13 @@
 
 #include <liteseq/refs.h> // for get_step_count
 
+#include "mto/from_gfa.hpp"
+
 #include "povu/common/core.hpp" // for pt, idx_t, id_t
 #include "povu/common/log.hpp"	// for WARN
 #include "povu/graph/types.hpp" // for v_end_e
-#include "povu/io/from_gfa.hpp"
 
-namespace povu::io::from_gfa
+namespace mto::from_gfa
 {
 namespace lq = liteseq;
 namespace bd = povu::bidirected;
@@ -180,4 +181,4 @@ bd::VG *to_bd(const core::config &app_config)
 
 	return vg;
 }
-}; // namespace povu::io::from_gfa
+}; // namespace mto::from_gfa

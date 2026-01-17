@@ -20,10 +20,11 @@
 #include <liteseq/refs.h> // for ref_walk, ref
 
 // povu
+#include "mto/from_vcf.hpp" // for VCFile
+
 #include "povu/common/core.hpp"	     // for pt
 #include "povu/common/utils.hpp"     // for pu::concat_with
 #include "povu/graph/bidirected.hpp" // for VG
-#include "povu/io/from_vcf.hpp"	     // for VCFile
 
 namespace zien::tui
 {
@@ -531,8 +532,7 @@ pt::u32 at_str_step_count(const std::string &at_str)
 	return count;
 }
 
-void comp_update_refs(const bd::VG &g,
-		      const povu::io::from_vcf::VCFile &vcf_file,
+void comp_update_refs(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 		      pt::u32 selected_rec_idx, pt::u32 at_idx,
 		      display_lines &pd)
 {
@@ -543,10 +543,10 @@ void comp_update_refs(const bd::VG &g,
 	// lm &meta = pd.meta;
 	std::vector<std::string> &ref_lines = pd.lines;
 
-	const povu::io::from_vcf::VCFRecord &rec =
+	const mto::from_vcf::VCFRecord &rec =
 		vcf_file.get_records().at(selected_rec_idx);
-	const povu::io::from_vcf::gt_data &d = rec.get_genotypes();
-	const std::vector<povu::io::from_vcf::at_meta> at_meta =
+	const mto::from_vcf::gt_data &d = rec.get_genotypes();
+	const std::vector<mto::from_vcf::at_meta> at_meta =
 		d.get_data().at(at_idx);
 
 	const std::string &s = rec.get_at(at_idx);
@@ -628,8 +628,7 @@ void comp_update_refs(const bd::VG &g,
 	return;
 };
 
-std::vector<std::string>
-comp_vcf_lines(const povu::io::from_vcf::VCFile &vcf_file)
+std::vector<std::string> comp_vcf_lines(const mto::from_vcf::VCFile &vcf_file)
 {
 	std::vector<std::string> lines;
 	std::stringstream ss; // string buffer
@@ -640,9 +639,9 @@ comp_vcf_lines(const povu::io::from_vcf::VCFile &vcf_file)
 
 	lines.emplace_back(pu::concat_with(COL_NAMES, '\t'));
 
-	const std::vector<povu::io::from_vcf::VCFRecord> &all_recs =
+	const std::vector<mto::from_vcf::VCFRecord> &all_recs =
 		vcf_file.get_records();
-	for (const povu::io::from_vcf::VCFRecord &rec : all_recs) {
+	for (const mto::from_vcf::VCFRecord &rec : all_recs) {
 		rec.viewer(ss);
 		lines.push_back(ss.str());
 		ss.str(std::string()); // Clear the stringstream
@@ -651,13 +650,12 @@ comp_vcf_lines(const povu::io::from_vcf::VCFile &vcf_file)
 	return lines;
 }
 
-std::vector<std::string>
-comp_gt_data(const povu::io::from_vcf::VCFile &vcf_file,
-	     pt::u32 selected_rec_idx)
+std::vector<std::string> comp_gt_data(const mto::from_vcf::VCFile &vcf_file,
+				      pt::u32 selected_rec_idx)
 {
-	const povu::io::from_vcf::VCFRecord &rec =
+	const mto::from_vcf::VCFRecord &rec =
 		vcf_file.get_records().at(selected_rec_idx);
-	const povu::io::from_vcf::gt_data &d = rec.get_genotypes();
+	const mto::from_vcf::gt_data &d = rec.get_genotypes();
 
 	pt::u32 at_count = rec.get_at_count();
 
@@ -687,7 +685,7 @@ comp_gt_data(const povu::io::from_vcf::VCFile &vcf_file,
 		//	continue;
 		// }
 
-		const std::vector<povu::io::from_vcf::at_meta> &at_meta =
+		const std::vector<mto::from_vcf::at_meta> &at_meta =
 			d.get_data().at(at_idx);
 		pt::u32 N = at_meta.size();
 		if (N > row_count)
@@ -713,8 +711,8 @@ comp_gt_data(const povu::io::from_vcf::VCFile &vcf_file,
 			//	continue;
 			// }
 
-			const std::vector<povu::io::from_vcf::at_meta>
-				&at_meta = d.get_data().at(at_idx);
+			const std::vector<mto::from_vcf::at_meta> &at_meta =
+				d.get_data().at(at_idx);
 
 			if (row_idx < at_meta.size()) {
 				const auto &[sample_idx, phase_idx] =
@@ -860,7 +858,7 @@ void show_loading_spinner(std::atomic<bool> &is_loading)
 	timeout(-1);
 }
 
-void view(const bd::VG &g, const povu::io::from_vcf::VCFile &vcf_file,
+void view(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 	  const std::vector<pt::u32> &invalid_recs)
 {
 	// ------------------------
@@ -923,7 +921,7 @@ void view(const bd::VG &g, const povu::io::from_vcf::VCFile &vcf_file,
 	{
 		pd.reset();
 
-		const povu::io::from_vcf::VCFRecord &rec =
+		const mto::from_vcf::VCFRecord &rec =
 			vcf_file.get_records().at(selected_rec_idx);
 
 		pt::u32 N = rec.get_alt_count() + 1;

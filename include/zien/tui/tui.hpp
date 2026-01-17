@@ -4,8 +4,9 @@
 #include <atomic> // for atomic
 #include <ncurses.h>
 
+#include "mto/from_vcf.hpp" // for VCFile
+
 #include "povu/graph/bidirected.hpp" // for VG
-#include "povu/io/from_vcf.hpp"	     // for VCFile
 
 namespace zien::tui
 {
@@ -41,7 +42,7 @@ struct NcursesGuard {
 
 void show_loading_spinner(std::atomic<bool> &is_loading);
 
-void view(const bd::VG &g, const povu::io::from_vcf::VCFile &vcf_file,
+void view(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 	  const std::vector<pt::u32> &invalid_recs);
 } // namespace zien::tui
 #endif // ZIEN_HPP

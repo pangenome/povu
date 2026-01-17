@@ -4,12 +4,13 @@
 #include <thread> // for thread
 #include <vector> // for vector
 
+#include "mto/from_gfa.hpp" // for to_bd
+#include "mto/from_vcf.hpp" // for read_vcf
+#include "mto/to_gfa.hpp"   // for write_gfa
+
 #include "povu/common/app.hpp"	      // for config
 #include "povu/graph/bidirected.hpp"  // for bidirected
 #include "povu/graph/pvst.hpp"	      // for pvst
-#include "povu/io/from_gfa.hpp"	      // for to_bd
-#include "povu/io/from_vcf.hpp"	      // for read_vcf
-#include "povu/io/to_gfa.hpp"	      // for write_gfa
 				      //
 #include "zien/tui/tui.hpp"	      // for view
 #include "zien/validate/validate.hpp" // for validate_vcf_records
@@ -17,18 +18,17 @@
 namespace povu::subcommands::vcf
 {
 
-std::pair<bd::VG *, povu::io::from_vcf::VCFile>
+std::pair<bd::VG *, mto::from_vcf::VCFile>
 data_loader(const core::config &app_config)
 {
-
-	povu::io::from_vcf::VCFile vcf_file;
-	bd::VG *g = povu::io::from_gfa::to_bd(app_config);
+	mto::from_vcf::VCFile vcf_file;
+	bd::VG *g = mto::from_gfa::to_bd(app_config);
 
 	pt::u32 ll = app_config.verbosity(); // ll for log level
 	const core::vcf_subcommand &vcf_opts = app_config.get_vcf_subcommand();
 
 	// Load VCF
-	povu::io::from_vcf::read_vcf(vcf_opts.get_input_vcf(), ll, vcf_file);
+	mto::from_vcf::read_vcf(vcf_opts.get_input_vcf(), ll, vcf_file);
 
 	return {g, vcf_file};
 }
@@ -43,7 +43,7 @@ void handle_tui(const core::config &app_config)
 
 	// We need these to persist after the thread finishes
 	bd::VG *g = nullptr;
-	povu::io::from_vcf::VCFile vcf_file;
+	mto::from_vcf::VCFile vcf_file;
 	std::vector<pt::u32> invalid_recs;
 
 	// 1. Launch the loading thread

@@ -1,4 +1,4 @@
-#include "povu/io/to_vcf.hpp"
+#include "mto/to_vcf.hpp"
 
 #include <sstream> // for basic_ostringstream
 #include <sys/types.h>
@@ -10,7 +10,7 @@
 #include "povu/common/core.hpp"	 // for pt
 #include "povu/refs/refs.hpp"	 // for Ref, pr
 
-namespace povu::io::to_vcf
+namespace mto::to_vcf
 {
 namespace pgt = povu::types::graph;
 
@@ -138,4 +138,4 @@ void write_vcfs(iv::VcfRecIdx &vcf_recs, const bd::VG &g, VcfOutput &vout,
 	return;
 }
 
-} // namespace povu::io::to_vcf
+} // namespace mto::to_vcf

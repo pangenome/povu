@@ -4,11 +4,13 @@
 #include <string>   // for basic_string, operator<<, string
 #include <vector>   // for vector
 
-#include "fmt/core.h"		     // for format
+#include <fmt/core.h> // for format
+
+#include "mto/from_gfa.hpp" // for to_bd
+
 #include "povu/common/compat.hpp"    // for format, pv_cmp
 #include "povu/common/core.hpp"	     // for idx_t, pt
 #include "povu/graph/bidirected.hpp" // for VG
-#include "povu/io/from_gfa.hpp"	     // for to_bd
 
 namespace povu::subcommands::info
 {
@@ -22,7 +24,7 @@ void do_info(const core::config &app_config)
 	// read the input gfa into a bidirected variation graph
 	// -----
 
-	bd::VG *g = povu::io::from_gfa::to_bd(app_config);
+	bd::VG *g = mto::from_gfa::to_bd(app_config);
 
 	std::vector<bd::VG *> components = bd::VG::componetize(*g);
 

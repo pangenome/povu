@@ -1,14 +1,14 @@
-#include "povu/io/to_gfa.hpp"
+#include "mto/to_gfa.hpp"
 
-#include <filesystem>
-#include <fstream> // for basic_ofstream, operator<<, basic_ostream
+#include <filesystem> // for path
+#include <fstream>    // for basic_ofstream, operator<<, basic_ostream
 
 #include "povu/common/core.hpp"
 #include "povu/common/log.hpp"
 #include "povu/graph/bidirected.hpp"
 #include "povu/graph/types.hpp"
 
-namespace povu::io::to_gfa
+namespace mto::to_gfa
 {
 void write_gfa(const bd::VG &g, const std::filesystem::path &fp)
 {
@@ -51,4 +51,4 @@ void write_gfa(const bd::VG &g, const std::filesystem::path &fp)
 				     g.v_idx_to_id(v2_idx), v2_e);
 	}
 }
-} // namespace povu::io::to_gfa
+} // namespace mto::to_gfa

@@ -9,7 +9,12 @@
 #include <utility>    // for get, make_pair, pair
 #include <vector>     // for vector
 
-#include "fmt/core.h"			 // for format
+#include "fmt/core.h" // for format
+
+#include "mto/from_gfa.hpp" // for to_bd
+#include "mto/to_gfa.hpp"
+#include "mto/to_pvst.hpp" // for write_pvst, pv_to_pvst
+
 #include "povu/algorithms/concealed.hpp" // for find_concealed
 #include "povu/algorithms/flubbles.hpp"	 // for flubbles
 #include "povu/algorithms/midi.hpp"	 // for find_midi
@@ -22,9 +27,6 @@
 #include "povu/graph/pvst.hpp"		 // for pvst
 #include "povu/graph/spanning_tree.hpp"	 // for spanning_tree
 #include "povu/graph/tree_utils.hpp"	 // for tree_utils
-#include "povu/io/from_gfa.hpp"		 // for to_bd
-#include "povu/io/to_gfa.hpp"
-#include "povu/io/to_pvst.hpp" // for write_pvst, pv_to_pvst
 
 namespace povu::subcommands::decompose
 {
@@ -68,8 +70,8 @@ void decompose_component(bd::VG *g, std::size_t component_id,
 		povu::smothered::find_smothered(st, flubble_tree, tm);
 	}
 
-	pv_to_pvst::write_pvst(flubble_tree, std::to_string(component_id),
-			       app_config);
+	mto::to_pvst::write_pvst(flubble_tree, std::to_string(component_id),
+				 app_config);
 
 	return;
 }
@@ -92,8 +94,8 @@ std::pair<uint32_t, uint32_t> thread_count(const core::config &app_config,
 
 void do_decompose(const core::config &app_config)
 {
-	std::size_t ll = app_config.verbosity();	   // ll for log level
-	bd::VG *g = povu::io::from_gfa::to_bd(app_config); // read graph
+	std::size_t ll = app_config.verbosity();      // ll for log level
+	bd::VG *g = mto::from_gfa::to_bd(app_config); // read graph
 
 	if (ll > 1)
 		INFO("Finding components");

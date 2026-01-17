@@ -137,6 +137,7 @@ set(BIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 set(POVULIB_SOURCES_DIR ${SRC_DIR}/povu)
 set(ZIENLIB_SOURCES_DIR ${SRC_DIR}/zien)
 set(ITA_SOURCES_DIR ${SRC_DIR}/ita)
+set(MTO_SOURCES_DIR ${SRC_DIR}/mto)
 
 # When set uses uses build dir for output binaries
 # set(BIN_DIR ${CMAKE_BINARY_DIR}/bin)
@@ -167,15 +168,16 @@ ADD_LIBRARY(povulib
   ${POVULIB_SOURCES_DIR}/graph/bracket_list.cpp
   ${POVULIB_SOURCES_DIR}/graph/spanning_tree.cpp
   ${POVULIB_SOURCES_DIR}/graph/tree_utils.cpp
+)
 
-  # io
-  ${POVULIB_SOURCES_DIR}/io/from_pvst.cpp
-  ${POVULIB_SOURCES_DIR}/io/to_pvst.cpp
-  ${POVULIB_SOURCES_DIR}/io/from_gfa.cpp
-  ${POVULIB_SOURCES_DIR}/io/to_gfa.cpp
-  ${POVULIB_SOURCES_DIR}/io/common.cpp
-  ${POVULIB_SOURCES_DIR}/io/to_vcf.cpp
-  ${POVULIB_SOURCES_DIR}/io/from_vcf.cpp
+ADD_LIBRARY(mto # io library
+  ${MTO_SOURCES_DIR}/from_pvst.cpp
+  ${MTO_SOURCES_DIR}/to_pvst.cpp
+  ${MTO_SOURCES_DIR}/from_gfa.cpp
+  ${MTO_SOURCES_DIR}/to_gfa.cpp
+  ${MTO_SOURCES_DIR}/common.cpp
+  ${MTO_SOURCES_DIR}/to_vcf.cpp
+  ${MTO_SOURCES_DIR}/from_vcf.cpp
 )
 
 
@@ -259,6 +261,14 @@ target_link_libraries(povulib
   liteseq  # gfa handling
 )
 
+target_link_libraries(mto
+  PRIVATE
+  povulib
+  fmt::fmt     # formatting
+  liteseq      # gfa handling
+)
+
+
 target_link_libraries(ita
   PRIVATE
   povulib
@@ -280,6 +290,7 @@ target_link_libraries(povu
   povulib
   zien
   ita
+  mto
 
   # external libraries
   liteseq      # gfa handling

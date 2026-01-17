@@ -1,18 +1,17 @@
-#include "povu/io/from_vcf.hpp"
+#include "mto/from_vcf.hpp"
 
-// #include <iostream> // for std::cerr, std::cout
-// #include <map>	    // for map
 #include <set>
 #include <string>
 #include <vector>
+
+#include "mto/common.hpp" // for fp_to_vector
 
 #include "povu/common/compat.hpp" // for pv_cmp
 #include "povu/common/core.hpp"	  // for pt
 #include "povu/common/log.hpp"	  // for INFO
 #include "povu/common/utils.hpp"  // for concat_with
-#include "povu/io/common.hpp"	  // for fp_to_vector
 
-namespace povu::io::from_vcf
+namespace mto::from_vcf
 {
 
 const std::set<std::string> VCF_SUPPORTED_VERSIONS = {
@@ -98,14 +97,13 @@ pu::TwoWayMap<std::string, pt::u32> extract_sample_names(const std::string &s)
 	return sn_to_idx;
 }
 
-void read_vcf(const fs::path &fp, pt::u32 ll,
-	      povu::io::from_vcf::VCFile &vcf_file)
+void read_vcf(const fs::path &fp, pt::u32 ll, mto::from_vcf::VCFile &vcf_file)
 {
 	if (ll > 1)
 		INFO("Reading VCF from: {}", fp.string());
 
 	std::vector<std::string> lines;
-	povu::io::common::fp_to_vector(fp, &lines);
+	mto::common::fp_to_vector(fp, &lines);
 
 	std::vector<std::string> headers = extract_header_lines(lines);
 	std::string vcf_version = check_version(headers);
@@ -118,9 +116,9 @@ void read_vcf(const fs::path &fp, pt::u32 ll,
 	pt::u32 i{static_cast<pt::u32>(headers.size())};
 	for (; i < lines.size(); i++) {
 		const std::string &line = lines[i];
-		auto rec = povu::io::from_vcf::VCFRecord::from_row(line);
+		auto rec = mto::from_vcf::VCFRecord::from_row(line);
 		vcf_file.add_record(std::move(rec));
 	}
 }
 
-} // namespace povu::io::from_vcf
+} // namespace mto::from_vcf

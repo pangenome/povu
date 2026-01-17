@@ -1,13 +1,13 @@
-#include <cstddef>  // for size_t
-#include <fstream>  // for basic_ifstream, basic_istream, basic_ios
-#include <stdlib.h> // for exit, EXIT_FAILURE
+#include <cstddef> // for size_t
+#include <cstdlib> // for exit, EXIT_FAILURE
+#include <fstream> // for basic_ifstream, basic_istream, basic_ios
+
+#include "mto/common.hpp"
 
 #include "povu/common/log.hpp" // for ERR
-#include "povu/io/common.hpp"
 
-namespace povu::io::common
+namespace mto::common
 {
-
 std::vector<fs::path> get_files(const std::string &dir_path,
 				const std::string &ext)
 {
@@ -89,4 +89,4 @@ void create_dir_if_not_exists(const fs::path &out_dir)
 	}
 }
 
-} // namespace povu::io::common
+} // namespace mto::common
