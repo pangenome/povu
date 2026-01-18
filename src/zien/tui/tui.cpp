@@ -1,16 +1,10 @@
-// ----------------------------------------------------------------------------
-// Simple ncurses-based dual-pane viewer with horizontal and vertical scrolling
-// ----------------------------------------------------------------------------
-
 #include "zien/tui/tui.hpp"
 
 // std
+#include <atomic>
 #include <sstream>
 #include <string>
-#include <vector>
-
-#include <atomic>
-// #include <thread>
+#include <utility>
 #include <vector>
 
 // ncurses
@@ -19,12 +13,16 @@
 // liteseq
 #include <liteseq/refs.h> // for ref_walk, ref
 
+#include "ita/align/align.hpp"	   // for align, aln_level_e
+#include "ita/genomics/allele.hpp" // for ia::at_itn
+
 // povu
 #include "mto/from_vcf.hpp" // for VCFile
 
 #include "povu/common/core.hpp"	     // for pt
 #include "povu/common/utils.hpp"     // for pu::concat_with
 #include "povu/graph/bidirected.hpp" // for VG
+#include "povu/graph/types.hpp"
 
 namespace zien::tui
 {
@@ -32,6 +30,8 @@ namespace lq = liteseq;
 
 // Use Group Separator (0x1D) as the invisible delimiter
 // const char SEP = '\x1D';
+
+constexpr povu::refs::ref_format_e PN = povu::refs::ref_format_e::PANSN;
 
 std::string search_query = "";
 bool search_mode = false;
@@ -42,13 +42,15 @@ enum class PaneID : uint8_t {
 	A, // top left
 	B, // top right
 	C, // bottom left
-	D  // bottom right
+	D, // bottom right
+	E, // repeats pane
 };
 
 std::map<PaneID, std::string> pane_names = {{PaneID::A, "VCF"},
 					    {PaneID::B, "Haps"},
 					    {PaneID::C, "Refs"},
-					    {PaneID::D, "Alts"}};
+					    {PaneID::D, "Alts"},
+					    {PaneID::E, "Repeats"}};
 
 struct line_metadata {
 	pt::u32 ref_name_pos;
@@ -103,20 +105,27 @@ struct Pane {
 
 	void update_scroll()
 	{
-		// Height - 2 (Borders). If header exists, subtract 2 more (Text
-		// + HLine).
 		int data_area_h = height - 2 - (has_header ? 2 : 0);
 		int first_data_idx = has_header ? 1 : 0;
 
-		// Relative position of selection compared to the first data
-		// line
-		int relative_pos = selected_line - first_data_idx;
+		// Calculate how many extra visual lines (separators) are above
+		// our selection
+		int separators_above = 0;
+		for (auto line_idx : pd.group_lines) {
+			if ((int)line_idx <= selected_line) {
+				separators_above++;
+			}
+		}
 
-		if (relative_pos < scroll_offset)
-			scroll_offset = relative_pos;
+		// The virtual Y position is the data index + separators
+		int virtual_selected_pos =
+			(selected_line - first_data_idx) + separators_above;
 
-		if (relative_pos >= scroll_offset + data_area_h)
-			scroll_offset = relative_pos - data_area_h + 1;
+		if (virtual_selected_pos < scroll_offset)
+			scroll_offset = virtual_selected_pos;
+
+		if (virtual_selected_pos >= scroll_offset + data_area_h)
+			scroll_offset = virtual_selected_pos - data_area_h + 1;
 
 		if (scroll_offset < 0)
 			scroll_offset = 0;
@@ -163,6 +172,8 @@ struct Pane {
 
 	void draw(bool is_focused)
 	{
+		// std::cerr << __func__ << pane_names.at(p_id) << " "
+		//	  << this->selected_line << "\n";
 		// int col_width = 30;
 		update_scroll();
 		werase(win);
@@ -211,7 +222,8 @@ struct Pane {
 		// --- DYNAMIC LABEL WIDTH CALCULATION ---
 		int label_width = this->pd.lh;
 		bool use_frozen_labels =
-			(p_id == PaneID::C || p_id == PaneID::D);
+			(p_id == PaneID::C || p_id == PaneID::D ||
+			 p_id == PaneID::E);
 
 		if (use_frozen_labels) {
 			// for (const auto &line : lines) {
@@ -257,10 +269,9 @@ struct Pane {
 			if (visual_y >= height - 1)
 				break;
 
-			if (use_frozen_labels &&
-			    pv_cmp::contains(this->pd.group_lines,
+			// Draw separator line if needed
+			if (pv_cmp::contains(this->pd.group_lines,
 					     (pt::u32)line_idx)) {
-
 				wattron(win, COLOR_PAIR(3));
 				mvwhline(win, visual_y, 1, ACS_HLINE, safe_w);
 				wattroff(win, COLOR_PAIR(3));
@@ -294,6 +305,10 @@ struct Pane {
 
 				std::string row_label =
 					full_line.substr(0, split_pos);
+
+				std::cerr << __func__ << " Line " << line_idx
+					  << " split at " << split_pos << " rl "
+					  << row_label << "\n";
 
 				// Draw Label: Using A_BOLD and right-alignment
 				// for a cleaner look
@@ -454,37 +469,64 @@ void setup_pane(const pane_params &pp)
 	p.selected_line = sl;
 }
 
-void setup_layout(int screen_h, int screen_w, Pane &a, Pane &b, Pane &c,
-		  Pane &d)
+void cleanup_panes(Pane &a, Pane &b, Pane &c, Pane &d, Pane &e)
 {
-	int mid_h = screen_h / 2;
+	if (a.win)
+		delwin(a.win);
+	if (b.win)
+		delwin(b.win);
+	if (c.win)
+		delwin(c.win);
+	if (d.win)
+		delwin(d.win);
+	if (e.win)
+		delwin(e.win);
+}
+
+void setup_layout(int screen_h, int screen_w, Pane &a, Pane &b, Pane &c,
+		  Pane &d, Pane *e, pt::u32 selected_record)
+{
+	// If e (Repeats) is NOT null, mid_h is screen_h / 3
+	int mid_h = (e == nullptr) ? screen_h / 2 : screen_h / 3;
 	int mid_w = screen_w / 2;
 
 	int gutter = 1; // gutter of 1 char between windows
 
-	setup_pane({0, 0, mid_w - gutter, mid_h, PaneID::A, a, true, false, 1});
+	setup_pane({0, 0, mid_w - gutter, mid_h, PaneID::A, a, true, false,
+		    selected_record});
 	setup_pane({mid_w, 0, screen_w - mid_w, mid_h, PaneID::B, b, false,
 		    true, 1});
 
 	// 2. Bottom Left: Half width, bottom half
-	int bottom_h = screen_h - mid_h;
+	// int bottom_h = screen_h - mid_h;
 	// We subtract 1 from bottom_h if we want to leave the very last
 	// line for the search bar
-	int actual_view_h = bottom_h - 1;
+	int actual_view_h = mid_h - 1;
+
+	actual_view_h = mid_h - 1; // keep bottom panes same height as top panes
 
 	setup_pane({0, mid_h, mid_w - gutter, actual_view_h, PaneID::C, c});
 
 	// 3. Bottom Right: Remaining width, bottom half
 	setup_pane(
 		{mid_w, mid_h, screen_w - mid_w, actual_view_h, PaneID::D, d});
+
+	if (e != nullptr)
+		setup_pane({0, mid_h + actual_view_h, screen_w, mid_h + 1,
+			    PaneID::E, *e});
 }
 
+// TODO: use utils
 char lq_strand_to_or_e(lq::strand s)
 {
 	return (s == lq::strand::STRAND_FWD) ? '>' : '<';
 }
 
-constexpr povu::refs::ref_format_e PN = povu::refs::ref_format_e::PANSN;
+ptg::or_e lq_strand_to_or(lq::strand s)
+{
+	return (s == lq::strand::STRAND_FWD) ? ptg::or_e::forward
+					     : ptg::or_e::reverse;
+}
 
 std::set<pt::id_t> get_ref_ids(const bd::VG &g, const std::string &sn,
 			       pt::u32 phase_idx)
@@ -594,7 +636,6 @@ void comp_update_refs(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 					std::min(ref_pos + at_str_sc + 10, N);
 
 				for (; i < end; i++) {
-
 					if (i == ref_pos) {
 						pt::slice w{
 							(pt::u32)curr_l.size(),
@@ -614,8 +655,6 @@ void comp_update_refs(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 
 				if (s + 1 < starts.size())
 					curr_l += " ... ";
-
-				// curr_l += "\t";
 			}
 
 			ref_lines.push_back(curr_l);
@@ -635,7 +674,8 @@ std::vector<std::string> comp_vcf_lines(const mto::from_vcf::VCFile &vcf_file)
 
 	// header
 	const std::vector<std::string> COL_NAMES = {
-		"VAR TYPE", "POS", "ID", "REF", "ALT", "REF AT", "ALT AT"};
+		"VAR TYPE", "TANGLED", "POS",	 "ID",
+		"REF",	    "ALT",     "REF AT", "ALT AT"};
 
 	lines.emplace_back(pu::concat_with(COL_NAMES, '\t'));
 
@@ -736,7 +776,8 @@ std::vector<std::string> comp_gt_data(const mto::from_vcf::VCFile &vcf_file,
 };
 
 // navigate and initialize search
-void nav(int ch, Pane *&active, const std::map<PaneID, Pane *> &panes)
+void nav(int ch, Pane *&active, const std::map<PaneID, Pane *> &panes,
+	 pt::u32 pane_count)
 {
 	PaneID active_p_id = active->p_id;
 
@@ -764,7 +805,14 @@ void nav(int ch, Pane *&active, const std::map<PaneID, Pane *> &panes)
 		case PaneID::C:
 			active = panes.at(PaneID::D);
 			break;
-		default: // also covers PaneID::D
+		case PaneID::D:
+			active = pane_count == 5 ? panes.at(PaneID::E)
+						 : panes.at(PaneID::A);
+			break;
+		case PaneID::E:
+			active = panes.at(PaneID::A);
+			break;
+		default:
 			active = panes.at(PaneID::A);
 		}
 		break;
@@ -788,6 +836,8 @@ void nav(int ch, Pane *&active, const std::map<PaneID, Pane *> &panes)
 			active->horiz_offset--;
 		break;
 	}
+
+	active->update_scroll();
 }
 
 // handle search input
@@ -814,7 +864,6 @@ void handle_search_input(int ch, Pane *&active)
 
 void show_loading_spinner(std::atomic<bool> &is_loading)
 {
-
 	curs_set(0); // hide the cursor
 
 	const std::vector<std::string> frames = {"|", "/", "-", "\\"};
@@ -858,15 +907,286 @@ void show_loading_spinner(std::atomic<bool> &is_loading)
 	timeout(-1);
 }
 
+struct current_rec_info {
+	bool tangled_;
+};
+
+std::map<pt::id_t, std::vector<pt::slice>>
+unroll_tangle(const bd::VG &g, const pt::op_t<ptg::id_or_t> &ef)
+{
+	std::map<pt::id_t, std::vector<pt::slice>> unrolled_steps;
+
+	auto [u, _] = ef.first;
+	auto [v, __] = ef.second;
+
+	for (pt::u32 h_idx{}; h_idx < g.get_hap_count(); h_idx++) {
+		const std::vector<pt::u32> &positions_u =
+			g.get_vertex_ref_idxs(g.v_id_to_idx(u), h_idx);
+
+		const std::vector<pt::u32> &positions_v =
+			g.get_vertex_ref_idxs(g.v_id_to_idx(v), h_idx);
+
+		pt::u32 N = std::min(positions_u.size(), positions_v.size());
+		for (pt::u32 i{}; i < N; i++) {
+			pt::u32 pos_u = positions_u[i];
+			pt::u32 pos_v = positions_v[i];
+
+			if (pos_v < pos_u) // swap
+				std::swap(pos_u, pos_v);
+
+			pt::slice s{pos_u, pos_v - pos_u + 1};
+			unrolled_steps[h_idx].emplace_back(s);
+		}
+	}
+
+	return unrolled_steps;
+}
+
+ptg::walk_t slice_to_walk(const bd::VG &g, pt::u32 h_idx, const pt::slice &s)
+{
+	ptg::walk_t w;
+
+	const lq::ref_walk *rw = g.get_ref_vec(h_idx)->walk;
+	for (pt::u32 i = s.start(); i < s.start() + s.len(); i++) {
+		pt::id_t v_id = rw->v_ids[i];
+		ptg::or_e o = lq_strand_to_or(rw->strands[i]);
+		w.push_back({v_id, o});
+	}
+
+	// std::cerr << "H: " << h_idx << "\n" << ptg::to_string(w) << "\n";
+
+	return w;
+}
+
+struct bar {
+	pt::u32 h_idx;
+	std::vector<pt::slice> itn;
+
+	// when h_idx == ref hap then aln is empty or all matches
+	std::string aln; // alignment string or edit transcript
+
+	// methods
+	[[nodiscard]]
+	std::string baz(const bd::VG &g, pt::u32 h_idx,
+			const std::vector<pt::slice> &curr_itn,
+			pt::u32 slice_idx) const
+	{
+		if (slice_idx >= curr_itn.size())
+			return "";
+
+		ptg::walk_t w = slice_to_walk(g, h_idx, curr_itn.at(slice_idx));
+		return ptg::to_string(w);
+	}
+
+	void to_tui_aln(const bd::VG &g, pt::u32 ref_h_idx,
+			const std::vector<pt::slice> &ref_itn, pt::u32 pos,
+			std::string &ref_at_str, std::string &alt_at_str,
+			pt::slice &ref_sl, pt::slice &alt_sl) const
+	{
+		pt::u32 i{}; // aln index
+		pt::u32 j{}; // ref itn index
+		pt::u32 k{}; // alt itn index
+
+		pt::u32 N = std::max(this->itn.size(), ref_itn.size());
+
+		// rs ref string, as alt string
+		auto get_rs = [&]() -> std::string
+		{
+			return this->baz(g, ref_h_idx, ref_itn, j++);
+		};
+
+		auto get_as = [&]() -> std::string
+		{
+			return this->baz(g, this->h_idx, this->itn, k++);
+		};
+
+		// Replace the character at the middle index with '-'
+		auto dashen = [](std::string &s)
+		{
+			size_t middle = s.size() / 2;
+			s[middle] = '-';
+		};
+
+		auto pos_covered = [&](pt::u32 j) -> bool
+		{
+			std::cerr << "Checking pos_covered at j=" << j
+				  << " ref itn size " << ref_itn.size() << "\n";
+
+			if (j >= ref_itn.size())
+				return false;
+
+			pt::slice ref_sl = ref_itn.at(j);
+			pt::u32 ref_start = ref_sl.start();
+			std::cerr << "Ref SL: " << ref_sl.start() << " "
+				  << ref_sl.len() << "\n";
+			pt::u32 ref_end = ref_start + (ref_sl.len() - 1);
+			std::cerr << "ref end " << ref_end;
+			const lq::ref_walk *rw = g.get_ref_vec(ref_h_idx)->walk;
+
+			pt::u32 s = rw->loci[ref_start];
+			pt::u32 e = rw->loci[ref_end];
+			pt::id_t v_id = rw->v_ids[ref_end];
+			e += g.get_vertex_by_id(v_id).get_length();
+
+			return (pos >= s && pos < e);
+		};
+
+		std::string ref_at_step;
+		std::string alt_at_step;
+
+		for (; i < N; i++) {
+
+			ref_at_step.clear();
+			alt_at_step.clear();
+			char c = this->aln[i];
+
+			if (c == 'I')
+				alt_at_step = get_as();
+			else if (c == 'D')
+				ref_at_step = get_rs();
+			else { // M or X
+				ref_at_step = get_rs();
+				alt_at_step = get_as();
+			}
+
+			if (ref_at_step.empty()) {
+				std::string s(alt_at_step.size(), ' ');
+				dashen(s);
+				ref_at_step = s;
+			}
+			else if (alt_at_step.empty()) {
+				std::string s(ref_at_step.size(), ' ');
+				dashen(s);
+				alt_at_step = s;
+			}
+
+			if (pos_covered(j - 1)) { // highlight the position
+				ref_sl = pt::slice(ref_at_str.length(),
+						   ref_at_step.length());
+				alt_sl = pt::slice(alt_at_str.length(),
+						   alt_at_step.length());
+			}
+
+			ref_at_str += ref_at_step;
+			alt_at_str += alt_at_step;
+
+			if (i + 1 < N) {
+				ref_at_str += std::string(2, ' ');
+				alt_at_str += std::string(2, ' ');
+			}
+		}
+	}
+};
+
+std::tuple<std::vector<pt::u32>, std::vector<pt::slice>,
+	   std::vector<std::string>>
+foo(const bd::VG &g, pt::u32 ref_h_idx, const pt::op_t<ptg::id_or_t> &ef,
+    pt::u32 pos)
+{
+	std::vector<std::string> lines;
+	std::vector<bar> bars;
+
+	std::map<pt::id_t, std::vector<pt::slice>> unrolled =
+		unroll_tangle(g, ef);
+
+	pt::u32 longest_loop{};
+	for (auto &[_, slices] : unrolled)
+		if (slices.size() > longest_loop)
+			longest_loop = slices.size();
+
+	// std::cerr << "A" << "\n";
+
+	bars.emplace_back(bar{ref_h_idx, unrolled.at(ref_h_idx), ""});
+
+	auto lvl = ita::align::aln_level_e::at;
+
+	std::map<pt::u32, ia::at_itn> itns;
+
+	std::map<pt::u32, std::string> hap_walk_to_alns;
+
+	for (const auto &[h_idx, slices] : unrolled) {
+		std::vector<ptg::walk_t> walks;
+		for (auto s : slices)
+			walks.emplace_back(slice_to_walk(g, h_idx, s));
+
+		ia::at_itn at(std::move(walks));
+		itns[h_idx] = at;
+	}
+
+	// std::cerr << "B" << "\n";
+
+	for (pt::u32 i{}; i < g.get_hap_count(); i++) {
+		if (i == ref_h_idx || !pv_cmp::contains(itns, i))
+			continue;
+
+		const ia::at_itn &ref_itn = itns.at(ref_h_idx);
+		const ia::at_itn &alt_itn = itns.at(i);
+		std::string et = ita::align::align(ref_itn, alt_itn, lvl);
+		hap_walk_to_alns[i] = et;
+
+		std::cerr << i << " " << et << "\n";
+
+		bars.emplace_back(bar{i, unrolled.at(i), et});
+	}
+
+	std::cerr << "C" << "\n";
+
+	std::vector<pt::u32> header_lens;
+	std::vector<pt::slice> highlight_slices; // highlight slices
+
+	lines.reserve(bars.size());
+	std::string ref_at_str;
+	std::string alt_at_str;
+
+	pt::slice ref_sl(0, 0);
+	pt::slice alt_sl(0, 0);
+
+	for (pt::u32 i{}; i < bars.size(); i++) {
+		const bar &b = bars.at(i);
+		if (b.h_idx == ref_h_idx)
+			continue;
+
+		ref_at_str += g.get_tag(ref_h_idx); // append ref tag
+		alt_at_str += g.get_tag(b.h_idx);   // append alt tag
+
+		std::cerr << "Bar h_idx: " << ref_at_str << " " << alt_at_str
+			  << "\n";
+
+		header_lens.emplace_back(ref_at_str.length());
+		header_lens.emplace_back(alt_at_str.length());
+
+		b.to_tui_aln(g, ref_h_idx, unrolled.at(ref_h_idx), pos,
+			     ref_at_str, alt_at_str, ref_sl, alt_sl);
+
+		highlight_slices.push_back(ref_sl);
+		highlight_slices.push_back(alt_sl);
+
+		lines.push_back(ref_at_str);
+		lines.push_back(alt_at_str);
+
+		ref_at_str.clear();
+		alt_at_str.clear();
+	}
+
+	std::cerr << "D" << "\n";
+
+	std::cerr << "lines\n";
+	pt::u32 k{};
+	for (auto &l : lines)
+		std::cerr << k++ << " " << l << "\n";
+
+	return {header_lens, highlight_slices, lines};
+}
+
 void view(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 	  const std::vector<pt::u32> &invalid_recs)
 {
-	// ------------------------
+	// ----------------------------------------------------------------
 	// colours
 	//
 	// ansi colours lookup
 	// https://gist.github.com/JBlond/2fea43a3049b38287e5e9cefc87b2124
-	// ------------------------
+	// ----------------------------------------------------------------
 
 	// Use indices in the 240+ range to stay safe
 	short dark_gray_idx = 234;   // Very dark (near black)
@@ -880,14 +1200,20 @@ void view(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 	int screen_h, screen_w;
 	getmaxyx(stdscr, screen_h, screen_w);
 
+	pt::u32 selected_rec{567};
+
+	pt::u32 pane_count{4};
+
 	Pane top_left_pane, top_right_pane, bottom_left_pane, bottom_right_pane;
-	const std::map<PaneID, Pane *> PANES = {
-		{PaneID::A, &top_left_pane},
-		{PaneID::B, &top_right_pane},
-		{PaneID::C, &bottom_left_pane},
-		{PaneID::D, &bottom_right_pane}};
+	Pane repeats_pane;
+	const std::map<PaneID, Pane *> PANES = {{PaneID::A, &top_left_pane},
+						{PaneID::B, &top_right_pane},
+						{PaneID::C, &bottom_left_pane},
+						{PaneID::D, &bottom_right_pane},
+						{PaneID::E, &repeats_pane}};
 	setup_layout(screen_h, screen_w, top_left_pane, top_right_pane,
-		     bottom_left_pane, bottom_right_pane);
+		     bottom_left_pane, bottom_right_pane, nullptr,
+		     selected_rec + 1);
 
 	// Initial focus
 	Pane *active = &top_left_pane;
@@ -934,12 +1260,57 @@ void view(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 		}
 	};
 
+	auto update_repeats =
+		[&vcf_file, &g](pt::u32 rec_idx, display_lines &pd)
+	{
+		pd.reset();
+
+		const mto::from_vcf::VCFRecord &rec =
+			vcf_file.get_records().at(rec_idx);
+
+		if (!rec.is_tangled())
+			return;
+
+		rec.dbg_print(std::cerr);
+
+		pt::op_t<ptg::id_or_t> ef = rec.get_ef();
+		auto [header_lens, hl_slices, lines] =
+			foo(g, 0, ef, rec.get_pos());
+
+		pt::u32 longest_header{};
+
+		for (pt::u32 i{}; i < lines.size(); i++) {
+			line_metadata &lm = pd.meta[i];
+			lm.ref_name_pos = header_lens[i];
+			lm.at_str_slices.push_back(hl_slices[i]);
+			if (header_lens[i] > longest_header)
+				longest_header = header_lens[i];
+			if (i > 0 && i % 2 == 0)
+				pd.group_lines.insert(i);
+		}
+
+		pd.lh = longest_header;
+		pd.lines.swap(lines);
+	};
+
+	pt::u32 vcf_selected_rec{(pt::u32)top_left_pane.selected_line - 1};
+	bool toggle_repeats_pane = false;
+
 	auto draw_all_panes = [&](bool initial_draw = false)
 	{
+		pt::u32 rec_idx = top_left_pane.selected_line - 1;
+		bool t = (vcf_file.get_records().at(rec_idx).is_tangled());
+
+		if (t)
+			update_repeats(rec_idx, repeats_pane.pd);
+
 		top_left_pane.draw(active == &top_left_pane);
 		top_right_pane.draw(active == &top_right_pane);
 		bottom_left_pane.draw(active == &bottom_left_pane);
 		bottom_right_pane.draw(active == &bottom_right_pane);
+
+		if (t)
+			repeats_pane.draw(active == &repeats_pane);
 
 		if (initial_draw)
 			refresh();
@@ -961,7 +1332,7 @@ void view(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 		if (search_mode)
 			handle_search_input(ch, active);
 		else
-			nav(ch, active, PANES); // nav and search
+			nav(ch, active, PANES, pane_count); // nav and search
 
 		// 2. Update dependent panes if necessary
 		if (active == &top_left_pane) {
@@ -975,6 +1346,34 @@ void view(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 
 			bottom_right_pane.pd.lines.clear();
 			update_alts(vcf_data_row, bottom_right_pane.pd);
+		}
+
+		vcf_selected_rec = (pt::u32)top_left_pane.selected_line - 1;
+
+		// volatile int i = 0;
+		bool is_tangled = vcf_file.get_records()
+					  .at(vcf_selected_rec)
+					  .is_tangled();
+
+		pane_count = is_tangled ? 5 : 4;
+
+		if (toggle_repeats_pane != is_tangled) {
+			if (is_tangled)
+				setup_layout(screen_h, screen_w, top_left_pane,
+					     top_right_pane, bottom_left_pane,
+					     bottom_right_pane, &repeats_pane,
+					     vcf_selected_rec + 1);
+			else
+				setup_layout(screen_h, screen_w, top_left_pane,
+					     top_right_pane, bottom_left_pane,
+					     bottom_right_pane, nullptr,
+					     vcf_selected_rec + 1);
+
+			toggle_repeats_pane = is_tangled;
+
+			erase(); // Clears the internal buffer / physical screen
+			refresh(); // Refresh stdscr so the terminal actually
+				   // clears right now
 		}
 
 		draw_all_panes();

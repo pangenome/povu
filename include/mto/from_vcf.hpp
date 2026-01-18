@@ -9,9 +9,12 @@
 #include <string_view> // for string_view
 #include <vector>      // for vector
 
+#include "ita/variation/rov.hpp" // for var_type_e
+
 #include "povu/common/constants.hpp" // for TAB_CHAR
 #include "povu/common/core.hpp"	     // for pt
 #include "povu/common/utils.hpp"     // for split
+#include "povu/graph/types.hpp"	     // for id_or_t
 
 namespace mto::from_vcf
 {
@@ -50,34 +53,14 @@ public:
 	}
 };
 
-// unify with povu::var::rov::var_type_e
-enum class var_type_e : pt::u8 {
-	del, // deletion
-	ins, // insertion
-	sub, // substitution
-	inv, // inversion
-};
-
-constexpr std::string_view to_string_view(var_type_e vt) noexcept
-{
-	switch (vt) {
-	case var_type_e::del:
-		return "DEL";
-	case var_type_e::ins:
-		return "INS";
-	case var_type_e::sub:
-		return "SUB";
-	case var_type_e::inv:
-		return "INV";
-	}
-
-	// ERR("Unknown variant type");
-
-	return "UNKNOWN";
-}
+std::vector<ptg::id_or_t> extract_v_id_ors(const std::string &at);
 
 struct VCFRecord {
 private:
+	// -----------------
+	// member variables
+	// -----------------
+
 	std::string chrom;
 	pt::u32 pos;
 	std::string id;
@@ -87,9 +70,20 @@ private:
 	std::vector<std::string> allele_traversals;
 	gt_data genotypes;
 
-	std::optional<var_type_e> var_type;
+	std::optional<ir::var_type_e> var_type;
+	bool tangled_ = false;
+
+	pt::op_t<ptg::id_or_t> ef_;
+
+	// ---------------
+	// constructor(s)
+	// ---------------
 
 	VCFRecord() = default;
+
+	// ----------------
+	// private methods
+	// ----------------
 
 	void extract_ats(const std::string &s)
 	{
@@ -103,13 +97,10 @@ private:
 						   &this->allele_traversals);
 			}
 		}
-
-		return;
 	}
 
 	void extract_var_type(const std::string &s)
 	{
-		// not used
 		std::vector<std::string> info_fields;
 		povu::utils::split(s, ';', &info_fields);
 
@@ -118,15 +109,58 @@ private:
 				std::string vt_str = field.substr(8);
 
 				if (vt_str == "DEL")
-					this->var_type = var_type_e::del;
+					this->var_type = ir::var_type_e::del;
 				else if (vt_str == "INS")
-					this->var_type = var_type_e::ins;
+					this->var_type = ir::var_type_e::ins;
 				else if (vt_str == "SUB")
-					this->var_type = var_type_e::sub;
+					this->var_type = ir::var_type_e::sub;
 				else if (vt_str == "INV")
-					this->var_type = var_type_e::inv;
+					this->var_type = ir::var_type_e::inv;
 				else
 					this->var_type = std::nullopt;
+			}
+		}
+	}
+
+	void extract_tangled(const std::string &s)
+	{
+		std::vector<std::string> info_fields;
+		povu::utils::split(s, ';', &info_fields);
+
+		for (const auto &field : info_fields) {
+			if (field.rfind("TANGLED=", 0) == 0) {
+				std::string vt_str = field.substr(8);
+
+				if (vt_str == "T")
+					this->tangled_ = true;
+			}
+		}
+
+		return;
+	}
+
+	void extract_ef(const std::string &s) // extract encapsulating flubble
+	{
+		std::vector<std::string> info_fields;
+		povu::utils::split(s, ';', &info_fields);
+
+		for (const auto &field : info_fields) {
+			if (field.rfind("ES=", 0) == 0) {
+				std::string vt_str = field.substr(3);
+				std::vector<ptg::id_or_t> v_ids =
+					extract_v_id_ors(vt_str);
+
+#ifdef DEBUG
+				if (v_ids.size() != 2) {
+					std::cerr << "[VCFRecord::extract_ef] "
+						     "Error: malformed EF "
+						     "field: "
+						  << vt_str << "\n";
+					std::exit(1);
+				}
+#endif
+
+				this->ef_ = {v_ids.front(), v_ids.back()};
 			}
 		}
 
@@ -186,6 +220,8 @@ public:
 
 		rec.extract_ats(fields[7]);
 		rec.extract_var_type(fields[7]);
+		rec.extract_tangled(fields[7]);
+		rec.extract_ef(fields[7]);
 		rec.handle_genotypes(fields, 9);
 		return rec;
 	}
@@ -194,6 +230,18 @@ public:
 	const gt_data &get_genotypes() const
 	{
 		return this->genotypes;
+	}
+
+	[[nodiscard]]
+	bool is_tangled() const
+	{
+		return this->tangled_;
+	}
+
+	[[nodiscard]]
+	pt::op_t<ptg::id_or_t> get_ef() const
+	{
+		return this->ef_;
 	}
 
 	[[nodiscard]]
@@ -236,8 +284,9 @@ public:
 	{
 		os << (this->var_type.has_value()
 			       ? to_string_view(this->var_type.value())
-			       : ".");
-		os << "\t";
+			       : ".")
+		   << "\t";
+		os << (this->is_tangled() ? "T" : "F") << "\t";
 		os << this->pos << "\t";
 		os << this->id << "\t";
 		os << this->ref << "\t";
@@ -255,6 +304,8 @@ public:
 		os << " chrom: " << this->chrom << "\n";
 		os << " pos: " << this->pos << "\n";
 		os << " id: " << this->id << "\n";
+		os << " ef: " << this->get_ef().first.as_str()
+		   << this->get_ef().second.as_str() << "\n";
 		os << " ref: " << this->ref << "\n";
 		os << " alts: " << pu::concat_with(this->alts, ',') << "\n";
 

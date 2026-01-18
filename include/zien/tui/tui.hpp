@@ -30,9 +30,8 @@ struct NcursesGuard {
 	// crashes
 	~NcursesGuard()
 	{
-		if (!isendwin()) {
+		if (!isendwin())
 			endwin();
-		}
 	}
 
 	// Prevent copying to avoid multiple calls to endwin
