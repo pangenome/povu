@@ -94,8 +94,13 @@ bool is_inverted(const std::vector<pt::u32> &ref_row,
 		       (ref_row[j] == 2 && alt_row[j] == 1);
 	};
 
+	auto is_null_col = [&](pt::u32 j) -> bool
+	{
+		return ref_row[j] == 0 && alt_row[j] == 0;
+	};
+
 	for (pt::u32 j{}; j < J; j++)
-		if (!is_col_inverted(j))
+		if (!is_col_inverted(j) && !is_null_col(j))
 			return false;
 
 	return true;
@@ -422,12 +427,12 @@ ia::trek comp_exps(const bd::VG &g, const ir::RoV *rov,
 			bool is_inv = is_inverted(ref_row, alt_row, J);
 
 			if (dbg) {
-				INFO("ref {} alt {}", ref_h_idx, h_idx);
-				INFO("{}", is_inv);
+				// INFO("ref {} alt {}", ref_h_idx, h_idx);
+				// INFO("{}", is_inv);
 
-				// cxts
-				for (auto [u, v] : cxts)
-					INFO("  cxt: ({} , {})", u, v);
+				// // cxts
+				// for (auto [u, v] : cxts)
+				//	INFO("  cxt: ({} , {})", u, v);
 			}
 
 			if (cxts.empty() && !is_inv) {
@@ -479,11 +484,20 @@ ia::trek comp_exps(const bd::VG &g, const ir::RoV *rov,
 				ia::hap_slice alt_sl = hap_sl_from_lap(
 					g, c, alt_lap, h_idx, dbg);
 
-				// TODO: check locally
-				if (slice_match(ref_sl, alt_sl) ||
-				    is_inv_local(ref_sl, alt_sl)) {
+				if (is_inv_local(ref_sl, alt_sl)) {
+					ise::pin ref_pin = {
+						ref_h_idx,
+						ref_sl.ref_start_idx};
+					ise::pin alt_pin = {
+						h_idx, alt_sl.ref_start_idx};
+					pcushion.add_pin_pair(
+						{ref_pin, alt_pin});
 					continue;
 				}
+
+				// TODO: check locally
+				if (slice_match(ref_sl, alt_sl))
+					continue;
 
 				if (!pv_cmp::contains(m, c)) { // init
 					// ia::hap_slice ref_sl =
@@ -580,7 +594,8 @@ std::vector<ia::trek> overlay_generic(const bd::VG &g, ir::RoV &rov,
 				      const std::set<pt::u32> &to_call_ref_ids,
 				      ise::pin_cushion &pcushion)
 {
-	bool dbg = rov.as_str() == ">1>4" ? true : false;
+	bool dbg = rov.as_str() == ">19662>19664" ? true : false;
+	dbg = false;
 	if (dbg)
 		INFO("{}", rov.as_str());
 
