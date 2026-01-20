@@ -1,22 +1,18 @@
 #include "zien/tui/tui.hpp"
 
-// std
 #include <atomic>
 #include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
 
-// ncurses
 #include <ncurses.h>
 
-// liteseq
 #include <liteseq/refs.h> // for ref_walk, ref
 
 #include "ita/align/align.hpp"	   // for align, aln_level_e
 #include "ita/genomics/allele.hpp" // for ia::at_itn
 
-// povu
 #include "mto/from_vcf.hpp" // for VCFile
 
 #include "povu/common/core.hpp"	     // for pt
@@ -28,15 +24,26 @@ namespace zien::tui
 {
 namespace lq = liteseq;
 
-// Use Group Separator (0x1D) as the invisible delimiter
-// const char SEP = '\x1D';
-
 constexpr povu::refs::ref_format_e PN = povu::refs::ref_format_e::PANSN;
 
+std::string jump_query = "";
 std::string search_query = "";
-bool search_mode = false;
 std::vector<int> search_results;
 int current_result_idx = -1;
+
+enum class Mode : pt::u8 {
+	NAVIGATION,
+	SEARCH,
+	JUMP,
+};
+
+std::map<Mode, std::string> mode_names = {
+	{Mode::NAVIGATION, "NAVIGATION"},
+	{Mode::SEARCH, "SEARCH"},
+	{Mode::JUMP, "JUMP"},
+};
+
+Mode current_mode = Mode::NAVIGATION;
 
 enum class PaneID : uint8_t {
 	A, // top left
@@ -156,25 +163,34 @@ struct Pane {
 
 	void scroll_down()
 	{
-		pt::u32 max_idx = (pt::u32)pd.lines.size() - 1;
-		if ((pt::u32)selected_line < max_idx) {
+		if (pd.lines.empty())
+			return;
+
+		pt::u32 min_idx = has_header ? 1 : 0;
+		pt::u32 max_idx = pd.lines.size() - 1;
+
+		if ((pt::u32)selected_line < max_idx)
 			selected_line++;
-		}
+		else
+			selected_line = min_idx;
 	}
 
 	void scroll_up()
 	{
+		if (pd.lines.empty())
+			return;
+
 		pt::u32 min_idx = has_header ? 1 : 0;
-		if ((pt::u32)selected_line > min_idx) {
+		pt::u32 max_idx = pd.lines.size() - 1;
+
+		if ((pt::u32)selected_line > min_idx)
 			selected_line--;
-		}
+		else
+			selected_line = max_idx;
 	}
 
 	void draw(bool is_focused)
 	{
-		// std::cerr << __func__ << pane_names.at(p_id) << " "
-		//	  << this->selected_line << "\n";
-		// int col_width = 30;
 		update_scroll();
 		werase(win);
 		box(win, 0, 0);
@@ -430,17 +446,113 @@ struct Pane {
 	}
 };
 
+// status bar or modeline
+// a status bar takes one full line which is saved in the linum field
+struct status_bar {
+	WINDOW *win;
+	int linum;
+	int width;
+
+	void draw(const std::string &left, const std::string &mid,
+		  const std::string &right)
+	{
+		move(this->linum, 0);
+		clrtoeol();
+
+		// 1. Determine final Left text
+		// std::string final_left =
+		//	search_mode ? ("/" + search_query) : left;
+
+		// 1. Determine the Left text (The Prompt)
+		std::string final_left = left;
+		if (current_mode == Mode::SEARCH) {
+			final_left = "/" + search_query;
+		}
+		else if (current_mode == Mode::JUMP) {
+			// Add this flag to your global state or pane
+			final_left = "Jump to line: " + jump_query;
+		}
+
+		// 2. Determine final Right text (Calculate this BEFORE
+		// calculating positions)
+		std::string final_right = right;
+		if (current_result_idx != -1 && !search_results.empty()) {
+			final_right = "[Match " +
+				      std::to_string(current_result_idx + 1) +
+				      "/" +
+				      std::to_string(search_results.size()) +
+				      "] " + right;
+		}
+
+		// 3. Calculate positions based on final lengths
+		int mid_pos = (width - (int)mid.length()) / 2;
+		int right_pos = width - (int)final_right.length();
+
+		// 4. Draw Left
+		// if (current_mode == Mode::SEARCH || current_mode ==
+		// Mode::JUMP)
+		mvprintw(this->linum, 0, "%s", final_left.c_str());
+
+		// 5. Draw Middle (only if it fits)
+		std::string final_mid = pv_cmp::format(
+			"{} [{}]", mid, mode_names[current_mode]);
+
+		if (mid_pos > (int)final_left.length() + 1)
+			mvprintw(this->linum, mid_pos, "%s", final_mid.c_str());
+
+		// 6. Draw Right (only if it doesn't overlap middle)
+		if (right_pos > mid_pos + (int)mid.length() + 1) {
+			mvprintw(this->linum, right_pos, "%s",
+				 final_right.c_str());
+		}
+
+		// 7. Cursor Management
+		if (current_mode == Mode::SEARCH) {
+			curs_set(1);
+			move(this->linum, (int)final_left.length());
+		}
+		else {
+			curs_set(0);
+			move(0, 0);
+		}
+	}
+};
+
 void perform_search(Pane *pane, const std::string &query)
 {
 	search_results.clear();
-	for (pt::u32 i = 0; i < pane->pd.lines.size(); ++i)
-		if (pane->pd.lines[i].find(query) != std::string::npos)
+	if (query.empty())
+		return;
+
+	for (pt::u32 i = 0; i < pane->pd.lines.size(); ++i) {
+		if (pane->pd.lines[i].find(query) != std::string::npos) {
 			search_results.push_back(i);
+		}
+	}
 
 	if (!search_results.empty()) {
+		// Find the first result that is >= the currently
+		// selected line
 		current_result_idx = 0;
-		pane->selected_line = search_results[0];
+		for (size_t i = 0; i < search_results.size(); ++i) {
+			if (search_results[i] >= pane->selected_line) {
+				current_result_idx = i;
+				break;
+			}
+		}
+		pane->selected_line = search_results[current_result_idx];
+		pane->horiz_offset = 0;
+		pane->update_scroll();
 	}
+	else {
+		current_result_idx = -1;
+	}
+}
+
+void clear_search()
+{
+	search_results.clear();
+	current_result_idx = -1;
 }
 
 struct pane_params {
@@ -615,7 +727,8 @@ void comp_update_refs(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 			if (header_len > pd.lh)
 				pd.lh = header_len;
 
-			// std::cerr << "Anchor v_id: " << anchor_v_id << "\t"
+			// std::cerr << "Anchor v_id: " << anchor_v_id
+			// << "\t"
 			//	  << sn << "\n";
 
 			pt::u32 anchor_v_idx = g.v_id_to_idx(anchor_v_id);
@@ -718,8 +831,8 @@ std::vector<std::string> comp_gt_data(const mto::from_vcf::VCFile &vcf_file,
 			continue;
 		}
 		// try {
-		//	const std::vector<povu::io::from_vcf::at_meta> at_meta =
-		//		d.get_data().at(at_idx);
+		//	const std::vector<povu::io::from_vcf::at_meta>
+		// at_meta =		d.get_data().at(at_idx);
 		// }
 		// catch (const std::out_of_range &e) {
 		//	continue;
@@ -743,8 +856,10 @@ std::vector<std::string> comp_gt_data(const mto::from_vcf::VCFile &vcf_file,
 			}
 
 			// try {
-			//	const std::vector<povu::io::from_vcf::at_meta>
-			//		at_meta = d.get_data().at(at_idx);
+			//	const
+			// std::vector<povu::io::from_vcf::at_meta>
+			//		at_meta =
+			// d.get_data().at(at_idx);
 			// }
 			// catch (const std::out_of_range &e) {
 			//	hl += "\t";
@@ -782,16 +897,35 @@ void nav(int ch, Pane *&active, const std::map<PaneID, Pane *> &panes,
 	PaneID active_p_id = active->p_id;
 
 	switch (ch) {
+	case 27: // ESC key
+		current_mode = Mode::NAVIGATION;
+		clear_search();
+		break;
 	case '/':
-		search_mode = true;
+		current_mode = Mode::SEARCH;
 		search_query = "";
 		break;
-	case 'n':
+	case ':':
+		current_mode = Mode::JUMP;
+		break;
+	case 'n': // Next match (Forward)
 		if (!search_results.empty()) {
 			current_result_idx = (current_result_idx + 1) %
 					     search_results.size();
 			active->selected_line =
 				search_results[current_result_idx];
+		}
+		break;
+	case 'N': // Previous match (Backward)
+		if (!search_results.empty()) {
+			// Adding size before modulo handles the
+			// negative wrap-around
+			current_result_idx = (current_result_idx - 1 +
+					      search_results.size()) %
+					     search_results.size();
+			active->selected_line =
+				search_results[current_result_idx];
+			active->update_scroll();
 		}
 		break;
 	case '\t': // Cycle: Top -> Left -> Right -> Top
@@ -844,12 +978,14 @@ void nav(int ch, Pane *&active, const std::map<PaneID, Pane *> &panes,
 void handle_search_input(int ch, Pane *&active)
 {
 	switch (ch) {
+	case '\r':
 	case '\n':
-		search_mode = false;
+		current_mode = Mode::NAVIGATION;
 		perform_search(active, search_query);
 		break;
 	case 27: // ESC key
-		search_mode = false;
+		current_mode = Mode::NAVIGATION;
+		clear_search();
 		break;
 	case KEY_BACKSPACE:
 	case 127: // Handle Backspace or DEL
@@ -859,6 +995,54 @@ void handle_search_input(int ch, Pane *&active)
 	default:
 		if (ch >= 32 && ch <= 126) // Only add printable characters
 			search_query += (char)ch;
+	}
+}
+
+void handle_jump_input(int ch, Pane *&active)
+{
+	switch (ch) {
+	case '\n': // ENTER: Execute jump
+		if (!jump_query.empty()) {
+			try {
+				int target = std::stoi(jump_query);
+				int min_idx = active->has_header ? 1 : 0;
+				int max_idx = (int)active->pd.lines.size() - 1;
+
+				// Bounds checking
+				if (target >= min_idx && target <= max_idx) {
+					active->selected_line = target;
+				}
+				else if (target > max_idx) {
+					active->selected_line = max_idx;
+				}
+				else {
+					active->selected_line = min_idx;
+				}
+				active->update_scroll();
+			}
+			catch (...) {
+			} // Handle non-numeric junk
+		}
+		current_mode = Mode::NAVIGATION;
+		jump_query = "";
+		break;
+
+	case 27: // ESC: Cancel
+		current_mode = Mode::NAVIGATION;
+		jump_query = "";
+		break;
+
+	case KEY_BACKSPACE:
+	case 127:
+		if (!jump_query.empty())
+			jump_query.pop_back();
+		break;
+
+	default:
+		if (isdigit(ch)) { // Only allow numbers for jumping
+			jump_query += (char)ch;
+		}
+		break;
 	}
 }
 
@@ -876,12 +1060,13 @@ void show_loading_spinner(std::atomic<bool> &is_loading)
 		erase();
 		box(stdscr, 0, 0);
 
-		// Fetch dimensions inside the loop in case the user resizes the
-		// terminal
+		// Fetch dimensions inside the loop in case the user
+		// resizes the terminal
 		int h, w;
 		getmaxyx(stdscr, h, w);
 
-		// No attron() or COLOR_PAIR needed for default white on black
+		// No attron() or COLOR_PAIR needed for default white on
+		// black
 		mvprintw(h / 2, (w / 2) - 10, "%s Loading data...",
 			 frames[frame_idx].c_str());
 
@@ -898,7 +1083,7 @@ void show_loading_spinner(std::atomic<bool> &is_loading)
 	}
 
 	// --- CLEANUP STEP ---
-	erase();   // Clears the internal buffer (removes the box and text)
+	erase();   // Clears the internal buffer (removes the box & text)
 	refresh(); // Pushes that empty buffer to the physical screen
 
 	curs_set(1); // restore the cursor
@@ -953,7 +1138,8 @@ ptg::walk_t slice_to_walk(const bd::VG &g, pt::u32 h_idx, const pt::slice &s)
 		w.push_back({v_id, o});
 	}
 
-	// std::cerr << "H: " << h_idx << "\n" << ptg::to_string(w) << "\n";
+	// std::cerr << "H: " << h_idx << "\n" << ptg::to_string(w) <<
+	// "\n";
 
 	return w;
 }
@@ -1058,6 +1244,18 @@ struct bar {
 				std::string s(ref_at_step.size(), ' ');
 				dashen(s);
 				alt_at_step = s;
+			}
+			else if (ref_at_step.length() < alt_at_step.length()) {
+				// pad ref
+				pt::u32 diff = alt_at_step.length() -
+					       ref_at_step.length();
+				ref_at_step += std::string(diff, ' ');
+			}
+			else if (alt_at_step.length() < ref_at_step.length()) {
+				// pad alt
+				pt::u32 diff = ref_at_step.length() -
+					       alt_at_step.length();
+				alt_at_step += std::string(diff, ' ');
 			}
 
 			if (pos_covered(j - 1)) { // highlight the position
@@ -1200,7 +1398,7 @@ void view(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 	int screen_h, screen_w;
 	getmaxyx(stdscr, screen_h, screen_w);
 
-	pt::u32 selected_rec{567};
+	pt::u32 selected_rec{}; // zero-based index
 
 	pt::u32 pane_count{4};
 
@@ -1214,6 +1412,11 @@ void view(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 	setup_layout(screen_h, screen_w, top_left_pane, top_right_pane,
 		     bottom_left_pane, bottom_right_pane, nullptr,
 		     selected_rec + 1);
+
+	status_bar sb;
+	sb.win = stdscr; // use stdscr for the status bar
+	sb.linum = screen_h - 1;
+	sb.width = screen_w;
 
 	// Initial focus
 	Pane *active = &top_left_pane;
@@ -1296,6 +1499,25 @@ void view(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 	pt::u32 vcf_selected_rec{(pt::u32)top_left_pane.selected_line - 1};
 	bool toggle_repeats_pane = false;
 
+	auto update_status_bar = [&]()
+	{
+		// left
+		//
+		//
+		// middle
+		// const std::string &mode = mode_names.at(current_mode);
+		const std::string &pane_name = pane_names.at(active->p_id);
+		// std::string mid_str =
+		//	pv_cmp::format("{} [{}]", pane_name, mode);
+
+		// right
+		std::string vcf_rec_line =
+			pv_cmp::format("[{}/{}]", vcf_selected_rec + 1,
+				       vcf_file.record_count());
+
+		sb.draw("", pane_name, vcf_rec_line);
+	};
+
 	auto draw_all_panes = [&](bool initial_draw = false)
 	{
 		pt::u32 rec_idx = top_left_pane.selected_line - 1;
@@ -1308,6 +1530,7 @@ void view(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 		top_right_pane.draw(active == &top_right_pane);
 		bottom_left_pane.draw(active == &bottom_left_pane);
 		bottom_right_pane.draw(active == &bottom_right_pane);
+		update_status_bar();
 
 		if (t)
 			repeats_pane.draw(active == &repeats_pane);
@@ -1326,13 +1549,25 @@ void view(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 
 	draw_all_panes(true);
 
-	int ch = 0;
-	do {
+	int ch{};
+	while ((ch = getch()) != 'q') {
 		// 1. Handle Input
-		if (search_mode)
+		if (current_mode == Mode::SEARCH)
 			handle_search_input(ch, active);
-		else
-			nav(ch, active, PANES, pane_count); // nav and search
+		else if (current_mode == Mode::JUMP)
+			handle_jump_input(ch, active);
+		else {
+			switch (ch) {
+			case '/':
+				current_mode = Mode::SEARCH;
+				break;
+			case ':':
+				current_mode = Mode::JUMP;
+				break; // Use colon for jump
+			}
+			// nav & search
+			nav(ch, active, PANES, pane_count);
+		}
 
 		// 2. Update dependent panes if necessary
 		if (active == &top_left_pane) {
@@ -1371,28 +1606,16 @@ void view(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 
 			toggle_repeats_pane = is_tangled;
 
-			erase(); // Clears the internal buffer / physical screen
-			refresh(); // Refresh stdscr so the terminal actually
-				   // clears right now
+			erase();   // Clears the internal buffer /
+				   // physical screen
+			refresh(); // Refresh stdscr so the terminal
+				   // actually clears right now
 		}
 
 		draw_all_panes();
 
-		// 3. Draw Search Bar (Always do this)
-		move(screen_h - 1, 0); // Move to the very bottom line
-		clrtoeol(); // Clear the entire line from cursor to end
-		if (search_mode) {
-			attron(COLOR_PAIR(1));
-			printw("/%s", search_query.c_str());
-			attroff(COLOR_PAIR(1));
-		}
-		else if (!search_query.empty()) {
-			printw("Search: %s (%d/%zu)", search_query.c_str(),
-			       current_result_idx + 1, search_results.size());
-		}
-
 		refresh(); // Push all changes to the physical terminal
-	} while ((ch = getch()) != 'q');
+	};
 
 	return;
 }

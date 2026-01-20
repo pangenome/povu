@@ -344,6 +344,12 @@ public:
 		return this->records;
 	}
 
+	[[nodiscard]]
+	pt::u32 record_count() const
+	{
+		return this->records.size();
+	}
+
 	pt::u32 sample_count() const
 	{
 		return this->sns.get_keys().size();
