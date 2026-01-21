@@ -119,18 +119,18 @@ struct bar {
 
 		auto pos_covered = [&](pt::u32 j) -> bool
 		{
-			std::cerr << "Checking pos_covered at j=" << j
-				  << " ref itn size " << ref_itn.size() << "\n";
+			// std::cerr << "Checking pos_covered at j=" << j
+			//	  << " ref itn size " << ref_itn.size() << "\n";
 
 			if (j >= ref_itn.size())
 				return false;
 
 			pt::slice ref_sl = ref_itn.at(j);
 			pt::u32 ref_start = ref_sl.start();
-			std::cerr << "Ref SL: " << ref_sl.start() << " "
-				  << ref_sl.len() << "\n";
+			// std::cerr << "Ref SL: " << ref_sl.start() << " "
+			//	  << ref_sl.len() << "\n";
 			pt::u32 ref_end = ref_start + (ref_sl.len() - 1);
-			std::cerr << "ref end " << ref_end;
+			// std::cerr << "ref end " << ref_end;
 			const lq::ref_walk *rw = g.get_ref_vec(ref_h_idx)->walk;
 
 			pt::u32 s = rw->loci[ref_start];
@@ -249,12 +249,12 @@ foo(const bd::VG &g, pt::u32 ref_h_idx, const pt::op_t<ptg::id_or_t> &ef,
 		std::string et = ita::align::align(ref_itn, alt_itn, lvl);
 		hap_walk_to_alns[i] = et;
 
-		std::cerr << i << " " << et << "\n";
+		// std::cerr << i << " " << et << "\n";
 
 		bars.emplace_back(bar{i, unrolled.at(i), et});
 	}
 
-	std::cerr << "C" << "\n";
+	// std::cerr << "C" << "\n";
 
 	std::vector<pt::u32> header_lens;
 	std::vector<pt::slice> highlight_slices; // highlight slices
@@ -274,8 +274,8 @@ foo(const bd::VG &g, pt::u32 ref_h_idx, const pt::op_t<ptg::id_or_t> &ef,
 		ref_at_str += g.get_tag(ref_h_idx); // append ref tag
 		alt_at_str += g.get_tag(b.h_idx);   // append alt tag
 
-		std::cerr << "Bar h_idx: " << ref_at_str << " " << alt_at_str
-			  << "\n";
+		// std::cerr << "Bar h_idx: " << ref_at_str << " " << alt_at_str
+		//	  << "\n";
 
 		header_lens.emplace_back(ref_at_str.length());
 		header_lens.emplace_back(alt_at_str.length());
@@ -293,12 +293,12 @@ foo(const bd::VG &g, pt::u32 ref_h_idx, const pt::op_t<ptg::id_or_t> &ef,
 		alt_at_str.clear();
 	}
 
-	std::cerr << "D" << "\n";
+	// std::cerr << "D" << "\n";
 
-	std::cerr << "lines\n";
-	pt::u32 k{};
-	for (auto &l : lines)
-		std::cerr << k++ << " " << l << "\n";
+	// std::cerr << "lines\n";
+	// pt::u32 k{};
+	// for (auto &l : lines)
+	//	std::cerr << k++ << " " << l << "\n";
 
 	return {header_lens, highlight_slices, lines};
 }

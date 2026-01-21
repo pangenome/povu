@@ -17,7 +17,7 @@ void update_repeats(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 	if (!rec.is_tangled())
 		return;
 
-	rec.dbg_print(std::cerr);
+	// rec.dbg_print(std::cerr);
 
 	pt::op_t<ptg::id_or_t> ef = rec.get_ef();
 	auto [header_lens, hl_slices, lines] =

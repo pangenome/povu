@@ -299,9 +299,9 @@ struct Pane {
 				std::string row_label =
 					full_line.substr(0, split_pos);
 
-				std::cerr << __func__ << " Line " << line_idx
-					  << " split at " << split_pos << " rl "
-					  << row_label << "\n";
+				// std::cerr << __func__ << " Line " << line_idx
+				//	  << " split at " << split_pos << " rl "
+				//	  << row_label << "\n";
 
 				// Draw Label: Using A_BOLD and right-alignment
 				// for a cleaner look
