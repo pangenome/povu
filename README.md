@@ -4,10 +4,12 @@ A toolkit for exploring regions of genomic variation
 
 ## Table of Contents
 - [Usage and Examples](#usage-and-examples)
+- [Rust Bindings](#rust-bindings)
 - [Building povu](#building-povu)
   - [Installing with Guix](#installing-with-guix)
   - [Building specific target](#building-specific-target)
   - [Development](#development)
+- [Repository Structure](#repository-structure)
 
 
 ## Usage and Examples
@@ -60,6 +62,63 @@ For more control, use the separate `decompose` and `call` commands:
 ./bin/povu call -i input.gfa -f regions/ -r ref_list.txt --stdout > output.vcf
 ```
 
+## Rust Bindings
+
+Povu provides Rust bindings for embedding pangenome variation analysis in Rust applications. The bindings are located in the `povu-rs/` directory and offer both high-level convenience methods and detailed topology access.
+
+### Quick Start (Rust)
+
+Add to your `Cargo.toml`:
+```toml
+[dependencies]
+povu = { git = "https://github.com/pangenome/povu", branch = "rust" }
+```
+
+### Example: Build a graph in memory
+
+```rust
+use povu::{PovuGraph, Orientation};
+
+// Create an empty graph
+let mut graph = PovuGraph::new(10, 15, 0);
+
+// Add vertices
+graph.add_vertex(1, "AAAA")?;
+graph.add_vertex(2, "GGGG")?;
+graph.add_vertex(3, "TTTT")?;
+graph.add_vertex(4, "CCCC")?;
+
+// Add edges to create a diamond (bubble)
+graph.add_edge(1, Orientation::Forward, 2, Orientation::Forward)?;
+graph.add_edge(1, Orientation::Forward, 3, Orientation::Forward)?;
+graph.add_edge(2, Orientation::Forward, 4, Orientation::Forward)?;
+graph.add_edge(3, Orientation::Forward, 4, Orientation::Forward)?;
+
+// Finalize and analyze
+graph.finalize();
+println!("Graph has {} vertices and {} edges",
+         graph.vertex_count(), graph.edge_count());
+```
+
+### Example: Load and analyze a GFA file
+
+```rust
+use povu::PovuGraph;
+
+// Load from GFA
+let graph = PovuGraph::load("graph.gfa")?;
+
+// Query topology
+let vertices = graph.vertices()?;
+let edges = graph.edges()?;
+let paths = graph.paths()?;
+
+// Analyze for variation
+let analysis = graph.analyze()?;
+println!("Found {} variation regions", analysis.flubble_count());
+```
+
+For more examples, see the `povu-rs/examples/` directory.
 
 ## Building povu
 
@@ -132,6 +191,38 @@ cmake --build build
 ```
 ctest --test-dir build
 ```
+
+## Repository Structure
+
+```
+povu/
+├── bin/              # Compiled binaries (povu CLI)
+├── docs/             # Documentation
+├── include/          # C++ headers
+│   └── povu/        # Public API headers
+├── src/             # C++ implementation
+│   └── povu/        # Core library sources
+├── tests/           # C++ test data
+├── povu-rs/         # Rust bindings
+│   ├── src/         # Rust high-level API
+│   ├── povu-ffi/    # C FFI bridge layer
+│   │   ├── povu_ffi.h     # C API header
+│   │   └── povu_ffi.cpp   # C++ implementation
+│   ├── examples/    # Rust usage examples
+│   └── tests/       # Rust integration tests
+└── CMakeLists.txt   # Build configuration
+```
+
+### Key Components
+
+- **C++ Core** (`src/`, `include/`): The main Povu library implementing the variation detection algorithms
+- **CLI Tool** (`bin/`): Command-line interface for gfa2vcf, decompose, call, and info subcommands
+- **Rust Bindings** (`povu-rs/`): Safe Rust wrappers around the C++ library
+  - High-level API for graph construction, querying, and analysis
+  - C FFI bridge providing a stable interface between C++ and Rust
+  - Comprehensive test suite ensuring correctness
+
+The Rust bindings live alongside the C++ code following the pattern used by many projects that provide multiple language interfaces (e.g., ripgrep, numpy, node.js).
 
 ## Name
 

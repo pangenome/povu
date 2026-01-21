@@ -349,6 +349,15 @@ message(STATUS "Install include directory: ${CMAKE_INSTALL_INCLUDEDIR}")
 message(STATUS "Install library directory: ${CMAKE_INSTALL_LIBDIR}")
 message(STATUS "Install binary directory: ${CMAKE_INSTALL_BINDIR}")
 
+# ================================ Rust FFI ==================================
+
+# Optional Rust FFI library
+option(POVU_BUILD_FFI "Build C FFI library for Rust bindings" OFF)
+
+if (POVU_BUILD_FFI)
+  add_subdirectory(povu-rs/povu-ffi)
+endif()
+
 # ================================ Tests =====================================
 
 if (POVU_ENABLE_TESTING)
