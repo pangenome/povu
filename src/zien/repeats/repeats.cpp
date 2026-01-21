@@ -150,10 +150,13 @@ struct bar {
 			alt_at_step.clear();
 			char c = this->aln[i];
 
-			if (c == 'I')
-				alt_at_step = get_as();
-			else if (c == 'D')
+			if (c == 'I') {
 				ref_at_step = get_rs();
+			}
+			else if (c == 'D') {
+				j++;
+				alt_at_step = get_as();
+			}
 			else { // M or X
 				ref_at_step = get_rs();
 				alt_at_step = get_as();
