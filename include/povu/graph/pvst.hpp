@@ -8,7 +8,7 @@
 
 #include "povu/common/compat.hpp"
 #include "povu/common/constants.hpp"
-#include "povu/common/log.hpp"
+// #include "povu/common/log.hpp"
 #include "povu/graph/types.hpp"
 
 /* === PVST pangenome variation structure tree === */
@@ -147,7 +147,9 @@ inline const char *to_str(route_e r)
 	case route_e::e2s:
 		return "R";
 	default:
-		ERR("Unknown route_e value: {}", static_cast<int>(r));
+		std::cerr << pv_cmp::format("Unknown route_e value: {}",
+					    static_cast<int>(r));
+		// ERR("Unknown route_e value: {}", static_cast<int>(r));
 		std::exit(1);
 	}
 }
@@ -302,7 +304,6 @@ public:
 };
 
 class Flubble : public VertexBase
-
 {
 	pgt::id_or_t a_; // start
 	pgt::id_or_t z_; // end

@@ -582,7 +582,6 @@ pt::status_t find_walks(const bd::VG &g, ir::RoV &rov)
 
 	// print each lap for each haplotype
 	if (dbg) {
-
 		auto [l, r, route] = *rov.get_pvst_vtx()->get_route_params();
 		auto [start_id, _] = l;
 		auto [stop_id, __] = r;

@@ -171,7 +171,9 @@ struct hap_slice {
 			return locus;
 		}
 
-		ERR("Unknown variant type");
+		std::cerr << "Unknown variant type";
+
+		// ERR("Unknown variant type");
 
 		return pc::INVALID_IDX;
 	}

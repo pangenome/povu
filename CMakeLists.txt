@@ -204,9 +204,21 @@ ADD_LIBRARY(ita
 
 ADD_LIBRARY(zien
   ${ZIENLIB_SOURCES_DIR}/tui/tui.cpp
+  ${ZIENLIB_SOURCES_DIR}/tui/state.cpp
+
+  #components
+  ${ZIENLIB_SOURCES_DIR}/components/repeats.cpp
+  ${ZIENLIB_SOURCES_DIR}/components/common.cpp
+  ${ZIENLIB_SOURCES_DIR}/components/genotypes.cpp
+  ${ZIENLIB_SOURCES_DIR}/components/refs.cpp
+  ${ZIENLIB_SOURCES_DIR}/components/alts.cpp
+  ${ZIENLIB_SOURCES_DIR}/components/vcf.cpp
 
   #validate
   ${ZIENLIB_SOURCES_DIR}/validate/validate.cpp
+
+  #repeats
+  ${ZIENLIB_SOURCES_DIR}/repeats/repeats.cpp
 )
 
 # ..... executable .......
@@ -279,6 +291,7 @@ target_link_libraries(ita
 target_link_libraries(zien
   PRIVATE
   povulib
+  ita
   liteseq      # gfa handling
   fmt::fmt     # formatting
   ncurses

@@ -36,7 +36,8 @@ constexpr std::string_view to_string_view(var_type_e vt) noexcept
 		return "INV";
 	}
 
-	ERR("Unknown variant type");
+	std::cerr << "Unknown variant type";
+	// ERR("Unknown variant type");
 
 	return "UNKNOWN";
 }

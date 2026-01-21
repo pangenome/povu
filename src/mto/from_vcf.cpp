@@ -121,4 +121,41 @@ void read_vcf(const fs::path &fp, pt::u32 ll, mto::from_vcf::VCFile &vcf_file)
 	}
 }
 
+// make this a utility function
+std::vector<ptg::id_or_t> extract_v_id_ors(const std::string &at)
+{
+	std::vector<ptg::id_or_t> v_ids;
+
+	ptg::or_e o;
+	std::string v_id_str = "";
+
+	auto update = [&v_id_str, &o, &v_ids]()
+	{
+		if (v_id_str != "") {
+			auto v_id = static_cast<pt::id_t>(std::stoll(v_id_str));
+			v_ids.emplace_back(ptg::id_or_t{v_id, o});
+			v_id_str.clear();
+		}
+	};
+
+	// zero is a > or <
+	for (pt::u32 i{1}; i < at.size(); i++) {
+		char c = at[i];
+
+		if ((c == '>' || c == '<') && v_id_str != "")
+			update();
+
+		if (c == '>')
+			o = ptg::or_e::forward;
+		else if (c == '<')
+			o = ptg::or_e::reverse;
+		else if (std::isdigit(c))
+			v_id_str += c;
+	}
+
+	update(); // final update
+
+	return v_ids;
+};
+
 } // namespace mto::from_vcf

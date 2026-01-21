@@ -4,9 +4,10 @@
 #include <atomic> // for atomic
 #include <ncurses.h>
 
-#include "mto/from_vcf.hpp" // for VCFile
-
+#include "mto/from_vcf.hpp"	     // for VCFile
 #include "povu/graph/bidirected.hpp" // for VG
+#include "zien/components/components.hpp"
+#include "zien/tui/state.hpp" // for Mode
 
 namespace zien::tui
 {
@@ -30,14 +31,65 @@ struct NcursesGuard {
 	// crashes
 	~NcursesGuard()
 	{
-		if (!isendwin()) {
+		if (!isendwin())
 			endwin();
-		}
 	}
 
 	// Prevent copying to avoid multiple calls to endwin
 	NcursesGuard(const NcursesGuard &) = delete;
 	NcursesGuard &operator=(const NcursesGuard &) = delete;
+};
+
+struct tui_context {
+	// -------------
+	// member fields
+	// -------------
+	zien::tui::state::ui_state state;
+
+	// 1. Store the actual Pane objects
+	components::Pane top_left_pane;
+	components::Pane top_right_pane;
+	components::Pane bottom_left_pane;
+	components::Pane bottom_right_pane;
+	components::Pane repeats_pane;
+
+	std::map<zien::tui::state::PaneID, components::Pane *> panes;
+
+	// -----------
+	// constructor
+	// -----------
+	tui_context(const tui_context &) = delete;	      // No copying
+	tui_context &operator=(const tui_context &) = delete; // No assignment
+
+	tui_context()
+	    : state(zien::tui::state::ui_state::create_new()),
+	      panes{{zien::tui::state::PaneID::A, &top_left_pane},
+		    {zien::tui::state::PaneID::B, &top_right_pane},
+		    {zien::tui::state::PaneID::C, &bottom_left_pane},
+		    {zien::tui::state::PaneID::D, &bottom_right_pane},
+		    {zien::tui::state::PaneID::E, &repeats_pane}}
+	{
+		state.setup_colors();
+	}
+
+	// -------
+	// methods
+	// -------
+
+	zien::tui::state::ui_state &get_state()
+	{
+		return this->state;
+	}
+
+	components::Pane &get_pane_ref(zien::tui::state::PaneID pane_id)
+	{
+		return *this->panes.at(pane_id);
+	}
+
+	components::Pane *get_pane(zien::tui::state::PaneID pane_id)
+	{
+		return this->panes.at(pane_id);
+	}
 };
 
 void show_loading_spinner(std::atomic<bool> &is_loading);
