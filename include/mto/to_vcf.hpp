@@ -55,8 +55,8 @@ class VcfOutput
 		}
 		std::ofstream ofs(fp, std::ios::out | std::ios::app);
 		if (!ofs) {
-			ERR("Append open failed: {}",
-			    fs::absolute(fp).string());
+			PL_ERR("Append open failed: {}",
+			       fs::absolute(fp).string());
 			std::exit(EXIT_FAILURE);
 		}
 		this->all_ofs_.push_back(std::move(ofs));

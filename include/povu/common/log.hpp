@@ -23,7 +23,7 @@
 		fmt::print(stderr, "\n");                                      \
 	} while (false)
 
-#define ERR(fmt_str, ...)                                                      \
+#define PL_ERR(fmt_str, ...)                                                   \
 	LOG("ERR", fmt::color::crimson, fmt_str, ##__VA_ARGS__)
 
 #define WARN(fmt_str, ...)                                                     \

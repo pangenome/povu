@@ -43,8 +43,8 @@ extract_header_lines(const std::vector<std::string> &all_lines)
 
 	for (const std::string &line : all_lines) {
 		if (line.empty()) {
-			ERR("Malformed VCF, Empty line found in VCF "
-			    "header.");
+			PL_ERR("Malformed VCF, Empty line found in VCF "
+			       "header.");
 			std::exit(EXIT_FAILURE);
 		}
 
@@ -66,8 +66,9 @@ std::string check_version(const std::vector<std::string> &headers)
 						 VCF_SUPPORTED_VERSIONS.end()),
 			',');
 
-		ERR("Unsupported VCF version: {}. Supported versions are: {}",
-		    vcf_version, supported);
+		PL_ERR("Unsupported VCF version: {}. Supported versions are: "
+		       "{}",
+		       vcf_version, supported);
 
 		std::exit(EXIT_FAILURE);
 	}

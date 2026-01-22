@@ -37,7 +37,7 @@ void write_pvst(const pvst::Tree &bt, const std::string &base_name,
 	std::ofstream bub_file(bub_file_name);
 
 	if (!bub_file.is_open()) {
-		ERR("Could not open file {}", bub_file_name);
+		PL_ERR("Could not open file {}", bub_file_name);
 		std::exit(EXIT_FAILURE);
 	}
 
@@ -72,7 +72,8 @@ void write_pvst(const pvst::Tree &bt, const std::string &base_name,
 			bub_file << pc::PVST_MIDI_SYMBOL << pc::COL_SEP;
 			break;
 		default:
-			ERR("Unknown vertex type in write_bub: {}", v.as_str());
+			PL_ERR("Unknown vertex type in write_bub: {}",
+			       v.as_str());
 			std::exit(EXIT_FAILURE);
 		}
 

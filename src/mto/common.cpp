@@ -12,7 +12,7 @@ std::vector<fs::path> get_files(const std::string &dir_path,
 				const std::string &ext)
 {
 	if (!fs::exists(dir_path)) {
-		ERR("Directory does not exist: {}", dir_path);
+		PL_ERR("Directory does not exist: {}", dir_path);
 		exit(EXIT_FAILURE);
 	}
 

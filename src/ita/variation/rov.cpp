@@ -40,7 +40,7 @@ var_type_e covariant(var_type_e a) noexcept
 		return var_type_e::inv;
 	}
 
-	ERR("Unknown variant type");
+	PL_ERR("Unknown variant type");
 	std::exit(EXIT_FAILURE);
 }
 
@@ -54,25 +54,25 @@ parse_genomic_region(const std::string &region_str)
 	// Find the colon separator
 	std::size_t colon_pos = region_str.find(':');
 	if (colon_pos == std::string::npos) {
-		ERR("Invalid region format '{}': missing colon "
-		    "separator",
-		    region_str);
+		PL_ERR("Invalid region format '{}': missing colon "
+		       "separator",
+		       region_str);
 		return std::nullopt;
 	}
 
 	std::string ref_name = region_str.substr(0, colon_pos);
 	if (ref_name.empty()) {
-		ERR("Invalid region format '{}': empty reference name",
-		    region_str);
+		PL_ERR("Invalid region format '{}': empty reference name",
+		       region_str);
 		return std::nullopt;
 	}
 
 	std::string range_str = region_str.substr(colon_pos + 1);
 	std::size_t dash_pos = range_str.find('-');
 	if (dash_pos == std::string::npos) {
-		ERR("Invalid region format '{}': missing dash "
-		    "separator in range",
-		    region_str);
+		PL_ERR("Invalid region format '{}': missing dash "
+		       "separator in range",
+		       region_str);
 		return std::nullopt;
 	}
 
@@ -82,17 +82,17 @@ parse_genomic_region(const std::string &region_str)
 	// Validate that start and end are numeric
 	for (char c : start_str) {
 		if (!std::isdigit(c)) {
-			ERR("Invalid region format '{}': non-numeric "
-			    "start position",
-			    region_str);
+			PL_ERR("Invalid region format '{}': non-numeric "
+			       "start position",
+			       region_str);
 			return std::nullopt;
 		}
 	}
 	for (char c : end_str) {
 		if (!std::isdigit(c)) {
-			ERR("Invalid region format '{}': non-numeric "
-			    "end position",
-			    region_str);
+			PL_ERR("Invalid region format '{}': non-numeric "
+			       "end position",
+			       region_str);
 			return std::nullopt;
 		}
 	}
@@ -102,16 +102,16 @@ parse_genomic_region(const std::string &region_str)
 		pt::idx_t end = std::stoull(end_str);
 
 		if (start >= end) {
-			ERR("Invalid region '{}': start position ({}) "
-			    "must be less than end position ({})",
-			    region_str, start, end);
+			PL_ERR("Invalid region '{}': start position ({}) "
+			       "must be less than end position ({})",
+			       region_str, start, end);
 			return std::nullopt;
 		}
 
 		return genomic_region(ref_name, start, end);
 	}
 	catch (const std::exception &e) {
-		ERR("Failed to parse region '{}': {}", region_str, e.what());
+		PL_ERR("Failed to parse region '{}': {}", region_str, e.what());
 		return std::nullopt;
 	}
 }
@@ -238,8 +238,8 @@ std::vector<RoV> gen_rov(const std::vector<pvst::Tree> &pvsts, const bd::VG &g,
 	if (region.has_value()) {
 		region_ref_id = g.get_ref_id(region.value().ref_name);
 		if (!region_ref_id.has_value()) {
-			ERR("Reference path '{}' not found in graph",
-			    region.value().ref_name);
+			PL_ERR("Reference path '{}' not found in graph",
+			       region.value().ref_name);
 			WARN("No RoVs will be generated due to invalid "
 			     "region");
 			return rs; // Return empty result

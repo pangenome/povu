@@ -219,8 +219,8 @@ ia::hap_slice hap_sl_from_lap(const bd::VG &g, const ia::rov_boundaries &cxt,
 	}
 
 	if (starts.empty() || ends.empty()) {
-		ERR("Could not find ia::context nodes in haplotype {} {}",
-		    h_idx, cxt.to_string());
+		PL_ERR("Could not find ia::context nodes in haplotype {} {}",
+		       h_idx, cxt.to_string());
 		std::exit(EXIT_FAILURE);
 	}
 

@@ -212,7 +212,7 @@ void write_summary(const core::config &app_config, pt::u32 err_recs, pt::u32 N)
 
 	std::ofstream os(summary_fp);
 	if (!os.is_open()) {
-		ERR("Could not open file {}", summary_fp);
+		PL_ERR("Could not open file {}", summary_fp);
 		std::exit(EXIT_FAILURE);
 	}
 
@@ -246,7 +246,7 @@ std::vector<pt::u32> validate_vcf_records(const bd::VG &g,
 
 		file_stream.open(report_fp);
 		if (!file_stream.is_open()) {
-			ERR("Could not open file {}", report_fp);
+			PL_ERR("Could not open file {}", report_fp);
 			std::exit(EXIT_FAILURE);
 		}
 

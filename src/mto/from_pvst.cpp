@@ -66,10 +66,10 @@ void check_pvst_version_support(const std::string &fp,
 				const std::string &pvst_version)
 {
 	if (!in_vector(PVST_SUPPORTED_VERSIONS, pvst_version)) {
-		ERR("Unsupported PVST version in file {}, got {}. Supported "
-		    "versions are: {}.",
-		    fp, pvst_version,
-		    pu::concat_with(PVST_SUPPORTED_VERSIONS, ','));
+		PL_ERR("Unsupported PVST version in file {}, got {}. Supported "
+		       "versions are: {}.",
+		       fp, pvst_version,
+		       pu::concat_with(PVST_SUPPORTED_VERSIONS, ','));
 
 		std::exit(1);
 	}
@@ -192,7 +192,7 @@ pvst::Tree read_pvst(const std::string &fp)
 				<< "File " << fp << ", line " << line_idx
 				<< ". Expected " << pc::EXPECTED_PVST_COL_NUMS
 				<< ", got " << tokens.size() << '\n';
-			ERR("{}", err_msg.str());
+			PL_ERR("{}", err_msg.str());
 			std::exit(1);
 		}
 
@@ -264,8 +264,8 @@ pvst::Tree read_pvst(const std::string &fp)
 			break;
 		}
 		default: {
-			ERR("Unknown vertex type in PVST file {}: L:{}", fp,
-			    line_idx + 1);
+			PL_ERR("Unknown vertex type in PVST file {}: L:{}", fp,
+			       line_idx + 1);
 			break;
 		}
 		}

@@ -267,7 +267,7 @@ public:
 		const pt::idx_t AN = this->get_an();
 
 		if (AN == 0) {
-			ERR("AN should never be 0");
+			PL_ERR("AN should never be 0");
 			std::exit(EXIT_FAILURE);
 		}
 

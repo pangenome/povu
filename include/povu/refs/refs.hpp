@@ -12,6 +12,7 @@
 
 #include "povu/common/compat.hpp"
 #include "povu/common/core.hpp"
+#include "povu/common/log.hpp"
 #include "povu/common/utils.hpp"
 
 namespace povu::refs
@@ -244,8 +245,8 @@ public:
 			const char *col_name = lq::get_sample_name(r);
 
 			if (sample_refs.empty()) {
-				std::cerr << "No sample names found for ref_id "
-					  << ref_id;
+				PL_ERR("No sample names found for ref_id {}",
+				       ref_id);
 				std::exit(EXIT_FAILURE);
 			}
 			else if (sample_refs.size() == 1) {
