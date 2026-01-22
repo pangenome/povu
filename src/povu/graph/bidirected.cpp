@@ -258,16 +258,6 @@ pt::idx_t VG::get_hap_count() const
 	return this->refs_.ref_count();
 }
 
-pt::id_t VG::ref_count() const
-{
-	return this->get_hap_count();
-}
-
-pt::idx_t VG::get_ref_count() const
-{
-	return this->get_hap_count();
-}
-
 const lq::ref *VG::get_ref_vec(pt::id_t ref_id) const
 {
 	return this->refs_.get_lq_ref_ptr(ref_id);

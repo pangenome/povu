@@ -107,11 +107,6 @@ class VariationGraph
 
 	lq::gfa_props *gfa;
 
-	// i is the vertex index, j is the ref index
-	// std::vector<std::vector<std::vector<pt::idx_t>>>
-	// vertex_to_step_matrix_; std::vector<pgt::ref_walk_t> ref_matrix_;
-	// pr::Refs refs_ = pr::Refs(0); // has no refs by default
-
 public:
 	// --------------
 	// constructor(s)
@@ -150,28 +145,31 @@ public:
 	const Vertex &get_vertex_by_id(pt::id_t v_id) const;
 	Vertex &get_vertex_mut_by_id(pt::id_t v_id);
 
-	// ref
+	/*
+	  --------------------------
+	  ref or hap related getters
+	  --------------------------
+	*/
 	std::string get_sample_name(pt::id_t ref_id) const;
 	std::string get_tag(pt::id_t ref_id) const;
 	const pr::Ref &get_ref_by_id(pt::id_t ref_id) const;
 	pr::Ref &get_ref_by_id_mut(pt::id_t ref_id);
 	std::optional<pt::id_t> get_ref_id(std::string_view ref_tag) const;
 
-	bool has_refs() const;
-	/**
-	 * if PanSN the prefix will be in sample
-	 */
+	// bool has_refs() const;
+	/** @brief if PanSN the prefix will be in sample */
 	std::set<pt::id_t> get_shared_samples(pt::id_t ref_id) const;
 	// sometimes the sample name is referred to as a prefix
+	/** @brief the set of ref ids in the sample
+	 *
+	 * sometimes the sample name is referred to as a prefix
+	 */
 	std::set<pt::id_t>
 	get_refs_in_sample(std::string_view sample_name) const;
 	const lq::ref *get_ref_vec(pt::id_t ref_id) const;
 
+	/** for GFA 1.1 returns the no of P lines in the graph */
 	pt::u32 get_hap_count() const;
-	[[deprecated("Use get_hap_count instead")]]
-	pt::id_t ref_count() const;
-	[[deprecated("Use get_hap_count instead")]]
-	pt::idx_t get_ref_count() const;
 
 	const std::vector<pt::idx_t> &
 	get_vertex_ref_idxs(pt::idx_t v_idx, pt::id_t ref_id) const;
