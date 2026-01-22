@@ -179,7 +179,7 @@ public:
 
 	const std::vector<std::string> &get_genotype_col_names() const;
 	std::vector<std::vector<std::string>> get_blank_genotype_cols() const;
-	const pt::op_t<pt::idx_t> &get_ref_gt_col_idx(pt::id_t ref_id) const;
+	const pr::gt_col_meta &get_gt_col_meta(pt::id_t ref_id) const;
 
 	// ---------
 	// setter(s)

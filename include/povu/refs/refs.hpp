@@ -86,6 +86,11 @@ public:
 	}
 };
 
+struct gt_col_meta {
+	pt::u32 hap_col;   // haplotype col idx
+	pt::u32 phase_col; // phase col idx or ploidy
+};
+
 class Refs
 {
 	lq::ref **refs_ptr_ptr;
@@ -95,16 +100,19 @@ class Refs
 	// TODO we are storing this pointer twice. Let's not do that.
 	std::vector<Ref> refs_;
 
-	/* genotype data */
+	/*
+	  -------------
+	  genotype data
+	  -------------
+	*/
 
 	// TODO: in C++20 or greater, use a constexpr instead of const
 	inline static const std::string BLANK_GT_VALUE = ".";
 
 	std::vector<std::vector<std::string>> blank_genotype_cols;
 
-	// std::map<pt::id_t, pt::idx_t> ref_id_to_col_idx;
-	//  ref id to two dimensional col idx
-	std::map<pt::idx_t, pt::op_t<pt::idx_t>> ref_id_to_col_idx;
+	// map from hap id to genotype column indices
+	std::map<pt::idx_t, gt_col_meta> ref_id_to_col_idx;
 
 	// TODO: [remove] we don't need to store this
 	// the size is the number of columns in the genotype data
@@ -209,7 +217,7 @@ public:
 	}
 
 	[[nodiscard]]
-	const pt::op_t<pt::idx_t> &get_ref_gt_col_idx(pt::id_t ref_id) const
+	const gt_col_meta &get_gt_col_idx(pt::id_t ref_id) const
 	{
 		return this->ref_id_to_col_idx.at(ref_id);
 	}
@@ -232,9 +240,8 @@ public:
 		std::set<pt::id_t> handled;
 
 		for (pt::id_t ref_id{}; ref_id < this->ref_count(); ++ref_id) {
-			if (pv_cmp::contains(handled, ref_id)) {
+			if (pv_cmp::contains(handled, ref_id))
 				continue;
-			}
 
 			handled.insert(ref_id);
 
@@ -253,26 +260,24 @@ public:
 				this->blank_genotype_cols.push_back(
 					std::vector<std::string>{
 						BLANK_GT_VALUE});
-				pt::op_t<pt::idx_t> x{
-					static_cast<pt::idx_t>(
-						this->genotype_col_names
-							.size()),
-					0};
-				this->ref_id_to_col_idx[ref_id] = x;
+
+				auto hc = static_cast<pt::u32>(
+					this->genotype_col_names.size());
+				pt::u32 pc = 0; // no phase info
+				this->ref_id_to_col_idx[ref_id] = {hc, pc};
 				this->genotype_col_names.emplace_back(col_name);
 			}
 			else if (sample_refs.size() > 1) {
-				pt::idx_t col_idx =
-					this->genotype_col_names.size();
+				pt::idx_t hc = this->genotype_col_names.size();
 
 				std::set<pt::u32> hap_count;
 
 				for (pt::u32 r_id_ : sample_refs) {
 					const Ref &r_ = this->get_lq_ref(r_id_);
-					pt::u32 mc = r_.get_hap_id() - 1;
+					pt::u32 pc = r_.get_hap_id() - 1;
 					hap_count.insert(r_.get_hap_id());
-					pt::op_t<pt::idx_t> x{col_idx, mc};
-					this->ref_id_to_col_idx[r_id_] = x;
+					this->ref_id_to_col_idx[r_id_] = {hc,
+									  pc};
 					handled.insert(r_id_);
 				}
 
@@ -280,12 +285,6 @@ public:
 				this->blank_genotype_cols.emplace_back(
 					ploidy, BLANK_GT_VALUE);
 
-				// for (pt::id_t ref_id_ : sample_refs) {
-				//	pt::op_t<pt::idx_t> x{col_idx,
-				//			      col_col_idx++};
-				//	this->ref_id_to_col_idx[ref_id_] = x;
-				//	handled.insert(ref_id_);
-				// }
 				this->genotype_col_names.emplace_back(col_name);
 			}
 		}
