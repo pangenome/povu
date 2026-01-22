@@ -107,14 +107,11 @@ bool check_at(const bd::VG &g, const std::string &at, pt::idx_t ref_id)
 	return any_of;
 }
 
-std::set<pt::id_t> get_ref_ids(const bd::VG &g, const std::string &sn,
-			       pt::u32 phase_idx)
+std::set<pt::id_t> get_ref_ids_phased(const bd::VG &g, const std::string &sn,
+				      pt::u32 phase_idx)
 {
 	// std::string sn = vcf_file.get_sample_name(sample_idx);
 	std::set<pt::id_t> ref_ids = g.get_refs_in_sample(sn);
-
-	// std::cerr << "All Ref IDs in sample " << sn << ": ["
-	//	  << pu::concat_with(ref_ids, ',') << "]\n";
 
 	std::set<pt::id_t> filtered_ref_ids;
 	for (pt::id_t r_id : ref_ids) {
@@ -146,7 +143,6 @@ bool validate_rec(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 	const mto::from_vcf::VCFRecord &rec = vcf_file.get_records()[rec_idx];
 
 	// bool dbg = rec.get_pos() == 10318131 ? true : false;
-
 	// if (dbg)
 	//	rec.dbg_print(std::cerr);
 
@@ -165,8 +161,13 @@ bool validate_rec(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 			//	  << " Sample idx: " << sample_idx
 			//	  << " Phase idx: " << phase_idx << "\n";
 
-			pt::u32 h_id = phase_idx + 1;
-			std::set<pt::id_t> ref_ids = get_ref_ids(g, sn, h_id);
+			pt::u32 h_id = g.get_ploidy_id(sn, phase_idx);
+
+			// ploidy is never 0, the else is always >1
+			std::set<pt::id_t> ref_ids =
+				(g.get_ploidy(sn) == 0)
+					? g.get_refs_in_sample(sn)
+					: get_ref_ids_phased(g, sn, h_id);
 
 			// std::cerr << "Filtered Ref IDs: ["
 			//	  << pu::concat_with(ref_ids, ',') << "]\n";

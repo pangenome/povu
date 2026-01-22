@@ -276,6 +276,17 @@ VG::get_vertex_refs(pt::idx_t v_id) const
 	return this->vertex_to_step_matrix_.at(v_idx);
 }
 
+pt::u32 VG::get_ploidy(const std::string &sample_name) const
+{
+	return this->refs_.get_ploidy(sample_name);
+}
+
+pt::u32 VG::get_ploidy_id(const std::string &sample_name,
+			  pt::u32 ploidy_idx) const
+{
+	return this->refs_.get_ploidy_id(sample_name, ploidy_idx);
+}
+
 const std::vector<std::string> &VG::get_genotype_col_names() const
 {
 	return this->refs_.get_genotype_col_names();

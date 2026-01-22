@@ -25,6 +25,66 @@ enum class ref_format_e : pt::u8 {
 	UNDEFINED = 0,
 };
 
+/**
+ * zero indexed
+ * hap col 0 is the first haplotype column
+ * phase col 0 is the first phase column
+ */
+struct gt_col_meta {
+	pt::u32 hap_col;   // haplotype col idx
+	pt::u32 phase_col; // phase col idx or ploidy
+};
+
+struct ploidy_meta {
+private:
+	// hap ids of the sample
+	// idx 0 is the first hap_id, idx 1 is the second hap id, etc.
+	std::vector<pt::u32> hap_ids;
+
+public:
+	// -----------
+	// constructor
+	// -----------
+	ploidy_meta() = default;
+
+	// -------
+	// getters
+	// -------
+
+	[[nodiscard]]
+	pt::u32 ploidy() const
+	{
+		return static_cast<pt::u32>(this->hap_ids.size());
+	}
+
+	[[nodiscard]]
+	pt::u32 get_hap_id(pt::u32 ploidy_idx) const
+	{
+		if (ploidy_idx >= this->hap_ids.size()) {
+			PL_ERR("Hap idx {} out of bounds for ploidy {}",
+			       ploidy_idx, this->hap_ids.size());
+			std::exit(EXIT_FAILURE);
+		}
+
+		return this->hap_ids.at(ploidy_idx);
+	}
+
+	// -------
+	// setters
+	// -------
+	void add_hap_id(pt::u32 hap_id)
+	{
+		// adds before the first greater than hap id to keep sorted
+		auto it = std::lower_bound(this->hap_ids.begin(),
+					   this->hap_ids.end(), hap_id);
+
+		if (it != this->hap_ids.end() && *it == hap_id)
+			return; // Duplicate found, exit early
+
+		this->hap_ids.insert(it, hap_id);
+	}
+};
+
 class Ref
 {
 	const lq::ref *ref_ptr_; // pointer to the original liteseq ref
@@ -86,11 +146,6 @@ public:
 	}
 };
 
-struct gt_col_meta {
-	pt::u32 hap_col;   // haplotype col idx
-	pt::u32 phase_col; // phase col idx or ploidy
-};
-
 class Refs
 {
 	lq::ref **refs_ptr_ptr;
@@ -99,6 +154,10 @@ class Refs
 
 	// TODO we are storing this pointer twice. Let's not do that.
 	std::vector<Ref> refs_;
+
+	// sample name to ploidy metadata
+	// sn2pm
+	std::map<std::string, std::optional<ploidy_meta>> sn2pm;
 
 	/*
 	  -------------
@@ -147,6 +206,45 @@ public:
 		const Ref &r = this->refs_.at(ref_id);
 		std::string sn = r.get_sample_name();
 		return sn;
+	}
+
+	[[nodiscard]]
+	pt::u32 get_ploidy(const std::string &sample_name) const
+	{
+		auto it = this->sn2pm.find(sample_name);
+		if (it == this->sn2pm.end()) {
+			PL_ERR("Sample name {} not found", sample_name);
+			std::exit(EXIT_FAILURE);
+		}
+
+		const std::optional<ploidy_meta> &pm = it->second;
+		if (!pm.has_value()) {
+			PL_ERR("Sample name {} has undefined ploidy",
+			       sample_name);
+			std::exit(EXIT_FAILURE);
+		}
+
+		return pm.value().ploidy();
+	}
+
+	[[nodiscard]]
+	pt::u32 get_ploidy_id(const std::string &sample_name,
+			      pt::u32 ploidy_idx) const
+	{
+		auto it = this->sn2pm.find(sample_name);
+		if (it == this->sn2pm.end()) {
+			PL_ERR("Sample name {} not found", sample_name);
+			std::exit(EXIT_FAILURE);
+		}
+
+		const std::optional<ploidy_meta> &pm = it->second;
+		if (!pm.has_value()) {
+			PL_ERR("Sample name {} has undefined ploidy",
+			       sample_name);
+			std::exit(EXIT_FAILURE);
+		}
+
+		return pm.value().get_hap_id(ploidy_idx);
 	}
 
 	[[nodiscard]]
@@ -232,6 +330,22 @@ public:
 		for (pt::idx_t ref_idx{}; ref_idx < ref_count; ++ref_idx) {
 			Ref ref = Ref::from_lq_ref(refs_ptr_ptr[ref_idx]);
 			this->refs_.emplace_back(ref);
+		}
+
+		for (const Ref &r : this->refs_) {
+			std::string sn = r.get_sample_name();
+			if (r.get_format() == ref_format_e::PANSN) {
+				pt::u32 hap_id = r.get_hap_id();
+
+				// add hap id to sample's ploidy meta
+				if (!pv_cmp::contains(this->sn2pm, sn))
+					this->sn2pm[sn] = ploidy_meta{};
+
+				this->sn2pm[sn].value().add_hap_id(hap_id);
+			}
+			else {
+				this->sn2pm[sn] = std::nullopt;
+			}
 		}
 	}
 

@@ -177,6 +177,10 @@ public:
 	const std::vector<std::vector<pt::idx_t>> &
 	get_vertex_refs(pt::idx_t v_id) const;
 
+	pt::idx_t get_ploidy(const std::string &sample_name) const;
+	pt::idx_t get_ploidy_id(const std::string &sample_name,
+				pt::u32 ploidy_idx) const;
+
 	const std::vector<std::string> &get_genotype_col_names() const;
 	std::vector<std::vector<std::string>> get_blank_genotype_cols() const;
 	const pr::gt_col_meta &get_gt_col_meta(pt::id_t ref_id) const;
