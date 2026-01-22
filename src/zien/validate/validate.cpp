@@ -204,11 +204,6 @@ bool validate_rec(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 	return true;
 }
 
-// void write_report_header(std::ofstream &f)
-// {
-//	f << "rec_idx\tID\tPOS\tAT\tHap ID\tsample\n";
-// }
-
 void write_summary(const core::config &app_config, pt::u32 err_recs, pt::u32 N)
 {
 	std::string summary_fp = pv_cmp::format(
