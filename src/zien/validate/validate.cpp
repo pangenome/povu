@@ -13,6 +13,7 @@
 #include "povu/graph/bidirected.hpp" // for bidirected
 #include "povu/graph/types.hpp"	     // for or_e
 #include "povu/refs/refs.hpp"	     // for Ref
+#include "zien/common/common.hpp"    // for get_ref_ids
 
 namespace zien::validate
 {
@@ -155,19 +156,22 @@ bool validate_rec(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 
 		for (const auto &[sample_idx, phase_idx] : at_meta) {
 
+			std::set<pt::id_t> ref_ids = zien::common::get_ref_ids(
+				g, vcf_file, sample_idx, phase_idx);
+
 			std::string sn = vcf_file.get_sample_name(sample_idx);
 
-			// std::cerr << "sn " << sn
-			//	  << " Sample idx: " << sample_idx
-			//	  << " Phase idx: " << phase_idx << "\n";
+			// // std::cerr << "sn " << sn
+			// //	  << " Sample idx: " << sample_idx
+			// //	  << " Phase idx: " << phase_idx << "\n";
 
 			pt::u32 ploidy_id = g.get_ploidy_id(sn, phase_idx);
 
-			// ploidy is never 0, the else is always >1
-			std::set<pt::id_t> ref_ids =
-				(g.get_ploidy(sn) == 0)
-					? g.get_refs_in_sample(sn)
-					: get_ref_ids_phased(g, sn, ploidy_id);
+			// // ploidy is never 0, the else is always >1
+			// std::set<pt::id_t> ref_ids =
+			//	(g.get_ploidy(sn) == 0)
+			//		? g.get_refs_in_sample(sn)
+			//		: get_ref_ids_phased(g, sn, ploidy_id);
 
 			// std::cerr << "Filtered Ref IDs: ["
 			//	  << pu::concat_with(ref_ids, ',') << "]\n";
