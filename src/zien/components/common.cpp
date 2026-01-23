@@ -2,6 +2,7 @@
 
 #include "mto/from_vcf.hpp"		  // for VCFile
 #include "povu/graph/bidirected.hpp"	  // for VG
+#include "zien/common/common.hpp"	  // for comp_update_refs
 #include "zien/components/components.hpp" // for status_bar
 
 namespace zien::components::common
@@ -88,7 +89,10 @@ void comp_update_refs(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 		std::string sn = vcf_file.get_sample_name(sample_idx);
 		std::string curr_l = "";
 
-		for (pt::u32 h_idx : get_ref_ids(g, sn, phase_idx + 1)) {
+		std::set<pt::id_t> ref_ids = zien::common::get_ref_ids(
+			g, vcf_file, sample_idx, phase_idx);
+
+		for (pt::u32 h_idx : ref_ids) {
 
 			const lq::ref_walk *rw = g.get_ref_vec(h_idx)->walk;
 			pt::u32 N = rw->step_count;
