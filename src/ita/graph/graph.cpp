@@ -45,7 +45,7 @@ inline pgt::v_end_e get_v_end(pgt::or_e o, dir_e e) noexcept
 						 : pgt::v_end_e::l;
 	}
 
-	ERR("Invalid v_end : {}", static_cast<int>(e));
+	PL_ERR("Invalid v_end : {}", static_cast<int>(e));
 	std::exit(EXIT_FAILURE);
 };
 
@@ -68,7 +68,7 @@ inline pgt::or_e get_or(pgt::v_end_e side, dir_e d) noexcept
 						: pgt::or_e::forward);
 	}
 
-	ERR("Invalid orientation: {}", static_cast<int>(d));
+	PL_ERR("Invalid orientation: {}", static_cast<int>(d));
 	std::exit(EXIT_FAILURE);
 };
 
@@ -263,7 +263,7 @@ std::list<pt::u32> gen_sort(const bd::VG &g, ir::RoV &rov,
 				left_cxt[v_id] = x.value();
 			}
 			else
-				ERR("v_id {} has no left context", v_id);
+				PL_ERR("v_id {} has no left context", v_id);
 		}
 
 		for (pt::u32 j{start + len - 1}; j >= (start); j--) {
@@ -283,7 +283,7 @@ std::list<pt::u32> gen_sort(const bd::VG &g, ir::RoV &rov,
 				right_cxt[v_id] = y.value();
 			}
 			else
-				ERR("v_id {} has no right context", v_id);
+				PL_ERR("v_id {} has no right context", v_id);
 		}
 	};
 

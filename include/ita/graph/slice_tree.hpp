@@ -247,7 +247,7 @@ public:
 	void set_parent(pt::u32 p_idx)
 	{
 		if (p_idx == this->get_r_start()) {
-			ERR("Setting parent to self");
+			PL_ERR("Setting parent to self");
 			std::exit(EXIT_FAILURE);
 		}
 
@@ -257,7 +257,7 @@ public:
 	void set_left(pt::u32 l_idx)
 	{
 		if (this->left() != pc::INVALID_IDX) {
-			ERR("Adding leaf to non-empty left child");
+			PL_ERR("Adding leaf to non-empty left child");
 			std::exit(EXIT_FAILURE);
 		}
 
@@ -267,7 +267,7 @@ public:
 	void set_right(pt::u32 r_idx)
 	{
 		if (this->right() != pc::INVALID_IDX) {
-			ERR("Adding leaf to non-empty right child");
+			PL_ERR("Adding leaf to non-empty right child");
 			std::exit(EXIT_FAILURE);
 		}
 
@@ -373,8 +373,8 @@ public:
 	{
 		std::vector<alt> &alts_vec = this->get_alts_mut(alt_h_idx);
 		if (alt_idx >= alts_vec.size()) {
-			ERR("Alt index {} out of bounds for alt hap {}",
-			    alt_idx, alt_h_idx);
+			PL_ERR("Alt index {} out of bounds for alt hap {}",
+			       alt_idx, alt_h_idx);
 			std::exit(EXIT_FAILURE);
 		}
 
@@ -494,7 +494,7 @@ private:
 		vertex &v = this->get_vertex_mut(v_idx);
 		pt::u32 p_idx = v.parent();
 		if (p_idx == pc::INVALID_IDX) {
-			ERR("Non root leaf vertex {} has no parent", v_idx);
+			PL_ERR("Non root leaf vertex {} has no parent", v_idx);
 			std::exit(EXIT_FAILURE);
 		}
 
@@ -613,12 +613,12 @@ private:
 			//	  << "\n";
 
 			if (ctr++ >= this->size()) {
-				ERR("Exceeded max traversal steps");
+				PL_ERR("Exceeded max traversal steps");
 				std::exit(EXIT_FAILURE);
 			}
 
 			if (pv_cmp::contains(visited, curr_v_idx)) {
-				ERR("Revist vertex {}", curr_v_idx);
+				PL_ERR("Revist vertex {}", curr_v_idx);
 				std::exit(EXIT_FAILURE);
 			}
 
@@ -649,7 +649,8 @@ private:
 					return {update_type::MERGE_REPLACE,
 						curr_v_idx, cr.ai};
 				case comp_type::EXTEND_ALT:
-					ERR("Did not expect EXTEND_ALT here");
+					PL_ERR("Did not expect EXTEND_ALT "
+					       "here");
 					std::exit(EXIT_FAILURE);
 				}
 			}
@@ -674,7 +675,7 @@ private:
 
 			if (ref_h_start == curr.get_r_start()) {
 				// should not reach here
-				ERR("Reached unexpected code path");
+				PL_ERR("Reached unexpected code path");
 				std::exit(EXIT_FAILURE);
 			}
 		}
@@ -704,11 +705,11 @@ private:
 		case comp_type::EXTEND_ALT:
 			return {update_type::EXTEND_ALT, ref_h_start};
 		case comp_type::NO_OVERLAP:
-			ERR("Did not expect comp type {}", to_string(cr.ct));
+			PL_ERR("Did not expect comp type {}", to_string(cr.ct));
 			std::exit(EXIT_FAILURE);
 		}
 
-		ERR("Reached unexpected code path {}", to_string(cr.ct));
+		PL_ERR("Reached unexpected code path {}", to_string(cr.ct));
 		std::exit(EXIT_FAILURE);
 	}
 

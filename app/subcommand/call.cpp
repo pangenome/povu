@@ -39,8 +39,8 @@ void read_pvsts(const core::config &app_config, std::vector<pvst::Tree> &pvsts)
 		mto::common::get_files(app_config.get_forest_dir(), ".pvst");
 
 	if (fps.empty()) {
-		ERR("Could not find pvst files in {}",
-		    app_config.get_forest_dir().string());
+		PL_ERR("Could not find pvst files in {}",
+		       app_config.get_forest_dir().string());
 		exit(EXIT_FAILURE);
 	}
 

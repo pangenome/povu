@@ -79,7 +79,7 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 		region = ir::parse_genomic_region(
 			app_config.get_genomic_region().value());
 		if (!region.has_value()) {
-			ERR("Failed to parse genomic region");
+			PL_ERR("Failed to parse genomic region");
 			std::exit(EXIT_FAILURE);
 		}
 	}

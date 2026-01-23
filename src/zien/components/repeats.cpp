@@ -17,11 +17,11 @@ void update_repeats(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 	if (!rec.is_tangled())
 		return;
 
-	// rec.dbg_print(std::cerr);
-
+	std::string ref_tag = rec.get_chrom();
+	pt::u32 ref_h_id = *g.get_ref_id(ref_tag);
 	pt::op_t<ptg::id_or_t> ef = rec.get_ef();
 	auto [header_lens, hl_slices, lines] =
-		zien::tui::repeats::foo(g, 0, ef, rec.get_pos());
+		zien::tui::repeats::foo(g, ref_h_id, ef, rec.get_pos());
 
 	pt::u32 longest_header{};
 

@@ -235,7 +235,7 @@ std::string align(const ia::at_itn &i_itn, const ia::at_itn &j_itn,
 				{0, 1, 2, 1},
 				aln_level_e::at};
 		default:
-			ERR("invalid alignment level {}", static_cast<int>(level));
+			PL_ERR("invalid alignment level {}", static_cast<int>(level));
 			std::exit(1);
 		}
 	})();

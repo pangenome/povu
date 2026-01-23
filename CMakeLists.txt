@@ -206,6 +206,9 @@ ADD_LIBRARY(zien
   ${ZIENLIB_SOURCES_DIR}/tui/tui.cpp
   ${ZIENLIB_SOURCES_DIR}/tui/state.cpp
 
+  #common
+  ${ZIENLIB_SOURCES_DIR}/common/common.cpp
+
   #components
   ${ZIENLIB_SOURCES_DIR}/components/repeats.cpp
   ${ZIENLIB_SOURCES_DIR}/components/common.cpp

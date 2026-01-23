@@ -258,16 +258,6 @@ pt::idx_t VG::get_hap_count() const
 	return this->refs_.ref_count();
 }
 
-pt::id_t VG::ref_count() const
-{
-	return this->get_hap_count();
-}
-
-pt::idx_t VG::get_ref_count() const
-{
-	return this->get_hap_count();
-}
-
 const lq::ref *VG::get_ref_vec(pt::id_t ref_id) const
 {
 	return this->refs_.get_lq_ref_ptr(ref_id);
@@ -286,6 +276,17 @@ VG::get_vertex_refs(pt::idx_t v_id) const
 	return this->vertex_to_step_matrix_.at(v_idx);
 }
 
+pt::u32 VG::get_ploidy(const std::string &sample_name) const
+{
+	return this->refs_.get_ploidy(sample_name);
+}
+
+pt::u32 VG::get_ploidy_id(const std::string &sample_name,
+			  pt::u32 ploidy_idx) const
+{
+	return this->refs_.get_ploidy_id(sample_name, ploidy_idx);
+}
+
 const std::vector<std::string> &VG::get_genotype_col_names() const
 {
 	return this->refs_.get_genotype_col_names();
@@ -296,9 +297,9 @@ std::vector<std::vector<std::string>> VG::get_blank_genotype_cols() const
 	return this->refs_.get_blank_genotype_cols();
 }
 
-const pt::op_t<pt::idx_t> &VG::get_ref_gt_col_idx(pt::id_t ref_id) const
+const pr::gt_col_meta &VG::get_gt_col_meta(pt::id_t ref_id) const
 {
-	return this->refs_.get_ref_gt_col_idx(ref_id);
+	return this->refs_.get_gt_col_idx(ref_id);
 }
 
 // ---------
@@ -311,7 +312,7 @@ void VG::add_tip(pt::id_t v_id, pgt::v_end_e end)
 
 pt::idx_t VG::add_vertex(pt::id_t v_id, const std::string &label)
 {
-	vertices.push_back(Vertex{v_id, label});
+	vertices.emplace_back(v_id, label);
 	this->v_id_to_idx_.insert(v_id, vertices.size() - 1);
 	return vertices.size() - 1;
 }

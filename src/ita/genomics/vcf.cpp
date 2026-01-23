@@ -1,6 +1,5 @@
 #include "ita/genomics/vcf.hpp"
 
-// #include <optional>
 #include <string>
 #include <vector>
 
@@ -8,10 +7,9 @@
 
 #include "ita/genomics/allele.hpp"  // for Exp, allele_slice_t, itn_t
 #include "ita/graph/slice_tree.hpp" // for poi
-#include "ita/variation/rov.hpp"
-
-#include "povu/common/core.hpp"
-#include "povu/graph/pvst.hpp" // for VertexBase
+#include "ita/variation/rov.hpp"    // for rov_boundaries, var_type_e
+#include "povu/common/core.hpp"	    // for pt, idx_t, id_t, op_t
+#include "povu/graph/pvst.hpp"	    // for VertexBase
 
 namespace ita::vcf
 {
@@ -33,18 +31,17 @@ gen_gt_data(const bd::VG &g, const std::set<pt::u32> &ref_haps,
 	std::set<pt::u32> ns_cols;
 
 	for (pt::u32 h_idx : ref_haps) {
-		auto [col_idx, row_idx] = g.get_ref_gt_col_idx(h_idx);
-		ns_cols.insert(col_idx);
-		gt_cols[col_idx][row_idx] = "0";
+		auto [hap_col, phase_col] = g.get_gt_col_meta(h_idx);
+		ns_cols.insert(hap_col);
+		gt_cols[hap_col][phase_col] = "0";
 	}
 
 	// 1 because 0 is reserved for reference allele
 	// pt::u32 i{1};
 	for (auto alt_h_idx : alt_h_idxs) {
-		auto [col_idx, row_idx] = g.get_ref_gt_col_idx(alt_h_idx);
-		gt_cols[col_idx][row_idx] = std::to_string(1);
-		ns_cols.insert(col_idx);
-		// i++;
+		auto [hap_col, phase_col] = g.get_gt_col_meta(alt_h_idx);
+		gt_cols[hap_col][phase_col] = std::to_string(1);
+		ns_cols.insert(hap_col);
 	}
 
 	return {ns_cols.size(), gt_cols};
@@ -65,19 +62,19 @@ gen_gt_data(const bd::VG &g, const ia::minimal_rov &min_rov,
 	std::set<pt::u32> ns_cols;
 
 	for (pt::u32 h_idx : min_rov.get_haps_matching_ref()) {
-		auto [col_idx, row_idx] = g.get_ref_gt_col_idx(h_idx);
-		ns_cols.insert(col_idx);
-		gt_cols[col_idx][row_idx] = "0";
+		auto [hap_col, phase_col] = g.get_gt_col_meta(h_idx);
+		ns_cols.insert(hap_col);
+		gt_cols[hap_col][phase_col] = "0";
 	}
 
 	// 1 because 0 is reserved for reference allele
 	pt::u32 i{1};
 	for (const auto &[_, slices] : wta) {
 		for (const ia::hap_slice &alt_as : slices) {
-			auto [col_idx, row_idx] =
-				g.get_ref_gt_col_idx(alt_as.ref_idx);
-			gt_cols[col_idx][row_idx] = std::to_string(i);
-			ns_cols.insert(col_idx);
+			auto [hap_col, phase_col] =
+				g.get_gt_col_meta(alt_as.ref_idx);
+			gt_cols[hap_col][phase_col] = std::to_string(i);
+			ns_cols.insert(hap_col);
 		}
 		i++;
 	}

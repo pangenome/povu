@@ -10,7 +10,7 @@
 namespace zien::components::genotypes
 {
 /* top-right (haplotype) pane */
-void update_haps(const mto::from_vcf::VCFile &vcf_file,
+void update_haps(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 		 pt::u32 selected_rec_idx, display_lines &pd);
 
 } // namespace zien::components::genotypes

@@ -227,6 +227,12 @@ public:
 	}
 
 	[[nodiscard]]
+	const std::string &get_chrom() const
+	{
+		return this->chrom;
+	}
+
+	[[nodiscard]]
 	const gt_data &get_genotypes() const
 	{
 		return this->genotypes;
@@ -350,6 +356,7 @@ public:
 		return this->records.size();
 	}
 
+	[[nodiscard]]
 	pt::u32 sample_count() const
 	{
 		return this->sns.get_keys().size();

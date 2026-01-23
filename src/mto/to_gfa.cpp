@@ -14,7 +14,7 @@ void write_gfa(const bd::VG &g, const std::filesystem::path &fp)
 {
 	std::ofstream os(fp);
 	if (!os.is_open())
-		ERR("Could not open file {} for writing", fp.string());
+		PL_ERR("Could not open file {} for writing", fp.string());
 
 	auto vxt_pair_to_edge_pair = [&](const bd::Edge &e)
 		-> std::tuple<pt::idx_t, std::string, pt::idx_t, std::string>

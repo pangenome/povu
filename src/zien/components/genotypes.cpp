@@ -1,13 +1,15 @@
 #include <ncurses.h>
 
-#include "mto/from_vcf.hpp"		  // for VCFile
+#include "mto/from_vcf.hpp" // for VCFile
+#include "povu/common/core.hpp"
 #include "povu/graph/bidirected.hpp"	  // for VG
 #include "zien/components/components.hpp" // for Mode
 
 namespace zien::components::genotypes
 {
 
-std::vector<std::string> comp_gt_data(const mto::from_vcf::VCFile &vcf_file,
+std::vector<std::string> comp_gt_data(const bd::VG &g,
+				      const mto::from_vcf::VCFile &vcf_file,
 				      pt::u32 selected_rec_idx)
 {
 	const mto::from_vcf::VCFRecord &rec =
@@ -78,9 +80,25 @@ std::vector<std::string> comp_gt_data(const mto::from_vcf::VCFile &vcf_file,
 					at_meta[row_idx];
 				std::string sn =
 					vcf_file.get_sample_name(sample_idx);
-				std::string l = sn + '#' +
-						std::to_string(phase_idx + 1);
-				hl += l;
+
+				std::string name; // TODO: rename to row data or
+						  // row string
+
+				if (g.get_ploidy(sn) == 0) {
+					pt::u32 hap_id =
+						*g.get_refs_in_sample(sn)
+							 .begin();
+					name = g.get_tag(hap_id);
+				}
+				else {
+					pt::u32 ploidy_id =
+						g.get_ploidy_id(sn, phase_idx);
+
+					name = sn + '#' +
+					       std::to_string(ploidy_id);
+				}
+
+				hl += name;
 				hl += "\t";
 			}
 			else {
@@ -95,11 +113,11 @@ std::vector<std::string> comp_gt_data(const mto::from_vcf::VCFile &vcf_file,
 };
 
 /* top-right (haplotype) pane */
-void update_haps(const mto::from_vcf::VCFile &vcf_file,
+void update_haps(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 		 pt::u32 selected_rec_idx, display_lines &pd)
 {
 	std::vector<std::string> hap_lines =
-		comp_gt_data(vcf_file, selected_rec_idx);
+		comp_gt_data(g, vcf_file, selected_rec_idx);
 
 	for (const std::string &hl : hap_lines)
 		pd.lines.push_back(hl);

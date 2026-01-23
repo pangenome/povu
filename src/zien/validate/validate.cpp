@@ -13,6 +13,7 @@
 #include "povu/graph/bidirected.hpp" // for bidirected
 #include "povu/graph/types.hpp"	     // for or_e
 #include "povu/refs/refs.hpp"	     // for Ref
+#include "zien/common/common.hpp"    // for get_ref_ids
 
 namespace zien::validate
 {
@@ -107,14 +108,11 @@ bool check_at(const bd::VG &g, const std::string &at, pt::idx_t ref_id)
 	return any_of;
 }
 
-std::set<pt::id_t> get_ref_ids(const bd::VG &g, const std::string &sn,
-			       pt::u32 phase_idx)
+std::set<pt::id_t> get_ref_ids_phased(const bd::VG &g, const std::string &sn,
+				      pt::u32 phase_idx)
 {
 	// std::string sn = vcf_file.get_sample_name(sample_idx);
 	std::set<pt::id_t> ref_ids = g.get_refs_in_sample(sn);
-
-	// std::cerr << "All Ref IDs in sample " << sn << ": ["
-	//	  << pu::concat_with(ref_ids, ',') << "]\n";
 
 	std::set<pt::id_t> filtered_ref_ids;
 	for (pt::id_t r_id : ref_ids) {
@@ -146,7 +144,6 @@ bool validate_rec(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 	const mto::from_vcf::VCFRecord &rec = vcf_file.get_records()[rec_idx];
 
 	// bool dbg = rec.get_pos() == 10318131 ? true : false;
-
 	// if (dbg)
 	//	rec.dbg_print(std::cerr);
 
@@ -159,14 +156,22 @@ bool validate_rec(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 
 		for (const auto &[sample_idx, phase_idx] : at_meta) {
 
+			std::set<pt::id_t> ref_ids = zien::common::get_ref_ids(
+				g, vcf_file, sample_idx, phase_idx);
+
 			std::string sn = vcf_file.get_sample_name(sample_idx);
 
-			// std::cerr << "sn " << sn
-			//	  << " Sample idx: " << sample_idx
-			//	  << " Phase idx: " << phase_idx << "\n";
+			// // std::cerr << "sn " << sn
+			// //	  << " Sample idx: " << sample_idx
+			// //	  << " Phase idx: " << phase_idx << "\n";
 
-			pt::u32 h_id = phase_idx + 1;
-			std::set<pt::id_t> ref_ids = get_ref_ids(g, sn, h_id);
+			pt::u32 ploidy_id = g.get_ploidy_id(sn, phase_idx);
+
+			// // ploidy is never 0, the else is always >1
+			// std::set<pt::id_t> ref_ids =
+			//	(g.get_ploidy(sn) == 0)
+			//		? g.get_refs_in_sample(sn)
+			//		: get_ref_ids_phased(g, sn, ploidy_id);
 
 			// std::cerr << "Filtered Ref IDs: ["
 			//	  << pu::concat_with(ref_ids, ',') << "]\n";
@@ -190,7 +195,8 @@ bool validate_rec(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 					*report_f << pv_cmp::format(
 						"{}\t{}\t{}\t{}\t{}\t{}\n",
 						rec_idx, rec.get_id(),
-						rec.get_pos(), at, h_id, sn);
+						rec.get_pos(), at, ploidy_id,
+						sn);
 
 				err_recs++;
 				// std::cout << rec_idx << "\t" << rec.get_id()
@@ -204,11 +210,6 @@ bool validate_rec(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 	return true;
 }
 
-// void write_report_header(std::ofstream &f)
-// {
-//	f << "rec_idx\tID\tPOS\tAT\tHap ID\tsample\n";
-// }
-
 void write_summary(const core::config &app_config, pt::u32 err_recs, pt::u32 N)
 {
 	std::string summary_fp = pv_cmp::format(
@@ -217,7 +218,7 @@ void write_summary(const core::config &app_config, pt::u32 err_recs, pt::u32 N)
 
 	std::ofstream os(summary_fp);
 	if (!os.is_open()) {
-		ERR("Could not open file {}", summary_fp);
+		PL_ERR("Could not open file {}", summary_fp);
 		std::exit(EXIT_FAILURE);
 	}
 
@@ -251,7 +252,7 @@ std::vector<pt::u32> validate_vcf_records(const bd::VG &g,
 
 		file_stream.open(report_fp);
 		if (!file_stream.is_open()) {
-			ERR("Could not open file {}", report_fp);
+			PL_ERR("Could not open file {}", report_fp);
 			std::exit(EXIT_FAILURE);
 		}
 

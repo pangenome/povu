@@ -37,7 +37,8 @@ void comp_vcfs(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 
 	std::vector<std::string> vcf_lines = comp_vcf_lines(vcf_file);
 	pd.lines.swap(vcf_lines);
-	pd.special_lines.insert(invalid_recs.begin(), invalid_recs.end());
+	for (auto r_idx : invalid_recs)
+		pd.special_lines.insert(r_idx + 1); // +1 for header line
 }
 
 } // namespace zien::components::vcf

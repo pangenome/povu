@@ -107,7 +107,7 @@ inline const char *to_str(task_e t)
 		return "unset";
 	}
 
-	ERR("unknown task");
+	PL_ERR("unknown task");
 	std::exit(EXIT_FAILURE); // should not reach here
 }
 
