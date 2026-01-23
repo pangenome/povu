@@ -437,7 +437,7 @@ void update_depenent_panes(const bd::VG &g,
 {
 	top_right_pane.pd.lines.clear();
 	zien::components::genotypes::update_haps(
-		vcf_file, state.vcf_selected_rec, top_right_pane.pd);
+		g, vcf_file, state.vcf_selected_rec, top_right_pane.pd);
 
 	bottom_left_pane.pd.lines.clear();
 	zien::components::refs::update_refs(g, vcf_file, state.vcf_selected_rec,
@@ -472,8 +472,8 @@ void view(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 
 	// 2. Explicitly trigger the data population BEFORE the loop
 	b->pd.lines.clear();
-	zien::components::genotypes::update_haps(vcf_file, INITIAL_VCF_REC_IDX,
-						 b->pd);
+	zien::components::genotypes::update_haps(g, vcf_file,
+						 INITIAL_VCF_REC_IDX, b->pd);
 	c->pd.lines.clear();
 	zien::components::refs::update_refs(g, vcf_file, INITIAL_VCF_REC_IDX,
 					    c->pd);

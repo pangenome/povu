@@ -161,13 +161,13 @@ bool validate_rec(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 			//	  << " Sample idx: " << sample_idx
 			//	  << " Phase idx: " << phase_idx << "\n";
 
-			pt::u32 h_id = g.get_ploidy_id(sn, phase_idx);
+			pt::u32 ploidy_id = g.get_ploidy_id(sn, phase_idx);
 
 			// ploidy is never 0, the else is always >1
 			std::set<pt::id_t> ref_ids =
 				(g.get_ploidy(sn) == 0)
 					? g.get_refs_in_sample(sn)
-					: get_ref_ids_phased(g, sn, h_id);
+					: get_ref_ids_phased(g, sn, ploidy_id);
 
 			// std::cerr << "Filtered Ref IDs: ["
 			//	  << pu::concat_with(ref_ids, ',') << "]\n";
@@ -191,7 +191,8 @@ bool validate_rec(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 					*report_f << pv_cmp::format(
 						"{}\t{}\t{}\t{}\t{}\t{}\n",
 						rec_idx, rec.get_id(),
-						rec.get_pos(), at, h_id, sn);
+						rec.get_pos(), at, ploidy_id,
+						sn);
 
 				err_recs++;
 				// std::cout << rec_idx << "\t" << rec.get_id()
