@@ -11,6 +11,7 @@
 #include <liteseq/gfa.h>
 
 #include "povu/common/compat.hpp"
+#include "povu/common/constants.hpp"
 #include "povu/common/core.hpp"
 #include "povu/common/log.hpp"
 #include "povu/common/utils.hpp"
@@ -217,11 +218,14 @@ public:
 			std::exit(EXIT_FAILURE);
 		}
 
+		// TODO: handle undefined ploidy more gracefully
+		// this is for non PANSN refs
 		const std::optional<ploidy_meta> &pm = it->second;
 		if (!pm.has_value()) {
-			PL_ERR("Sample name {} has undefined ploidy",
-			       sample_name);
-			std::exit(EXIT_FAILURE);
+			return pc::INVALID_IDX;
+			// PL_ERR("Sample name {} has undefined ploidy",
+			//        sample_name);
+			// std::exit(EXIT_FAILURE);
 		}
 
 		return pm.value().ploidy();
@@ -239,9 +243,10 @@ public:
 
 		const std::optional<ploidy_meta> &pm = it->second;
 		if (!pm.has_value()) {
-			PL_ERR("Sample name {} has undefined ploidy",
-			       sample_name);
-			std::exit(EXIT_FAILURE);
+			return pc::INVALID_ID;
+			// PL_ERR("Sample name {} has undefined ploidy at {}",
+			//        sample_name, ploidy_idx);
+			// std::exit(EXIT_FAILURE);
 		}
 
 		return pm.value().get_hap_id(ploidy_idx);

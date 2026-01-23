@@ -205,6 +205,7 @@ ADD_LIBRARY(ita
 ADD_LIBRARY(zien
   ${ZIENLIB_SOURCES_DIR}/tui/tui.cpp
   ${ZIENLIB_SOURCES_DIR}/tui/state.cpp
+  ${ZIENLIB_SOURCES_DIR}/tui/input.cpp
 
   #common
   ${ZIENLIB_SOURCES_DIR}/common/common.cpp
@@ -215,6 +216,7 @@ ADD_LIBRARY(zien
   ${ZIENLIB_SOURCES_DIR}/components/genotypes.cpp
   ${ZIENLIB_SOURCES_DIR}/components/refs.cpp
   ${ZIENLIB_SOURCES_DIR}/components/alts.cpp
+  ${ZIENLIB_SOURCES_DIR}/components/paths.cpp
   ${ZIENLIB_SOURCES_DIR}/components/vcf.cpp
 
   #validate

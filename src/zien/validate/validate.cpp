@@ -156,8 +156,12 @@ bool validate_rec(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 
 		for (const auto &[sample_idx, phase_idx] : at_meta) {
 
+			// INFO("B");
+
 			std::set<pt::id_t> ref_ids = zien::common::get_ref_ids(
 				g, vcf_file, sample_idx, phase_idx);
+
+			// INFO("A");
 
 			std::string sn = vcf_file.get_sample_name(sample_idx);
 
@@ -166,6 +170,10 @@ bool validate_rec(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 			// //	  << " Phase idx: " << phase_idx << "\n";
 
 			pt::u32 ploidy_id = g.get_ploidy_id(sn, phase_idx);
+			ploidy_id =
+				(ploidy_id == pc::INVALID_ID) ? 1 : ploidy_id;
+
+			// INFO("C");
 
 			// // ploidy is never 0, the else is always >1
 			// std::set<pt::id_t> ref_ids =

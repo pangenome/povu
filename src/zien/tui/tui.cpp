@@ -14,9 +14,11 @@
 #include "zien/components/alts.hpp"	  // for update_alts
 #include "zien/components/components.hpp" // for status_bar
 #include "zien/components/genotypes.hpp"  // for update_haps
+#include "zien/components/paths.hpp"	  // for update_paths
 #include "zien/components/refs.hpp"	  // for foo
 #include "zien/components/repeats.hpp"	  // for update_repeats
 #include "zien/components/vcf.hpp"	  // for comp_vcfs
+#include "zien/tui/input.hpp"		  // for
 #include "zien/tui/state.hpp"		  // for Mode
 
 namespace zien::tui
@@ -24,51 +26,13 @@ namespace zien::tui
 namespace lq = liteseq;
 
 using namespace zien::tui::state;
+using namespace zien::tui::input;
 using namespace zien::components;
 
 const pt::u32 REPEATS_PANE_COUNT = 5;
 const pt::u32 NO_REPEATS_PANE_COUNT = 4;
 
 const pt::u32 INITIAL_VCF_REC_IDX = 0; // skip header line
-
-void perform_search(Pane *pane, ui_state &state)
-{
-	std::string &query = state.search_query;
-	state.search_results.clear();
-	if (query.empty())
-		return;
-
-	for (pt::u32 i = 0; i < pane->pd.lines.size(); ++i) {
-		if (pane->pd.lines[i].find(query) != std::string::npos) {
-			state.search_results.push_back(i);
-		}
-	}
-
-	if (!state.search_results.empty()) {
-		// Find the first result that is >= the currently
-		// selected line
-		state.current_result_idx = 0;
-		for (size_t i = 0; i < state.search_results.size(); ++i) {
-			if (state.search_results[i] >= pane->selected_line) {
-				state.current_result_idx = i;
-				break;
-			}
-		}
-		pane->selected_line =
-			state.search_results[state.current_result_idx];
-		pane->horiz_offset = 0;
-		pane->update_scroll();
-	}
-	else {
-		state.current_result_idx = -1;
-	}
-}
-
-void clear_search(ui_state &state)
-{
-	state.search_results.clear();
-	state.current_result_idx = -1;
-}
 
 void setup_pane(const pane_params &pp)
 {
@@ -97,11 +61,18 @@ void cleanup_panes(Pane &a, Pane &b, Pane &c, Pane &d, Pane &e)
 		delwin(e.win);
 }
 
-void setup_layout(const ui_state &state, Pane &a, Pane &b, Pane &c, Pane &d,
-		  Pane *e)
+void create_views(const ui_state &state, Pane &a, Pane &b, Pane &c, Pane &d,
+		  Pane *e, Pane &f)
 {
 	int screen_h = state.screen_h;
 	int screen_w = state.screen_w;
+
+	/*
+	  --------------
+	  Variation view
+	  --------------
+	*/
+
 	// If e (Repeats) is NOT null, mid_h is screen_h / 3
 	int mid_h = (e == nullptr) ? screen_h / 2 : screen_h / 3;
 	int mid_w = screen_w / 2;
@@ -129,165 +100,13 @@ void setup_layout(const ui_state &state, Pane &a, Pane &b, Pane &c, Pane &d,
 	if (e != nullptr)
 		setup_pane({0, mid_h + actual_view_h, screen_w, mid_h + 1,
 			    PaneID::E, *e});
-}
 
-// navigate and initialize search
-void nav(int ch, tui_context &tc, ui_state &state)
-{
-	PaneID active_pane_id = state.active_pane_id;
-	Pane *active = tc.get_pane(active_pane_id);
-
-	switch (ch) {
-	case 27: // ESC key
-		state.current_mode = Mode::NAVIGATION;
-		clear_search(state);
-		break;
-	case '/':
-		state.current_mode = Mode::SEARCH;
-		state.search_query = "";
-		break;
-	case ':':
-		state.current_mode = Mode::JUMP;
-		break;
-	case 'n': // Next match (Forward)
-		if (!state.search_results.empty()) {
-			state.current_result_idx =
-				(state.current_result_idx + 1) %
-				state.search_results.size();
-			active->selected_line =
-				state.search_results[state.current_result_idx];
-		}
-		break;
-	case 'N': // Previous match (Backward)
-		if (!state.search_results.empty()) {
-			// Adding size before modulo handles the
-			// negative wrap-around
-			state.current_result_idx =
-				(state.current_result_idx - 1 +
-				 state.search_results.size()) %
-				state.search_results.size();
-			active->selected_line =
-				state.search_results[state.current_result_idx];
-			active->update_scroll();
-		}
-		break;
-	case '\t': // Cycle: Top -> Left -> Right -> Top
-		switch (active_pane_id) {
-		case PaneID::A:
-			state.active_pane_id = PaneID::B;
-			break;
-		case PaneID::B:
-			state.active_pane_id = PaneID::C;
-			break;
-		case PaneID::C:
-			state.active_pane_id = PaneID::D;
-			break;
-		case PaneID::D:
-			state.active_pane_id =
-				state.pane_count == 5 ? PaneID::E : PaneID::A;
-			break;
-		case PaneID::E:
-			state.active_pane_id = PaneID::A;
-			break;
-		default:
-			state.active_pane_id = PaneID::A;
-		}
-		break;
-	case 'j':
-	case KEY_DOWN:
-		active->scroll_down();
-		break;
-	case 'k':
-	case KEY_UP:
-		active->scroll_up();
-		break;
-	case 'l':
-	case KEY_RIGHT:
-		if (active->horiz_offset + active->get_content_width() <
-		    (int)active->pd.lines[active->selected_line].length())
-			active->horiz_offset++;
-		break;
-	case 'h':
-	case KEY_LEFT:
-		if (active->horiz_offset > 0)
-			active->horiz_offset--;
-		break;
-	}
-
-	active->update_scroll();
-}
-
-// handle search input
-void handle_search_input(int ch, Pane *ap, ui_state &state)
-{
-	switch (ch) {
-	case '\r':
-	case '\n':
-		state.current_mode = Mode::NAVIGATION;
-		perform_search(ap, state);
-		break;
-	case 27: // ESC key
-		state.current_mode = Mode::NAVIGATION;
-		clear_search(state);
-		break;
-	case KEY_BACKSPACE:
-	case 127: // Handle Backspace or DEL
-		if (!state.search_query.empty())
-			state.search_query.pop_back();
-		break;
-	default:
-		if (ch >= 32 && ch <= 126) // Only add printable characters
-			state.search_query += (char)ch;
-	}
-}
-
-void handle_jump_input(int ch, Pane *active, ui_state &state)
-{
-	// Pane *active = ;
-	switch (ch) {
-	case '\n': // ENTER: Execute jump
-		if (!state.jump_query.empty()) {
-			try {
-				int target = std::stoi(state.jump_query);
-				int min_idx = active->has_header ? 1 : 0;
-				int max_idx = (int)active->pd.lines.size() - 1;
-
-				// Bounds checking
-				if (target >= min_idx && target <= max_idx) {
-					active->selected_line = target;
-				}
-				else if (target > max_idx) {
-					active->selected_line = max_idx;
-				}
-				else {
-					active->selected_line = min_idx;
-				}
-				active->update_scroll();
-			}
-			catch (...) {
-			} // Handle non-numeric junk
-		}
-		state.current_mode = Mode::NAVIGATION;
-		state.jump_query = "";
-		break;
-
-	case 27: // ESC: Cancel
-		state.current_mode = Mode::NAVIGATION;
-		state.jump_query = "";
-		break;
-
-	case KEY_BACKSPACE:
-	case 127:
-		if (!state.jump_query.empty())
-			state.jump_query.pop_back();
-		break;
-
-	default:
-		if (isdigit(ch)) { // Only allow numbers for jumping
-			state.jump_query += (char)ch;
-		}
-		break;
-	}
+	/*
+	  --------------
+	  Paths view
+	  --------------
+	*/
+	setup_pane({0, 0, screen_w, screen_h - 1, PaneID::F, f, false, false});
 }
 
 void show_loading_spinner(std::atomic<bool> &is_loading)
@@ -353,50 +172,11 @@ void update_status_bar(const mto::from_vcf::VCFile &vcf_file, ui_state &state,
 	sb.draw(state, "", pane_name, vcf_rec_line);
 };
 
-void handle_special_states(int ch, tui_context &tc, ui_state &state)
-{
-	Pane *ap = tc.get_pane(state.active_pane_id); // active pane
-	if (state.current_mode == Mode::SEARCH)
-		handle_search_input(ch, ap, state);
-	else if (state.current_mode == Mode::JUMP)
-		handle_jump_input(ch, ap, state);
-}
-
-void handle_normal_state(int ch, tui_context &tc, ui_state &state)
-{
-	switch (ch) {
-	case '/':
-		state.current_mode = Mode::SEARCH;
-		break;
-	case ':':
-		state.current_mode = Mode::JUMP;
-		break; // Use colon for jump
-	}
-
-	// nav & search
-	nav(ch, tc, state);
-
-	// Immediately sync state ONLY if the VCF pane was the
-	// one moving
-	if (state.active_pane_id == PaneID::A) {
-		Pane *a = tc.get_pane(PaneID::A);
-		state.vcf_selected_rec = (pt::u32)a->selected_line - 1;
-	}
-}
-
-void handle_input(int ch, tui_context &tc, ui_state &state)
-{
-	if (state.current_mode == Mode::NAVIGATION)
-		handle_normal_state(ch, tc, state);
-	else
-		handle_special_states(ch, tc, state);
-}
-
 void draw_all_panes(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 		    Pane &top_left_pane, Pane &top_right_pane,
 		    Pane &bottom_left_pane, Pane &bottom_right_pane,
-		    Pane &repeats_pane, ui_state &state, status_bar &sb,
-		    bool initial_draw)
+		    Pane &repeats_pane, Pane &paths_pane, ui_state &state,
+		    status_bar &sb, bool initial_draw)
 {
 
 	if (initial_draw) {
@@ -407,6 +187,13 @@ void draw_all_panes(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 		top_right_pane.selected_line = 1;
 		bottom_left_pane.selected_line = 0;
 		bottom_right_pane.selected_line = 0;
+	}
+
+	if (state.current_view == View::PATHS) {
+		// setup_paths_window(state, paths_pane);
+		paths_pane.draw(state);
+		update_status_bar(vcf_file, state, sb);
+		return;
 	}
 
 	pt::u32 rec_idx = top_left_pane.selected_line - 1;
@@ -459,8 +246,9 @@ void view(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 	Pane *c = (tc.get_pane(PaneID::C));
 	Pane *d = (tc.get_pane(PaneID::D));
 	Pane *e = (tc.get_pane(PaneID::E));
+	Pane *f = (tc.get_pane(PaneID::F));
 
-	setup_layout(state, *a, *b, *c, *d, nullptr);
+	create_views(state, *a, *b, *c, *d, nullptr, *f);
 
 	status_bar sb(stdscr, state.screen_h - 1, state.screen_w);
 
@@ -481,7 +269,10 @@ void view(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 	zien::components::alts::update_alts(g, vcf_file, INITIAL_VCF_REC_IDX,
 					    d->pd);
 
-	draw_all_panes(g, vcf_file, *a, *b, *c, *d, *e, state, sb, true);
+	d->pd.lines.clear();
+	zien::components::paths::update_paths(g, f->pd);
+
+	draw_all_panes(g, vcf_file, *a, *b, *c, *d, *e, *f, state, sb, true);
 
 	// aka has repeats
 	// does the current record cover a repetitive region?
@@ -504,15 +295,15 @@ void view(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 			is_tangled ? REPEATS_PANE_COUNT : NO_REPEATS_PANE_COUNT;
 
 		if (state.toggle_repeats_pane != is_tangled) {
-			setup_layout(state, *a, *b, *c, *d,
-				     (is_tangled ? e : nullptr));
+			create_views(state, *a, *b, *c, *d,
+				     (is_tangled ? e : nullptr), *f);
 			state.toggle_repeats_pane = is_tangled;
 
 			erase();
 			refresh();
 		}
 
-		draw_all_panes(g, vcf_file, *a, *b, *c, *d, *e, state, sb,
+		draw_all_panes(g, vcf_file, *a, *b, *c, *d, *e, *f, state, sb,
 			       false);
 		refresh(); // Push all changes to the physical terminal
 	};

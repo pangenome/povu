@@ -182,6 +182,9 @@ struct Pane {
 		int body_h = (height - 2) - (has_header ? 2 : 0);
 		int first_data_idx = has_header ? 1 : 0;
 
+		// std::cerr << "pane " << pane_names.at(p_id) << " safe w "
+		//	  << safe_w << "\n";
+
 		// --- DYNAMIC COL_WIDTH CALCULATION ---
 		int dynamic_col_width = 10; // Minimum default
 		if (sep_cols) {
@@ -216,7 +219,7 @@ struct Pane {
 		int label_width = this->pd.lh;
 		bool use_frozen_labels =
 			(p_id == PaneID::C || p_id == PaneID::D ||
-			 p_id == PaneID::E);
+			 p_id == PaneID::E || p_id == PaneID::F);
 
 		if (use_frozen_labels) {
 			// for (const auto &line : lines) {
@@ -320,6 +323,12 @@ struct Pane {
 				int content_w =
 					safe_w - label_width - gutter_width;
 
+				// std::cerr << "lw " << label_width << " cw "
+				//	  << content_w << "\n";
+
+				// if (p_id == PaneID::F)
+				//	content_w += 50;
+
 				std::string row_content =
 					full_line.substr(split_pos);
 
@@ -327,6 +336,8 @@ struct Pane {
 				if ((int)row_content.length() > horiz_offset)
 					display_str = row_content.substr(
 						horiz_offset, content_w);
+
+				// std::cerr << display_str << "\n";
 
 				if (sep_cols) {
 					draw_tabular_line(visual_y, content_x,
@@ -476,6 +487,9 @@ struct status_bar {
 		else if (state.current_mode == Mode::JUMP) {
 			// Add this flag to your global state or pane
 			final_left = "Jump to line: " + state.jump_query;
+		}
+		else if (state.current_mode == Mode::COMMAND) {
+			final_left = ":" + state.command_prompt;
 		}
 
 		// 2. Determine final Right text (Calculate this BEFORE

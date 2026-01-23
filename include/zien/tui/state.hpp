@@ -24,16 +24,25 @@ enum class Mode : pt::u8 {
 	NAVIGATION,
 	SEARCH,
 	JUMP,
+	COMMAND,
+};
+
+enum class View : pt::u8 {
+	VARIATION,
+	PATHS,
 };
 
 extern std::map<Mode, std::string> mode_names;
 
 enum class PaneID : uint8_t {
+	// variation window
 	A, // top left
 	B, // top right
 	C, // bottom left
 	D, // bottom right
 	E, // repeats pane
+	// graph window
+	F, // paths
 };
 
 extern std::map<PaneID, std::string> pane_names;
@@ -47,6 +56,8 @@ struct ui_state {
 	int screen_h; // screen height
 	int screen_w; // screen width
 
+	View current_view = View::VARIATION;
+
 	PaneID active_pane_id = PaneID::A;
 
 	pt::u8 pane_count = 4; // number of panes currently displayed
@@ -56,6 +67,7 @@ struct ui_state {
 
 	std::string jump_query = "";
 	std::string search_query = "";
+	std::string command_prompt = "";
 	std::vector<int> search_results;
 	int current_result_idx = -1;
 	Mode current_mode = Mode::NAVIGATION;

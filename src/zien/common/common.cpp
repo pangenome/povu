@@ -9,6 +9,7 @@
 
 namespace zien::common
 {
+
 std::set<pt::id_t> get_ref_ids_phased(const bd::VG &g, const std::string &sn,
 				      pt::u32 phase_idx)
 {
@@ -34,11 +35,12 @@ std::set<pt::id_t> get_ref_ids(const bd::VG &g,
 			       pt::u32 sample_idx, pt::u32 phase_idx)
 {
 	const std::string &sn = vcf_file.get_sample_name(sample_idx);
-	pt::u32 ploidy_id = g.get_ploidy_id(sn, phase_idx);
 
-	if (g.get_ploidy(sn) == 0)
+	if (g.get_ploidy(sn) == 1 || g.get_ploidy(sn) == pc::INVALID_IDX)
 		return g.get_refs_in_sample(sn);
-	else // ploidy is never 0, the else is always >1
+	else { // ploidy is never 0, the else is always >1
+		pt::u32 ploidy_id = g.get_ploidy_id(sn, phase_idx);
 		return get_ref_ids_phased(g, sn, ploidy_id);
+	}
 }
 } // namespace zien::common

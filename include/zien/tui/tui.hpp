@@ -52,6 +52,7 @@ struct tui_context {
 	components::Pane bottom_left_pane;
 	components::Pane bottom_right_pane;
 	components::Pane repeats_pane;
+	components::Pane paths_pane;
 
 	std::map<zien::tui::state::PaneID, components::Pane *> panes;
 
@@ -67,7 +68,8 @@ struct tui_context {
 		    {zien::tui::state::PaneID::B, &top_right_pane},
 		    {zien::tui::state::PaneID::C, &bottom_left_pane},
 		    {zien::tui::state::PaneID::D, &bottom_right_pane},
-		    {zien::tui::state::PaneID::E, &repeats_pane}}
+		    {zien::tui::state::PaneID::E, &repeats_pane},
+		    {zien::tui::state::PaneID::F, &paths_pane}}
 	{
 		state.setup_colors();
 	}
