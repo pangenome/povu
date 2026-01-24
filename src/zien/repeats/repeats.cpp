@@ -62,9 +62,6 @@ ptg::walk_t slice_to_walk(const bd::VG &g, pt::u32 h_idx, const pt::slice &s)
 		w.push_back({v_id, o});
 	}
 
-	// std::cerr << "H: " << h_idx << "\n" << ptg::to_string(w) <<
-	// "\n";
-
 	return w;
 }
 

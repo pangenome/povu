@@ -217,11 +217,24 @@ void draw_all_panes(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 		refresh();
 }
 
-void update_depenent_panes(const bd::VG &g,
-			   const mto::from_vcf::VCFile &vcf_file,
-			   Pane &top_right_pane, Pane &bottom_left_pane,
-			   Pane &bottom_right_pane, ui_state &state)
+void update_paths_view(const bd::VG &g, ui_state &state, display_lines &pd)
 {
+	if (state.update_paths_view == false)
+		return;
+
+	pd.reset();
+	zien::components::paths::update_paths(g, state, pd);
+	state.update_paths_view = false;
+}
+
+void update_variants_view(const bd::VG &g,
+			  const mto::from_vcf::VCFile &vcf_file,
+			  Pane &top_right_pane, Pane &bottom_left_pane,
+			  Pane &bottom_right_pane, ui_state &state)
+{
+	if (state.active_pane_id != PaneID::A)
+		return;
+
 	top_right_pane.pd.lines.clear();
 	zien::components::genotypes::update_haps(
 		g, vcf_file, state.vcf_selected_rec, top_right_pane.pd);
@@ -233,6 +246,24 @@ void update_depenent_panes(const bd::VG &g,
 	bottom_right_pane.pd.lines.clear();
 	zien::components::alts::update_alts(g, vcf_file, state.vcf_selected_rec,
 					    bottom_right_pane.pd);
+}
+
+void update_depenent_panes(const bd::VG &g,
+			   const mto::from_vcf::VCFile &vcf_file,
+			   Pane &top_right_pane, Pane &bottom_left_pane,
+			   Pane &bottom_right_pane, Pane &paths_pane,
+			   ui_state &state)
+{
+	switch (state.current_view) {
+	case View::VARIATION:
+		update_variants_view(g, vcf_file, top_right_pane,
+				     bottom_left_pane, bottom_right_pane,
+				     state);
+		return;
+	case View::PATHS:
+		update_paths_view(g, state, paths_pane.pd);
+		return;
+	}
 }
 
 void view(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
@@ -270,7 +301,7 @@ void view(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 					    d->pd);
 
 	d->pd.lines.clear();
-	zien::components::paths::update_paths(g, f->pd);
+	zien::components::paths::update_paths(g, state, f->pd);
 
 	draw_all_panes(g, vcf_file, *a, *b, *c, *d, *e, *f, state, sb, true);
 
@@ -282,9 +313,8 @@ void view(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 	while ((ch = getch()) != 'q') {
 		handle_input(ch, tc, state);
 
-		// Update dependent panes if necessary
-		if (state.active_pane_id == PaneID::A)
-			update_depenent_panes(g, vcf_file, *b, *c, *d, state);
+		// Updates dependent panes if necessary
+		update_depenent_panes(g, vcf_file, *b, *c, *d, *f, state);
 
 		// 2. Tangle Logic (Check if we need to change layout)
 		is_tangled = vcf_file.get_records()
