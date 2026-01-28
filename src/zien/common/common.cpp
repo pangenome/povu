@@ -3,12 +3,22 @@
 #include <set>
 #include <string>
 
+#include <liteseq/refs.h> // for ref_walk, ref
+
 #include "mto/from_vcf.hpp"	     // for VCFile
 #include "povu/common/core.hpp"	     // for pt
 #include "povu/graph/bidirected.hpp" // for bidirected
 
 namespace zien::common
 {
+
+char to_char(liteseq::strand s)
+{
+	if (s == liteseq::strand::STRAND_FWD)
+		return '>';
+	else // STRAND_REV
+		return '<';
+}
 
 std::set<pt::id_t> get_ref_ids_phased(const bd::VG &g, const std::string &sn,
 				      pt::u32 phase_idx)

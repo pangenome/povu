@@ -1,7 +1,6 @@
 #ifndef ZIEN_COMPONENTS_HPP
 #define ZIEN_COMPONENTS_HPP
 
-#include <iostream>
 #include <map>
 #include <set>
 #include <sstream>
@@ -326,11 +325,12 @@ struct Pane {
 				// std::cerr << "lw " << label_width << " cw "
 				//	  << content_w << "\n";
 
-				// if (p_id == PaneID::F)
-				//	content_w += 50;
-
 				std::string row_content =
 					full_line.substr(split_pos);
+
+				// if (p_id == PaneID::F && line_idx == 0) {
+				//	row_content = full_line;
+				// }
 
 				std::string display_str = "";
 				if ((int)row_content.length() > horiz_offset)

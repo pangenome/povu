@@ -15,18 +15,16 @@ namespace zien::tui::input
 using namespace zien::components;
 using namespace zien::tui::state;
 
-void perform_search(Pane *pane, ui_state &state)
+void perform_search_variants(Pane *pane, ui_state &state)
 {
 	std::string &query = state.search_query;
 	state.search_results.clear();
 	if (query.empty())
 		return;
 
-	for (pt::u32 i = 0; i < pane->pd.lines.size(); ++i) {
-		if (pane->pd.lines[i].find(query) != std::string::npos) {
+	for (pt::u32 i = 0; i < pane->pd.lines.size(); ++i)
+		if (pane->pd.lines[i].find(query) != std::string::npos)
 			state.search_results.push_back(i);
-		}
-	}
 
 	if (!state.search_results.empty()) {
 		// Find the first result that is >= the currently
@@ -48,8 +46,41 @@ void perform_search(Pane *pane, ui_state &state)
 	}
 }
 
+void perform_search_paths(Pane *pane, ui_state &state)
+{
+	std::string &query = state.search_query;
+	state.search_results.clear();
+
+	if (query.empty()) {
+		state.paths_view_mid = 250;
+		return;
+	}
+
+	// loop over query and extract numbers
+	pt::u32 v{};
+	for (auto &ch : query)
+		if (isdigit(ch))
+			v = v * 10 + (ch - '0');
+
+	state.paths_view_mid = v;
+	state.update_paths_view = true;
+}
+
+void perform_search(Pane *pane, ui_state &state)
+{
+	switch (state.current_view) {
+	case View::PATHS:
+		perform_search_paths(pane, state);
+		return;
+	case View::VARIATION:
+		perform_search_variants(pane, state);
+		return;
+	}
+}
+
 void clear_search(ui_state &state)
 {
+	state.search_query.clear();
 	state.search_results.clear();
 	state.current_result_idx = -1;
 }
@@ -173,17 +204,6 @@ void handle_command_input(int ch, Pane *ap, ui_state &state)
 	}
 }
 
-void handle_special_states(int ch, tui_context &tc, ui_state &state)
-{
-	Pane *ap = tc.get_pane(state.active_pane_id); // active pane
-	if (state.current_mode == Mode::SEARCH)
-		handle_search_input(ch, ap, state);
-	else if (state.current_mode == Mode::JUMP)
-		handle_jump_input(ch, ap, state);
-	else if (state.current_mode == Mode::COMMAND)
-		handle_command_input(ch, ap, state);
-}
-
 // navigate and initialize search
 void nav(int ch, tui_context &tc, ui_state &state)
 {
@@ -288,8 +308,7 @@ void handle_normal_state(int ch, tui_context &tc, ui_state &state)
 		break;
 	}
 
-	// nav & search
-	nav(ch, tc, state);
+	nav(ch, tc, state); // nav & search
 
 	// Immediately sync state ONLY if the VCF pane was the
 	// one moving
@@ -301,9 +320,20 @@ void handle_normal_state(int ch, tui_context &tc, ui_state &state)
 
 void handle_input(int ch, tui_context &tc, ui_state &state)
 {
-	if (state.current_mode == Mode::NAVIGATION)
+	Pane *ap = tc.get_pane(state.active_pane_id); // active pane
+	switch (state.current_mode) {
+	case Mode::NAVIGATION:
 		handle_normal_state(ch, tc, state);
-	else
-		handle_special_states(ch, tc, state);
+		break;
+	case Mode::SEARCH:
+		handle_search_input(ch, ap, state);
+		break;
+	case Mode::JUMP:
+		handle_jump_input(ch, ap, state);
+		break;
+	case Mode::COMMAND:
+		handle_command_input(ch, ap, state);
+		break;
+	}
 }
 }; // namespace zien::tui::input

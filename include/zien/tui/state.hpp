@@ -58,6 +58,10 @@ struct ui_state {
 
 	View current_view = View::VARIATION;
 
+	// paths view start position
+	pt::u32 paths_view_mid = 250;
+	bool update_paths_view = false;
+
 	PaneID active_pane_id = PaneID::A;
 
 	pt::u8 pane_count = 4; // number of panes currently displayed
