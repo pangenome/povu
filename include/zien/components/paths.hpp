@@ -9,7 +9,7 @@
 
 namespace zien::components::paths
 {
-void update_paths(const bd::VG &g, const ui_state &state, display_lines &pd);
+void update_paths(const bd::VG &g, ui_state &state, display_lines &pd);
 } // namespace zien::components::paths
 
 #endif // ZIEN_COMPONENTS_PATHS_HPP

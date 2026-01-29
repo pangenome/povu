@@ -227,9 +227,10 @@ pt::op_t<pt::u32> comp_path_view_range(const bd::VG &g, const ui_state &state)
 	return {start_idx, end_idx};
 }
 
-void update_paths(const bd::VG &g, const ui_state &state, display_lines &pd)
+void update_paths(const bd::VG &g, ui_state &state, display_lines &pd)
 {
 	auto [start, end] = comp_path_view_range(g, state);
+	state.paths_view_range = {start, end};
 	std::vector<std::string> order = comp_order(g, start, end);
 
 	pt::u32 col_count = order.size();

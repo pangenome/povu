@@ -11,12 +11,6 @@ namespace lq = liteseq;
 constexpr povu::refs::ref_format_e PN = povu::refs::ref_format_e::PANSN;
 using namespace zien::components;
 
-// TODO: use utils
-char lq_strand_to_or_e(lq::strand s)
-{
-	return (s == lq::strand::STRAND_FWD) ? '>' : '<';
-}
-
 pt::id_t extract_anchor_v_id(const std::string &at)
 {
 	std::string v_id_str = "";
@@ -139,8 +133,10 @@ void comp_update_refs(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 					}
 
 					pt::id_t v_id = rw->v_ids[i];
-					char o = lq_strand_to_or_e(
+					char o = povu::refs::lq_strand_to_char(
 						rw->strands[i]);
+					// char o = lq_strand_to_or_e(
+					//	rw->strands[i]);
 
 					curr_l += o;
 					curr_l += std::to_string(v_id);

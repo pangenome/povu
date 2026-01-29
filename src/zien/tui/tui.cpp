@@ -164,8 +164,16 @@ void update_status_bar(ui_state &state, status_bar &sb)
 	// const std::string &mode = mode_names.at(current_mode);
 	const std::string &pane_name = pane_names.at(state.active_pane_id);
 
-	// right
-	std::string vcf_rec_line = pv_cmp::format("[{}/{}]", 0, 0);
+	std::string vcf_rec_line; // right
+	if (state.current_view == View::PATHS) {
+		auto [a, b] = state.paths_view_range;
+		vcf_rec_line = pv_cmp::format("[{}/{}]", a, b);
+	}
+	else {
+		// vcf_rec_line =
+		//	pv_cmp::format("[{}/{}]", state.vcf_selected_rec + 1,
+		//		       vcf_file.record_count());
+	}
 
 	sb.draw(state, "", pane_name, vcf_rec_line);
 };
@@ -302,7 +310,7 @@ void view_gfa(const bd::VG &g)
 	Pane *b = (tc.get_pane(PaneID::B));
 	Pane *c = (tc.get_pane(PaneID::C));
 	Pane *d = (tc.get_pane(PaneID::D));
-	Pane *e = (tc.get_pane(PaneID::E));
+	// Pane *e = (tc.get_pane(PaneID::E));
 	Pane *f = (tc.get_pane(PaneID::F));
 
 	create_views(state, *a, *b, *c, *d, nullptr, *f);
@@ -311,7 +319,6 @@ void view_gfa(const bd::VG &g)
 
 	state.current_view = zien::tui::state::View::PATHS;
 	state.active_pane_id = PaneID::F; // Initial focus
-
 	state.update_paths_view = true;
 
 	update_paths_view(g, state, f->pd, sb);
@@ -326,6 +333,7 @@ void view_gfa(const bd::VG &g)
 		update_paths_view(g, state, f->pd, sb);
 		f->draw(state);
 		update_status_bar(state, sb);
+
 		refresh(); // Push all changes to the physical terminal
 	};
 

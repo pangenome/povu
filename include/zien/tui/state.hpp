@@ -60,6 +60,7 @@ struct ui_state {
 
 	// paths view start position
 	pt::u32 paths_view_mid = 250;
+	pt::op_t<pt::u32> paths_view_range{1, 500};
 	bool update_paths_view = false;
 
 	PaneID active_pane_id = PaneID::A;
