@@ -17,10 +17,10 @@ namespace pvst = povu::pvst;
 namespace pgt = povu::types::graph;
 
 enum class var_type_e : pt::u8 {
-	del, // deletion
-	ins, // insertion
-	sub, // substitution
-	inv, // inversion
+	del,  // deletion
+	ins,  // insertion
+	sub,  // substitution
+	subr, // substitution in reverse
 };
 
 constexpr std::string_view to_string_view(var_type_e vt) noexcept
@@ -32,8 +32,8 @@ constexpr std::string_view to_string_view(var_type_e vt) noexcept
 		return "INS";
 	case var_type_e::sub:
 		return "SUB";
-	case var_type_e::inv:
-		return "INV";
+	case var_type_e::subr:
+		return "SUBR";
 	}
 
 	std::cerr << "Unknown variant type";

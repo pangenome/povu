@@ -147,7 +147,7 @@ struct hap_slice {
 		case ir::var_type_e::del:
 			N--;
 			break;
-		case ir::var_type_e::inv:
+		case ir::var_type_e::subr:
 			break;
 		}
 
@@ -167,7 +167,7 @@ struct hap_slice {
 		case ir::var_type_e::ins:
 			return locus - 1;
 		case ir::var_type_e::sub:
-		case ir::var_type_e::inv:
+		case ir::var_type_e::subr:
 			return locus;
 		}
 
@@ -187,7 +187,7 @@ struct hap_slice {
 		pt::u32 N = ref_start_idx + len;
 
 		switch (vt) {
-		case ir::var_type_e::inv:
+		case ir::var_type_e::subr:
 		case ir::var_type_e::sub:
 			break;
 		case ir::var_type_e::ins:
@@ -197,7 +197,7 @@ struct hap_slice {
 			break;
 		}
 
-		if (vt != ir::var_type_e::inv) {
+		if (vt != ir::var_type_e::subr) {
 			i++;
 			N--;
 		}
@@ -357,7 +357,7 @@ public:
 		case ir::var_type_e::del:
 			alt = &this->dels;
 			break;
-		case ir::var_type_e::inv:
+		case ir::var_type_e::subr:
 			return;
 		}
 

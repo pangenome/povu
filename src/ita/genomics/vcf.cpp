@@ -10,6 +10,7 @@
 #include "ita/variation/rov.hpp"    // for rov_boundaries, var_type_e
 #include "povu/common/core.hpp"	    // for pt, idx_t, id_t, op_t
 #include "povu/graph/pvst.hpp"	    // for VertexBase
+#include "povu/refs/refs.hpp"
 
 namespace ita::vcf
 {
@@ -153,13 +154,24 @@ void gen_inv_recs(const bd::VG &g, const ist::st &it_,
 			pt::u32 s = ref_h_start;
 			pt::u32 t = ref_h_start + len - 1;
 
-			std::string id =
-				pv_cmp::format("|{}|{}|", ref_h_w->v_ids[s],
-					       ref_h_w->v_ids[t]);
+			char sc = povu::refs::lq_strand_to_char(
+				ref_h_w->strands[s]);
+			char tc = povu::refs::lq_strand_to_char(
+				ref_h_w->strands[t]);
+
+			// forwardise
+			if (sc == tc && sc == '<') {
+				sc = '>';
+				tc = '>';
+			}
+
+			std::string id = pv_cmp::format("{}{}{}{}", sc,
+							ref_h_w->v_ids[s], tc,
+							ref_h_w->v_ids[t]);
 
 			ia::hap_slice ref_sl = {g.get_ref_vec(ref_h_idx)->walk,
 						ref_h_idx, ref_h_start, len};
-			pt::u32 pos = ref_sl.comp_pos(ir::var_type_e::inv);
+			pt::u32 pos = ref_sl.comp_pos(ir::var_type_e::subr);
 
 			pt::u32 h = 0; // height
 
@@ -172,7 +184,7 @@ void gen_inv_recs(const bd::VG &g, const ist::st &it_,
 				       ref_sl,
 				       h,
 				       std::move(ref_haps),
-				       ir::var_type_e::inv,
+				       ir::var_type_e::subr,
 				       false};
 
 			// TODO [A] actually fix this. Alts should always be

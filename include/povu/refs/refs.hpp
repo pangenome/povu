@@ -26,6 +26,8 @@ enum class ref_format_e : pt::u8 {
 	UNDEFINED = 0,
 };
 
+char lq_strand_to_char(liteseq::strand s);
+
 /**
  * zero indexed
  * hap col 0 is the first haplotype column

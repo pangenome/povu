@@ -114,8 +114,8 @@ private:
 					this->var_type = ir::var_type_e::ins;
 				else if (vt_str == "SUB")
 					this->var_type = ir::var_type_e::sub;
-				else if (vt_str == "INV")
-					this->var_type = ir::var_type_e::inv;
+				else if (vt_str == "SUBR")
+					this->var_type = ir::var_type_e::subr;
 				else
 					this->var_type = std::nullopt;
 			}

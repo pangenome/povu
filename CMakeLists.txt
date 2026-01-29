@@ -159,6 +159,8 @@ ADD_LIBRARY(povulib
   ${POVULIB_SOURCES_DIR}/algorithms/tiny.cpp
   ${POVULIB_SOURCES_DIR}/algorithms/flubbles.cpp
 
+  ${POVULIB_SOURCES_DIR}/refs/refs.cpp
+
   # common
   ${POVULIB_SOURCES_DIR}/common/utils.cpp
 

@@ -36,8 +36,8 @@ var_type_e covariant(var_type_e a) noexcept
 		return var_type_e::ins;
 	case var_type_e::sub:
 		return var_type_e::sub;
-	case var_type_e::inv:
-		return var_type_e::inv;
+	case var_type_e::subr:
+		return var_type_e::subr;
 	}
 
 	PL_ERR("Unknown variant type");
