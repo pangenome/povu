@@ -33,9 +33,44 @@ data_loader(const core::config &app_config)
 	return {g, vcf_file};
 }
 
+void handle_tui_gfa(const core::config &app_config)
+{
+	// 1. Initialize ncurses ONCE for this entire TUI session
+	zt::NcursesGuard guard;
+
+	std::atomic<bool> is_loading(true);
+
+	// We need these to persist after the thread finishes
+	bd::VG *g = nullptr;
+
+	// 1. Launch the loading thread
+	std::thread loader(
+		[&]()
+		{
+			g = mto::from_gfa::to_bd(app_config);
+
+			// 2. Signal that we are done
+			is_loading.store(false);
+		});
+
+	// 3. Run the spinner on the MAIN thread
+	// Note: Ncurses must be initialized inside show_loading_spinner or
+	// before it
+	zt::show_loading_spinner(is_loading);
+
+	// 4. Wait for the loader thread to safely finish
+	if (loader.joinable())
+		loader.join();
+
+	is_loading.store(false); // stop loading spinner
+
+	zt::view_gfa(*g);
+
+	delete g;
+}
+
 void handle_tui(const core::config &app_config)
 {
-
 	// 1. Initialize ncurses ONCE for this entire TUI session
 	zt::NcursesGuard guard;
 
@@ -95,7 +130,7 @@ void do_vcf(const core::config &app_config)
 		handle_report(app_config);
 		break;
 	case core::vcf_options::tui:
-		handle_tui(app_config);
+		handle_tui_gfa(app_config);
 		break;
 	}
 }

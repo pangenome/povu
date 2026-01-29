@@ -155,6 +155,21 @@ void show_loading_spinner(std::atomic<bool> &is_loading)
 	timeout(-1);
 }
 
+void update_status_bar(ui_state &state, status_bar &sb)
+{
+	// left
+	//
+	//
+	// middle
+	// const std::string &mode = mode_names.at(current_mode);
+	const std::string &pane_name = pane_names.at(state.active_pane_id);
+
+	// right
+	std::string vcf_rec_line = pv_cmp::format("[{}/{}]", 0, 0);
+
+	sb.draw(state, "", pane_name, vcf_rec_line);
+};
+
 void update_status_bar(const mto::from_vcf::VCFile &vcf_file, ui_state &state,
 		       status_bar &sb)
 {
@@ -227,6 +242,18 @@ void update_paths_view(const bd::VG &g, ui_state &state, display_lines &pd)
 	state.update_paths_view = false;
 }
 
+void update_paths_view(const bd::VG &g, ui_state &state, display_lines &pd,
+		       status_bar &sb)
+{
+	if (state.update_paths_view == false)
+		return;
+
+	pd.reset();
+	zien::components::paths::update_paths(g, state, pd);
+	update_status_bar(state, sb);
+	state.update_paths_view = false;
+}
+
 void update_variants_view(const bd::VG &g,
 			  const mto::from_vcf::VCFile &vcf_file,
 			  Pane &top_right_pane, Pane &bottom_left_pane,
@@ -264,6 +291,45 @@ void update_depenent_panes(const bd::VG &g,
 		update_paths_view(g, state, paths_pane.pd);
 		return;
 	}
+}
+
+void view_gfa(const bd::VG &g)
+{
+	tui_context tc;
+	ui_state &state = tc.get_state();
+
+	Pane *a = (tc.get_pane(PaneID::A));
+	Pane *b = (tc.get_pane(PaneID::B));
+	Pane *c = (tc.get_pane(PaneID::C));
+	Pane *d = (tc.get_pane(PaneID::D));
+	Pane *e = (tc.get_pane(PaneID::E));
+	Pane *f = (tc.get_pane(PaneID::F));
+
+	create_views(state, *a, *b, *c, *d, nullptr, *f);
+
+	status_bar sb(stdscr, state.screen_h - 1, state.screen_w);
+
+	state.current_view = zien::tui::state::View::PATHS;
+	state.active_pane_id = PaneID::F; // Initial focus
+
+	state.update_paths_view = true;
+
+	update_paths_view(g, state, f->pd, sb);
+	f->draw(state);
+	refresh(); // Push all changes to the physical terminal
+
+	int ch{};
+	while ((ch = getch()) != 'q') {
+		handle_input(ch, tc, state);
+
+		// Updates dependent panes if necessary
+		update_paths_view(g, state, f->pd, sb);
+		f->draw(state);
+		update_status_bar(state, sb);
+		refresh(); // Push all changes to the physical terminal
+	};
+
+	return;
 }
 
 void view(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,

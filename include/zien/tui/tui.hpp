@@ -96,6 +96,8 @@ struct tui_context {
 
 void show_loading_spinner(std::atomic<bool> &is_loading);
 
+void view_gfa(const bd::VG &g);
+
 void view(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 	  const std::vector<pt::u32> &invalid_recs);
 } // namespace zien::tui

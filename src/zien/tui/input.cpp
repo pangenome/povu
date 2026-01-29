@@ -111,7 +111,6 @@ void handle_search_input(int ch, Pane *ap, ui_state &state)
 
 void handle_jump_input(int ch, Pane *active, ui_state &state)
 {
-	// Pane *active = ;
 	switch (ch) {
 	case '\n': // ENTER: Execute jump
 		if (!state.jump_query.empty()) {
