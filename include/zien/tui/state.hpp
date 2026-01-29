@@ -3,6 +3,7 @@
 
 #include <map>
 #include <string>
+#include <sys/select.h>
 #include <vector>
 
 #include <ncurses.h>
@@ -62,6 +63,8 @@ struct ui_state {
 	pt::u32 paths_view_mid = 250;
 	pt::op_t<pt::u32> paths_view_range{1, 500};
 	bool update_paths_view = false;
+
+	pt::u32 selected_line = 1;
 
 	PaneID active_pane_id = PaneID::A;
 

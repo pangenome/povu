@@ -29,10 +29,9 @@ using namespace zien::tui::state;
 using namespace zien::tui::input;
 using namespace zien::components;
 
+const pt::u32 INITIAL_VCF_REC_IDX = 0; // skip header line
 const pt::u32 REPEATS_PANE_COUNT = 5;
 const pt::u32 NO_REPEATS_PANE_COUNT = 4;
-
-const pt::u32 INITIAL_VCF_REC_IDX = 0; // skip header line
 
 void setup_pane(const pane_params &pp)
 {
@@ -159,7 +158,7 @@ void update_status_bar(ui_state &state, status_bar &sb)
 {
 	// left
 	//
-	//
+
 	// middle
 	// const std::string &mode = mode_names.at(current_mode);
 	const std::string &pane_name = pane_names.at(state.active_pane_id);
@@ -167,7 +166,8 @@ void update_status_bar(ui_state &state, status_bar &sb)
 	std::string vcf_rec_line; // right
 	if (state.current_view == View::PATHS) {
 		auto [a, b] = state.paths_view_range;
-		vcf_rec_line = pv_cmp::format("[{}/{}]", a, b);
+		vcf_rec_line =
+			pv_cmp::format("{} [{}/{}]", state.selected_line, a, b);
 	}
 	else {
 		// vcf_rec_line =
@@ -190,7 +190,8 @@ void update_status_bar(const mto::from_vcf::VCFile &vcf_file, ui_state &state,
 
 	// right
 	std::string vcf_rec_line = pv_cmp::format(
-		"[{}/{}]", state.vcf_selected_rec + 1, vcf_file.record_count());
+		"{} [{}/{}]", state.selected_line, state.vcf_selected_rec + 1,
+		vcf_file.record_count());
 
 	sb.draw(state, "", pane_name, vcf_rec_line);
 };
@@ -317,6 +318,7 @@ void view_gfa(const bd::VG &g)
 
 	status_bar sb(stdscr, state.screen_h - 1, state.screen_w);
 
+	state.selected_line = f->selected_line;
 	state.current_view = zien::tui::state::View::PATHS;
 	state.active_pane_id = PaneID::F; // Initial focus
 	state.update_paths_view = true;

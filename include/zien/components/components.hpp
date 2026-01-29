@@ -14,7 +14,6 @@
 
 namespace zien::components
 {
-
 using namespace zien::tui::state;
 
 struct line_metadata {
@@ -474,10 +473,6 @@ struct status_bar {
 	{
 		move(this->linum, 0);
 		clrtoeol();
-
-		// 1. Determine final Left text
-		// std::string final_left =
-		//	search_mode ? ("/" + search_query) : left;
 
 		// 1. Determine the Left text (The Prompt)
 		std::string final_left = left;

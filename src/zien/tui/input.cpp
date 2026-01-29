@@ -271,10 +271,12 @@ void nav(int ch, tui_context &tc, ui_state &state)
 	case 'j':
 	case KEY_DOWN:
 		active->scroll_down();
+		state.selected_line = active->selected_line;
 		break;
 	case 'k':
 	case KEY_UP:
 		active->scroll_up();
+		state.selected_line = active->selected_line;
 		break;
 	case 'l':
 	case KEY_RIGHT:
