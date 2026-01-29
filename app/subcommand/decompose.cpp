@@ -50,8 +50,6 @@ void decompose_component(bd::VG *g, std::size_t component_id,
 	pst::Tree st = pst::Tree::from_bd(*g);
 	delete g;
 
-	ptu::tree_meta tm = ptu::gen_tree_meta(st);
-
 	pvst::Tree flubble_tree = pfl::find_flubbles(st, app_config);
 
 #ifdef DEBUG
@@ -63,6 +61,7 @@ void decompose_component(bd::VG *g, std::size_t component_id,
 #endif
 
 	if (app_config.find_subflubbles()) {
+		ptu::tree_meta tm = ptu::gen_tree_meta(st);
 		povu::tiny::find_tiny(st, flubble_tree, tm);
 		povu::parallel::find_parallel(st, flubble_tree, tm);
 		povu::concealed::find_concealed(st, flubble_tree, tm);
