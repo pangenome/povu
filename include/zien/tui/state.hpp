@@ -57,6 +57,7 @@ struct ui_state {
 	// ........................
 	// common state
 	// ........................
+	//
 	int screen_h; // screen height
 	int screen_w; // screen width
 
@@ -72,13 +73,17 @@ struct ui_state {
 	bool toggle_repeats_pane = false;
 
 	// ........................
+	// shared
+	// ........................
+	pt::u32 hap_count = 0; // number of haplotypes in the graph
+
+	// ........................
 	// paths view
 	// ........................
 	//
 	pt::u32 paths_view_mid = 250;
 	pt::op_t<pt::u32> paths_view_range{1, 500};
 	bool update_paths_view = false;
-
 	pt::u32 selected_line = 1;
 
 	// ........................

@@ -154,7 +154,8 @@ void show_loading_spinner(std::atomic<bool> &is_loading)
 	timeout(-1);
 }
 
-void update_status_bar(ui_state &state, status_bar &sb)
+void update_status_bar(ui_state &state, status_bar &sb,
+		       pt::u32 total_line_count)
 {
 	// left
 	//
@@ -166,13 +167,9 @@ void update_status_bar(ui_state &state, status_bar &sb)
 	std::string vcf_rec_line; // right
 	if (state.current_view == View::PATHS) {
 		auto [a, b] = state.paths_view_range;
-		vcf_rec_line =
-			pv_cmp::format("{} [{}/{}]", state.selected_line, a, b);
-	}
-	else {
-		// vcf_rec_line =
-		//	pv_cmp::format("[{}/{}]", state.vcf_selected_rec + 1,
-		//		       vcf_file.record_count());
+		vcf_rec_line = pv_cmp::format(
+			"| L{} H{} I{} | [{}:{}]", state.selected_line,
+			state.hap_count, total_line_count, a, b);
 	}
 
 	sb.draw(state, "", pane_name, vcf_rec_line);
@@ -254,15 +251,13 @@ void update_paths_view(const bd::VG &g, ui_state &state, display_lines &pd)
 void update_paths_view(const bd::VG &g, ui_state &state, display_lines &pd,
 		       status_bar &sb)
 {
-	std::cerr << "update_paths_view called " << state.update_paths_view
-		  << "\n";
-
 	if (state.update_paths_view == false)
 		return;
 
 	pd.reset();
 	zien::components::paths::update_paths(g, state, pd);
-	update_status_bar(state, sb);
+	pt::u32 total_line_count = pd.lines.size();
+	update_status_bar(state, sb, total_line_count);
 	state.update_paths_view = false;
 }
 
@@ -321,6 +316,7 @@ void view_gfa(const bd::VG &g)
 
 	status_bar sb(stdscr, state.screen_h - 1, state.screen_w);
 
+	state.hap_count = g.get_hap_count();
 	state.selected_line = f->selected_line;
 	state.current_view = zien::tui::state::View::PATHS;
 	state.active_pane_id = PaneID::F; // Initial focus
@@ -337,7 +333,8 @@ void view_gfa(const bd::VG &g)
 		// Updates dependent panes if necessary
 		update_paths_view(g, state, f->pd, sb);
 		f->draw(state);
-		update_status_bar(state, sb);
+		pt::u32 total_line_count = f->pd.lines.size();
+		update_status_bar(state, sb, total_line_count);
 
 		refresh(); // Push all changes to the physical terminal
 	};
