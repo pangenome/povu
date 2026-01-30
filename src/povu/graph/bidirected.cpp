@@ -347,6 +347,7 @@ void VG::set_vtx_ref_idx(pt::id_t v_id, pt::id_t ref_id, pt::idx_t step_idx)
 {
 	pt::idx_t v_idx = this->v_id_to_idx_.get_value(v_id);
 	std::vector<pt::idx_t> &s = this->vertex_to_step_matrix_[v_idx][ref_id];
+
 	// insert in sorted order of step idx
 	auto it = std::lower_bound(s.begin(), s.end(), step_idx);
 	if (it == s.end() || *it != step_idx) // avoid duplicates

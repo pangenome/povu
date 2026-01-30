@@ -99,9 +99,9 @@ matrix comp_hap_rows(const bd::VG &g, const std::vector<std::string> &order,
 		if (N < 2)
 			return positions.size();
 
-		pt::u32 row_count{};
+		pt::u32 row_count{1};
 		for (pt::u32 j{}; j < N - 1; j++)
-			if (positions[j + 1] > positions[j])
+			if (positions[j] < positions[j + 1])
 				row_count++;
 
 		return row_count;
@@ -250,7 +250,8 @@ void update_paths(const bd::VG &g, ui_state &state, display_lines &pd)
 
 		// row content
 		const liteseq::ref_walk *rw = g.get_ref_vec(hap_idx)->walk;
-		pt::u32 N = std::min(rw->step_count, end);
+		pt::u32 N = std::min(g.vtx_count(), end);
+
 		matrix hap_rows = comp_hap_rows(g, order, hap_idx, start, N, rw,
 						col_width, hap_row_count);
 

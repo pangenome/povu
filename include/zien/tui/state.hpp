@@ -54,24 +54,13 @@ struct ui_state {
 	// member variables or fields
 	// --------------------------
 
+	// ........................
+	// common state
+	// ........................
 	int screen_h; // screen height
 	int screen_w; // screen width
 
 	View current_view = View::VARIATION;
-
-	// paths view start position
-	pt::u32 paths_view_mid = 250;
-	pt::op_t<pt::u32> paths_view_range{1, 500};
-	bool update_paths_view = false;
-
-	pt::u32 selected_line = 1;
-
-	PaneID active_pane_id = PaneID::A;
-
-	pt::u8 pane_count = 4; // number of panes currently displayed
-
-	// currently selected VCF record index
-	pt::u32 vcf_selected_rec = 0; // zero-based index
 
 	std::string jump_query = "";
 	std::string search_query = "";
@@ -81,6 +70,25 @@ struct ui_state {
 	Mode current_mode = Mode::NAVIGATION;
 
 	bool toggle_repeats_pane = false;
+
+	// ........................
+	// paths view
+	// ........................
+	//
+	pt::u32 paths_view_mid = 250;
+	pt::op_t<pt::u32> paths_view_range{1, 500};
+	bool update_paths_view = false;
+
+	pt::u32 selected_line = 1;
+
+	// ........................
+	// variation view
+	// ........................
+	PaneID active_pane_id = PaneID::A;
+	pt::u8 pane_count = 4; // number of panes currently displayed
+
+	// currently selected VCF record index
+	pt::u32 vcf_selected_rec = 0; // zero-based index
 
 	// TODO: add is tangled to UI state
 

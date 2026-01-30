@@ -1,6 +1,7 @@
 #ifndef ZIEN_COMPONENTS_HPP
 #define ZIEN_COMPONENTS_HPP
 
+#include <iostream>
 #include <map>
 #include <set>
 #include <sstream>
@@ -88,24 +89,31 @@ struct Pane {
 		int data_area_h = height - 2 - (has_header ? 2 : 0);
 		int first_data_idx = has_header ? 1 : 0;
 
-		// Calculate how many extra visual lines (separators) are above
-		// our selection
-		int separators_above = 0;
+		// Calculate how many EXTRA visual rows exist due to separators
+		// from the start of the data up to the selected line.
+		int separators_before_selection = 0;
 		for (auto line_idx : pd.group_lines) {
-			if ((int)line_idx <= selected_line) {
-				separators_above++;
+			// Only count separators that are within the current
+			// scroll view OR affect the current selection's
+			// position.
+			if ((int)line_idx >= first_data_idx &&
+			    (int)line_idx <= selected_line) {
+				separators_before_selection++;
 			}
 		}
 
-		// The virtual Y position is the data index + separators
-		int virtual_selected_pos =
-			(selected_line - first_data_idx) + separators_above;
+		// This is the actual screen row (relative to data start)
+		// the selection wants to occupy.
+		int virtual_selected_pos = (selected_line - first_data_idx) +
+					   separators_before_selection;
 
-		if (virtual_selected_pos < scroll_offset)
+		if (virtual_selected_pos < scroll_offset) {
 			scroll_offset = virtual_selected_pos;
+		}
 
-		if (virtual_selected_pos >= scroll_offset + data_area_h)
+		if (virtual_selected_pos >= scroll_offset + data_area_h) {
 			scroll_offset = virtual_selected_pos - data_area_h + 1;
+		}
 
 		if (scroll_offset < 0)
 			scroll_offset = 0;
@@ -166,11 +174,17 @@ struct Pane {
 	{
 		bool is_focused = (state.active_pane_id == this->p_id);
 
-		update_scroll();
+		update_scroll(); // Ensure this uses the "visual row" logic
+				 // discussed
 		werase(win);
 		box(win, 0, 0);
 
 		const std::vector<std::string> &lines = this->pd.lines;
+		if (lines.empty()) {
+			box(win, 0, 0);
+			wrefresh(win);
+			return;
+		}
 
 		if (!title.empty())
 			mvwprintw(win, 0, 2, " %s ", title.c_str());
@@ -180,67 +194,8 @@ struct Pane {
 		int body_h = (height - 2) - (has_header ? 2 : 0);
 		int first_data_idx = has_header ? 1 : 0;
 
-		// std::cerr << "pane " << pane_names.at(p_id) << " safe w "
-		//	  << safe_w << "\n";
-
-		// --- DYNAMIC COL_WIDTH CALCULATION ---
-		int dynamic_col_width = 10; // Minimum default
-		if (sep_cols) {
-			for (int i = 0; i < body_h; i++) {
-				int line_idx =
-					first_data_idx + scroll_offset + i;
-				if (line_idx >= (int)lines.size())
-					break;
-
-				std::stringstream ss(lines[line_idx]);
-				std::string segment;
-				while (std::getline(ss, segment, '\t')) {
-					if ((int)segment.length() >
-					    dynamic_col_width) {
-						dynamic_col_width =
-							(int)segment.length();
-					}
-				}
-			}
-			dynamic_col_width += 2; // Add gutter for readability
-
-			// Cap col_width to 50% of window so we don't push
-			// secondary columns entirely off-screen
-			if (dynamic_col_width > (width / 2))
-				dynamic_col_width = width / 2;
-		}
-
-		// Now use dynamic_col_width instead of the hardcoded 30
-		int col_width = dynamic_col_width;
-
-		// --- DYNAMIC LABEL WIDTH CALCULATION ---
-		int label_width = this->pd.lh;
-		bool use_frozen_labels =
-			(p_id == PaneID::C || p_id == PaneID::D ||
-			 p_id == PaneID::E || p_id == PaneID::F);
-
-		if (use_frozen_labels) {
-			// for (const auto &line : lines) {
-			//	size_t split_pos = line.find_first_of(SEP);
-			//	if (split_pos != std::string::npos) {
-			//		// The split position is exactly the
-			//		// length of the name
-			//		if ((int)split_pos > label_width) {
-			//			label_width = (int)split_pos;
-			//		}
-			//	}
-			// }
-			// Cap label width at 40% of window to preserve space
-			// for the path
-			// if (label_width > safe_w * 0.4)
-			//	label_width = safe_w * 0.4;
-
-			if (this->pd.lh > safe_w * 0.4)
-				label_width = safe_w * 0.4;
-		}
-
-		// --- HEADER (Pane A/B) ---
-		if (has_header && !lines.empty()) {
+		// --- 1. HEADER RENDERING ---
+		if (has_header) {
 			wattron(win, A_BOLD | COLOR_PAIR(2));
 			mvwprintw(win, 1, 1, "%-*.*s", safe_w, safe_w,
 				  lines[0].c_str());
@@ -248,95 +203,131 @@ struct Pane {
 			mvwhline(win, 2, 1, ACS_HLINE, safe_w);
 		}
 
-		// --- DATA ROWS ---
-		int separator_count = 0;
-		for (int i = 0; i < body_h; i++) {
-			int line_idx = first_data_idx + scroll_offset + i;
-			if (line_idx >= (int)lines.size())
+		// --- 2. COLUMN & LABEL WIDTH CALCULATIONS ---
+		int col_width = 10;
+		if (sep_cols) {
+			// Sample visible lines to determine column width
+			for (size_t i = first_data_idx; i < lines.size(); ++i) {
+				std::stringstream ss(lines[i]);
+				std::string segment;
+				while (std::getline(ss, segment, '\t')) {
+					if ((int)segment.length() > col_width)
+						col_width =
+							(int)segment.length();
+				}
+			}
+			col_width = std::min(col_width + 2, width / 2);
+		}
+
+		int label_width = this->pd.lh;
+		bool use_frozen_labels =
+			(p_id == PaneID::C || p_id == PaneID::D ||
+			 p_id == PaneID::E || p_id == PaneID::F);
+		if (use_frozen_labels && label_width > safe_w * 0.4) {
+			label_width = safe_w * 0.4;
+		}
+
+		// --- 3. DATA RENDERING WITH VISUAL OFFSET ---
+		// We must find which data index corresponds to our current
+		// scroll_offset
+		int current_data_idx = first_data_idx;
+		int visual_rows_skipped = 0;
+
+		while (current_data_idx < (int)lines.size()) {
+			int rows_for_this_item =
+				pv_cmp::contains(pd.group_lines,
+						 (pt::u32)current_data_idx)
+					? 2
+					: 1;
+
+			if (visual_rows_skipped + rows_for_this_item >
+			    scroll_offset) {
+				// This is where we start drawing.
+				// If scroll_offset falls exactly on a
+				// separator, we handle that offset here.
 				break;
+			}
+			visual_rows_skipped += rows_for_this_item;
+			current_data_idx++;
+		}
 
-			// Shift the actual text row down based on how many
-			// separators we've hit
-			int visual_y = data_start_y + i + separator_count;
+		int y_occupied = 0;
+		for (int i = current_data_idx;
+		     i < (int)lines.size() && y_occupied < body_h; ++i) {
 
-			// Check if we exceed pane height
-			if (visual_y >= height - 1)
-				break;
-
-			// Draw separator line if needed
-			if (pv_cmp::contains(this->pd.group_lines,
-					     (pt::u32)line_idx)) {
-				wattron(win, COLOR_PAIR(3));
-				mvwhline(win, visual_y, 1, ACS_HLINE, safe_w);
-				wattroff(win, COLOR_PAIR(3));
-
-				separator_count++;
-				visual_y++; // Move the text for THIS line to
-					    // the next row
-
-				if (visual_y >= height - 1)
-					break;
+			// A. Handle Separator
+			if (pv_cmp::contains(pd.group_lines, (pt::u32)i)) {
+				// If the scroll offset is inside the
+				// separator/line pair, we might skip the
+				// separator
+				if (y_occupied == 0 &&
+				    visual_rows_skipped < scroll_offset) {
+					// Skip drawing separator because it's
+					// scrolled off
+				}
+				else {
+					wattron(win, COLOR_PAIR(3));
+					mvwhline(win, data_start_y + y_occupied,
+						 1, ACS_HLINE, safe_w);
+					wattroff(win, COLOR_PAIR(3));
+					y_occupied++;
+				}
 			}
 
-			// Reset and clear the row background
-			wattrset(win, A_NORMAL);
-			mvwprintw(win, visual_y, 1, "%*s", safe_w, "");
+			if (y_occupied >= body_h)
+				break;
 
-			bool is_selected =
-				(is_focused && line_idx == selected_line);
+			// B. Handle Data Line
+			int visual_y = data_start_y + y_occupied;
+			bool is_selected = (is_focused && i == selected_line);
+
+			// Clear line and apply selection attribute
+			wattrset(win, A_NORMAL);
 			if (is_selected)
 				wattron(win, A_REVERSE | COLOR_PAIR(1));
+			else
+				wattrset(win, A_NORMAL);
+			mvwprintw(win, visual_y, 1, "%*s", safe_w,
+				  ""); // Background fill
 
 			if (use_frozen_labels) {
-				int gutter_width = 2;
-
-				const std::string &full_line = lines[line_idx];
-
-				const line_metadata &line_meta =
-					this->pd.meta[line_idx];
-
-				pt::u32 split_pos = line_meta.ref_name_pos;
-
+				// Logic for split panes (Label | Content)
+				const line_metadata &meta = pd.meta[i];
 				std::string row_label =
-					full_line.substr(0, split_pos);
+					lines[i].substr(0, meta.ref_name_pos);
+				std::string row_content =
+					lines[i].substr(meta.ref_name_pos);
 
-				// std::cerr << __func__ << " Line " << line_idx
-				//	  << " split at " << split_pos << " rl "
-				//	  << row_label << "\n";
+				// Draw Label
+				if (!is_selected)
+					wattron(win, A_BOLD | COLOR_PAIR(2));
+				else
+					wattron(win, A_BOLD);
 
-				// Draw Label: Using A_BOLD and right-alignment
-				// for a cleaner look
-				wattron(win, A_BOLD | COLOR_PAIR(2));
 				mvwprintw(win, visual_y, 1, "%*.*s",
 					  label_width, label_width,
 					  row_label.c_str());
-				wattroff(win, A_BOLD | COLOR_PAIR(2));
 
-				// Draw Separator (The visual replacement for
-				// the colon)
+				if (!is_selected)
+					wattroff(win, A_BOLD | COLOR_PAIR(2));
+				else
+					wattroff(win, A_BOLD);
+
+				// wattroff(win, A_BOLD | COLOR_PAIR(2));
+
 				mvwaddch(win, visual_y, 1 + label_width,
 					 ACS_VLINE | COLOR_PAIR(2));
 
-				int content_x = 1 + label_width + gutter_width;
-				int content_w =
-					safe_w - label_width - gutter_width;
-
-				// std::cerr << "lw " << label_width << " cw "
-				//	  << content_w << "\n";
-
-				std::string row_content =
-					full_line.substr(split_pos);
-
-				// if (p_id == PaneID::F && line_idx == 0) {
-				//	row_content = full_line;
-				// }
-
-				std::string display_str = "";
-				if ((int)row_content.length() > horiz_offset)
-					display_str = row_content.substr(
-						horiz_offset, content_w);
-
-				// std::cerr << display_str << "\n";
+				// Draw Content
+				int content_x = 1 + label_width + 2;
+				int content_w = safe_w - label_width - 2;
+				std::string display_str =
+					(row_content.length() >
+					 (size_t)horiz_offset)
+						? row_content.substr(
+							  horiz_offset,
+							  content_w)
+						: "";
 
 				if (sep_cols) {
 					draw_tabular_line(visual_y, content_x,
@@ -346,86 +337,66 @@ struct Pane {
 				else {
 					for (int j = 0;
 					     j < (int)display_str.length();
-					     j++) {
-
-						pt::u32 global_idx =
-							split_pos +
+					     ++j) {
+						pt::u32 global_char_pos =
+							meta.ref_name_pos +
 							horiz_offset + j;
-
-						// 2. Check if global_idx is
-						// inside any of the slices
-						bool should_dim = true;
-						for (const pt::slice &slice :
-						     line_meta.at_str_slices) {
-							// auto [start, len] =
-							//	slice;
-							// pt::slice usually has
-							// .offset and .len (or
-							// .start and .end)
-							if (global_idx >=
+						bool dim = true;
+						for (const auto &slice :
+						     meta.at_str_slices) {
+							if (global_char_pos >=
 								    slice.start() &&
-							    global_idx <
+							    global_char_pos <
 								    (slice.start() +
 								     slice.len())) {
-								should_dim =
-									false;
+								dim = false;
 								break;
 							}
 						}
-
-						// 3. Apply attributes
-						if (should_dim) {
+						// Only dim if we aren't trying
+						// to highlight the line
+						if (dim & !is_selected)
 							wattron(win, A_DIM);
-						}
-						else {
-							wattroff(win, A_DIM);
-						}
-
 						mvwaddch(win, visual_y,
 							 content_x + j,
 							 display_str[j]);
+						wattroff(win, A_DIM);
 					}
-
-					wattroff(win, A_DIM);
 				}
 			}
 			else {
-				// Standard Logic for A & B
-				std::string display_str = "";
-				if ((int)lines[line_idx].length() >
-				    horiz_offset)
-					display_str = lines[line_idx].substr(
-						horiz_offset, safe_w);
+				// Standard logic (Pane A/B)
+				std::string display_str =
+					(lines[i].length() >
+					 (size_t)horiz_offset)
+						? lines[i].substr(horiz_offset,
+								  safe_w)
+						: "";
 
-				if (sep_cols) {
+				bool is_special = pv_cmp::contains(
+					pd.special_lines, (pt::u32)i);
+
+				if (is_special && !is_selected)
+					wattron(win, COLOR_PAIR(4));
+
+				if (sep_cols)
 					draw_tabular_line(visual_y, 1,
 							  display_str,
 							  col_width);
-				}
-				else {
-					if (pv_cmp::contains(
-						    this->pd.special_lines,
-						    (pt::u32)line_idx)) {
-						wattron(win, COLOR_PAIR(4));
-					}
-
+				else
 					mvwprintw(win, visual_y, 1, "%-*.*s",
 						  safe_w, safe_w,
 						  display_str.c_str());
 
-					wattroff(win, COLOR_PAIR(4));
-				}
-			}
-
-			// Pad the highlight to fill the remainder of the window
-			// width
-			int cur_x = getcurx(win);
-			if (cur_x < safe_w + 1) {
-				whline(win, ' ', (safe_w + 1) - cur_x);
+				wattroff(win, COLOR_PAIR(4));
 			}
 
 			if (is_selected)
 				wattrset(win, A_NORMAL);
+
+			y_occupied++;
+			visual_rows_skipped++; // This helps sync with next loop
+					       // iteration
 		}
 
 		box(win, 0, 0);

@@ -254,6 +254,9 @@ void update_paths_view(const bd::VG &g, ui_state &state, display_lines &pd)
 void update_paths_view(const bd::VG &g, ui_state &state, display_lines &pd,
 		       status_bar &sb)
 {
+	std::cerr << "update_paths_view called " << state.update_paths_view
+		  << "\n";
+
 	if (state.update_paths_view == false)
 		return;
 

@@ -10,7 +10,6 @@
 
 namespace cli
 {
-
 struct decomopose_opts {
 	args::Group decompose;
 	args::Flag hairpins;
@@ -352,13 +351,13 @@ int cli(int argc, char **argv, core::config &app_config)
 		// only run this if the user is not requesting to print the
 		// version
 		if (!version) {
-			std::cerr << e.what() << std::endl << p;
+			std::cerr << e.what() << "\n" << p;
 			return 1;
 		}
 	}
 
 	if (version) {
-		std::cout << VERSION << std::endl;
+		std::cout << VERSION << "\n";
 		std::exit(EXIT_SUCCESS);
 	}
 
