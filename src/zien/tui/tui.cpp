@@ -60,6 +60,17 @@ void cleanup_panes(Pane &a, Pane &b, Pane &c, Pane &d, Pane &e)
 		delwin(e.win);
 }
 
+/**
+ * only for paths view, there's no variation view
+ */
+void create_views_gfa(const ui_state &state, tui_context &tc)
+{
+	Pane &f = tc.get_pane_ref_mut(PaneID::F);
+	int screen_h = state.screen_h;
+	int screen_w = state.screen_w;
+	setup_pane({0, 0, screen_w, screen_h - 1, PaneID::F, f, false, false});
+}
+
 void create_views(const ui_state &state, Pane &a, Pane &b, Pane &c, Pane &d,
 		  Pane *e, Pane &f)
 {
@@ -305,15 +316,9 @@ void view_gfa(const bd::VG &g)
 	tui_context tc;
 	ui_state &state = tc.get_state();
 
-	Pane *a = (tc.get_pane(PaneID::A));
-	Pane *b = (tc.get_pane(PaneID::B));
-	Pane *c = (tc.get_pane(PaneID::C));
-	Pane *d = (tc.get_pane(PaneID::D));
-	// Pane *e = (tc.get_pane(PaneID::E));
 	Pane *f = (tc.get_pane(PaneID::F));
 
-	create_views(state, *a, *b, *c, *d, nullptr, *f);
-
+	create_views_gfa(state, tc);
 	status_bar sb(stdscr, state.screen_h - 1, state.screen_w);
 
 	state.hap_count = g.get_hap_count();

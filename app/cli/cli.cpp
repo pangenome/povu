@@ -310,6 +310,32 @@ void vcf_handler(args::Subparser &parser, core::config &app_config)
 			core::vcf_options::tui);
 }
 
+void view_handler(args::Subparser &parser, core::config &app_config)
+{
+	args::Group arguments("arguments");
+	// clang-format off
+	args::ValueFlag<std::string> input_gfa(parser, "gfa", "path to input gfa [required]", {'i', "input-gfa"}, args::Options::Required);
+	args::ValueFlag<std::string> input_vcf(parser, "vcf", "path to input vcf [required]", {'c', "input-vcf"});
+	// clang-format on
+
+	parser.Parse();
+	app_config.set_task(core::task_e::view);
+
+	app_config.set_input_gfa(args::get(input_gfa));
+	// set opts for GFA required for VCF validation
+	app_config.set_inc_vtx_labels(true);
+	app_config.set_inc_refs(true);
+
+	/* set VCF subcommand options */
+	core::vcf_subcommand &vcf_opts = app_config.get_vcf_subcommand_mut();
+	vcf_opts.set_input_vcf(args::get(input_vcf));
+
+	if (input_vcf)
+		app_config.set_view_opts(core::view_opts::variation);
+	else
+		app_config.set_view_opts(core::view_opts::paths);
+}
+
 int cli(int argc, char **argv, core::config &app_config)
 {
 	args::ArgumentParser p("Explore variation in a variation graph");
@@ -328,7 +354,9 @@ int cli(int argc, char **argv, core::config &app_config)
 	args::Command prune(commands, "prune", "Reduce GFA to graph structure",
 			    [&](args::Subparser &parser) { prune_handler(parser, app_config); });
 	args::Command vcf(commands, "vcf", "Analyse a VCF file against the graph",
-			   [&](args::Subparser &parser) { vcf_handler(parser, app_config); });
+			  [&](args::Subparser &parser) { vcf_handler(parser, app_config); });
+	args::Command view(commands, "view", "Visualise variation data",
+			   [&](args::Subparser &parser) { view_handler(parser, app_config); });
 	// clang-format on
 
 	// shared options

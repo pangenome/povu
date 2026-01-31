@@ -4,22 +4,83 @@
 #include <cmath>     // for ceil
 #include <cstddef>   // for size_t
 #include <cstdlib>   // for std::max, exit, EXIT_FAILURE
+#include <set>	     // for set
 #include <utility>   // for move
+#include <vector>    // for vector
 
 #include "ita/genomics/allele.hpp"   // for Exp, comp_itineraries
 #include "ita/genomics/vcf.hpp"	     // for VcfRecIdx, gen_vcf_records
 #include "ita/variation/overlay.hpp" // for comp_itineraries3, sub_inv
 #include "ita/variation/rov.hpp"     // for RoV, gen_rov
 #include "ita/variation/sne.hpp"     // for sne
-
-#include "povu/common/app.hpp"	  // for config
-#include "povu/common/core.hpp"	  // for pt, idx_t, id_t
-#include "povu/common/log.hpp"	  // for ERR
-#include "povu/common/thread.hpp" // for thread_pool, task_group
+#include "povu/common/app.hpp"	     // for config
+#include "povu/common/core.hpp"	     // for pt, idx_t, id_t
+#include "povu/common/log.hpp"	     // for ERR
+#include "povu/common/thread.hpp"    // for thread_pool, task_group
 
 namespace ita::genomics
 {
 namespace pvst = povu::pvst;
+
+void find_inversions(const bd::VG &g, const std::set<pt::id_t> &to_call_ref_ids,
+		     ia::inversions &invs)
+{
+	for (pt::u32 hap_idx : to_call_ref_ids) {
+		pr::Ref r = g.get_ref_by_id(hap_idx);
+		std::cerr << r.tag() << "\n";
+		std::cerr << "[";
+		for (pt::u32 v_idx{}; v_idx < g.vtx_count(); v_idx++) {
+			const std::vector<pt::u32> &positions =
+				g.get_vertex_ref_idxs(v_idx, hap_idx);
+
+			if (positions.size() != 2)
+				continue;
+
+			const liteseq::ref_walk *rw =
+				g.get_ref_vec(hap_idx)->walk;
+
+			pt::u32 f = positions[0];
+			pt::u32 s = positions[1];
+
+			pt::u32 f_vid = rw->v_ids[f];
+			pt::u32 s_vid = rw->v_ids[s];
+
+			if (f_vid != s_vid)
+				continue;
+
+			liteseq::strand f_strand = rw->strands[f];
+			liteseq::strand s_strand = rw->strands[s];
+
+			if (f_strand == s_strand)
+				continue;
+
+			std::cerr << "{" << g.v_idx_to_id(v_idx) << " " << s_vid
+				  << " " << f_vid << "}, ";
+
+			auto [fwd_idx, rev_idx] =
+				(f_strand == liteseq::strand::STRAND_FWD)
+					? pt::op_t<pt::u32>{f, s}
+					: pt::op_t<pt::u32>{s, f};
+
+			invs.add_inv_slice(v_idx, hap_idx,
+					   ia::inv_slice{rw, hap_idx, fwd_idx,
+							 rev_idx, 1});
+		}
+		std::cerr << "]\n";
+	}
+
+	// for (pt::u32 hap_idx{}; hap_idx < g.get_hap_count(); hap_idx++) {
+	//	const liteseq::ref_walk *rw = g.get_ref_vec(hap_idx)->walk;
+	//	pr::Ref r = g.get_ref_by_id(hap_idx);
+	//	std::cerr << r.tag() << "\n";
+	//	std::cerr << "[";
+	//	for (const auto &[v_idx, inv_slices] :
+	//	     invs.get_slices_by_hap_idx(hap_idx)) {
+	//		std::cerr << g.v_idx_to_id(v_idx) << ", ";
+	//	}
+	//	std::cerr << "]\n";
+	// }
+}
 
 void comp_expeditions_serial(const bd::VG &g, std::vector<ir::RoV> &all_rovs,
 			     pt::idx_t start, pt::idx_t count,
@@ -72,6 +133,10 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 		     const core::config &app_config)
 {
 	// bool prog = app_config.show_progress();
+	ia::inversions invs;
+	find_inversions(g, to_call_ref_ids, invs);
+
+	INFO("Generating regions of variation (RoVs)");
 
 	// Parse genomic region if specified
 	std::optional<ir::genomic_region> region = std::nullopt;
@@ -107,6 +172,11 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 	ise::pin_cushion pc;
 	std::vector<ia::trek> treks;
 
+	std::vector<ist::st> i_trees;
+
+	iv::VcfRecIdx rs = iv::gen_vcf_records(g, treks, i_trees, invs);
+	q.push(std::move(rs));
+
 	// std::vector<ia::Exp> exps;
 	// treks.reserve(CHUNK_SIZE);
 
@@ -115,6 +185,9 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 			pt::u32 end = std::min(base + CHUNK_SIZE, N);
 			pt::u32 count = end - base;
 			pt::u32 chunk_num = (base / CHUNK_SIZE) + 1;
+
+			INFO("Processing RoV Chunk ({}/{})", chunk_num,
+			     (N + CHUNK_SIZE - 1) / CHUNK_SIZE);
 
 			// if (prog) {
 			//	pt::idx_t chunk_num = (base /
@@ -134,15 +207,14 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 			comp_expeditions_serial(g, all_rovs, base, count,
 						to_call_ref_ids, pc, treks);
 
-			std::vector<ist::st> i_trees;
 			if (chunk_num == CHUNK_SIZE)
 				i_trees = ise::sne(g, pc, to_call_ref_ids);
 
-			if (treks.empty() && i_trees.empty())
-				continue;
+			// ia::inversions invs;
+			find_inversions(g, to_call_ref_ids, invs);
 
 			iv::VcfRecIdx rs =
-				iv::gen_vcf_records(g, treks, i_trees);
+				iv::gen_vcf_records(g, treks, i_trees, invs);
 
 			if (!q.push(std::move(rs)))
 				break; // queue was closed early

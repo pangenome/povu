@@ -26,12 +26,18 @@ enum class task_e : uint8_t {
 	info,	   // print graph information
 	prune,	   // leave only the graph structure
 	vcf,	   // analyse a VCF against a graph
+	view,	   // view variation or paths in a TUI
 	unset	   // unset
 };
 
 enum class vcf_options : uint8_t {
 	tui,
 	report,
+};
+
+enum class view_opts : uint8_t {
+	variation,
+	paths,
 };
 
 struct vcf_subcommand {
@@ -103,6 +109,8 @@ inline const char *to_str(task_e t)
 		return "prune";
 	case task_e::vcf:
 		return "vcf";
+	case task_e::view:
+		return "view";
 	case task_e::unset:
 		return "unset";
 	}
@@ -178,6 +186,8 @@ private:
 
 	/* Subcommand VCF */
 	vcf_subcommand vcf_subcmd;
+
+	view_opts view_opts_;
 
 public:
 	// -------------
@@ -315,6 +325,12 @@ public:
 		return this->vcf_subcmd;
 	}
 
+	[[nodiscard]]
+	view_opts get_view_opts() const
+	{
+		return this->view_opts_;
+	}
+
 	// ---------
 	// setter(s)
 	// ---------
@@ -429,6 +445,11 @@ public:
 	void set_genomic_region(const std::string &s)
 	{
 		this->genomic_region_str_ = s;
+	}
+
+	void set_view_opts(view_opts o)
+	{
+		this->view_opts_ = o;
 	}
 
 	// --------

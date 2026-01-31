@@ -11,8 +11,7 @@
 #include <liteseq/refs.h>  // for ref_walk
 #include <liteseq/types.h> // for strand
 
-#include "ita/variation/rov.hpp" // for RoV, var_type_e
-
+#include "ita/variation/rov.hpp"  // for RoV, var_type_e
 #include "povu/common/compat.hpp" // for contains, pv_cmp
 #include "povu/common/constants.hpp"
 #include "povu/common/core.hpp" // for pt, idx_t, id_t, op_t
@@ -37,6 +36,80 @@ using broad_step = extended_step;
 using broad_walk = extended_walk; // a lap?
 using ext_lap = std::vector<extended_step>;
 using race = std::vector<broad_walk>;
+
+struct inv_slice {
+	const lq::ref_walk *ref_w;
+	pt::idx_t hap_idx;
+	pt::idx_t fwd_idx;
+	pt::idx_t rev_idx;
+	pt::idx_t len;
+};
+
+struct inversions {
+	// (vertex idx, hap idx) pair to inv_slice
+	std::map<pt::op_t<pt::u32>, std::vector<inv_slice>> inv_slices;
+
+	// --------------
+	// constructor(s)
+	// --------------
+	inversions() = default;
+
+	// ---------
+	// getter(s)
+	// ---------
+
+	[[nodiscard]]
+	bool empty() const
+	{
+		return inv_slices.empty();
+	}
+
+	[[nodiscard]]
+	std::vector<inv_slice> get_slices_by_v_idx(pt::u32 v_idx) const
+	{
+		std::vector<inv_slice> result;
+		for (const auto &[key, inv_sls] : this->inv_slices) {
+			auto [v_idx_, h_idx] = key;
+
+			if (v_idx_ != v_idx)
+				continue;
+
+			for (const inv_slice &inv_sl : inv_sls)
+				result.emplace_back(inv_sl);
+		}
+
+		return result;
+	}
+
+	[[nodiscard]]
+	std::map<pt::u32, std::vector<inv_slice>>
+	get_slices_by_hap_idx(pt::u32 hap_idx) const
+	{
+		// v idx to inv_slices
+		std::map<pt::u32, std::vector<inv_slice>> result;
+		for (const auto &[key, inv_sls] : this->inv_slices) {
+			auto [v_idx, h_idx] = key;
+
+			if (h_idx != hap_idx)
+				continue;
+
+			for (const inv_slice &inv_sl : inv_sls)
+				result[v_idx].emplace_back(inv_sl);
+		}
+
+		return result;
+	}
+
+	// ---------
+	// setter(s)
+	// ---------
+
+	void add_inv_slice(pt::u32 v_idx, pt::u32 hap_idx, inv_slice &&inv_sl)
+	{
+		this->inv_slices[pt::op_t<pt::u32>{v_idx, hap_idx}]
+			.emplace_back(inv_sl);
+	}
+};
 
 struct hap_slice {
 	const lq::ref_walk *ref_w;
@@ -147,6 +220,7 @@ struct hap_slice {
 		case ir::var_type_e::del:
 			N--;
 			break;
+		case ir::var_type_e::inv:
 		case ir::var_type_e::subr:
 			break;
 		}
@@ -168,6 +242,7 @@ struct hap_slice {
 			return locus - 1;
 		case ir::var_type_e::sub:
 		case ir::var_type_e::subr:
+		case ir::var_type_e::inv:
 			return locus;
 		}
 
@@ -189,6 +264,7 @@ struct hap_slice {
 		switch (vt) {
 		case ir::var_type_e::subr:
 		case ir::var_type_e::sub:
+		case ir::var_type_e::inv:
 			break;
 		case ir::var_type_e::ins:
 		case ir::var_type_e::del:;
@@ -197,7 +273,8 @@ struct hap_slice {
 			break;
 		}
 
-		if (vt != ir::var_type_e::subr) {
+		if (vt == ir::var_type_e::ins || vt == ir::var_type_e::del ||
+		    vt == ir::var_type_e::sub) {
 			i++;
 			N--;
 		}
@@ -358,6 +435,7 @@ public:
 			alt = &this->dels;
 			break;
 		case ir::var_type_e::subr:
+		case ir::var_type_e::inv:
 			return;
 		}
 

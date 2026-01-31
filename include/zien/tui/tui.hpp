@@ -83,7 +83,7 @@ struct tui_context {
 		return this->state;
 	}
 
-	components::Pane &get_pane_ref(zien::tui::state::PaneID pane_id)
+	components::Pane &get_pane_ref_mut(zien::tui::state::PaneID pane_id)
 	{
 		return *this->panes.at(pane_id);
 	}

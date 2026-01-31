@@ -391,7 +391,8 @@ public:
 };
 
 VcfRecIdx gen_vcf_records(const bd::VG &g, const std::vector<ia::trek> &treks,
-			  const std::vector<ist::st> &its);
+			  const std::vector<ist::st> &its,
+			  const ia::inversions &invs);
 
 } // namespace ita::vcf
 

@@ -21,6 +21,7 @@ enum class var_type_e : pt::u8 {
 	ins,  // insertion
 	sub,  // substitution
 	subr, // substitution in reverse
+	inv,  // inversion
 };
 
 constexpr std::string_view to_string_view(var_type_e vt) noexcept
@@ -34,6 +35,8 @@ constexpr std::string_view to_string_view(var_type_e vt) noexcept
 		return "SUB";
 	case var_type_e::subr:
 		return "SUBR";
+	case var_type_e::inv:
+		return "INV";
 	}
 
 	std::cerr << "Unknown variant type";

@@ -1,11 +1,14 @@
 #include <algorithm>
+#include <cstdlib>
+#include <queue>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include <liteseq/refs.h> // for ref_walk, ref
 
-#include "povu/common/constants.hpp"
-#include "povu/common/core.hpp"
+#include "povu/common/constants.hpp"	  // for pv_cmp
+#include "povu/common/core.hpp"		  // for pt, pc
 #include "povu/graph/bidirected.hpp"	  // for VG
 #include "zien/common/common.hpp"	  // for to_char
 #include "zien/components/components.hpp" // for display_lines
@@ -15,6 +18,48 @@ namespace zien::components::paths
 using cell = std::vector<std::string>;
 using hap_row = std::vector<cell>;
 using matrix = std::vector<hap_row>;
+
+struct range_meta {
+	pt::u32 min_pos = pc::MAX_IDX;
+	pt::u32 row_count = 1;
+	pt::u32 wrap_idx = 0;
+
+	range_meta() = default; // default constructor
+};
+
+struct display_matrix {
+	pt::u32 I; // row count
+	pt::u32 J; // column count
+	matrix data;
+	std::set<pt::u32> blank_rows; // indices of blank rows
+	pt::u32 row_offset = 0;
+	std::vector<range_meta> meta;
+	std::vector<pt::u32> col_width; // default col width is 0
+
+	display_matrix() = delete;
+
+	/**
+	 * I hap row count
+	 * J column count
+	 * m metadata for each hap row
+	 * Initializes the display matrix with the specified dimensions &
+	 * metadata.
+	 *
+	 * default col width is 0, which means the column width will be
+	 * determined by the content in the cells.
+	 * The col_width vector will be updated as
+	 * the cells are filled with data.
+	 */
+	display_matrix(pt::u32 I, pt::u32 J, std::vector<range_meta> &&m)
+	    : data(I, hap_row(J)), meta(std::move(m)), col_width(J, 0)
+	{}
+
+	[[nodiscard]]
+	bool is_blank_row(pt::u32 row_idx) const
+	{
+		return pv_cmp::contains(blank_rows, row_idx);
+	}
+};
 
 std::vector<std::string> comp_order(const bd::VG &g, pt::u32 start, pt::u32 end)
 {
@@ -26,10 +71,18 @@ std::vector<std::string> comp_order(const bd::VG &g, pt::u32 start, pt::u32 end)
 	return h;
 }
 
-void update_display_lines(const bd::VG &g, const matrix &view_matrix,
-			  const std::vector<pt::u32> &col_width,
-			  const std::vector<pt::u32> &hap_row_count,
-			  display_lines &pd)
+/**
+ * Update the display lines based on the provided display matrix and metadata.
+ *
+ * @param g The bidirected graph containing the haplotypes and vertices.
+ * @param meta A vector of range_meta structures containing metadata for each
+ * haplotype.
+ * @param dm The display matrix containing the cell data to be displayed.
+ * @param pd A reference to the display_lines structure to be updated with the
+ * formatted lines.
+ */
+void update_display_lines(const bd::VG &g, std::vector<range_meta> meta,
+			  const display_matrix &dm, display_lines &pd)
 {
 	auto cell_to_str = [](const cell &cell_) -> std::string
 	{
@@ -40,14 +93,18 @@ void update_display_lines(const bd::VG &g, const matrix &view_matrix,
 		return s;
 	};
 
+	const matrix &view_matrix = dm.data;
+	const std::vector<pt::u32> &col_width = dm.col_width;
+
 	pt::u32 hap_idx{};
 	pt::u32 hap_row_idx{};
 	std::string line;
 
 	pt::u32 matrix_row_idx{};
 	pt::u32 matrix_row_count = view_matrix.size();
-
 	while (matrix_row_idx < matrix_row_count) {
+		const range_meta &rm = meta[hap_idx];
+		pt::u32 hap_row_count = rm.row_count;
 		const hap_row &hap_row = view_matrix[matrix_row_idx];
 
 		if (hap_row_idx == 0) {
@@ -57,6 +114,17 @@ void update_display_lines(const bd::VG &g, const matrix &view_matrix,
 		}
 		else {
 			pd.meta[matrix_row_idx].ref_name_pos = 0;
+		}
+
+		// TODO: better handle blank rows
+		if (hap_row_count == 0) { // blank
+			pd.lines.push_back(line);
+			line.clear();
+			hap_idx++;
+			hap_row_idx = 0;
+			pd.group_lines.insert(matrix_row_idx + 1);
+			matrix_row_idx++;
+			continue;
 		}
 
 		// c_idx = cell index
@@ -74,7 +142,7 @@ void update_display_lines(const bd::VG &g, const matrix &view_matrix,
 		pd.lines.push_back(line);
 		line.clear();
 
-		if (hap_row_idx + 1 >= hap_row_count[hap_idx]) {
+		if (hap_row_idx + 1 >= hap_row_count) {
 			hap_idx++;
 			hap_row_idx = 0;
 			pd.group_lines.insert(matrix_row_idx + 1);
@@ -87,135 +155,256 @@ void update_display_lines(const bd::VG &g, const matrix &view_matrix,
 	}
 }
 
-matrix comp_hap_rows(const bd::VG &g, const std::vector<std::string> &order,
-		     pt::u32 hap_idx, pt::u32 start, pt::u32 end,
-		     const liteseq::ref_walk *rw,
-		     std::vector<pt::u32> &col_width,
-		     std::vector<pt::u32> &hap_row_count)
+/**
+ * Compute the wrap around index for a given haplotype in the specified vertex
+ * range.
+ *
+ * @param g The bidirected graph containing the haplotypes and vertices.
+ * @param hap_idx The index of the haplotype to compute the wrap around for.
+ * @param start_v_idx The starting vertex index of the range (inclusive).
+ * @param end_v_idx The ending vertex index of the range (exclusive).
+ * @param rm A reference to a range_meta structure to store the computed wrap
+ * index.
+ */
+void comp_wrap_around(const bd::VG &g, pt::u32 hap_idx, pt::u32 start_v_idx,
+		      pt::u32 end_v_idx, range_meta &rm)
 {
-	auto count_rows = [](const std::vector<pt::idx_t> &positions) -> pt::u32
-	{
-		pt::u32 N = positions.size();
-		if (N < 2)
-			return positions.size();
+	for (pt::u32 v_idx{end_v_idx}; v_idx-- > start_v_idx;) {
+		const std::vector<pt::idx_t> &positions =
+			g.get_vertex_ref_idxs(v_idx, hap_idx);
 
-		pt::u32 row_count{1};
-		for (pt::u32 j{}; j < N - 1; j++)
-			if (positions[j] < positions[j + 1])
-				row_count++;
+		if (positions.empty())
+			continue;
 
-		return row_count;
-	};
+		pt::u32 min_pos =
+			*std::min_element(positions.begin(), positions.end());
 
-	auto baz = [](const liteseq::ref_walk *rw,
-		      const std::vector<pt::idx_t> &positions, pt::u32 pos_idx,
-		      pt::u32 order_step_idx,
-		      const std::vector<std::string> &order, pt::u32 &prev_pos,
-		      pt::u32 &w, cell &cell_)
+		if (min_pos > rm.wrap_idx) {
+			rm.wrap_idx = min_pos;
+			break;
+		}
+	}
+}
+
+void scan_range(const bd::VG &g, pt::u32 hap_idx, range_meta &rm,
+		pt::u32 start_v_idx, pt::u32 end_v_idx)
+{
+	comp_wrap_around(g, hap_idx, start_v_idx, end_v_idx, rm);
+
+	for (pt::u32 v_idx{start_v_idx}; v_idx < end_v_idx; v_idx++) {
+		const std::vector<pt::idx_t> &positions =
+			g.get_vertex_ref_idxs(v_idx, hap_idx);
+
+		if (positions.empty())
+			continue;
+
+		// compute min pos
+		for (pt::u32 pos : positions)
+			if (pos < rm.min_pos)
+				rm.min_pos = pos;
+
+		// compute row count
+		//
+		// wrap around detected
+		pt::u32 row_count_positions{1};
+		for (pt::u32 i{}; i < positions.size() - 1; i++)
+			if (positions[i] + 1 < positions[i + 1])
+				row_count_positions++;
+
+		// wrap around row count
+		pt::u32 row_count_wrap{0};
+		pt::u32 row_idx{};
+		for (pt::u32 step_idx : positions) {
+			if (step_idx > rm.wrap_idx) {
+				row_idx = step_idx / rm.wrap_idx;
+
+				if (row_count_wrap < row_idx)
+					row_count_wrap = row_idx;
+			}
+		}
+
+		// final row count for this haplotype in this range
+		pt::u32 row_count =
+			std::max(row_count_positions, row_count_wrap);
+		if (rm.row_count < row_count)
+			rm.row_count = row_count;
+	}
+
+	if (rm.row_count > 1)
+		rm.row_count++; // for 0 based index
+
+	return;
+}
+
+void comp_hap_rows(const bd::VG &g, pt::u32 hap_idx, pt::u32 start, pt::u32 end,
+		   display_matrix &dm)
+{
+	auto fill_cell = [](const liteseq::ref_walk *rw,
+			    const std::vector<pt::idx_t> &positions,
+			    pt::u32 pos_idx, pt::u32 &prev_pos, pt::u32 &w,
+			    cell &cell_)
 	{
 		pt::u32 pos = positions[pos_idx];
+
 		liteseq::strand s = rw->strands[pos];
 		char c = zien::common::to_char(s);
-		std::string k = c + order[order_step_idx];
+		std::string k = c + std::to_string(rw->v_ids[pos]);
+
+		// std::string pos_str = "[" + std::to_string(pos) + "]";
+		// k += pos_str; // to indicate position
+
 		w += k.length();
 
 		cell_.emplace_back(k);
 		prev_pos = pos;
 	};
 
-	auto check_prev = [](const std::vector<pt::idx_t> &positions,
-			     pt::u32 prev_pos, bool row_has_data,
-			     pt::u32 row_idx) -> std::vector<pt::u32>
-	{
-		std::vector<pt::u32> res{};
+	matrix &m = dm.data;
+	std::vector<pt::u32> &col_width = dm.col_width;
+	const liteseq::ref_walk *rw = g.get_ref_vec(hap_idx)->walk;
 
-		pt::u32 N = positions.size();
-		if (prev_pos == pc::INVALID_IDX) {
-			res.push_back(0);
-		}
-		else {
-			for (pt::u32 pos_idx{}; pos_idx < N; pos_idx++) {
-				if ((positions[pos_idx] - 1) == prev_pos) {
-					res.push_back(pos_idx);
-					break;
-				}
-				else if (!row_has_data && pos_idx == row_idx) {
-					res.push_back(pos_idx);
-					break;
-				}
-			}
-
-			if (res.empty())
-				return {};
-		}
-
-		for (pt::u32 i{res.front()}; i < N - 1; i++)
-			if (positions[i] + 1 == (positions[i + 1]))
-				res.push_back(i + 1);
-
-		return res;
-	};
-
-	matrix m; // hap rows
-
-	pt::u32 curr_row{};
-	pt::u32 max_row_count{};
-
+	std::map<pt::u32, std::queue<pt::u32>> buff;
+	std::set<pt::u32> seen;
+	const range_meta &rm = dm.meta[hap_idx];
+	pt::u32 row_count = rm.row_count;
+	bool row_has_data{false};
 	pt::u32 prev_pos = pc::INVALID_IDX;
-	do {
-		bool row_has_data{false};
-		hap_row row; // single hap row
+
+	pt::u32 conceptual_row_idx{};
+	pt::u32 row_idx{}; // actual row index in the matrix
+	for (; row_idx < row_count; row_idx++) {
+
+		row_has_data = false;
+		prev_pos = pc::INVALID_IDX;
+		hap_row &row = m[row_idx + dm.row_offset];
+
 		for (pt::u32 v_idx{start}; v_idx < end; v_idx++) {
+
 			const std::vector<pt::idx_t> &positions =
 				g.get_vertex_ref_idxs(v_idx, hap_idx);
 
-			if (positions.empty()) {
-				row.emplace_back(); // empty cell
+			if (positions.empty())
 				continue;
-			}
-
-			// do this only once to get the max row count
-			if (curr_row == 0) {
-				pt::u32 row_count = count_rows(positions);
-				if (row_count > max_row_count)
-					max_row_count = row_count;
-			}
 
 			// the col for that specific node
 			// i - start to get the index in order
 			pt::u32 order_step_idx = v_idx - start;
+			pt::u32 col_idx = order_step_idx;
 
-			std::vector<pt::u32> curr_pos_idxs = check_prev(
-				positions, prev_pos, row_has_data, curr_row);
+			std::set<pt::u32> curr_pos_idxs;
 
-			if (!curr_pos_idxs.empty())
+			if (pv_cmp::contains(buff, v_idx)) {
+				auto &q = buff[v_idx];
+				while (!q.empty()) {
+					pt::u32 curr_pos_idx = q.front();
+					q.pop();
+					curr_pos_idxs.insert(curr_pos_idx);
+
+					if (!q.empty() &&
+					    positions[curr_pos_idx] + 1 <
+						    positions[q.front()]) {
+						break;
+					}
+				}
+
+				if (q.empty())
+					buff.erase(v_idx);
+			}
+
+			for (pt::u32 i{}; i < positions.size(); i++) {
+				if (rm.wrap_idx == 0)
+					continue;
+
+				pt::u32 prev_step_idx{pc::INVALID_IDX};
+				if (!curr_pos_idxs.empty()) {
+					pt::u32 i = *curr_pos_idxs.rbegin();
+					prev_step_idx = positions[i];
+				};
+
+				pt::u32 curr_step_idx = positions[i];
+
+				pt::u32 expected_row_idx =
+					positions[i] / rm.wrap_idx;
+
+				if (expected_row_idx > 0 &&
+				    positions[i] % rm.wrap_idx == 0)
+					expected_row_idx--;
+
+				if (expected_row_idx < conceptual_row_idx || //
+				    pv_cmp::contains(seen, curr_step_idx))   //
+					continue;
+
+				if (expected_row_idx > conceptual_row_idx)
+					break;
+
+				// going forward
+				// expected_row_idx == conceptual_row_idx
+
+				// buffer
+				if (prev_pos == pc::INVALID_IDX &&	// new
+				    prev_step_idx != pc::INVALID_IDX && // x
+				    prev_step_idx + 1 < curr_step_idx	// x
+				) {
+					buff[v_idx].push(i);
+				}
+				else if (prev_pos == pc::INVALID_IDX ||
+					 prev_step_idx + 1 == curr_step_idx ||
+					 (prev_pos != pc::INVALID_IDX &&
+					  (prev_pos + 1 == curr_step_idx))) {
+					curr_pos_idxs.insert(i);
+				}
+
+				seen.insert(curr_step_idx);
+			}
+
+			// extend from previous col
+			// checks if a position is adjacent to prev_pos
+			if (prev_pos != pc::INVALID_IDX) {
+				for (pt::u32 i{}; i < positions.size(); i++) {
+					if (prev_pos + 1 == positions[i] ||
+					    prev_pos - 1 == positions[i]) {
+						curr_pos_idxs.insert(i);
+						break;
+					}
+				}
+			}
+
+			for (pt::u32 i{1}; i < positions.size(); i++) {
+				if (positions[i - 1] + 1 < positions[i] &&
+				    prev_pos == positions[i - 1]) {
+					curr_pos_idxs.insert(i);
+				}
+			}
+
+			if (!row_has_data && !curr_pos_idxs.empty())
 				row_has_data = true;
 
-			cell cell_;
+			cell &cell_ = row[col_idx];
 			pt::u32 cell_width{};
 
 			for (pt::u32 curr_pos_idx : curr_pos_idxs)
-				baz(rw, positions, curr_pos_idx, order_step_idx,
-				    order, prev_pos, cell_width, cell_);
-
-			// if empty it adds an empty cell
-			row.emplace_back(cell_);
+				fill_cell(rw, positions, curr_pos_idx, prev_pos,
+					  cell_width, cell_);
 
 			if (cell_width > col_width[order_step_idx])
 				col_width[order_step_idx] = cell_width;
 		}
-		m.emplace_back(row);
-	} while (++curr_row < max_row_count);
 
-	hap_row_count.emplace_back(max_row_count);
+		if (buff.empty())
+			conceptual_row_idx++;
 
-	return m;
+		if (!row_has_data)
+			dm.blank_rows.insert(row_idx);
+	}
+
+	dm.row_offset += row_count;
 }
 
 pt::op_t<pt::u32> comp_path_view_range(const bd::VG &g, const ui_state &state)
 {
-	const pt::u32 min_idx{};	     // minimum valid vertex index
-	const pt::u32 half_window_size{250}; // halfway point vertex idx
+	const pt::u32 min_idx{}; // minimum valid vertex index
+	// halfway point vertex idx
+	const pt::u32 half_window_size{state.half_window_size};
 
 	pt::u32 start_idx = (state.paths_view_mid > half_window_size)
 				    ? state.paths_view_mid - half_window_size
@@ -227,6 +416,28 @@ pt::op_t<pt::u32> comp_path_view_range(const bd::VG &g, const ui_state &state)
 	return {start_idx, end_idx};
 }
 
+/**
+  pre comp metadata for each haplotype in the range
+*/
+std::pair<pt::u32, std::vector<range_meta>>
+pre_comp_meta(const bd::VG &g, pt::u32 start, pt::u32 end)
+{
+	std::vector<range_meta> meta(g.get_hap_count());
+	pt::u32 total_row_count{};
+	for (pt::u32 hap_idx{}; hap_idx < g.get_hap_count(); hap_idx++) {
+		// row content
+
+		// idx in the vertex is the hap idx the value is the
+		// range meta for that hap
+		pt::u32 N = std::min(g.vtx_count(), end);
+		range_meta &rm = meta[hap_idx];
+		scan_range(g, hap_idx, rm, start, N);
+		total_row_count += rm.row_count;
+	}
+
+	return {total_row_count, meta};
+}
+
 void update_paths(const bd::VG &g, ui_state &state, display_lines &pd)
 {
 	auto [start, end] = comp_path_view_range(g, state);
@@ -234,12 +445,12 @@ void update_paths(const bd::VG &g, ui_state &state, display_lines &pd)
 	std::vector<std::string> order = comp_order(g, start, end);
 
 	pt::u32 col_count = order.size();
-	std::vector<pt::u32> col_width(col_count, 0); // default col width is 0
 
 	std::vector<pt::u32> hap_row_count;
 	hap_row_count.reserve(g.get_hap_count());
 
-	matrix view_matrix;
+	auto [total_row_count, meta] = pre_comp_meta(g, start, end);
+	display_matrix dm(total_row_count, col_count, std::move(meta));
 
 	// populate view matrix
 	for (pt::u32 hap_idx{}; hap_idx < g.get_hap_count(); hap_idx++) {
@@ -249,17 +460,10 @@ void update_paths(const bd::VG &g, ui_state &state, display_lines &pd)
 			pd.lh = tag.length();
 
 		// row content
-		const liteseq::ref_walk *rw = g.get_ref_vec(hap_idx)->walk;
 		pt::u32 N = std::min(g.vtx_count(), end);
-
-		matrix hap_rows = comp_hap_rows(g, order, hap_idx, start, N, rw,
-						col_width, hap_row_count);
-
-		for (auto &&r : hap_rows)
-			view_matrix.emplace_back(r);
+		comp_hap_rows(g, hap_idx, start, N, dm);
 	}
 
-	// update display lines from view matrix
-	update_display_lines(g, view_matrix, col_width, hap_row_count, pd);
+	update_display_lines(g, meta, dm, pd);
 }
 } // namespace zien::components::paths

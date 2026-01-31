@@ -5,6 +5,7 @@
 #include "./subcommand/info.hpp"      // for do_info
 #include "./subcommand/prune.hpp"     // for do_prune
 #include "./subcommand/vcf.hpp"	      // for do_vcf
+#include "./subcommand/view.hpp"      // for do_view
 #include "povu/common/app.hpp"	      // for task_e, config
 
 namespace pv = povu::subcommands;
@@ -35,6 +36,9 @@ int main(int argc, char *argv[])
 		break;
 	case core::task_e::vcf:
 		pv::vcf::do_vcf(app_config);
+		break;
+	case core::task_e::view:
+		pv::view::do_view(app_config);
 		break;
 	default:
 		break;

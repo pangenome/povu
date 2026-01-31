@@ -42,7 +42,8 @@ enum class PaneID : uint8_t {
 	C, // bottom left
 	D, // bottom right
 	E, // repeats pane
-	// graph window
+
+	// paths window
 	F, // paths
 };
 
@@ -82,6 +83,9 @@ struct ui_state {
 	// ........................
 	//
 	pt::u32 paths_view_mid = 250;
+	// pt::u32 paths_view_mid = 1720;
+	// pt::u32 paths_view_mid = 93050;
+	pt::u32 half_window_size = 250; // halfway point vertex idx
 	pt::op_t<pt::u32> paths_view_range{1, 500};
 	bool update_paths_view = false;
 	pt::u32 selected_line = 1;

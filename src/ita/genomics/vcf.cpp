@@ -282,8 +282,8 @@ void context_bound(const bd::VG &g, const std::vector<ia::trek> &treks,
 	}
 }
 
-void context_free(const bd::VG &g, const std::vector<ist::st> &its,
-		  VcfRecIdx &vcf_recs)
+void sub_invs(const bd::VG &g, const std::vector<ist::st> &its,
+	      VcfRecIdx &vcf_recs)
 {
 	for (const auto &i_tree : its) {
 		pt::u32 ref_h_idx = i_tree.get_ref_hap_idx();
@@ -292,20 +292,75 @@ void context_free(const bd::VG &g, const std::vector<ist::st> &its,
 	}
 }
 
+void context_free(const bd::VG &g, const ia::inversions &invs,
+		  VcfRecIdx &vcf_recs)
+{
+	for (pt::u32 hap_idx{}; hap_idx < g.get_hap_count(); hap_idx++) {
+
+		// v idx to inv slices for this hap idx
+		std::map<pt::u32, std::vector<ia::inv_slice>> slices =
+			invs.get_slices_by_hap_idx(hap_idx);
+
+		for (const auto &[v_idx, inv_slices] : slices) {
+			for (auto &inv_sl : inv_slices) {
+
+				const lq::ref_walk *ref_w = inv_sl.ref_w;
+				pt::u32 pos = ref_w->loci[inv_sl.fwd_idx];
+
+				pt::u32 u_v_id = ref_w->v_ids[inv_sl.fwd_idx];
+				pt::u32 v_v_id = ref_w->v_ids[inv_sl.fwd_idx +
+							      inv_sl.len - 1];
+
+				std::string id = pv_cmp::format("|{}|{}|",
+								u_v_id, v_v_id);
+
+				ia::hap_slice ref_sl{ref_w, hap_idx,
+						     inv_sl.fwd_idx,
+						     inv_sl.len};
+
+				std::set<pt::u32> ref_haps;
+
+				VcfRec vcf_rec{hap_idx,
+					       pos,
+					       id,
+					       "",
+					       ref_sl,
+					       0,
+					       std::move(ref_haps),
+					       ir::var_type_e::inv,
+					       false};
+
+				// comp alt set
+				std::vector<ia::hap_slice> alt_set;
+				for (const ia::inv_slice &inv_sl_ :
+				     invs.get_slices_by_v_idx(v_idx)) {
+					alt_set.emplace_back(
+						g.get_ref_vec(inv_sl_.hap_idx)
+							->walk,
+						inv_sl_.hap_idx,
+						inv_sl_.rev_idx, inv_sl_.len);
+				}
+
+				vcf_rec.add_alt_set(std::move(alt_set));
+
+				auto &recs = vcf_recs.ensure_recs_mut(hap_idx);
+				recs.emplace_back(std::move(vcf_rec));
+			}
+		}
+	}
+}
+
 VcfRecIdx gen_vcf_records(const bd::VG &g, const std::vector<ia::trek> &treks,
-			  const std::vector<ist::st> &its)
+			  const std::vector<ist::st> &its,
+			  const ia::inversions &invs)
 {
 	VcfRecIdx vcf_recs;
 
 	context_bound(g, treks, vcf_recs);
-	context_free(g, its, vcf_recs);
+	sub_invs(g, its, vcf_recs);
 
-	// for (pt::idx_t i{}; i < treks.size(); ++i) {
-	//	const ia::trek &tk = treks[i];
-	//	std::map<pt::idx_t, std::vector<VcfRec>> exp_vcf_recs =
-	//		gen_exp_vcf_recs(g, tk);
-	//	vcf_recs.ensure_append_recs(std::move(exp_vcf_recs));
-	// }
+	if (!invs.empty())
+		context_free(g, invs, vcf_recs);
 
 	return vcf_recs;
 }
