@@ -28,7 +28,9 @@ void write_header_common(std::ostream &os)
 	os << "##INFO=<ID=AN,Number=1,Type=String,Description=\"Total number of alleles in called genotypes\">\n";
 	os << "##INFO=<ID=AF,Number=A,Type=Float,Description=\"Allele frequency in the population\">\n";
 	os << "##INFO=<ID=NS,Number=1,Type=Integer,Description=\"Number of samples with data\">\n";
+	os << "##INFO=<ID=VARCLASS,Number=1,Type=String,Description=\"Class of variation: SIMPLE or STRUCTURAL\">\n";
 	os << "##INFO=<ID=VARTYPE,Number=1,Type=String,Description=\"Type of variation: INS (insertion), DEL (deletion), SUB (substitution), SUBR(substitution in reverse) \">\n";
+	os << "##INFO=<ID=SVTYPE,Number=1,Type=String,Description=\"Type of structural variation: INV (inversion)\">\n";
 	os << "##INFO=<ID=TANGLED,Number=1,Type=String,Description=\"Variant lies in a tangled region of the graph: T or F\">\n";
 	os << "##INFO=<ID=LV,Number=1,Type=Integer,Description=\"Level in the PVST (0=top level)\">\n";
 	os << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
@@ -78,30 +80,42 @@ void init_vcfs(bd::VG &g, const std::vector<std::string> &ref_name_prefixes,
 	return;
 }
 
-/**
- * @brief write a VCF record to output stream
- */
-void write_rec(const bd::VG &g, iv::VcfRec &r, const std::string &chrom,
-	       std::ostream &os)
+std::ostringstream comp_info_field(iv::VcfRec &r)
 {
 	std::ostringstream info_field;
+
 	// clang-format off
 	info_field << "AC=" << r.get_ac()
 		   << ";AF=" << r.get_af()
 		   << ";AN=" << r.get_an()
 		   << ";NS=" << r.get_ns()
-		   << ";AT=" << r.get_at()
-		   << ";VARTYPE=" << ir::to_string_view(r.get_var_type())
-		   << ";TANGLED=" << (r.is_tangled() ? "T" : "F");
+		   << ";AT=" << r.get_at();
 	// clang-format on
 
-	if (r.get_var_type() != ir::var_type_e::subr) {
+	info_field << (r.get_var_class() == iv::var_class_e::structural
+			       ? ";SVTYPE="
+			       : ";VARTYPE=")
+		   << ir::to_string_view(r.get_var_type());
+
+	info_field << ";VARCLASS=" << r.get_var_class();
+	info_field << ";TANGLED=" << (r.is_tangled() ? "T" : "F");
+
+	if (r.get_var_class() != iv::var_class_e::structural) {
 		// clang-format off
 		info_field << ";ES=" << r.get_enc_flubble()
 			   << ";LV=" << (r.get_height() - 1);
 		// clang-format on
 	}
 
+	return info_field;
+}
+
+/**
+ * @brief write a VCF record to output stream
+ */
+void write_rec(const bd::VG &g, iv::VcfRec &r, const std::string &chrom,
+	       const std::ostringstream &info_field, std::ostream &os)
+{
 	// clang-format off
 	os << chrom << "\t"
 	   << r.get_pos() << "\t"
@@ -131,8 +145,10 @@ void write_vcfs(iv::VcfRecIdx &vcf_recs, const bd::VG &g, VcfOutput &vout,
 		std::ostream &os =
 			to_stdout ? *stdout_os : vout.stream_for_ref_id(ref_id);
 
-		for (iv::VcfRec &r : recs)
-			write_rec(g, r, ref_tag, os);
+		for (iv::VcfRec &r : recs) {
+			std::ostringstream info_field = comp_info_field(r);
+			write_rec(g, r, ref_tag, info_field, os);
+		}
 	}
 
 	return;

@@ -18,6 +18,7 @@
 #include "ita/graph/slice_tree.hpp" // for poi
 #include "ita/variation/rov.hpp"    // for var_type_e
 
+#include "ita/graph/interval_tree.hpp" // for interval_tree
 #include "povu/common/constants.hpp"
 #include "povu/common/core.hpp"	     // for pt, idx_t, id_t, op_t
 #include "povu/common/log.hpp"	     // for ERR
@@ -29,6 +30,13 @@ namespace ita::vcf
 inline constexpr std::string_view MODULE = "povu::genomics::vcf";
 namespace bd = povu::bidirected;
 namespace pgt = povu::types::graph;
+
+enum class var_class_e : pt::u8 { // variation class
+	simple,
+	structural
+};
+
+std::ostream &operator<<(std::ostream &os, var_class_e vc);
 
 class VcfRec
 {
@@ -54,6 +62,7 @@ class VcfRec
 
 	pt::idx_t height_; // height of the pvst node in the tree
 
+	var_class_e var_class_;
 	// type of the variant, e.g. del, ins, sub, und
 	ir::var_type_e var_type_;
 
@@ -96,7 +105,19 @@ public:
 	      enc_flubble(std::move(en_flub)), ref_slice_(ref_sl),
 	      ref_at_haps_(ref_at_haps), height_(height), var_type_(var_typ),
 	      is_tangled_(is_tangled)
-	{}
+	{
+		switch (this->var_type_) {
+		case ir::var_type_e::del:
+		case ir::var_type_e::ins:
+		case ir::var_type_e::sub:
+		case ir::var_type_e::subr:
+			this->var_class_ = var_class_e::simple;
+			break;
+		case ir::var_type_e::inv:
+			this->var_class_ = var_class_e::structural;
+			break;
+		}
+	}
 
 	// because of allele slice let's make these operators/methods explicit
 	VcfRec(const VcfRec &) = delete;
@@ -234,6 +255,12 @@ public:
 	ir::var_type_e get_var_type() const
 	{
 		return this->var_type_;
+	}
+
+	[[nodiscard]]
+	var_class_e get_var_class() const
+	{
+		return this->var_class_;
 	}
 
 	[[nodiscard]]
@@ -392,7 +419,7 @@ public:
 
 VcfRecIdx gen_vcf_records(const bd::VG &g, const std::vector<ia::trek> &treks,
 			  const std::vector<ist::st> &its,
-			  const ia::inversions &invs);
+			  const std::map<pt::u32, iit::interval_tree> &invs);
 
 } // namespace ita::vcf
 

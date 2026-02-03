@@ -17,6 +17,21 @@ namespace ita::vcf
 namespace lq = liteseq;
 namespace pvst = povu::pvst;
 
+std::ostream &operator<<(std::ostream &os, var_class_e vc)
+{
+	switch (vc) {
+	case var_class_e::simple:
+		return os << "SIMPLE";
+	case var_class_e::structural:
+		return os << "STRUCTURAL";
+	default:
+		std::string err_msg = std::string(__func__) + ":" +
+				      std::to_string(__LINE__) +
+				      " - Unknown variant class";
+		throw std::invalid_argument(err_msg);
+	}
+}
+
 std::pair<pt::u32, std::vector<std::vector<std::string>>>
 gen_gt_data(const bd::VG &g, const std::set<pt::u32> &ref_haps,
 	    const std::set<pt::u32> &alt_h_idxs)
@@ -292,67 +307,64 @@ void sub_invs(const bd::VG &g, const std::vector<ist::st> &its,
 	}
 }
 
-void context_free(const bd::VG &g, const ia::inversions &invs,
+void context_free(const bd::VG &g,
+		  const std::map<pt::u32, iit::interval_tree> &invs,
 		  VcfRecIdx &vcf_recs)
 {
-	for (pt::u32 hap_idx{}; hap_idx < g.get_hap_count(); hap_idx++) {
+	for (const auto &[hap_idx, it] : invs) {
+		const liteseq::ref_walk *rw = g.get_ref_vec(hap_idx)->walk;
+		for (const auto &[_, interval] : it.get_intervals()) {
 
-		// v idx to inv slices for this hap idx
-		std::map<pt::u32, std::vector<ia::inv_slice>> slices =
-			invs.get_slices_by_hap_idx(hap_idx);
+			pt::u32 fwd_s = interval.fwd_start;
+			pt::u32 rev_s = interval.rev_start;
+			pt::u32 len = interval.len;
 
-		for (const auto &[v_idx, inv_slices] : slices) {
-			for (auto &inv_sl : inv_slices) {
+			pt::u32 pos = rw->loci[fwd_s];
 
-				const lq::ref_walk *ref_w = inv_sl.ref_w;
-				pt::u32 pos = ref_w->loci[inv_sl.fwd_idx];
+			pt::u32 u_v_id = rw->v_ids[fwd_s];
+			pt::u32 v_v_id = rw->v_ids[fwd_s + len - 1];
 
-				pt::u32 u_v_id = ref_w->v_ids[inv_sl.fwd_idx];
-				pt::u32 v_v_id = ref_w->v_ids[inv_sl.fwd_idx +
-							      inv_sl.len - 1];
+			std::string id =
+				pv_cmp::format("|{}|{}|", u_v_id, v_v_id);
 
-				std::string id = pv_cmp::format("|{}|{}|",
-								u_v_id, v_v_id);
+			ia::hap_slice ref_sl{rw, hap_idx, fwd_s, len};
 
-				ia::hap_slice ref_sl{ref_w, hap_idx,
-						     inv_sl.fwd_idx,
-						     inv_sl.len};
+			std::set<pt::u32> ref_haps{hap_idx};
+			VcfRec vcf_rec{hap_idx,
+				       pos,
+				       id,
+				       "",
+				       ref_sl,
+				       0,
+				       std::move(ref_haps),
+				       ir::var_type_e::inv,
+				       false};
 
-				std::set<pt::u32> ref_haps;
+			// comp alt set
+			ia::hap_slice alt_sl{rw, hap_idx, rev_s, len};
+			std::vector<ia::hap_slice> alt_set{alt_sl};
 
-				VcfRec vcf_rec{hap_idx,
-					       pos,
-					       id,
-					       "",
-					       ref_sl,
-					       0,
-					       std::move(ref_haps),
-					       ir::var_type_e::inv,
-					       false};
+			vcf_rec.add_alt_set(std::move(alt_set));
 
-				// comp alt set
-				std::vector<ia::hap_slice> alt_set;
-				for (const ia::inv_slice &inv_sl_ :
-				     invs.get_slices_by_v_idx(v_idx)) {
-					alt_set.emplace_back(
-						g.get_ref_vec(inv_sl_.hap_idx)
-							->walk,
-						inv_sl_.hap_idx,
-						inv_sl_.rev_idx, inv_sl_.len);
-				}
+			std::vector<std::vector<std::string>> gt_cols =
+				g.get_blank_genotype_cols();
 
-				vcf_rec.add_alt_set(std::move(alt_set));
+			std::set<pt::u32> ns_cols;
+			auto [hap_col, phase_col] = g.get_gt_col_meta(hap_idx);
+			ns_cols.insert(hap_col);
+			gt_cols[hap_col][phase_col] = "0";
+			vcf_rec.add_gt_cols(std::move(gt_cols));
+			vcf_rec.set_ns(ns_cols.size());
 
-				auto &recs = vcf_recs.ensure_recs_mut(hap_idx);
-				recs.emplace_back(std::move(vcf_rec));
-			}
+			auto &recs = vcf_recs.ensure_recs_mut(hap_idx);
+			recs.emplace_back(std::move(vcf_rec));
 		}
 	}
 }
 
 VcfRecIdx gen_vcf_records(const bd::VG &g, const std::vector<ia::trek> &treks,
 			  const std::vector<ist::st> &its,
-			  const ia::inversions &invs)
+			  const std::map<pt::u32, iit::interval_tree> &invs)
 {
 	VcfRecIdx vcf_recs;
 

@@ -56,7 +56,7 @@ struct ui_state {
 	// --------------------------
 
 	// ........................
-	// common state
+	//       common state
 	// ........................
 	//
 	int screen_h; // screen height
@@ -74,24 +74,26 @@ struct ui_state {
 	bool toggle_repeats_pane = false;
 
 	// ........................
-	// shared
+	//       shared
 	// ........................
 	pt::u32 hap_count = 0; // number of haplotypes in the graph
 
 	// ........................
-	// paths view
+	//      paths view
 	// ........................
+	//
 	//
 	pt::u32 paths_view_mid = 250;
 	// pt::u32 paths_view_mid = 1720;
 	// pt::u32 paths_view_mid = 93050;
+
 	pt::u32 half_window_size = 250; // halfway point vertex idx
 	pt::op_t<pt::u32> paths_view_range{1, 500};
 	bool update_paths_view = false;
 	pt::u32 selected_line = 1;
 
 	// ........................
-	// variation view
+	//     variation view
 	// ........................
 	PaneID active_pane_id = PaneID::A;
 	pt::u8 pane_count = 4; // number of panes currently displayed
