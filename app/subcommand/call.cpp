@@ -73,6 +73,12 @@ void do_call(core::config &app_config)
 	bd::VG *g{nullptr};
 	std::vector<pvst::Tree> pvsts;
 
+	using std::chrono::duration;
+	using std::chrono::duration_cast;
+	using std::chrono::high_resolution_clock;
+	using std::chrono::milliseconds;
+
+	auto t1 = high_resolution_clock::now();
 	// read graph
 	std::thread read_graph([&] { g = mto::from_gfa::to_bd(app_config); });
 
@@ -153,6 +159,13 @@ void do_call(core::config &app_config)
 
 	delete g;
 	g = nullptr;
+
+	auto t2 = high_resolution_clock::now();
+
+	duration<double, std::milli> ms_double = t2 - t1;
+	duration<double> s_double = duration_cast<duration<double>>(ms_double);
+	if (app_config.verbosity() > 0)
+		INFO("Did all in {} seconds", s_double.count());
 
 	return;
 }

@@ -10,11 +10,13 @@
 #include <string_view>	 // for string_view
 #include <vector>	 // for vector
 
-#include "liteseq/refs.h"	 // for ref
-#include "povu/common/core.hpp"	 // for pt, idx_t, id_t, op_t
-#include "povu/common/utils.hpp" // for pu, TwoWayMap
-#include "povu/graph/types.hpp"	 // for v_end_e, side_n_id_t, side_n_idx_t
-#include "povu/refs/refs.hpp"	 // for pr, Ref, Refs
+#include <liteseq/refs.h> // for ref
+
+#include "meza/matrix/matrix.hpp" // for matrix2d
+#include "povu/common/core.hpp"	  // for pt, idx_t, id_t, op_t
+#include "povu/common/utils.hpp"  // for pu, TwoWayMap
+#include "povu/graph/types.hpp"	  // for v_end_e, side_n_id_t, side_n_idx_t
+#include "povu/refs/refs.hpp"	  // for pr, Ref, Refs
 
 namespace povu::bidirected
 {
@@ -101,8 +103,10 @@ class VariationGraph
 
 	std::vector<Edge> edges;
 
-	// i is the vertex index, j is the ref index
-	std::vector<std::vector<std::vector<pt::idx_t>>> vertex_to_step_matrix_;
+	// vtx2sm -> vertex to step matrix
+	// i is the vertex index, j is the ref index, k is the step index
+	meza::matrix::matrix2d<std::vector<pt::idx_t>, pt::u32> vtx2sm;
+
 	pr::Refs refs_;
 
 	lq::gfa_props *gfa;

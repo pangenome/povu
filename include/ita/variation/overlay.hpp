@@ -10,7 +10,7 @@
 
 namespace ita::overlay
 {
-inline constexpr std::string_view MODULE = "povu::overlay";
+inline constexpr std::string_view MODULE = "ita::overlay";
 
 namespace lq = liteseq;
 namespace pgt = povu::types::graph;

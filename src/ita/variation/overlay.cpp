@@ -219,9 +219,9 @@ ia::hap_slice hap_sl_from_lap(const bd::VG &g, const ia::rov_boundaries &cxt,
 	}
 
 	if (starts.empty() || ends.empty()) {
-		PL_ERR("Could not find ia::context nodes in haplotype {} {}",
-		       h_idx, cxt.to_string());
-		std::exit(EXIT_FAILURE);
+		throw std::runtime_error(fmt::format(
+			"Could not find ia::context nodes in haplotype {} {}",
+			h_idx, cxt.to_string()));
 	}
 
 	if (starts.front() > ends.front()) // swap the starts and ends
@@ -317,6 +317,12 @@ ia::rov_boundaries gen_cxt(pt::u32 u, pt::u32 v, const ext_lap &lap)
 
 		if (v_id == v)
 			v_buff.push_back(lap[i]);
+	}
+
+	if (u_buff.empty() || v_buff.empty()) {
+		throw std::runtime_error(
+			"Could not find context nodes in lap for "
+			"cxt generation");
 	}
 
 	auto [_, l_v_id, l_o] = u_buff.front();
@@ -473,16 +479,56 @@ ia::trek comp_exps(const bd::VG &g, const ir::RoV *rov,
 				pt::id_t u = rov->get_sorted_vertex(b.first);
 				pt::id_t v = rov->get_sorted_vertex(b.second);
 
-				ia::rov_boundaries c = gen_cxt(u, v, ref_lap);
+				std::optional<ia::rov_boundaries> opt_c;
+				try {
+					opt_c = gen_cxt(u, v, ref_lap);
+				}
+				catch (...) {
+					PL_ERR("Error generating context for "
+					       "ref haplotype {} and alt "
+					       "haplotype {}. Skipping this "
+					       "pair.",
+					       ref_h_idx, h_idx);
+					std::cerr << "u " << u << " v " << v
+						  << "\n";
+					dm.print(std::cerr);
+					continue;
+				}
+				ia::rov_boundaries c = opt_c.value();
 
 				ia::cxt_to_min_rov_map &m =
 					tk.get_min_rov(ref_h_idx);
 
-				ia::hap_slice ref_sl = hap_sl_from_lap(
-					g, c, ref_lap, ref_h_idx, dbg);
+				std::optional<ia::hap_slice> opt_ref_sl;
+				std::optional<ia::hap_slice> opt_alt_sl;
 
-				ia::hap_slice alt_sl = hap_sl_from_lap(
-					g, c, alt_lap, h_idx, dbg);
+				try {
+					opt_ref_sl = hap_sl_from_lap(
+						g, c, ref_lap, ref_h_idx, dbg);
+				}
+				catch (std::runtime_error &e) {
+					WARN("Failed to generate hap_slice for "
+					     "ref "
+					     "haplotype {} cxt {}: {}",
+					     ref_h_idx, c.to_string(),
+					     e.what());
+					continue;
+				}
+
+				try {
+					opt_alt_sl = hap_sl_from_lap(
+						g, c, alt_lap, h_idx, dbg);
+				}
+				catch (std::runtime_error &e) {
+					WARN("Failed to generate hap_slice for "
+					     "alt "
+					     "haplotype {} cxt {}: {}",
+					     h_idx, c.to_string(), e.what());
+					continue;
+				}
+
+				ia::hap_slice ref_sl = *opt_ref_sl;
+				ia::hap_slice alt_sl = *opt_alt_sl;
 
 				if (is_inv_local(ref_sl, alt_sl)) {
 					ise::pin ref_pin = {

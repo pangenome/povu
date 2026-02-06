@@ -7,8 +7,9 @@
 #include <unordered_set> // for unordered_set, operator!=
 #include <vector>
 
-#include "fmt/core.h"		     // for format
-#include "liteseq/gfa.h"	     // for gfa_props
+#include <fmt/core.h>	 // for format
+#include <liteseq/gfa.h> // for gfa_props
+
 #include "povu/common/compat.hpp"    // for contains, pv_cmp, format
 #include "povu/common/constants.hpp" // for UNDEFINED_ID
 #include "povu/common/core.hpp"
@@ -146,27 +147,22 @@ void Vertex::add_edge_r(pt::idx_t e_idx)
 
 VariationGraph::VariationGraph(pt::idx_t vtx_count, pt::idx_t edge_count,
 			       pt::idx_t ref_count)
+    : vtx2sm(vtx_count, ref_count)
 {
 	this->gfa = nullptr;
 	this->vertices.reserve(vtx_count);
 	this->edges.reserve(edge_count);
-	this->vertex_to_step_matrix_.resize(vtx_count);
-	for (auto &vec : this->vertex_to_step_matrix_)
-		vec.resize(ref_count);
 }
 
 VariationGraph::VariationGraph(lq::gfa_props *gfa_props)
+    : vtx2sm(gfa_props->vtx_arr_size, gfa_props->ref_count)
 {
 	pt::idx_t vtx_count = gfa_props->vtx_arr_size;
 	pt::idx_t edge_count = gfa_props->l_line_count;
-	pt::idx_t ref_count = gfa_props->ref_count;
 
 	this->gfa = gfa_props;
 	this->vertices.reserve(vtx_count);
 	this->edges.reserve(edge_count);
-	this->vertex_to_step_matrix_.resize(vtx_count);
-	for (auto &vec : this->vertex_to_step_matrix_)
-		vec.resize(ref_count);
 }
 
 // ---------
@@ -266,7 +262,7 @@ const lq::ref *VG::get_ref_vec(pt::id_t ref_id) const
 const std::vector<pt::idx_t> &VG::get_vertex_ref_idxs(pt::idx_t v_idx,
 						      pt::id_t ref_id) const
 {
-	return this->vertex_to_step_matrix_.at(v_idx).at(ref_id);
+	return this->vtx2sm.at(v_idx, ref_id);
 }
 
 pt::u32 VG::get_ploidy(const std::string &sample_name) const
@@ -339,12 +335,14 @@ void VG::set_refs_meta(lq::ref **refs, pt::idx_t ref_count)
 void VG::set_vtx_ref_idx(pt::id_t v_id, pt::id_t ref_id, pt::idx_t step_idx)
 {
 	pt::idx_t v_idx = this->v_id_to_idx_.get_value(v_id);
-	std::vector<pt::idx_t> &s = this->vertex_to_step_matrix_[v_idx][ref_id];
+	std::vector<pt::idx_t> &s = this->vtx2sm.at(v_idx, ref_id);
 
 	// insert in sorted order of step idx
 	auto it = std::lower_bound(s.begin(), s.end(), step_idx);
 	if (it == s.end() || *it != step_idx) // avoid duplicates
 		s.insert(it, step_idx);
+
+	this->vtx2sm.mark_non_blank(v_idx, ref_id);
 }
 
 void VG::shrink_to_fit()

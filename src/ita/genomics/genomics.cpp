@@ -22,8 +22,6 @@
 
 namespace ita::genomics
 {
-namespace pvst = povu::pvst;
-
 void find_inversions(
 	const bd::VG &g, const std::set<pt::id_t> &to_call_ref_ids,
 	std::map<pt::u32, ita::interval_tree::interval_tree> &hap_idx_to_it)
@@ -203,9 +201,6 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 			pt::u32 end = std::min(base + CHUNK_SIZE, N);
 			pt::u32 count = end - base;
 			pt::u32 chunk_num = (base / CHUNK_SIZE) + 1;
-
-			if (chunk_num != 4883)
-				continue;
 
 			if (app_config.verbosity() > 0)
 				INFO("Processing RoV Chunk ({}/{})", chunk_num,
