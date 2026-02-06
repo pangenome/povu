@@ -269,13 +269,6 @@ const std::vector<pt::idx_t> &VG::get_vertex_ref_idxs(pt::idx_t v_idx,
 	return this->vertex_to_step_matrix_.at(v_idx).at(ref_id);
 }
 
-const std::vector<std::vector<pt::idx_t>> &
-VG::get_vertex_refs(pt::idx_t v_id) const
-{
-	pt::idx_t v_idx = this->v_id_to_idx_.get_value(v_id);
-	return this->vertex_to_step_matrix_.at(v_idx);
-}
-
 pt::u32 VG::get_ploidy(const std::string &sample_name) const
 {
 	return this->refs_.get_ploidy(sample_name);

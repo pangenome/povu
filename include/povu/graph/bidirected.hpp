@@ -174,9 +174,6 @@ public:
 	const std::vector<pt::idx_t> &
 	get_vertex_ref_idxs(pt::idx_t v_idx, pt::id_t ref_id) const;
 
-	const std::vector<std::vector<pt::idx_t>> &
-	get_vertex_refs(pt::idx_t v_id) const;
-
 	pt::idx_t get_ploidy(const std::string &sample_name) const;
 	pt::idx_t get_ploidy_id(const std::string &sample_name,
 				pt::u32 ploidy_idx) const;
@@ -209,7 +206,6 @@ public:
 };
 
 using VG = VariationGraph;
-// typedef VariationGraph VG;
 } // namespace povu::bidirected
 
 // NOLINTNEXTLINE(misc-unused-alias-decls)
