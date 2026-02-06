@@ -33,7 +33,6 @@ namespace fs = std::filesystem;
  */
 void read_pvsts(const core::config &app_config, std::vector<pvst::Tree> &pvsts)
 {
-
 	// get the list of files in the forest dir that end in .pvst
 	std::vector<fs::path> fps =
 		mto::common::get_files(app_config.get_forest_dir(), ".pvst");

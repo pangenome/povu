@@ -194,12 +194,11 @@ public:
 	// returns the index (e_idx) of the added edge
 	pt::idx_t add_edge(pt::id_t v1_id, pgt::v_end_e v1_end, pt::id_t v2_id,
 			   pgt::v_end_e v2_end);
-	void add_all_refs(lq::ref **refs, pt::idx_t ref_count);
+	void set_refs_meta(lq::ref **refs, pt::idx_t ref_count);
 	// pt::id_t add_ref(const std::string &label, char delim);
 	void shrink_to_fit();
 	void set_vtx_ref_idx(pt::id_t v_id, pt::id_t ref_id,
 			     pt::idx_t step_idx);
-	void gen_genotype_metadata();
 
 	// -----
 	// other

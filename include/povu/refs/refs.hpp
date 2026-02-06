@@ -4,13 +4,13 @@
 #include <iostream>
 #include <map>
 #include <optional>
+#include <ostream>
 #include <set>
 #include <string>
 #include <string_view>
 
 #include <liteseq/gfa.h>
 
-#include "povu/common/compat.hpp"
 #include "povu/common/constants.hpp"
 #include "povu/common/core.hpp"
 #include "povu/common/log.hpp"
@@ -25,6 +25,7 @@ enum class ref_format_e : pt::u8 {
 	PANSN = 1,
 	UNDEFINED = 0,
 };
+std::string to_string(ref_format_e r);
 
 char lq_strand_to_char(liteseq::strand s);
 
@@ -53,11 +54,22 @@ public:
 	// -------
 	// getters
 	// -------
-
 	[[nodiscard]]
 	pt::u32 ploidy() const
 	{
 		return static_cast<pt::u32>(this->hap_ids.size());
+	}
+
+	pt::u32 get_ploidy_idx(pt::u32 ploidy_id) const
+	{
+		for (pt::u32 i = 0; i < this->hap_ids.size(); i++)
+			if (this->hap_ids[i] == ploidy_id)
+				return i;
+
+		std::string contents = pu::concat_with(this->hap_ids, ',');
+		PL_ERR("Hap id {} not found in ploidy metadata. Contains: {}",
+		       ploidy_id, contents);
+		std::exit(EXIT_FAILURE);
 	}
 
 	[[nodiscard]]
@@ -158,9 +170,11 @@ class Refs
 	// TODO we are storing this pointer twice. Let's not do that.
 	std::vector<Ref> refs_;
 
-	// sample name to ploidy metadata
-	// sn2pm
+	// sn2pm: sample name to ploidy metadata
 	std::map<std::string, std::optional<ploidy_meta>> sn2pm;
+
+	// sample name to hap idxs
+	std::map<std::string, std::set<pt::u32>> sn2h_idxs;
 
 	/*
 	  -------------
@@ -278,26 +292,16 @@ public:
 	std::set<pt::id_t>
 	get_refs_in_sample(std::string_view sample_name) const
 	{
-		std::set<pt::id_t> in_sample;
-		for (pt::id_t ref_id{}; ref_id < this->ref_count(); ref_id++) {
-			const lq::ref *r = this->refs_ptr_ptr[ref_id];
-			const char *r_sn = lq::get_sample_name(r);
-			lq::ref_id_type rt = lq::get_ref_id_type(r);
-			if (rt == lq::ref_id_type::REF_ID_PANSN) {
-				if (r_sn == sample_name)
-					in_sample.insert(ref_id);
-			}
-			else if (rt == lq::ref_id_type::REF_ID_RAW) {
-				if (pu::is_prefix(sample_name, r_sn))
-					in_sample.insert(ref_id);
-			}
-
-			// as a fallback, match using the tag
-			if (pu::is_prefix(sample_name, lq::get_tag(r)))
-				in_sample.insert(ref_id);
+		std::string sn{sample_name};
+		std::set<pt::u32> combined;
+		auto it = this->sn2h_idxs.lower_bound(sn);
+		while (it != this->sn2h_idxs.end() &&
+		       pu::is_prefix(sn, it->first)) {
+			combined.insert(it->second.begin(), it->second.end());
+			++it;
 		}
 
-		return in_sample;
+		return combined;
 	}
 
 	[[nodiscard]]
@@ -305,7 +309,7 @@ public:
 	{
 		const lq::ref *r = this->refs_ptr_ptr[ref_id];
 		const char *sample_name = lq::get_sample_name(r);
-		return this->get_refs_in_sample(sample_name);
+		return this->get_refs_in_sample(std::string_view(sample_name));
 	}
 
 	[[nodiscard]]
@@ -330,83 +334,88 @@ public:
 	// ---------
 	// setter(s)
 	// ---------
-	void add_all_refs(lq::ref **refs, pt::idx_t ref_count)
+	/**
+	 * @brief adds ref names and ref metadata
+	 *
+	 */
+	void set_refs_meta(lq::ref **refs, pt::u32 ref_count)
 	{
 		this->ref_count_ = ref_count;
 		this->refs_ptr_ptr = refs;
-		for (pt::idx_t ref_idx{}; ref_idx < ref_count; ++ref_idx) {
-			Ref ref = Ref::from_lq_ref(refs_ptr_ptr[ref_idx]);
+		for (pt::idx_t h_idx{}; h_idx < ref_count; h_idx++) {
+			Ref ref = Ref::from_lq_ref(refs_ptr_ptr[h_idx]);
 			this->refs_.emplace_back(ref);
+
+			std::string sn = ref.get_sample_name();
+
+			// store gt cols based on h_idx
+			this->genotype_col_names.emplace_back(sn);
+
+			std::set<pt::u32> &sample_hap_idxs =
+				this->sn2h_idxs[sn];
+			sample_hap_idxs.insert(h_idx);
 		}
 
-		for (const Ref &r : this->refs_) {
-			std::string sn = r.get_sample_name();
-			if (r.get_format() == ref_format_e::PANSN) {
-				pt::u32 hap_id = r.get_hap_id();
+		// set ploidy metadata. ploidy meta only makes sense for PanSN
+		for (const auto &[sn, h_idxs] : this->sn2h_idxs) {
+			std::optional<ploidy_meta> &opt_pm =
+				this->sn2pm[sn]; // Create nullopt if none
 
-				// add hap id to sample's ploidy meta
-				if (!pv_cmp::contains(this->sn2pm, sn))
-					this->sn2pm[sn] = ploidy_meta{};
+			for (pt::u32 h_idx : h_idxs) {
+				const Ref &r = this->get_lq_ref(h_idx);
 
-				this->sn2pm[sn].value().add_hap_id(hap_id);
-			}
-			else {
-				this->sn2pm[sn] = std::nullopt;
+				if (r.get_format() != ref_format_e::PANSN)
+					continue;
+
+				pt::u32 ploidy_id = r.get_hap_id();
+				if (!opt_pm)
+					opt_pm = ploidy_meta{};
+
+				opt_pm->add_hap_id(ploidy_id);
 			}
 		}
-	}
 
-	void gen_genotype_metadata()
-	{
-		std::set<pt::id_t> handled;
+		// compute and save genotype fields for each hap
+		pt::u32 N = this->genotype_col_names.size();
+		for (pt::u32 hap_col{}; hap_col < N; hap_col++) {
+			const std::string &sn = genotype_col_names[hap_col];
+			const std::set<pt::u32> &sample_haps = sn2h_idxs[sn];
+			const std::optional<ploidy_meta> &opt_pm = sn2pm[sn];
 
-		for (pt::id_t ref_id{}; ref_id < this->ref_count(); ++ref_id) {
-			if (pv_cmp::contains(handled, ref_id))
-				continue;
+			// ---
+			// pre compute the blank gt cols
+			// if it has ploidy meta set ploidy to what is computed
+			// else we assume that the number of sample haps is the
+			// ploidy
+			// ----
 
-			handled.insert(ref_id);
+			pt::u32 ploidy = (opt_pm) ? this->get_ploidy(sn)
+						  : sample_haps.size();
+			this->blank_genotype_cols.emplace_back(ploidy,
+							       BLANK_GT_VALUE);
 
-			const std::set<pt::id_t> &sample_refs =
-				this->get_shared_samples(ref_id);
+			// ---
+			//
+			// ----
+			pt::u32 phase_col_ctr =
+				0; // used when there is no phase info
+			for (pt::u32 h_idx : sample_haps) {
+				const Ref &r = this->get_lq_ref(h_idx);
+				ref_format_e ref_fmt = r.get_format();
 
-			const lq::ref *r = this->refs_ptr_ptr[ref_id];
-			const char *col_name = lq::get_sample_name(r);
-
-			if (sample_refs.empty()) {
-				PL_ERR("No sample names found for ref_id {}",
-				       ref_id);
-				std::exit(EXIT_FAILURE);
-			}
-			else if (sample_refs.size() == 1) {
-				this->blank_genotype_cols.push_back(
-					std::vector<std::string>{
-						BLANK_GT_VALUE});
-
-				auto hc = static_cast<pt::u32>(
-					this->genotype_col_names.size());
-				pt::u32 pc = 0; // no phase info
-				this->ref_id_to_col_idx[ref_id] = {hc, pc};
-				this->genotype_col_names.emplace_back(col_name);
-			}
-			else if (sample_refs.size() > 1) {
-				pt::idx_t hc = this->genotype_col_names.size();
-
-				std::set<pt::u32> hap_count;
-
-				for (pt::u32 r_id_ : sample_refs) {
-					const Ref &r_ = this->get_lq_ref(r_id_);
-					pt::u32 pc = r_.get_hap_id() - 1;
-					hap_count.insert(r_.get_hap_id());
-					this->ref_id_to_col_idx[r_id_] = {hc,
-									  pc};
-					handled.insert(r_id_);
+				if (ref_fmt == ref_format_e::UNDEFINED) {
+					this->ref_id_to_col_idx[h_idx] = {
+						hap_col, phase_col_ctr++};
 				}
+				else if (ref_fmt == ref_format_e::PANSN) {
+					pt::u32 phase_id = r.get_hap_id();
+					pt::u32 phase_col =
+						opt_pm->get_ploidy_idx(
+							phase_id);
 
-				pt::u32 ploidy = hap_count.size();
-				this->blank_genotype_cols.emplace_back(
-					ploidy, BLANK_GT_VALUE);
-
-				this->genotype_col_names.emplace_back(col_name);
+					this->ref_id_to_col_idx[h_idx] = {
+						hap_col, phase_col};
+				}
 			}
 		}
 	}

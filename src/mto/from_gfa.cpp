@@ -1,16 +1,13 @@
-// #include <chrono>	 // for milliseconds
-#include <cstddef>	 // for size_t
-#include <liteseq/gfa.h> // for gfa_config, gfa...
-// #include <optional>	 // for optional
-#include <set>	  // for set
-#include <string> // for basic_string
-#include <thread> // for thread, sleep_for
-#include <vector> // for vector
+#include <cstddef> // for size_t
+#include <set>	   // for set
+#include <string>  // for basic_string
+#include <thread>  // for thread, sleep_for
+#include <vector>  // for vector
 
+#include <liteseq/gfa.h>  // for gfa_config, gfa...
 #include <liteseq/refs.h> // for get_step_count
 
 #include "mto/from_gfa.hpp"
-
 #include "povu/common/core.hpp" // for pt, idx_t, id_t
 #include "povu/common/log.hpp"	// for WARN
 #include "povu/graph/types.hpp" // for v_end_e
@@ -147,7 +144,7 @@ bd::VG *to_bd(const core::config &app_config)
 
 	/* refs */
 	if (app_config.inc_refs()) {
-		vg->add_all_refs(gfa->refs, ref_count);
+		vg->set_refs_meta(gfa->refs, ref_count);
 
 		for (pt::idx_t ref_idx{}; ref_idx < ref_count; ref_idx++) {
 			lq::ref *ref = lq::get_ref(gfa, ref_idx);
@@ -157,8 +154,6 @@ bd::VG *to_bd(const core::config &app_config)
 				vg->set_vtx_ref_idx(v_id, ref_idx, step_idx);
 			}
 		}
-
-		vg->gen_genotype_metadata();
 	}
 
 	/* populate tips */

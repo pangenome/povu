@@ -163,8 +163,8 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 		     pbq::bounded_queue<iv::VcfRecIdx> &q,
 		     const core::config &app_config)
 {
-
-	INFO("Generating regions of variation (RoVs)");
+	if (app_config.verbosity() > 0)
+		INFO("Generating regions of variation (RoVs)");
 
 	// Parse genomic region if specified
 	std::optional<ir::genomic_region> region = std::nullopt;
@@ -180,17 +180,11 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 	std::vector<ir::RoV> all_rovs =
 		ir::gen_rov(pvsts, g, to_call_ref_ids, region);
 
-	// std::cerr << "found " << all_rovs.size();
-
 	const std::size_t CHUNK_SIZE = app_config.get_chunk_size();
 	const std::size_t N = all_rovs.size();
-	// const std::size_t CHUNK_COUNT = (N + CHUNK_SIZE - 1) / CHUNK_SIZE;
 
-	// set up progress bars
-	// ProgressBar chunks_prog_bar{option::Stream{std::cerr}};
-	// set_progress_bar_common_opts(&chunks_prog_bar, CHUNK_COUNT);
-	// std::string prog_msg; // setup buffer for progress bar messages
-	// prog_msg.reserve(128);
+	if (app_config.verbosity() > 0)
+		INFO("No. of chunks: {}", N);
 
 	// set up thread pool & decide on thread split
 	std::size_t thread_count = app_config.thread_count();
@@ -202,15 +196,7 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 
 	std::vector<ist::st> i_trees;
 
-	// bool prog = app_config.show_progress();
 	std::map<pt::u32, ita::interval_tree::interval_tree> invs;
-	//	find_inversions(g, to_call_ref_ids);
-
-	// iv::VcfRecIdx rs = iv::gen_vcf_records(g, treks, i_trees, invs);
-	// q.push(std::move(rs));
-
-	// std::vector<ia::Exp> exps;
-	// treks.reserve(CHUNK_SIZE);
 
 	try {
 		for (pt::idx_t base{}; base < N; base += CHUNK_SIZE) {
@@ -218,32 +204,18 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 			pt::u32 count = end - base;
 			pt::u32 chunk_num = (base / CHUNK_SIZE) + 1;
 
-			INFO("Processing RoV Chunk ({}/{})", chunk_num,
-			     (N + CHUNK_SIZE - 1) / CHUNK_SIZE);
+			if (chunk_num != 4883)
+				continue;
 
-			// if (prog) {
-			//	pt::idx_t chunk_num = (base /
-			// CHUNK_SIZE) + 1;
-
-			//	prog_msg = pv_cmp::format(
-			//		"Processing RoV Chunk ({}/{})",
-			//		chunk_num, CHUNK_COUNT);
-			//	chunks_prog_bar.set_option(
-			//		option::IsetfixText{prog_msg});
-			//	chunks_prog_bar.set_progress(
-			//		static_cast<size_t>(chunk_num));
-			// }
-
-			// std::cerr << "A\n";
+			if (app_config.verbosity() > 0)
+				INFO("Processing RoV Chunk ({}/{})", chunk_num,
+				     (N + CHUNK_SIZE - 1) / CHUNK_SIZE);
 
 			comp_expeditions_serial(g, all_rovs, base, count,
 						to_call_ref_ids, pc, treks);
 
 			if (chunk_num == CHUNK_SIZE)
 				i_trees = ise::sne(g, pc, to_call_ref_ids);
-
-			// ia::inversions invs;
-			// find_inversions(g, to_call_ref_ids, invs);
 
 			iv::VcfRecIdx rs =
 				iv::gen_vcf_records(g, treks, i_trees, invs);
@@ -258,7 +230,9 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 
 		// inversions
 		{
-			INFO("Processing inversions");
+			if (app_config.verbosity() > 0)
+				INFO("Processing inversions");
+
 			find_inversions(g, to_call_ref_ids, invs);
 
 			iv::VcfRecIdx rs =

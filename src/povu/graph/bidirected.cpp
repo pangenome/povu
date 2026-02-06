@@ -338,9 +338,9 @@ pt::idx_t VG::add_edge(pt::id_t v1_id, pgt::v_end_e v1_end, pt::id_t v2_id,
 	return e_idx;
 }
 
-void VG::add_all_refs(lq::ref **refs, pt::idx_t ref_count)
+void VG::set_refs_meta(lq::ref **refs, pt::idx_t ref_count)
 {
-	this->refs_.add_all_refs(refs, ref_count);
+	this->refs_.set_refs_meta(refs, ref_count);
 }
 
 void VG::set_vtx_ref_idx(pt::id_t v_id, pt::id_t ref_id, pt::idx_t step_idx)
@@ -352,11 +352,6 @@ void VG::set_vtx_ref_idx(pt::id_t v_id, pt::id_t ref_id, pt::idx_t step_idx)
 	auto it = std::lower_bound(s.begin(), s.end(), step_idx);
 	if (it == s.end() || *it != step_idx) // avoid duplicates
 		s.insert(it, step_idx);
-}
-
-void VG::gen_genotype_metadata()
-{
-	this->refs_.gen_genotype_metadata();
 }
 
 void VG::shrink_to_fit()
