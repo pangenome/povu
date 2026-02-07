@@ -1,12 +1,11 @@
 #include <algorithm>
-#include <cstdlib>
 #include <queue>
 #include <string>
-#include <thread>
 #include <vector>
 
 #include <liteseq/refs.h> // for ref_walk, ref
 
+#include "meza/matrix/matrix.hpp"	  // for matrix2d
 #include "povu/common/constants.hpp"	  // for pv_cmp
 #include "povu/common/core.hpp"		  // for pt, pc
 #include "povu/graph/bidirected.hpp"	  // for VG
@@ -27,38 +26,18 @@ struct range_meta {
 	range_meta() = default; // default constructor
 };
 
-struct display_matrix {
-	pt::u32 I; // row count
-	pt::u32 J; // column count
-	matrix data;
-	std::set<pt::u32> blank_rows; // indices of blank rows
-	pt::u32 row_offset = 0;
+struct disp_matrix : public meza::matrix::matrix2d<cell, std::string> {
 	std::vector<range_meta> meta;
 	std::vector<pt::u32> col_width; // default col width is 0
 
-	display_matrix() = delete;
+	// ------------
+	// constructors
+	// ------------
+	disp_matrix() = delete;
 
-	/**
-	 * I hap row count
-	 * J column count
-	 * m metadata for each hap row
-	 * Initializes the display matrix with the specified dimensions &
-	 * metadata.
-	 *
-	 * default col width is 0, which means the column width will be
-	 * determined by the content in the cells.
-	 * The col_width vector will be updated as
-	 * the cells are filled with data.
-	 */
-	display_matrix(pt::u32 I, pt::u32 J, std::vector<range_meta> &&m)
-	    : data(I, hap_row(J)), meta(std::move(m)), col_width(J, 0)
+	disp_matrix(pt::u32 I, pt::u32 J, std::vector<range_meta> &&m)
+	    : matrix2d(I, J), meta(std::move(m)), col_width(J, 0)
 	{}
-
-	[[nodiscard]]
-	bool is_blank_row(pt::u32 row_idx) const
-	{
-		return pv_cmp::contains(blank_rows, row_idx);
-	}
 };
 
 std::vector<std::string> comp_order(const bd::VG &g, pt::u32 start, pt::u32 end)
@@ -81,8 +60,8 @@ std::vector<std::string> comp_order(const bd::VG &g, pt::u32 start, pt::u32 end)
  * @param pd A reference to the display_lines structure to be updated with the
  * formatted lines.
  */
-void update_display_lines(const bd::VG &g, std::vector<range_meta> meta,
-			  const display_matrix &dm, display_lines &pd)
+void update_display_lines(const bd::VG &g, const disp_matrix &dm,
+			  display_lines &pd)
 {
 	auto cell_to_str = [](const cell &cell_) -> std::string
 	{
@@ -93,19 +72,20 @@ void update_display_lines(const bd::VG &g, std::vector<range_meta> meta,
 		return s;
 	};
 
-	const matrix &view_matrix = dm.data;
+	// const matrix &view_matrix = dm.data;
 	const std::vector<pt::u32> &col_width = dm.col_width;
+	const std::vector<range_meta> &meta = dm.meta;
 
 	pt::u32 hap_idx{};
 	pt::u32 hap_row_idx{};
 	std::string line;
 
 	pt::u32 matrix_row_idx{};
-	pt::u32 matrix_row_count = view_matrix.size();
+	pt::u32 matrix_row_count = dm.rows();
 	while (matrix_row_idx < matrix_row_count) {
 		const range_meta &rm = meta[hap_idx];
 		pt::u32 hap_row_count = rm.row_count;
-		const hap_row &hap_row = view_matrix[matrix_row_idx];
+		// const hap_row &hap_row = view_matrix[matrix_row_idx];
 
 		if (hap_row_idx == 0) {
 			std::string tag = g.get_tag(hap_idx);
@@ -117,7 +97,8 @@ void update_display_lines(const bd::VG &g, std::vector<range_meta> meta,
 		}
 
 		// TODO: better handle blank rows
-		if (hap_row_count == 0) { // blank
+		// blank
+		if (hap_row_count == 0) {
 			pd.lines.push_back(line);
 			line.clear();
 			hap_idx++;
@@ -128,8 +109,8 @@ void update_display_lines(const bd::VG &g, std::vector<range_meta> meta,
 		}
 
 		// c_idx = cell index
-		for (pt::u32 c_idx{}; c_idx < hap_row.size(); c_idx++) {
-			const cell &cell_ = hap_row[c_idx];
+		for (pt::u32 c_idx{}; c_idx < dm.cols(); c_idx++) {
+			const cell &cell_ = dm.at(matrix_row_idx, c_idx);
 			std::string k = cell_to_str(cell_);
 			pt::u32 w = col_width[c_idx];
 
@@ -237,12 +218,13 @@ void scan_range(const bd::VG &g, pt::u32 hap_idx, range_meta &rm,
 }
 
 void comp_hap_rows(const bd::VG &g, pt::u32 hap_idx, pt::u32 start, pt::u32 end,
-		   display_matrix &dm)
+		   disp_matrix &dm, pt::u32 row_offset)
 {
 	auto fill_cell = [](const liteseq::ref_walk *rw,
 			    const std::vector<pt::idx_t> &positions,
 			    pt::u32 pos_idx, pt::u32 &prev_pos, pt::u32 &w,
-			    cell &cell_)
+			    disp_matrix &dm, pt::u32 row_idx,
+			    pt::u32 col_idx) -> void
 	{
 		pt::u32 pos = positions[pos_idx];
 
@@ -255,11 +237,13 @@ void comp_hap_rows(const bd::VG &g, pt::u32 hap_idx, pt::u32 start, pt::u32 end,
 
 		w += k.length();
 
+		cell &cell_ = dm.at(row_idx, col_idx);
 		cell_.emplace_back(k);
+		dm.mark_non_blank(row_idx, col_idx);
 		prev_pos = pos;
 	};
 
-	matrix &m = dm.data;
+	// matrix &m = dm.data;
 	std::vector<pt::u32> &col_width = dm.col_width;
 	const liteseq::ref_walk *rw = g.get_ref_vec(hap_idx)->walk;
 
@@ -267,16 +251,13 @@ void comp_hap_rows(const bd::VG &g, pt::u32 hap_idx, pt::u32 start, pt::u32 end,
 	std::set<pt::u32> seen;
 	const range_meta &rm = dm.meta[hap_idx];
 	pt::u32 row_count = rm.row_count;
-	bool row_has_data{false};
+	// bool row_has_data{false};
 	pt::u32 prev_pos = pc::INVALID_IDX;
 
 	pt::u32 conceptual_row_idx{};
 	pt::u32 row_idx{}; // actual row index in the matrix
-	for (; row_idx < row_count; row_idx++) {
-
-		row_has_data = false;
+	for (; conceptual_row_idx < row_count; row_idx++) {
 		prev_pos = pc::INVALID_IDX;
-		hap_row &row = m[row_idx + dm.row_offset];
 
 		for (pt::u32 v_idx{start}; v_idx < end; v_idx++) {
 
@@ -376,15 +357,15 @@ void comp_hap_rows(const bd::VG &g, pt::u32 hap_idx, pt::u32 start, pt::u32 end,
 				}
 			}
 
-			if (!row_has_data && !curr_pos_idxs.empty())
-				row_has_data = true;
+			// if (!row_has_data && !curr_pos_idxs.empty())
+			//	row_has_data = true;
 
-			cell &cell_ = row[col_idx];
 			pt::u32 cell_width{};
 
 			for (pt::u32 curr_pos_idx : curr_pos_idxs)
 				fill_cell(rw, positions, curr_pos_idx, prev_pos,
-					  cell_width, cell_);
+					  cell_width, dm, row_idx + row_offset,
+					  col_idx);
 
 			if (cell_width > col_width[order_step_idx])
 				col_width[order_step_idx] = cell_width;
@@ -392,12 +373,7 @@ void comp_hap_rows(const bd::VG &g, pt::u32 hap_idx, pt::u32 start, pt::u32 end,
 
 		if (buff.empty())
 			conceptual_row_idx++;
-
-		if (!row_has_data)
-			dm.blank_rows.insert(row_idx);
 	}
-
-	dm.row_offset += row_count;
 }
 
 pt::op_t<pt::u32> comp_path_view_range(const bd::VG &g, const ui_state &state)
@@ -426,7 +402,6 @@ pre_comp_meta(const bd::VG &g, pt::u32 start, pt::u32 end)
 	pt::u32 total_row_count{};
 	for (pt::u32 hap_idx{}; hap_idx < g.get_hap_count(); hap_idx++) {
 		// row content
-
 		// idx in the vertex is the hap idx the value is the
 		// range meta for that hap
 		pt::u32 N = std::min(g.vtx_count(), end);
@@ -450,8 +425,9 @@ void update_paths(const bd::VG &g, ui_state &state, display_lines &pd)
 	hap_row_count.reserve(g.get_hap_count());
 
 	auto [total_row_count, meta] = pre_comp_meta(g, start, end);
-	display_matrix dm(total_row_count, col_count, std::move(meta));
+	disp_matrix dm(total_row_count, col_count, std::move(meta));
 
+	pt::u32 row_offset{};
 	// populate view matrix
 	for (pt::u32 hap_idx{}; hap_idx < g.get_hap_count(); hap_idx++) {
 		// row header
@@ -461,9 +437,10 @@ void update_paths(const bd::VG &g, ui_state &state, display_lines &pd)
 
 		// row content
 		pt::u32 N = std::min(g.vtx_count(), end);
-		comp_hap_rows(g, hap_idx, start, N, dm);
+		comp_hap_rows(g, hap_idx, start, N, dm, row_offset);
+		row_offset += dm.meta[hap_idx].row_count;
 	}
 
-	update_display_lines(g, meta, dm, pd);
+	update_display_lines(g, dm, pd);
 }
 } // namespace zien::components::paths
