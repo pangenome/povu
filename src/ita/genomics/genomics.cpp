@@ -4,7 +4,6 @@
 #include <cmath>     // for ceil
 #include <cstddef>   // for size_t
 #include <cstdlib>   // for std::max, exit, EXIT_FAILURE
-#include <numeric>   // for accumulate
 #include <set>	     // for set
 #include <utility>   // for move
 #include <vector>    // for vector
@@ -27,9 +26,6 @@ void find_inversions(
 	std::map<pt::u32, ita::interval_tree::interval_tree> &hap_idx_to_it)
 {
 	for (pt::u32 hap_idx : to_call_ref_ids) {
-		// pr::Ref r = g.get_ref_by_id(hap_idx);
-		// std::cerr << r.tag() << "\n";
-		// std::cerr << "[";
 		ita::interval_tree::interval_tree it{hap_idx};
 		for (pt::u32 v_idx{}; v_idx < g.vtx_count(); v_idx++) {
 			const std::vector<pt::u32> &positions =
@@ -65,50 +61,10 @@ void find_inversions(
 								  positions[u]};
 
 			it.add(f, s, 1);
-
-			// pt::u32 f_vid = rw->v_ids[f];
-			// pt::u32 s_vid = rw->v_ids[s];
-
-			// if (f_vid != s_vid)
-			//	continue;
-
-			// liteseq::strand f_strand = rw->strands[f];
-			// liteseq::strand s_strand = rw->strands[s];
-
-			// if (f_strand == s_strand)
-			//	continue;
-
-			// std::cerr << "{" << g.v_idx_to_id(v_idx) << " " <<
-			// s_vid
-			//	  << " " << f_vid << "}, ";
-
-			// auto [fwd_idx, rev_idx] =
-			//	(f_strand == liteseq::strand::STRAND_FWD)
-			//		? pt::op_t<pt::u32>{f, s}
-			//		: pt::op_t<pt::u32>{s, f};
-
-			// invs.add_inv_slice(v_idx, hap_idx,
-			//		   ia::inv_slice{rw, hap_idx, fwd_idx,
-			//				 rev_idx, 1});
 		}
 
 		hap_idx_to_it.emplace(hap_idx, std::move(it));
-		// std::cerr << "]\n";
 	}
-
-	// for (pt::u32 hap_idx{}; hap_idx < g.get_hap_count(); hap_idx++) {
-	//	const liteseq::ref_walk *rw = g.get_ref_vec(hap_idx)->walk;
-	//	pr::Ref r = g.get_ref_by_id(hap_idx);
-	//	std::cerr << r.tag() << "\n";
-	//	std::cerr << "[";
-	//	for (const auto &[v_idx, inv_slices] :
-	//	     invs.get_slices_by_hap_idx(hap_idx)) {
-	//		std::cerr << g.v_idx_to_id(v_idx) << ", ";
-	//	}
-	//	std::cerr << "]\n";
-	// }
-
-	// return hap_idx_to_it;
 }
 
 void comp_expeditions_serial(const bd::VG &g, std::vector<ir::RoV> &all_rovs,
@@ -156,6 +112,31 @@ split_threads(std::size_t total, std::size_t outer_cap = 2,
 	return {outer, inner};
 }
 
+/**
+ * @brief Update the progress display for chunk processing.
+ *
+ * This function moves the cursor up to the previous line and clears it,
+ * then prints the current chunk number and total chunks. It is designed
+ * to be called after printing a newline to ensure the progress starts on
+ * a new line.
+ *
+ * it is wise to call
+ * \n before the first call to this function to ensure the progress starts on a
+ * new line, and
+ * std::cerr << "\033[F\033[K"; at the end of processing to clear the progress
+ *line after the last chunk.
+ *
+ * @param chunk The current chunk number (1-based).
+ * @param total The total number of chunks.
+ */
+void update_progress(int chunk, int total)
+{
+	// \033[F  - Move cursor to beginning of previous line
+	// \033[K  - Clear the line from cursor to end (prevents ghosting)
+	std::cerr << "\033[F\033[K"
+		  << "Processing chunk " << chunk << "/" << total << std::flush;
+}
+
 void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 		     const std::set<pt::id_t> &to_call_ref_ids,
 		     pbq::bounded_queue<iv::VcfRecIdx> &q,
@@ -180,9 +161,10 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 
 	const std::size_t CHUNK_SIZE = app_config.get_chunk_size();
 	const std::size_t N = all_rovs.size();
+	pt::u32 total_chunks = (N + CHUNK_SIZE - 1) / CHUNK_SIZE;
 
 	if (app_config.verbosity() > 0)
-		INFO("No. of chunks: {}", N);
+		INFO("No. of chunks: {}", total_chunks);
 
 	// set up thread pool & decide on thread split
 	std::size_t thread_count = app_config.thread_count();
@@ -191,9 +173,7 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 
 	ise::pin_cushion pc;
 	std::vector<ia::trek> treks;
-
 	std::vector<ist::st> i_trees;
-
 	std::map<pt::u32, ita::interval_tree::interval_tree> invs;
 
 	try {
@@ -203,8 +183,7 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 			pt::u32 chunk_num = (base / CHUNK_SIZE) + 1;
 
 			if (app_config.verbosity() > 0)
-				INFO("Processing RoV Chunk ({}/{})", chunk_num,
-				     (N + CHUNK_SIZE - 1) / CHUNK_SIZE);
+				update_progress(chunk_num, total_chunks);
 
 			comp_expeditions_serial(g, all_rovs, base, count,
 						to_call_ref_ids, pc, treks);
@@ -222,6 +201,10 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 			if (chunk_num == CHUNK_SIZE)
 				i_trees.clear();
 		}
+
+		if (app_config.verbosity() > 0 && total_chunks > 0)
+			std::cerr << "\033[F\033[K"; // clear progress line
+						     // after last chunk
 
 		// inversions
 		{

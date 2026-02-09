@@ -26,7 +26,6 @@ inline constexpr std::string_view MODULE = "povu::genomics::allele";
 
 namespace lq = liteseq;
 namespace pgt = povu::types::graph;
-namespace pvst = povu::pvst;
 
 // idx_in_hap, v_id, or_e
 using extended_step = std::tuple<pt::u32, pt::u32, pgt::or_e>;

@@ -1,4 +1,5 @@
 #include "povu/refs/refs.hpp"
+#include "povu/graph/types.hpp"
 #include <liteseq/gfa.h>
 
 namespace povu::refs
@@ -16,4 +17,11 @@ char lq_strand_to_char(liteseq::strand s)
 {
 	return (s == liteseq::strand::STRAND_FWD) ? '>' : '<';
 }
+
+ptg::or_e lq_strand_to_pv_or(liteseq::strand s)
+{
+	return s == lq::strand::STRAND_FWD ? ptg::or_e::forward
+					   : ptg::or_e::reverse;
+}
+
 }; // namespace povu::refs

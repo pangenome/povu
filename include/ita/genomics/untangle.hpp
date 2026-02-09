@@ -21,7 +21,7 @@ std::vector<depth_matrix> untangle(const bd::VG &g,
 				   const depth_matrix &dm, const ir::RoV &rov);
 
 race gen_race(const bd::VG &g, const std::vector<pt::id_t> &sorted_w,
-	      pt::u32 h_idx);
+	      pt::u32 h_idx, bool comp_clusters = true);
 } // namespace ita::untangle
 
 #endif // IT_UNTANGLE_HPP

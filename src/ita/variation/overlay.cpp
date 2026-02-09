@@ -7,6 +7,7 @@
 #include <ostream> // for ostream
 #include <queue>   // for queue
 #include <set>
+#include <string>
 #include <utility>
 #include <vector> // for vector
 
@@ -106,6 +107,10 @@ bool is_inverted(const std::vector<pt::u32> &ref_row,
 	return true;
 }
 
+/**
+ * computes the bounds of the pairwise ROV between ref_row and alt_row
+ * i.e. the cols where they match and contain a difference in between
+ */
 std::vector<pt::op_t<pt::u32>> comp_bounds(const std::vector<pt::u32> &ref_row,
 					   const std::vector<pt::u32> &alt_row,
 					   const pt::u32 J)
@@ -113,7 +118,10 @@ std::vector<pt::op_t<pt::u32>> comp_bounds(const std::vector<pt::u32> &ref_row,
 	if (J == 1)
 		return {};
 
-	auto comp_bounds = [&](pt::u32 j) -> bool
+	// returns true if col j is a bound, i.e. ref_row and alt_row match at j
+	// and there is a difference in between two bounds or the bounds are at
+	// the ends of the rows
+	auto is_bound = [&](pt::u32 j) -> bool
 	{
 		return ref_row[j] > 0 &&
 		       (ref_row[j] == alt_row[j] ||
@@ -125,10 +133,7 @@ std::vector<pt::op_t<pt::u32>> comp_bounds(const std::vector<pt::u32> &ref_row,
 	std::queue<pt::u32> q; // a buffer to store similar cols
 	pt::u32 u{pc::INVALID_IDX}, v{pc::INVALID_IDX};
 	for (pt::u32 j{}; j < J; j++) {
-		// if (ref_row[j] == alt_row[j] && ref_row[j] > 0)
-		//	q.push(j);
-
-		if (comp_bounds(j))
+		if (is_bound(j))
 			q.push(j);
 
 		if (q.size() > 1) {
@@ -304,8 +309,11 @@ std::optional<ia::hap_slice> hap_sl_from_lap_alt(const bd::VG &g,
 	return ia::hap_slice{g.get_ref_vec(h_idx)->walk, h_idx, start, len};
 }
 
+/**
+ *
+ */
+// TODO: return a pair of step idxs
 ia::rov_boundaries gen_cxt(pt::u32 u, pt::u32 v, const ext_lap &lap)
-
 {
 	std::vector<extended_step> u_buff;
 	std::vector<extended_step> v_buff;
@@ -320,9 +328,9 @@ ia::rov_boundaries gen_cxt(pt::u32 u, pt::u32 v, const ext_lap &lap)
 	}
 
 	if (u_buff.empty() || v_buff.empty()) {
-		throw std::runtime_error(
-			"Could not find context nodes in lap for "
-			"cxt generation");
+		std::string err = pv_cmp::format("{} is empty",
+						 u_buff.empty() ? 'u' : 'v');
+		throw std::runtime_error(err);
 	}
 
 	auto [_, l_v_id, l_o] = u_buff.front();
@@ -339,13 +347,19 @@ ise::pin gen_pin(pt::u32 h_idx, const extended_step &s)
 	return {h_idx, idx_in_hap};
 }
 
+void print_lap(std::ostream &os, const ext_lap &lap)
+{
+	for (auto [_, v_id, o] : lap) {
+		pgt::id_or_t v{v_id, o};
+		std::cerr << v;
+	}
+	os << "\n";
+}
+
 void print_race(std::ostream &os, const race &r)
 {
 	for (const auto &lap : r) {
-		for (auto [_, v_id, o] : lap) {
-			pgt::id_or_t v{v_id, o};
-			std::cerr << v;
-		}
+		print_lap(os, lap);
 		os << "\t";
 	}
 	os << "\n";
@@ -371,48 +385,20 @@ ia::trek comp_exps(const bd::VG &g, const ir::RoV *rov,
 		const std::vector<pt::id_t> &sorted_w =
 			rov->get_sorted_vertices();
 
-		h_idx_to_race_map[h_idx] =
-			ita::untangle::gen_race(g, sorted_w, h_idx);
-
-		// print race
-		if (dbg) {
-			std::cerr << __func__ << " race for haps " << h_idx
-				  << ":\n";
-			for (const auto &lap : h_idx_to_race_map.at(h_idx)) {
-				for (const auto &[_, v_id, o] : lap) {
-					pgt::id_or_t v{v_id, o};
-					std::cerr << v << ",";
-				}
-				std::cerr << "\t";
-			}
-			std::cerr << "\n";
-		}
+		bool comp_clusters = tangled;
+		h_idx_to_race_map[h_idx] = ita::untangle::gen_race(
+			g, sorted_w, h_idx, comp_clusters);
 
 		return h_idx_to_race_map.at(h_idx);
 	};
 
-	// auto init_context = [&](pt::u32 ref_h_idx,
-	//			const ia::rov_boundaries cxt,
-	//			const ext_lap &ref_lap)
-	// {
-	//	std::map<ia::rov_boundaries, ia::minimal_rov> &d =
-	//		tk.get_ref_recs_mut(ref_h_idx);
-
-	//	d.insert({cxt,
-	//		  {cxt, hap_sl_from_lap(g, cxt, ref_lap,
-	// ref_h_idx)}});
-	// };
-
-	// auto add_alt = [&](pt::u32 ref_h_idx, pt::u32 alt_h_idx,
-	//		   const ia::rov_boundaries cxt,
-	//		   const ext_lap &alt_lap)
-	// {
-	//	ia::minimal_rov &min_rov =
-	//		tk.get_ref_recs_mut(ref_h_idx).at(cxt);
-
-	//	min_rov.add_alt(hap_sl_from_lap(g, cxt, alt_lap,
-	// alt_h_idx));
-	// };
+	auto comp_ext_lap = [&](pt::u32 h_idx,
+				pt::u32 loop_no) -> const ext_lap &
+	{
+		const race &r = h_idx_to_race(h_idx);
+		const ext_lap &e_lap = r[loop_no];
+		return e_lap;
+	};
 
 	for (auto ref_h_idx : to_call_ref_ids) {
 		std::vector<pt::u32> ref_row = dm.get_row_data(ref_h_idx);
@@ -422,6 +408,8 @@ ia::trek comp_exps(const bd::VG &g, const ir::RoV *rov,
 				continue;
 
 			std::vector<pt::u32> alt_row = dm.get_row_data(h_idx);
+			// TODO: compute when filling the depth matrix by
+			// elimination
 			if (is_row_empty(alt_row)) {
 				tk.add_no_cov(ref_h_idx, h_idx);
 				continue;
@@ -432,31 +420,16 @@ ia::trek comp_exps(const bd::VG &g, const ir::RoV *rov,
 
 			bool is_inv = is_inverted(ref_row, alt_row, J);
 
-			if (dbg) {
-				// INFO("ref {} alt {}", ref_h_idx, h_idx);
-				// INFO("{}", is_inv);
-
-				// // cxts
-				// for (auto [u, v] : cxts)
-				//	INFO("  cxt: ({} , {})", u, v);
-			}
-
+			// matches ref
 			if (cxts.empty() && !is_inv) {
 				tk.add_match_ref(ref_h_idx, h_idx);
 				continue;
 			}
 
-			const race &ref_race = h_idx_to_race(ref_h_idx);
-			const race &alt_race = h_idx_to_race(h_idx);
-
-			// does nothing if the ref idx is already
-			// initialised tk.init_ref_idx(ref_h_idx);
-
-			const ext_lap &ref_lap =
-				ref_race[dm.get_loop_no(ref_h_idx)];
-
+			const ext_lap &ref_lap = comp_ext_lap(
+				ref_h_idx, dm.get_loop_no(ref_h_idx));
 			const ext_lap &alt_lap =
-				alt_race[dm.get_loop_no(h_idx)];
+				comp_ext_lap(h_idx, dm.get_loop_no(h_idx));
 
 			if (is_inv) {
 				pcushion.add_pin_pair(
@@ -464,16 +437,6 @@ ia::trek comp_exps(const bd::VG &g, const ir::RoV *rov,
 					 gen_pin(h_idx, alt_lap.back())});
 				continue;
 			}
-
-			// if (dbg)
-			//	volatile int pause = 1;
-
-			// std::cerr << __func__
-			//	  << " found contexts for ref haplotype
-			//"
-			//	  << ref_h_idx << " and alt haplotype "
-			//<< h_idx
-			//	  << ":\n";
 
 			for (auto b : cxts) {
 				pt::id_t u = rov->get_sorted_vertex(b.first);
@@ -483,15 +446,19 @@ ia::trek comp_exps(const bd::VG &g, const ir::RoV *rov,
 				try {
 					opt_c = gen_cxt(u, v, ref_lap);
 				}
-				catch (...) {
-					PL_ERR("Error generating context for "
-					       "ref haplotype {} and alt "
-					       "haplotype {}. Skipping this "
-					       "pair.",
-					       ref_h_idx, h_idx);
-					std::cerr << "u " << u << " v " << v
-						  << "\n";
-					dm.print(std::cerr);
+				catch (std::runtime_error &e) {
+					std::string ref_name =
+						g.get_ref_by_id(ref_h_idx)
+							.tag();
+					std::string alt_name =
+						g.get_ref_by_id(h_idx).tag();
+					WARN("Failed to generate context for "
+					     "refs: "
+					     "{} {}. v_ids ({}{}). {} ",
+					     ref_name, alt_name, u, v,
+					     e.what());
+					std::cerr << "lap:\n";
+					print_lap(std::cerr, ref_lap);
 					continue;
 				}
 				ia::rov_boundaries c = opt_c.value();
@@ -546,31 +513,14 @@ ia::trek comp_exps(const bd::VG &g, const ir::RoV *rov,
 					continue;
 
 				if (!pv_cmp::contains(m, c)) { // init
-					// ia::hap_slice ref_sl =
-					// hap_sl_from_lap(	g, c, ref_lap,
-					// ref_h_idx, dbg);
-
 					m.insert({c,
 						  ia::minimal_rov(
 							  c,
 							  std::move(ref_sl))});
-					// m[c] = ia::minimal_rov(
-					//	c,
-					//	hap_sl_from_lap(g, c,
-					// ref_lap,
-					// ref_h_idx));
 				}
 
 				ia::minimal_rov &min_rov = m.at(c);
-				// ia::hap_slice alt_sl = hap_sl_from_lap(
-				//	g, c, alt_lap, h_idx, dbg);
 				min_rov.add_alt(std::move(alt_sl));
-				// if (!tk.has_context(ref_h_idx, c))
-				//	init_context(ref_h_idx, c,
-				// ref_lap);
-
-				// add_alt(ref_h_idx, h_idx, c,
-				// alt_lap);
 			}
 		}
 

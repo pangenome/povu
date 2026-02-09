@@ -13,18 +13,11 @@
 #include "povu/common/core.hpp"	     // for pt, id_t, up_t, operator<
 #include "povu/graph/bidirected.hpp" // for VG, bd
 #include "povu/graph/types.hpp"	     // for or_e, id_or_t
+#include "povu/refs/refs.hpp"	     // for lq_strand_to_pv_or
 
 namespace ita::untangle
 {
 using namespace ia;
-
-constexpr auto fwd = pgt::or_e::forward;
-constexpr auto rev = pgt::or_e::reverse;
-
-pgt::or_e lq_strand_to_or_e(lq::strand s)
-{
-	return s == lq::strand::STRAND_FWD ? fwd : rev;
-}
 
 broad_walk lineup(const bd::VG &g, const std::vector<pt::u32> &sorted_w,
 		  pt::u32 h_idx)
@@ -44,14 +37,14 @@ broad_walk lineup(const bd::VG &g, const std::vector<pt::u32> &sorted_w,
 		unrolled.insert(it, es);
 	};
 
-	const lq::ref_walk *h_w = g.get_ref_vec(h_idx)->walk; // the hap walk
+	const lq::ref_walk *hw = g.get_ref_vec(h_idx)->walk; // the hap walk
 	for (pt::u32 j{}; j < J; j++) {
 		pt::u32 v_id = sorted_w[j];
 		const std::vector<pt::u32> &positions =
 			g.get_vertex_ref_idxs(g.v_id_to_idx(v_id), h_idx);
 
 		for (pt::u32 i : positions) { // index in the hap walk
-			pgt::or_e o = lq_strand_to_or_e(h_w->strands[i]);
+			pgt::or_e o = pr::lq_strand_to_pv_or(hw->strands[i]);
 			add_unrolled(i, v_id, o);
 		}
 	}
@@ -80,26 +73,31 @@ race cluster(const broad_walk &unrolled)
 
 	for (auto it = unrolled.begin(); it != unrolled.end(); ++it) {
 		q.push(*it);
-		if (std::next(it) == unrolled.end()) { // last element
-			flush_q();
-			break; // TODO[C] return here?
-		}
+		if (std::next(it) == unrolled.end()) // last element
+			continue;
 
-		auto [idx_in_hap_curr, v_id_curr, o] = *it;
-		auto [idx_in_hap_nxt, v_id_nxt, _] = *std::next(it);
+		auto [idx_in_hap_curr, v_id_curr, _] = *it;
+		auto [idx_in_hap_nxt, v_id_nxt, __] = *std::next(it);
 
 		if (idx_in_hap_curr + 1 != idx_in_hap_nxt)
 			flush_q();
 	}
 
+	flush_q(); // Flush remaining elements in the queue
+
 	return clusters;
 }
 
 race gen_race(const bd::VG &g, const std::vector<pt::u32> &sorted_w,
-	      pt::u32 h_idx)
+	      pt::u32 h_idx, bool comp_clusters)
 {
 	broad_walk bw = lineup(g, sorted_w, h_idx);
-	return cluster(bw);
+	if (comp_clusters) {
+		return cluster(bw);
+	}
+	else {
+		return {bw};
+	}
 }
 
 // generate a ia::at_it from a race

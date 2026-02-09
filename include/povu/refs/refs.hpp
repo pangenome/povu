@@ -15,6 +15,7 @@
 #include "povu/common/core.hpp"
 #include "povu/common/log.hpp"
 #include "povu/common/utils.hpp"
+#include "povu/graph/types.hpp"
 
 namespace povu::refs
 {
@@ -28,6 +29,8 @@ enum class ref_format_e : pt::u8 {
 std::string to_string(ref_format_e r);
 
 char lq_strand_to_char(liteseq::strand s);
+
+ptg::or_e lq_strand_to_pv_or(liteseq::strand s);
 
 /**
  * zero indexed
