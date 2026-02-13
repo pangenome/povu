@@ -308,16 +308,16 @@ void sub_invs(const bd::VG &g, const std::vector<ist::st> &its,
 }
 
 void context_free(const bd::VG &g,
-		  const std::map<pt::u32, iit::interval_tree> &invs,
+		  const std::map<pt::u32, std::vector<ia::inv_slice>> &invs,
 		  VcfRecIdx &vcf_recs)
 {
-	for (const auto &[hap_idx, it] : invs) {
+	for (const auto &[hap_idx, inv_slices] : invs) {
 		const liteseq::ref_walk *rw = g.get_ref_vec(hap_idx)->walk;
-		for (const auto &[_, interval] : it.get_intervals()) {
+		for (const ia::inv_slice inv_sl : inv_slices) {
 
-			pt::u32 fwd_s = interval.fwd_start;
-			pt::u32 rev_s = interval.rev_start;
-			pt::u32 len = interval.len;
+			pt::u32 fwd_s = inv_sl.fwd_idx;
+			pt::u32 rev_s = inv_sl.rev_idx;
+			pt::u32 len = inv_sl.len;
 
 			pt::u32 pos = rw->loci[fwd_s];
 
@@ -362,9 +362,10 @@ void context_free(const bd::VG &g,
 	}
 }
 
-VcfRecIdx gen_vcf_records(const bd::VG &g, const std::vector<ia::trek> &treks,
-			  const std::vector<ist::st> &its,
-			  const std::map<pt::u32, iit::interval_tree> &invs)
+VcfRecIdx
+gen_vcf_records(const bd::VG &g, const std::vector<ia::trek> &treks,
+		const std::vector<ist::st> &its,
+		const std::map<pt::u32, std::vector<ia::inv_slice>> &invs)
 {
 	VcfRecIdx vcf_recs;
 

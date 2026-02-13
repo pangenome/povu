@@ -18,7 +18,6 @@
 #include "ita/graph/slice_tree.hpp" // for poi
 #include "ita/variation/rov.hpp"    // for var_type_e
 
-#include "ita/graph/interval_tree.hpp" // for interval_tree
 #include "povu/common/constants.hpp"
 #include "povu/common/core.hpp"	     // for pt, idx_t, id_t, op_t
 #include "povu/common/log.hpp"	     // for ERR
@@ -417,9 +416,10 @@ public:
 	}
 };
 
-VcfRecIdx gen_vcf_records(const bd::VG &g, const std::vector<ia::trek> &treks,
-			  const std::vector<ist::st> &its,
-			  const std::map<pt::u32, iit::interval_tree> &invs);
+VcfRecIdx
+gen_vcf_records(const bd::VG &g, const std::vector<ia::trek> &treks,
+		const std::vector<ist::st> &its,
+		const std::map<pt::u32, std::vector<ia::inv_slice>> &invs);
 
 } // namespace ita::vcf
 
