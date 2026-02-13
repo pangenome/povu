@@ -351,8 +351,8 @@ public:
 
 			std::string sn = ref.get_sample_name();
 
-			// store gt cols based on h_idx
-			this->genotype_col_names.emplace_back(sn);
+			if (!pv_cmp::contains(this->sn2h_idxs, sn))
+				this->genotype_col_names.emplace_back(sn);
 
 			std::set<pt::u32> &sample_hap_idxs =
 				this->sn2h_idxs[sn];
