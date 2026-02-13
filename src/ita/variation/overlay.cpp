@@ -524,8 +524,10 @@ ia::trek comp_exps(const bd::VG &g, const ir::RoV *rov,
 			}
 		}
 
-		if (!tk.has_data())
-			return tk;
+		std::set<pt::u32> trek_ref_haps = tk.get_ref_haps();
+
+		if (!pv_cmp::contains(trek_ref_haps, ref_h_idx))
+			continue;
 
 		for (auto &[cxt, min_rov] : tk.get_ref_recs_mut(ref_h_idx)) {
 			auto [l, r] = cxt.get_bounds();
@@ -590,10 +592,7 @@ std::vector<ia::trek> overlay_generic(const bd::VG &g, ir::RoV &rov,
 				      const std::set<pt::u32> &to_call_ref_ids,
 				      ise::pin_cushion &pcushion)
 {
-	bool dbg = rov.as_str() == ">19662>19664" ? true : false;
-	dbg = false;
-	if (dbg)
-		INFO("{}", rov.as_str());
+	bool dbg = false;
 
 	std::vector<ia::trek> treks;
 
