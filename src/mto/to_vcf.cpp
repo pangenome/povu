@@ -25,13 +25,14 @@ void write_header_common(std::ostream &os)
 	os << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
 	os << "##INFO=<ID=AC,Number=A,Type=Integer,Description=\"Total number of alternate alleles in called genotypes\">\n";
 	os << "##INFO=<ID=AT,Number=R,Type=String,Description=\"Allele traversal path through the graph\">\n";
-	os << "##INFO=<ID=AN,Number=1,Type=String,Description=\"Total number of alleles in called genotypes\">\n";
+	os << "##INFO=<ID=AN,Number=1,Type=Integer,Description=\"Total number of alleles in called genotypes\">\n";
 	os << "##INFO=<ID=AF,Number=A,Type=Float,Description=\"Allele frequency in the population\">\n";
 	os << "##INFO=<ID=NS,Number=1,Type=Integer,Description=\"Number of samples with data\">\n";
 	os << "##INFO=<ID=VARCLASS,Number=1,Type=String,Description=\"Class of variation: SIMPLE or STRUCTURAL\">\n";
 	os << "##INFO=<ID=VARTYPE,Number=1,Type=String,Description=\"Type of variation: INS (insertion), DEL (deletion), SUB (substitution), SUBR(substitution in reverse) \">\n";
 	os << "##INFO=<ID=SVTYPE,Number=1,Type=String,Description=\"Type of structural variation: INV (inversion)\">\n";
 	os << "##INFO=<ID=TANGLED,Number=1,Type=String,Description=\"Variant lies in a tangled region of the graph: T or F\">\n";
+	os << "##INFO=<ID=ES,Number=1,Type=String,Description=\"Encapsulating Flubble\">\n";
 	os << "##INFO=<ID=LV,Number=1,Type=Integer,Description=\"Level in the PVST (0=top level)\">\n";
 	os << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
 	// clang-format on
