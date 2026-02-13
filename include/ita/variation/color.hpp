@@ -7,6 +7,7 @@
 
 namespace ita::color
 {
+inline constexpr std::string_view MODULE = "ita::colour";
 std::set<pt::u32> color_pvst(const bd::VG &g, const pvst::Tree &pvst,
 			     const std::set<pt::id_t> &to_call_ref_ids);
 

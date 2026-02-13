@@ -148,9 +148,8 @@ bool pvst_vertex_overlaps_region(const bd::VG &g,
 		g.get_vertex_ref_idxs(end_v_idx, ref_id);
 
 	// If either vertex is not on this reference, skip
-	if (start_steps.empty() || end_steps.empty()) {
+	if (start_steps.empty() || end_steps.empty())
 		return false;
-	}
 
 	// Get the reference walk to access genomic positions (loci)
 	const lq::ref *ref_ptr = g.get_ref_vec(ref_id);
