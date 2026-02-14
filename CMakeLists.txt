@@ -281,19 +281,19 @@ target_link_libraries(povulib
   liteseq  # gfa handling
 )
 
-target_link_libraries(mto
+target_link_libraries(ita
   PRIVATE
   povulib
   fmt::fmt     # formatting
   liteseq      # gfa handling
 )
 
-
-target_link_libraries(ita
+target_link_libraries(mto
   PRIVATE
   povulib
   fmt::fmt     # formatting
   liteseq      # gfa handling
+  ita
 )
 
 target_link_libraries(zien
