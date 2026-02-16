@@ -192,7 +192,7 @@ bool is_inv_local(const ia::hap_slice &a, const ia::hap_slice &b)
 }
 
 ia::hap_slice hap_sl_from_lap(const bd::VG &g, const ia::rov_boundaries &cxt,
-			      const ext_lap &lap, pt::u32 h_idx, bool dbg)
+			      const ext_lap &lap, pt::u32 h_idx)
 {
 	auto [u, v] = cxt.get_bounds();
 	auto [l_cxt_v_id, _] = u;
@@ -238,14 +238,14 @@ ia::hap_slice hap_sl_from_lap(const bd::VG &g, const ia::rov_boundaries &cxt,
 	// pt::u32 end = std::max(*start_opt, *end_opt);
 	pt::u32 len = end - start + 1;
 
-	if (dbg) {
-		std::cerr << "starts " << pu::concat_with(starts, ',') << "\n";
-		std::cerr << "ends " << pu::concat_with(ends, ',') << "\n";
-		INFO("hap_sl_from_lap for haplotype {} cxt {}: start "
-		     "{} end {} "
-		     "len {}",
-		     h_idx, cxt.to_string(), start, end, len);
-	}
+	// if (dbg) {
+	//	std::cerr << "starts " << pu::concat_with(starts, ',') << "\n";
+	//	std::cerr << "ends " << pu::concat_with(ends, ',') << "\n";
+	//	INFO("hap_sl_from_lap for haplotype {} cxt {}: start "
+	//	     "{} end {} "
+	//	     "len {}",
+	//	     h_idx, cxt.to_string(), start, end, len);
+	// }
 
 	return ia::hap_slice{g.get_ref_vec(h_idx)->walk, h_idx, start, len};
 }
@@ -253,7 +253,7 @@ ia::hap_slice hap_sl_from_lap(const bd::VG &g, const ia::rov_boundaries &cxt,
 std::optional<ia::hap_slice> hap_sl_from_lap_alt(const bd::VG &g,
 						 const ia::rov_boundaries &cxt,
 						 const ext_lap &lap,
-						 pt::u32 h_idx, bool dbg)
+						 pt::u32 h_idx)
 {
 	auto [u, v] = cxt.get_bounds();
 	auto [l_cxt_v_id, _] = u;
@@ -296,15 +296,6 @@ std::optional<ia::hap_slice> hap_sl_from_lap_alt(const bd::VG &g,
 	// pt::u32 start = std::min(*start_opt, *end_opt);
 	// pt::u32 end = std::max(*start_opt, *end_opt);
 	pt::u32 len = end - start + 1;
-
-	if (dbg) {
-		std::cerr << "starts " << pu::concat_with(starts, ',') << "\n";
-		std::cerr << "ends " << pu::concat_with(ends, ',') << "\n";
-		INFO("hap_sl_from_lap for haplotype {} cxt {}: start "
-		     "{} end {} "
-		     "len {}",
-		     h_idx, cxt.to_string(), start, end, len);
-	}
 
 	return ia::hap_slice{g.get_ref_vec(h_idx)->walk, h_idx, start, len};
 }
@@ -432,9 +423,18 @@ ia::trek comp_exps(const bd::VG &g, const ir::RoV *rov,
 				comp_ext_lap(h_idx, dm.get_loop_no(h_idx));
 
 			if (is_inv) {
-				pcushion.add_pin_pair(
-					{gen_pin(ref_h_idx, ref_lap.front()),
-					 gen_pin(h_idx, alt_lap.back())});
+				// INFO("full {} {} {}", rov->as_str(),
+				// ref_h_idx,
+				//      h_idx);
+				// INFO("full {} {} {}", rov->as_str(),
+				// ref_h_idx,
+				//      h_idx);
+				// dbg = true;
+				tk.add_match_ref(ref_h_idx, h_idx);
+
+				// pcushion.add_pin_pair(
+				//	{gen_pin(ref_h_idx, ref_lap.front()),
+				//	 gen_pin(h_idx, alt_lap.back())});
 				continue;
 			}
 
@@ -471,7 +471,7 @@ ia::trek comp_exps(const bd::VG &g, const ir::RoV *rov,
 
 				try {
 					opt_ref_sl = hap_sl_from_lap(
-						g, c, ref_lap, ref_h_idx, dbg);
+						g, c, ref_lap, ref_h_idx);
 				}
 				catch (std::runtime_error &e) {
 					WARN("Failed to generate hap_slice for "
@@ -484,7 +484,7 @@ ia::trek comp_exps(const bd::VG &g, const ir::RoV *rov,
 
 				try {
 					opt_alt_sl = hap_sl_from_lap(
-						g, c, alt_lap, h_idx, dbg);
+						g, c, alt_lap, h_idx);
 				}
 				catch (std::runtime_error &e) {
 					WARN("Failed to generate hap_slice for "
@@ -498,13 +498,18 @@ ia::trek comp_exps(const bd::VG &g, const ir::RoV *rov,
 				ia::hap_slice alt_sl = *opt_alt_sl;
 
 				if (is_inv_local(ref_sl, alt_sl)) {
-					ise::pin ref_pin = {
-						ref_h_idx,
-						ref_sl.ref_start_idx};
-					ise::pin alt_pin = {
-						h_idx, alt_sl.ref_start_idx};
-					pcushion.add_pin_pair(
-						{ref_pin, alt_pin});
+					tk.add_match_ref(ref_h_idx, h_idx);
+					// ise::pin ref_pin = {
+					//	ref_h_idx,
+					//	ref_sl.ref_start_idx};
+					// ise::pin alt_pin = {
+					//	h_idx, alt_sl.ref_start_idx};
+					// pcushion.add_pin_pair(
+					//	{ref_pin, alt_pin});
+					// INFO("mini {} {} {} ({} {})",
+					//      rov->as_str(), ref_h_idx, h_idx,
+					//      u, v);
+					// dbg = true;
 					continue;
 				}
 
@@ -542,8 +547,8 @@ ia::trek comp_exps(const bd::VG &g, const ir::RoV *rov,
 			const race &ref_race = h_idx_to_race(ref_h_idx);
 			const ext_lap &ref_lap =
 				ref_race[dm.get_loop_no(ref_h_idx)];
-			ia::hap_slice ref_sl = hap_sl_from_lap(g, cxt, ref_lap,
-							       ref_h_idx, dbg);
+			ia::hap_slice ref_sl =
+				hap_sl_from_lap(g, cxt, ref_lap, ref_h_idx);
 
 			for (pt::u32 h_idx{}; h_idx < I; h_idx++) {
 				std::vector<pt::u32> alt_row =
@@ -565,7 +570,7 @@ ia::trek comp_exps(const bd::VG &g, const ir::RoV *rov,
 					alt_race[dm.get_loop_no(h_idx)];
 				std::optional<ia::hap_slice> opt_alt_sl =
 					hap_sl_from_lap_alt(g, cxt, alt_lap,
-							    h_idx, dbg);
+							    h_idx);
 
 				if (!opt_alt_sl)
 					continue;
@@ -576,10 +581,13 @@ ia::trek comp_exps(const bd::VG &g, const ir::RoV *rov,
 					min_rov.add_haps_match_ref(h_idx);
 			}
 		}
-	}
 
-	if (dbg) {
-		tk.dbg_print(std::cerr);
+		// if (dbg) {
+		//	std::cerr << "Ref hap idx " << ref_h_idx << "\n";
+		//	for (auto x : tk.get_match_ref(ref_h_idx))
+		//		std::cerr << x << " ";
+		//	std::cerr << "\n";
+		// }
 	}
 
 	return tk;

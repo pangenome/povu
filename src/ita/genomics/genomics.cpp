@@ -187,8 +187,8 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 			comp_expeditions_serial(g, all_rovs, base, count,
 						to_call_ref_ids, pc, treks);
 
-			if (chunk_num == CHUNK_SIZE)
-				i_trees = ise::sne(g, pc, to_call_ref_ids);
+			// if (chunk_num == CHUNK_SIZE)
+			//	i_trees = ise::sne(g, pc, to_call_ref_ids);
 
 			iv::VcfRecIdx rs = iv::gen_vcf_records(
 				g, treks, i_trees, inv_slices);
