@@ -198,7 +198,8 @@ matrix_pool gen_matrices(const bd::VG &g, ir::RoV &rov,
 
 	filter_thread.join();
 
-	return {ref_matrices, filter_matrix, result_matrix};
+	return {ref_matrices, filter_matrix, result_matrix,
+		filter_matrix.is_tangled()};
 }
 
 matrix_pool init_depth_matrices(const bd::VG &g, ir::RoV &rov,
@@ -209,20 +210,24 @@ matrix_pool init_depth_matrices(const bd::VG &g, ir::RoV &rov,
 
 	const std::vector<pt::u32> &sorted_vertices = rov.get_sorted_vertices();
 
-	auto [ref_matrices, filter_matrix, result_matrix] =
+	matrix_pool mp =
 		gen_matrices(g, rov, to_call_ref_ids, I, J, sorted_vertices);
 
-	filter_matrix.add_row_names(comp_row_names(I));
+	// auto [ref_matrices, filter_matrix, result_matrix, is_tangled] =
+	//	gen_matrices(g, rov, to_call_ref_ids, I, J, sorted_vertices);
+
+	mp.filter_matrix.add_row_names(comp_row_names(I));
+	// filter_matrix.add_row_names(comp_row_names(I));
 
 	for (pt::u32 ref_h_idx : to_call_ref_ids) {
 		meza::matrix::depth_matrix &ref_matrix =
-			ref_matrices.at(ref_h_idx);
+			mp.ref_matrices.at(ref_h_idx);
 		std::vector<pt::u32> row_names =
 			comp_row_names_fixed(I, ref_h_idx);
 		ref_matrix.add_row_names(std::move(row_names));
 	}
 
-	return {ref_matrices, filter_matrix, result_matrix};
+	return mp;
 }
 
 } // namespace ita::at_matrix

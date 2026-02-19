@@ -16,6 +16,7 @@ struct matrix_pool {
 	std::map<pt::u32, meza::matrix::depth_matrix> ref_matrices;
 	meza::matrix::depth_matrix filter_matrix;
 	meza::matrix::depth_matrix result_matrix;
+	bool tangled;
 };
 
 matrix_pool init_depth_matrices(const bd::VG &g, ir::RoV &rov,

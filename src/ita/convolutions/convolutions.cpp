@@ -1,4 +1,5 @@
 #include <cassert>
+#include <optional>
 #include <thread>
 #include <tuple>
 #include <vector>
@@ -293,8 +294,16 @@ comp_expedition(const bd::VG &g, ir::RoV &rov,
 		const std::set<pt::u32> &to_call_ref_ids)
 {
 	const pt::u32 I = g.get_hap_count();
-	auto [ref_matrices, filter_matrix, result_matrix] =
+	auto [ref_matrices, filter_matrix, result_matrix, is_tangled] =
 		ita::at_matrix::init_depth_matrices(g, rov, to_call_ref_ids);
+
+	if (is_tangled) {
+		std::cerr << "Tangled RoV " << rov.as_str() << "\n";
+		std::exit(1);
+	}
+	else {
+		return std::nullopt;
+	}
 
 	const std::vector<pt::u32> &sorted_vertices = rov.get_sorted_vertices();
 
