@@ -105,7 +105,7 @@ class VariationGraph
 
 	// vtx2sm -> vertex to step matrix
 	// i is the vertex index, j is the ref index, k is the step index
-	meza::matrix::matrix2d<std::vector<pt::idx_t>, pt::u32> vtx2sm;
+	meza::matrix::matrix2d<std::vector<pt::idx_t>> vtx2sm;
 
 	pr::Refs refs_;
 

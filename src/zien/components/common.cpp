@@ -71,6 +71,17 @@ void comp_update_refs(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 	const mto::from_vcf::VCFRecord &rec =
 		vcf_file.get_records().at(selected_rec_idx);
 	const mto::from_vcf::gt_data &d = rec.get_genotypes();
+
+	try {
+		const std::vector<mto::from_vcf::at_meta> at_meta =
+			d.get_data().at(at_idx);
+	}
+	catch (std::out_of_range &e) {
+		std::cerr << " at idx " << at_idx << " rec idx "
+			  << selected_rec_idx << "\n";
+		std::exit(1);
+	}
+
 	const std::vector<mto::from_vcf::at_meta> at_meta =
 		d.get_data().at(at_idx);
 

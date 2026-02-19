@@ -373,44 +373,6 @@ bool is_slice_in_hap(const bd::VG &g, pt::u32 ref_h_idx, pt::u32 ref_h_start,
 	return false;
 }
 
-// void find_ref_haps(const bd::VG &g, ist::st &i_tree, pt::u32 I)
-// {
-//	// pt::u32 N = i_tree.size();
-//	pt::u32 ref_h_idx = i_tree.get_ref_hap_idx();
-
-//	for (const auto &[_, v] : i_tree.get_vertices()) {
-//		for (auto &[len, alts] : v.get_same_len_alts()) {
-//			// INFO("LEN {}", len);
-
-//			v.add_len_haps(len, ref_h_idx);
-
-//			std::set<pt::u32> alt_haps;
-//			for (const auto &a : alts)
-//				alt_haps.insert(a.h_idx);
-
-//			for (pt::u32 h_idx{}; h_idx < I; ++h_idx) {
-//				if (pv_cmp::contains(alt_haps, h_idx))
-//					continue;
-
-//				if (h_idx == ref_h_idx)
-//					continue;
-
-//				if (is_slice_in_hap(g, ref_h_idx,
-// v.ref_h_start,						    len,
-// h_idx)) {					v.add_len_haps(h_idx,
-// len);
-//				}
-//			}
-//		}
-//	}
-
-//	// for (pt::u32 it_v_idx{}; it_v_idx < N; it_v_idx++) {
-//	//	ist::vertex &v = i_tree.get_vertex_mut(it_v_idx);
-//	//	// std::set<pt::u32> alt_haps = v.get_alt_hap_indices();
-
-//	// }
-// }
-
 std::vector<ist::st> sne(const bd::VG &g, const pin_cushion &pcushions,
 			 const std::set<pt::u32> &to_call_ref_ids)
 {
@@ -420,13 +382,8 @@ std::vector<ist::st> sne(const bd::VG &g, const pin_cushion &pcushions,
 	for (pt::u32 ref_h_idx : to_call_ref_ids) {
 		ist::st i_tree(ref_h_idx);
 		for (pt::u32 alt_h_idx{}; alt_h_idx < I; ++alt_h_idx) {
-
 			if (ref_h_idx == alt_h_idx)
 				continue;
-
-			// const povu::refs::Ref &r =
-			// g.get_ref_by_id(alt_h_idx); std::cerr <<
-			// "Tag: " << r.tag() << "\n";
 
 			std::optional<chain_t> opt_co_chain =
 				gen_colinear_chain(ref_h_idx, alt_h_idx,

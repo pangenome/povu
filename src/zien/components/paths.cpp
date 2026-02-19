@@ -26,7 +26,7 @@ struct range_meta {
 	range_meta() = default; // default constructor
 };
 
-struct disp_matrix : public meza::matrix::matrix2d<cell, std::string> {
+struct disp_matrix : public meza::matrix::path_matrix {
 	std::vector<range_meta> meta;
 	std::vector<pt::u32> col_width; // default col width is 0
 
@@ -36,7 +36,8 @@ struct disp_matrix : public meza::matrix::matrix2d<cell, std::string> {
 	disp_matrix() = delete;
 
 	disp_matrix(pt::u32 I, pt::u32 J, std::vector<range_meta> &&m)
-	    : matrix2d(I, J), meta(std::move(m)), col_width(J, 0)
+	    : meza::matrix::path_matrix(I, J), meta(std::move(m)),
+	      col_width(J, 0)
 	{}
 };
 
@@ -81,7 +82,7 @@ void update_display_lines(const bd::VG &g, const disp_matrix &dm,
 	std::string line;
 
 	pt::u32 matrix_row_idx{};
-	pt::u32 matrix_row_count = dm.rows();
+	pt::u32 matrix_row_count = dm.base().rows();
 	while (matrix_row_idx < matrix_row_count) {
 		const range_meta &rm = meta[hap_idx];
 		pt::u32 hap_row_count = rm.row_count;
@@ -109,8 +110,8 @@ void update_display_lines(const bd::VG &g, const disp_matrix &dm,
 		}
 
 		// c_idx = cell index
-		for (pt::u32 c_idx{}; c_idx < dm.cols(); c_idx++) {
-			const cell &cell_ = dm.at(matrix_row_idx, c_idx);
+		for (pt::u32 c_idx{}; c_idx < dm.base().cols(); c_idx++) {
+			const cell &cell_ = dm.base().at(matrix_row_idx, c_idx);
 			std::string k = cell_to_str(cell_);
 			pt::u32 w = col_width[c_idx];
 
@@ -237,9 +238,9 @@ void comp_hap_rows(const bd::VG &g, pt::u32 hap_idx, pt::u32 start, pt::u32 end,
 
 		w += k.length();
 
-		cell &cell_ = dm.at(row_idx, col_idx);
+		cell &cell_ = dm.base_mut().at(row_idx, col_idx);
 		cell_.emplace_back(k);
-		dm.mark_non_blank(row_idx, col_idx);
+		dm.base_mut().mark_non_blank(row_idx, col_idx);
 		prev_pos = pos;
 	};
 

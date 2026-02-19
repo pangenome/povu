@@ -370,7 +370,7 @@ gen_vcf_records(const bd::VG &g, const std::vector<ia::trek> &treks,
 	VcfRecIdx vcf_recs;
 
 	context_bound(g, treks, vcf_recs);
-	sub_invs(g, its, vcf_recs);
+	// sub_invs(g, its, vcf_recs);
 
 	if (!invs.empty())
 		context_free(g, invs, vcf_recs);

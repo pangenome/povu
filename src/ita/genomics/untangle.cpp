@@ -67,6 +67,7 @@ race cluster(const broad_walk &unrolled)
 			cluster.emplace_back(q.front());
 			q.pop();
 		}
+
 		clusters.emplace_back(cluster);
 		cluster.clear();
 	};

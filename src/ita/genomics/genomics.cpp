@@ -4,21 +4,23 @@
 #include <cmath>     // for ceil
 #include <cstddef>   // for size_t
 #include <cstdlib>   // for std::max, exit, EXIT_FAILURE
-#include <set>	     // for set
-#include <utility>   // for move
-#include <vector>    // for vector
+#include <optional>
+#include <set>	   // for set
+#include <utility> // for move
+#include <vector>  // for vector
 
-#include "dynamo/dynamo.hpp"	     // for dynamic_interval_tree
-#include "ita/genomics/allele.hpp"   // for Exp, comp_itineraries
-#include "ita/genomics/vcf.hpp"	     // for VcfRecIdx, gen_vcf_records
-#include "ita/variation/overlay.hpp" // for comp_itineraries3, sub_inv
-#include "ita/variation/rov.hpp"     // for RoV, gen_rov
-#include "ita/variation/sne.hpp"     // for sne
-#include "povu/common/app.hpp"	     // for config
-#include "povu/common/core.hpp"	     // for pt, idx_t, id_t
-#include "povu/common/log.hpp"	     // for ERR
-#include "povu/common/thread.hpp"    // for thread_pool, task_group
-#include "povu/refs/refs.hpp"	     // for lq_strand_to_char
+#include "dynamo/dynamo.hpp"		     // for dynamic_interval_tree
+#include "ita/convolutions/convolutions.hpp" // for run_convs
+#include "ita/genomics/allele.hpp"	     // for Exp, comp_itineraries
+#include "ita/genomics/vcf.hpp"		     // for VcfRecIdx, gen_vcf_records
+#include "ita/variation/overlay.hpp"	     // for comp_itineraries3, sub_inv
+#include "ita/variation/rov.hpp"	     // for RoV, gen_rov
+#include "ita/variation/sne.hpp"	     // for sne
+#include "povu/common/app.hpp"		     // for config
+#include "povu/common/core.hpp"		     // for pt, idx_t, id_t
+#include "povu/common/log.hpp"		     // for ERR
+#include "povu/common/thread.hpp"	     // for thread_pool, task_group
+#include "povu/refs/refs.hpp"		     // for lq_strand_to_char
 
 namespace ita::genomics
 {
@@ -88,6 +90,26 @@ void find_inversions_new(const bd::VG &g,
 					      rev_slice.start(), len});
 		}
 	}
+}
+
+void comp_expeditions(const bd::VG &g, std::vector<ir::RoV> &all_rovs,
+		      pt::idx_t start, pt::idx_t count,
+		      const std::set<pt::id_t> &to_call_ref_ids,
+		      std::vector<ia::trek> &treks)
+{
+	const std::size_t N = all_rovs.size();
+	for (pt::idx_t i = start; i < start + count && i < N; ++i) {
+		ir::RoV &rov = all_rovs[i];
+
+		std::optional<ia::trek> opt_tk =
+			ita::convolutions::comp_expedition(g, rov,
+							   to_call_ref_ids);
+
+		if (opt_tk.has_value())
+			treks.emplace_back(std::move(opt_tk.value()));
+	}
+
+	return;
 }
 
 void comp_expeditions_serial(const bd::VG &g, std::vector<ir::RoV> &all_rovs,
@@ -184,8 +206,11 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 			if (app_config.verbosity() > 0)
 				INFO("\t{}/{}", chunk_num, total_chunks);
 
-			comp_expeditions_serial(g, all_rovs, base, count,
-						to_call_ref_ids, pc, treks);
+			// comp_expeditions_serial(g, all_rovs, base, count,
+			//			to_call_ref_ids, pc, treks);
+
+			comp_expeditions(g, all_rovs, base, count,
+					 to_call_ref_ids, treks);
 
 			// if (chunk_num == CHUNK_SIZE)
 			//	i_trees = ise::sne(g, pc, to_call_ref_ids);

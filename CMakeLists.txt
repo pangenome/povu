@@ -198,6 +198,8 @@ ADD_LIBRARY(ita
 
   # variation
   ${ITA_SOURCES_DIR}/variation/overlay.cpp
+  ${ITA_SOURCES_DIR}/convolutions/convolutions.cpp
+  ${ITA_SOURCES_DIR}/convolutions/at_matrix.cpp
   ${ITA_SOURCES_DIR}/variation/sne.cpp
   ${ITA_SOURCES_DIR}/variation/rov.cpp
   ${ITA_SOURCES_DIR}/variation/color.cpp

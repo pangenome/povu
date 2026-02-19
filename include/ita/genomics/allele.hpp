@@ -466,8 +466,15 @@ public:
 
 	minimal_rov() = delete;
 
-	minimal_rov(const rov_boundaries cxt, hap_slice &&ref_as)
+	minimal_rov(const rov_boundaries &cxt, hap_slice &&ref_as)
 	    : cxt_(cxt), ref_as_(ref_as), alts_()
+	{}
+
+	minimal_rov(rov_boundaries cxt, hap_slice ref_as,
+		    std::set<pt::u32> &&ref_haps, std::set<pt::u32> &&alt_haps,
+		    alt_set &&min_rov_alt_set)
+	    : cxt_(cxt), ref_as_(ref_as), haps_matching_ref(ref_haps),
+	      alt_haps(alt_haps), alts_(min_rov_alt_set)
 	{}
 
 	// ---------
@@ -555,8 +562,9 @@ public:
 	{
 		os << "minimal Rov:\n";
 		os << this->get_context() << "\n";
-		os << "Ref " << this->get_ref_as().dbg_str();
-		os << "\t alts: ";
+		os << "Ref\n";
+		os << this->get_ref_as().dbg_str() << "\n";
+		os << "Alts: \n";
 		this->alts_.print_alt(os, ir::var_type_e::sub);
 		this->alts_.print_alt(os, ir::var_type_e::ins);
 		this->alts_.print_alt(os, ir::var_type_e::del);
@@ -661,6 +669,11 @@ public:
 	cxt_to_min_rov_map &get_ref_recs_mut(pt::u32 ref_h_idx)
 	{
 		return this->data_.at(ref_h_idx);
+	}
+
+	void set_min_rov(pt::u32 ref_h_idx, cxt_to_min_rov_map &&e)
+	{
+		this->data_.insert({ref_h_idx, e});
 	}
 
 	[[nodiscard]]

@@ -25,19 +25,6 @@ struct pin {
 	pt::u32 idx;   // index in the hap walk
 };
 
-struct chain_link {
-	pt::u32 idx;
-	pt::u32 limit_left;
-	pt::u32 limit_right;
-
-	// hap_traversal dir; // direction of traversal
-
-	chain_link static from_pin(const pin &p)
-	{
-		return chain_link{p.idx, pc::INVALID_IDX, pc::INVALID_IDX};
-	}
-};
-
 // or matching overlap
 struct extension {
 	pt::u32 f_r_idx;
@@ -80,6 +67,19 @@ struct extension {
 		   << ", r_ref_start: " << ext.r_ref_start
 		   << ", len: " << ext.len << ")";
 		return os;
+	}
+};
+
+struct chain_link {
+	pt::u32 idx;
+	pt::u32 limit_left;
+	pt::u32 limit_right;
+
+	// hap_traversal dir; // direction of traversal
+
+	chain_link static from_pin(const pin &p)
+	{
+		return chain_link{p.idx, pc::INVALID_IDX, pc::INVALID_IDX};
 	}
 };
 

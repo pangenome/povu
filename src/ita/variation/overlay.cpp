@@ -1,8 +1,7 @@
 #include "ita/variation/overlay.hpp" // for pos, pin_cushion
 
 #include <algorithm>
-#include <cstdlib> // for exit, EXIT_FAILURE
-#include <map>	   // for map
+#include <map> // for map
 #include <optional>
 #include <ostream> // for ostream
 #include <queue>   // for queue
@@ -17,11 +16,9 @@
 #include "ita/genomics/untangle.hpp"
 #include "ita/variation/rov.hpp"
 #include "ita/variation/sne.hpp"
-
 #include "povu/common/constants.hpp"
 #include "povu/common/core.hpp"
 #include "povu/common/log.hpp"
-#include "povu/common/utils.hpp"
 #include "povu/graph/types.hpp"
 
 namespace ita::overlay
@@ -524,6 +521,11 @@ ia::trek comp_exps(const bd::VG &g, const ir::RoV *rov,
 							  std::move(ref_sl))});
 				}
 
+				if (dbg) {
+					std::cerr << h_idx << " "
+						  << alt_sl.dbg_str() << "\n";
+				}
+
 				ia::minimal_rov &min_rov = m.at(c);
 				min_rov.add_alt(std::move(alt_sl));
 			}
@@ -554,14 +556,26 @@ ia::trek comp_exps(const bd::VG &g, const ir::RoV *rov,
 				std::vector<pt::u32> alt_row =
 					dm.get_row_data(h_idx);
 
+				auto dbg_i =
+					(dbg && h_idx == 107) ? true : false;
+
+				if (dbg_i) {
+					std::cerr << ref_h_idx << "\n";
+					min_rov.print(std::cerr);
+				}
+
 				// check context match, cheap filter
 				if (!match_in_cxt(ref_row, alt_row, j_u, j_v))
 					continue;
 
 				const race &alt_race = h_idx_to_race(h_idx);
 
-				if (!(dm.get_loop_no(h_idx) < alt_race.size()))
+				if (!(dm.get_loop_no(h_idx) <
+				      alt_race.size())) {
+					if (dbg_i)
+						std::cerr << "B\n";
 					continue;
+				}
 
 				// std::cerr << alt_race.size() << " "
 				//	  << dm.get_loop_no(h_idx) << "\n";
@@ -572,13 +586,20 @@ ia::trek comp_exps(const bd::VG &g, const ir::RoV *rov,
 					hap_sl_from_lap_alt(g, cxt, alt_lap,
 							    h_idx);
 
-				if (!opt_alt_sl)
+				if (!opt_alt_sl) {
+					if (dbg_i)
+						std::cerr << "V\n";
 					continue;
+				}
 
 				ia::hap_slice alt_sl = opt_alt_sl.value();
 
 				if (slice_match(ref_sl, alt_sl))
 					min_rov.add_haps_match_ref(h_idx);
+				else {
+					if (dbg_i)
+						std::cerr << "J\n";
+				}
 			}
 		}
 
@@ -600,7 +621,7 @@ std::vector<ia::trek> overlay_generic(const bd::VG &g, ir::RoV &rov,
 				      const std::set<pt::u32> &to_call_ref_ids,
 				      ise::pin_cushion &pcushion)
 {
-	bool dbg = false;
+	bool dbg = rov.as_str() == ">181>185" ? true : false;
 
 	std::vector<ia::trek> treks;
 
@@ -612,7 +633,7 @@ std::vector<ia::trek> overlay_generic(const bd::VG &g, ir::RoV &rov,
 	depth_matrix dm(I, J, sorted_vertices);
 	dm.fill(g, rov);
 
-	if (dbg)
+	if (false && dbg)
 		dm.print(std::cerr);
 
 	if (dm.tangled()) {
