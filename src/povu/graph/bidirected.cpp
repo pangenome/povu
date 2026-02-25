@@ -334,15 +334,26 @@ void VG::set_refs_meta(lq::ref **refs, pt::idx_t ref_count)
 
 void VG::set_vtx_ref_idx(pt::id_t v_id, pt::id_t ref_id, pt::idx_t step_idx)
 {
+
+	auto update_fn = [&](auto &s)
+	{
+		auto it = std::lower_bound(s.begin(), s.end(), step_idx);
+		if (it == s.end() || *it != step_idx)
+			s.insert(it, step_idx);
+	};
+
 	pt::idx_t v_idx = this->v_id_to_idx_.get_value(v_id);
-	std::vector<pt::idx_t> &s = this->vtx2sm.at(v_idx, ref_id);
+	this->vtx2sm.update(v_idx, ref_id, update_fn);
 
-	// insert in sorted order of step idx
-	auto it = std::lower_bound(s.begin(), s.end(), step_idx);
-	if (it == s.end() || *it != step_idx) // avoid duplicates
-		s.insert(it, step_idx);
+	// pt::idx_t v_idx = this->v_id_to_idx_.get_value(v_id);
+	// std::vector<pt::idx_t> &s = this->vtx2sm.at(v_idx, ref_id);
 
-	this->vtx2sm.mark_non_blank(v_idx, ref_id);
+	// // insert in sorted order of step idx
+	// auto it = std::lower_bound(s.begin(), s.end(), step_idx);
+	// if (it == s.end() || *it != step_idx) // avoid duplicates
+	//	s.insert(it, step_idx);
+
+	// this->vtx2sm.mark_non_blank(v_idx, ref_id);
 }
 
 void VG::shrink_to_fit()

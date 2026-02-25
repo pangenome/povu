@@ -5,229 +5,79 @@
 
 #include <liteseq/refs.h> // for ref_walk, ref
 
-#include "ita/genomics/allele.hpp" // for trek
-#include "ita/variation/rov.hpp"   // for RoV
-#include "meza/matrix/matrix.hpp"  // for matrix2d
-#include "povu/common/core.hpp"
-#include "povu/graph/bidirected.hpp" // for VG
-#include "povu/graph/types.hpp"	     // for ptg: or_e
+#include "ita/convolutions/at_matrix_no_tangle.hpp" // for no_tangle
+#include "ita/convolutions/at_matrix_tangled.hpp" // for init_tangled_depth_matrices
+#include "ita/traversals/untangle.hpp"		  // for untangle
+#include "ita/variation/rov.hpp"		  // for RoV
+#include "meza/matrix/matrix.hpp"		  // for matrix2d
+#include "povu/common/core.hpp"			  // for pt
+#include "povu/graph/bidirected.hpp"		  // for VG
 
 namespace ita::at_matrix
 {
-namespace lq = liteseq;
+using ita::at_matrix::no_tangle::init_depth_matrices_no_tangle;
 
-void fill_filter_matrix(const bd::VG &g, ir::RoV &rov, pt::u32 I, pt::u32 J,
-			meza::matrix::depth_matrix &m)
+meza::matrix::depth_matrix
+comp_depth_matrix(const bd::VG &g, const ir::RoV &rov,
+		  const std::vector<pt::u32> &sorted_vertices)
 {
-	// fill column-wise
-	// row wise is more cache friendly, but needs
-	// a method in bd::VG to get haplotypes per haplotype
-	for (pt::u32 h_idx{}; h_idx < I; h_idx++) {
-		for (pt::u32 j{}; j < J; j++) {
-			pt::u32 v_id = rov.get_sorted_vertex(j);
+	const pt::u32 I = g.get_hap_count();
+	const pt::u32 J = rov.get_vertex_count();
 
-			pt::u32 v_idx = g.v_id_to_idx(v_id);
-			const std::vector<pt::idx_t> &ref_idxs =
-				g.get_vertex_ref_idxs(v_idx, h_idx);
-			pt::u32 depth = ref_idxs.size();
-
-			if (depth == 0)
-				continue;
-
-			if (depth == 1) {
-				const lq::ref_walk *h_w =
-					g.get_ref_vec(h_idx)
-						->walk;	 // the hap walk
-				pt::u32 k = ref_idxs[0]; // index in the
-							 // hap walk
-				ptg::or_e orn =
-					h_w->strands[k] ==
-							lq::strand::STRAND_FWD
-						? ptg::or_e::forward
-						: ptg::or_e::reverse;
-
-				switch (orn) {
-				case ptg::or_e::forward:
-					m.set_value(h_idx,
-						    rov.get_sorted_pos(v_id),
-						    1);
-					break;
-				case ptg::or_e::reverse:
-					m.set_value(h_idx,
-						    rov.get_sorted_pos(v_id),
-						    2);
-					break;
-				}
-				continue;
-			}
-
-			if (depth > 1 && (j == 0 || j == J - 1))
-				m.set_tangled(true);
-
-			if (depth > m.get_max_depth())
-				m.set_max_depth(depth);
-
-			m.set_value(h_idx, j, depth);
-		}
-	}
-}
-
-std::tuple<std::vector<pt::u32>, bool, pt::u32>
-compute_ref_row(const bd::VG &g, ir::RoV &rov, pt::u32 ref_h_idx, pt::u32 J)
-{
-	std::vector<pt::u32> ref_row(J, 0);
-	bool is_tangled = false;
-	pt::u32 max_depth = 0;
-
-	for (pt::u32 j{}; j < J; j++) {
-		pt::u32 v_id = rov.get_sorted_vertex(j);
-
-		pt::u32 sorted_j = rov.get_sorted_pos(v_id);
-
-		pt::u32 v_idx = g.v_id_to_idx(v_id);
-		const std::vector<pt::idx_t> &ref_idxs =
-			g.get_vertex_ref_idxs(v_idx, ref_h_idx);
-		pt::u32 depth = ref_idxs.size();
-
-		if (depth == 0)
-			continue;
-
-		if (depth == 1) {
-			const lq::ref_walk *h_w =
-				g.get_ref_vec(ref_h_idx)->walk; // the hap walk
-			pt::u32 k = ref_idxs[0];		// index in the
-								// hap walk
-			ptg::or_e orn =
-				h_w->strands[k] == lq::strand::STRAND_FWD
-					? ptg::or_e::forward
-					: ptg::or_e::reverse;
-
-			switch (orn) {
-			case ptg::or_e::forward:
-				ref_row[sorted_j] = 1;
-				break;
-			case ptg::or_e::reverse:
-				ref_row[sorted_j] = 2;
-				break;
-			}
-			continue;
-		}
-
-		if (depth > 1 && (j == 0 || j == J - 1))
-			is_tangled = true;
-
-		if (depth > max_depth)
-			max_depth = depth;
-
-		ref_row[sorted_j] = depth;
-	}
-
-	return {ref_row, is_tangled, max_depth};
-}
-
-void fill_ref_matrix(const bd::VG &g, ir::RoV &rov, pt::u32 ref_h_idx,
-		     pt::u32 I, pt::u32 J, meza::matrix::depth_matrix &m)
-{
-	// fill column-wise
-	// row wise is more cache friendly, but needs
-	// a method in bd::VG to get haplotypes per haplotype
-
-	auto [ref_row, is_tangled, max_depth] =
-		compute_ref_row(g, rov, ref_h_idx, J);
+	auto d_mat = meza::matrix::depth_matrix{I, J};
+	auto cpy = sorted_vertices;
+	d_mat.add_col_names(std::move(cpy));
 
 	for (pt::u32 i{}; i < I; i++) {
 		for (pt::u32 j{}; j < J; j++) {
-			if (ref_row[j] == 0)
-				continue;
+			pt::u32 v_id = sorted_vertices[j];
+			pt::u32 v_idx = g.v_id_to_idx(v_id);
+			const std::vector<pt::idx_t> &ref_idxs =
+				g.get_vertex_ref_idxs(v_idx, i);
+			pt::u32 depth = ref_idxs.size();
 
-			pt::u32 value = ref_row[j];
-			m.set_value(i, j, value);
+			d_mat.set_value(i, j, depth);
+
+			if (depth > 1 && (j == 0 || j == J - 1))
+				d_mat.set_tangled(true);
+
+			if (depth > d_mat.get_max_depth())
+				d_mat.set_max_depth(depth);
 		}
 	}
 
-	m.set_tangled(is_tangled);
-	m.set_max_depth(max_depth);
+	// std::cerr << rov.as_str() << " Depth matrix\n";
+	// d_mat.base().dbg_print(std::cerr);
+
+	return d_mat;
 }
 
-template <typename V>
-std::vector<V> comp_row_names_fixed(pt::u32 I, V fixed_value)
+rov_matrix_pool init_tangled(const bd::VG &g, ir::RoV &rov,
+			     const std::set<pt::u32> &to_call_ref_ids)
 {
-	std::vector<V> row_names(I, fixed_value);
-
-	return row_names;
-};
-
-std::vector<pt::u32> comp_row_names(pt::u32 I)
-{
-	std::vector<pt::u32> row_names;
-	for (pt::u32 i{}; i < I; i++)
-		row_names.push_back(i);
-
-	return row_names;
-};
-
-matrix_pool gen_matrices(const bd::VG &g, ir::RoV &rov,
-			 const std::set<pt::u32> &to_call_ref_ids, pt::u32 I,
-			 pt::u32 J, std::vector<pt::u32> sorted_vertices)
-{
-	auto blank_matrix = meza::matrix::depth_matrix::create_full(I, J);
-	blank_matrix.add_col_names(std::move(sorted_vertices));
-
-	// duplicate the ref matrix
-	auto result_matrix = blank_matrix;
-	auto filter_matrix = blank_matrix;
-
-	std::thread filter_thread(
-		[&]()
-		{
-			fill_filter_matrix(std::cref(g), std::ref(rov), I, J,
-					   std::ref(filter_matrix));
-		});
-
-	std::map<pt::u32, meza::matrix::depth_matrix> ref_matrices;
-	auto ref_matrix = meza::matrix::depth_matrix::create_repeated_row(I, J);
-
-	if (to_call_ref_ids.size() == 1)
-		ref_matrices.emplace(*to_call_ref_ids.begin(), ref_matrix);
-	else if (to_call_ref_ids.size() > 1)
-		for (pt::u32 ref_h_idx : to_call_ref_ids)
-			ref_matrices.emplace(ref_h_idx, ref_matrix);
-
-	for (auto &[ref_h_idx, ref_matrix] : ref_matrices)
-		fill_ref_matrix(g, rov, ref_h_idx, I, J, ref_matrix);
-
-	filter_thread.join();
-
-	return {ref_matrices, filter_matrix, result_matrix,
-		filter_matrix.is_tangled()};
+	ita::traversals::untangle::aln_chain c =
+		ita::traversals::untangle::untangle(g, to_call_ref_ids, rov);
+	ita::at_matrix::rov_matrix_pool tangled_rov_mp =
+		ita::at_matrix::tangled::init_tangled_depth_matrices(
+			g, rov, to_call_ref_ids, c);
+	return tangled_rov_mp;
 }
 
-matrix_pool init_depth_matrices(const bd::VG &g, ir::RoV &rov,
-				const std::set<pt::u32> &to_call_ref_ids)
+inline rov_matrix_pool
+init_not_tangled(const bd::VG &g, ir::RoV &rov,
+		 const std::set<pt::u32> &to_call_ref_ids)
 {
-	pt::u32 I = g.get_hap_count();	    // rows
-	pt::u32 J = rov.get_vertex_count(); // cols
+	return init_depth_matrices_no_tangle(g, rov, to_call_ref_ids);
+}
 
+rov_matrix_pool init_depth_matrices(const bd::VG &g, ir::RoV &rov,
+				    const std::set<pt::u32> &to_call_ref_ids)
+{
 	const std::vector<pt::u32> &sorted_vertices = rov.get_sorted_vertices();
-
-	matrix_pool mp =
-		gen_matrices(g, rov, to_call_ref_ids, I, J, sorted_vertices);
-
-	// auto [ref_matrices, filter_matrix, result_matrix, is_tangled] =
-	//	gen_matrices(g, rov, to_call_ref_ids, I, J, sorted_vertices);
-
-	mp.filter_matrix.add_row_names(comp_row_names(I));
-	// filter_matrix.add_row_names(comp_row_names(I));
-
-	for (pt::u32 ref_h_idx : to_call_ref_ids) {
-		meza::matrix::depth_matrix &ref_matrix =
-			mp.ref_matrices.at(ref_h_idx);
-		std::vector<pt::u32> row_names =
-			comp_row_names_fixed(I, ref_h_idx);
-		ref_matrix.add_row_names(std::move(row_names));
-	}
-
-	return mp;
+	meza::matrix::depth_matrix d_mat =
+		comp_depth_matrix(g, rov, sorted_vertices);
+	return d_mat.is_tangled() ? init_tangled(g, rov, to_call_ref_ids)
+				  : init_not_tangled(g, rov, to_call_ref_ids);
 }
 
 } // namespace ita::at_matrix

@@ -2,6 +2,7 @@
 #define MZ_MATRIX_HPP
 
 #include <cstddef>
+#include <functional> // for std::invoke
 #include <iostream>
 #include <queue>
 #include <set>
@@ -10,220 +11,156 @@
 #include <string_view>
 #include <vector> // for vector
 
-#include "povu/common/compat.hpp" // for pv_cmp, format
-#include "povu/common/core.hpp"	  // for pt
+#include "quilt/shim.hpp"  // for qs::contains, qs::format
+#include "quilt/types.hpp" // for qt::u32, qt::u8, qt::op_t
 
 namespace meza::matrix
 {
 inline constexpr std::string_view MODULE = "meza::matrix";
 
-/**
- * @brief A 2D matrix with fixed dimensions and high-performance sparsity
- * tracking.
- * * @note Dimensions (I, J) are fixed at construction.
- * @warning The `is_row_blank` and `is_col_blank` tracking logic is optimized
- * for write-heavy/append-only workloads. It assumes data is only added or
- * updated. If elements are "deleted" (reset to T{}), the row/column will still
- * be marked as non-blank unless the internal tracking flags are manually
- * updated.
- */
+enum class layout : qt::u8 {
+	DenseRowMajor,
+	LowerSymmetricSquare,
+	RepeatedRow,
+};
+
+[[nodiscard]]
+std::size_t get_idx(qt::u32 i, qt::u32 j, layout l, const qt::u32 I,
+		    const qt::u32 J);
+
 template <typename T>
-struct matrix2d {
-private:
-	pt::u32 I_;
-	pt::u32 J_;
+struct dense_matrix2d {
+	static constexpr layout LO_ = layout::DenseRowMajor;
+	qt::u32 I_;
+	qt::u32 J_;
+
+	// otcional: track which rows and cols have data for quick filtering
+	std::vector<qt::u8> row_has_data_;
+	std::vector<qt::u8> col_has_data_;
+
 	std::vector<T> data_; // row-major order
 
-	// optional: track which rows and cols have data for quick filtering
-	std::vector<pt::u8> row_has_data_;
-	std::vector<pt::u8> col_has_data_;
-
-	bool repeated_rows = false;
-	pt::u32 false_row_count = 0; // use invalud
-
-	[[nodiscard]]
-	std::size_t get_idx(pt::u32 i, pt::u32 j) const
-	{
-		if (i >= this->rows() || j >= this->cols()) {
-			std::string err = pv_cmp::format(
-				"{} out of bounds access [{},{}]", MODULE, i,
-				j);
-			throw std::out_of_range(err);
-		}
-
-		if (repeated_rows)
-			return j;
-		else
-			return static_cast<std::size_t>(i) * this->cols() + j;
-	}
-
-public:
-	matrix2d(pt::u32 I, pt::u32 J)
-	    : I_{I}, J_{J}, data_(static_cast<std::size_t>(I) * J),
+	dense_matrix2d(qt::u32 I, qt::u32 J, T init = T{})
+	    : I_(I), J_(J), data_(static_cast<std::size_t>(I) * J, init),
 	      row_has_data_(I, 0), col_has_data_(J, 0)
-	{}
-
-	static matrix2d create_repeated_row(pt::u32 false_row_count, pt::u32 J)
 	{
-		auto m = matrix2d(1, J);
-		m.repeated_rows = true;
-		m.false_row_count = false_row_count;
-
-		return m;
-	}
-
-	matrix2d clone_shape() const
-	{
-		matrix2d<T> m(this->rows(), this->cols());
-
-		return m;
+		if (init != T{}) {
+			std::fill(row_has_data_.begin(), row_has_data_.end(),
+				  1);
+			std::fill(col_has_data_.begin(), col_has_data_.end(),
+				  1);
+		}
 	}
 
 	[[nodiscard]]
-	pt::u32 rows() const
+	qt::u32 rows() const
 	{
-		if (repeated_rows)
-			return false_row_count;
-
 		return this->I_;
 	}
 
 	[[nodiscard]]
-	pt::u32 cols() const
+	qt::u32 cols() const
 	{
 		return this->J_;
-	}
-
-	[[nodiscard]]
-	bool is_row_blank(pt::u32 i) const
-	{
-		if (i >= this->rows()) {
-			std::string err = pv_cmp::format(
-				"{} Invalid row index: {}", MODULE, i);
-			throw std::out_of_range(err);
-		}
-
-		if (this->repeated_rows)
-			return row_has_data_[0] == 0;
-		else
-			return row_has_data_[i] == 0;
-	}
-
-	[[nodiscard]]
-	bool is_col_blank(pt::u32 j) const
-	{
-		if (j >= this->cols()) {
-			std::string err = pv_cmp::format(
-				"{} Invalid column index: {}", MODULE, j);
-			throw std::out_of_range(err);
-		}
-
-		return col_has_data_[j] == 0;
-	}
-
-	[[nodiscard]]
-	const T &at(pt::u32 i, pt::u32 j) const
-	{
-		return data_[get_idx(i, j)];
 	}
 
 	/**
 	 * a notify method to mark a cell as non-blank
 	 * useful when updated without using the `set` method
 	 */
-	void mark_non_blank(pt::u32 i, pt::u32 j)
+	void mark_non_blank(qt::u32 i, qt::u32 j)
 	{
 		if (i >= this->rows() || j >= this->cols()) {
-			std::string err = pv_cmp::format(
-				"{} out of bounds access {}{}", MODULE, i, j);
-			throw std::out_of_range(err);
+			throw std::out_of_range("");
+			// throw std::out_of_range(
+			//	pv_cmp::format("{} ({}, {})", MODULE, i, j));
 		}
 
-		if (repeated_rows)
-			row_has_data_[0] = 1;
-		else
-			row_has_data_[i] = 1;
-
+		row_has_data_[i] = 1;
 		col_has_data_[j] = 1;
 	}
 
-	/** it is advisable to use set
-	 * if used call mark_non_blank
-	 */
 	[[nodiscard]]
-	T &at(pt::u32 i, pt::u32 j)
+	bool is_row_blank(qt::u32 i) const
 	{
-		return data_[get_idx(i, j)];
+		if (i >= this->rows()) {
+			// std::string err = pv_cmp::format(
+			//	"{} Invalid row index: {}", MODULE, i);
+			throw std::out_of_range("");
+		}
+
+		return row_has_data_[i] == 0;
 	}
 
-	void set(pt::u32 i, pt::u32 j, T value)
+	template <class F>
+	void update(qt::u32 i, qt::u32 j, F &&fn)
 	{
-		std::size_t idx = get_idx(i, j);
+		auto idx = get_idx(i, j, LO_, I_, J_);
+		auto &cell = data_[idx];
+		std::invoke(std::forward<F>(fn), cell);
+
+		// If you treat "non-blank" as "was ever written", mark
+		// unconditionally:
+		mark_non_blank(i, j);
+
+		// return out; // lets fn return something useful if you want
+	}
+
+	void set(qt::u32 i, qt::u32 j, T value)
+	{
+		std::size_t idx = get_idx(i, j, LO_, this->I_, this->J_);
 		data_[idx] = value;
 
 		// If value is non-zero, mark row/col as non-blank
-		if (value != T{}) {
+		if (value != T{})
 			this->mark_non_blank(i, j);
-		}
 	}
 
 	[[nodiscard]]
-	const std::vector<T> &data() const
+	const T &at(qt::u32 i, qt::u32 j) const
 	{
-		return data_;
+		return data_[get_idx(i, j, LO_, this->I_, this->J_)];
+	}
+
+	[[nodiscard]]
+	T &at_mut(qt::u32 i, qt::u32 j)
+	{
+		return data_[get_idx(i, j, LO_, this->I_, this->J_)];
 	}
 
 	// get row method
 	// return a slice into the matrix
 	[[nodiscard]]
-	std::vector<T> get_row(pt::u32 i) const
+	std::vector<T> copy_row(qt::u32 i) const
 	{
 		if (i >= this->rows()) {
-			std::string err = pv_cmp::format(
-				"{} Invalid row index: {}", MODULE, i);
-			throw std::out_of_range(err);
+			// std::string err = pv_cmp::format(
+			//	"{} Invalid row index: {}", MODULE, i);
+			throw std::out_of_range("");
 		}
 
-		pt::u32 row_idx = i;
-		if (repeated_rows)
-			row_idx = 0;
-
-		std::size_t offset =
-			static_cast<std::size_t>(row_idx) * this->cols();
+		std::size_t offset = static_cast<std::size_t>(i) * this->cols();
 		return std::vector<T>(data_.begin() + offset,
 				      data_.begin() + offset + this->cols());
 	}
 
-	// get col method
-	// return a slice into the matrix
-	/**
-	 * data stored in row major order
-	 * get_col is thus significantly slower than get_row due to cache misses
-	 */
 	[[nodiscard]]
-	std::vector<T> get_col(pt::u32 j) const
+	dense_matrix2d<T> copy_shape() const
 	{
-		if (j >= this->cols())
-			throw std::out_of_range("Invalid column index");
-
-		std::vector<T> col(this->rows());
-		for (pt::u32 i{}; i < this->rows(); i++)
-			col[i] = data_[get_idx(i, j)];
-
-		return col;
+		return dense_matrix2d<T>(this->rows(), this->cols());
 	}
 
 	[[nodiscard]]
-	std::vector<T> xor_rows(pt::u32 i1, pt::u32 i2) const
+	std::vector<T> xor_rows(qt::u32 i1, qt::u32 i2) const
 	{
 		std::vector<T> result;
-		pt::u32 J = this->cols();
+		qt::u32 J = this->cols();
 
 		result.reserve(this->cols());
 		auto [r1_it, _] = this->get_row_it(i1);
 		auto [r2_it, __] = this->get_row_it(i2);
 
-		for (pt::u32 j{}; j < J; j++, r1_it++, r2_it++)
+		for (qt::u32 j{}; j < J; j++, r1_it++, r2_it++)
 			result.push_back(*r1_it ^ *r2_it);
 
 		return result;
@@ -236,7 +173,7 @@ public:
 	}
 
 	[[nodiscard]]
-	std::vector<T> xor_rows_and_prefix_sum(pt::u32 i1, pt::u32 i2) const
+	std::vector<T> xor_rows_and_prefix_sum(qt::u32 i1, qt::u32 i2) const
 	{
 		std::vector<T> result = this->xor_rows(i1, i2);
 		this->prefix_sum(result);
@@ -244,110 +181,285 @@ public:
 		return result;
 	}
 
-	/**
-	 * @brief Retrieves a specific row from the matrix as a range of
-	 * iterators.
-	 *
-	 * iterators are invalidated if the matrix data is modified.
-	 *
-	 * This method returns a pair of iterators (begin and end) representing
-	 * the elements of the specified row in the matrix. It avoids copying
-	 * data, providing direct access to the internal storage. The iterators
-	 * define a half-open range `[begin, end)`, where `begin` is the start
-	 * of the row, and `end` points to one past the last element.
-	 *
-	 * Note: The `end` iterator is not dereferenceable.
-	 *
-	 * @tparam T The type of elements in the matrix.
-	 * @param i The 0-based index of the row to retrieve.
-	 * @return A pair of iterators pointing to the beginning and one past
-	 * the end of the row.
-	 *
-	 * @throws std::out_of_range If the row index `i` is out of bounds.
-	 */
 	[[nodiscard]]
 	std::pair<typename std::vector<T>::const_iterator,
 		  typename std::vector<T>::const_iterator>
-	get_row_it(pt::u32 i) const
+	get_row_it(qt::u32 i) const
 	{
 		if (i >= this->rows()) {
-			std::string err = pv_cmp::format(
-				"{} Invalid row index: {}", MODULE, i);
-			throw std::out_of_range(err);
+			// std::string err = pv_cmp::format(
+			//	"{} Invalid row index: {}", MODULE, i);
+			throw std::out_of_range("");
 		}
 
-		pt::u32 row_idx = i;
-		if (repeated_rows)
-			row_idx = 0;
-
-		std::size_t offset =
-			static_cast<std::size_t>(row_idx) * this->cols();
+		std::size_t offset = static_cast<std::size_t>(i) * this->cols();
 		return std::make_pair(data_.begin() + offset,
 				      data_.begin() + offset + this->cols());
 	}
 
-	[[nodiscard]]
-	std::vector<pt::op_t<pt::u32>> find_context(pt::u32 i) const
+	void dbg_print(std::ostream &os) const
 	{
-		pt::u32 J = this->cols();
+		const qt::u32 I = this->rows();
+		const qt::u32 J = this->cols();
 
-		auto [start_it, _] = this->get_row_it(i);
-
-		if (J == 1)
-			return {};
-
-		std::vector<pt::op_t<pt::u32>> bounds;
-		std::queue<pt::u32> q; // a buffer to store similar cols
-		auto it{start_it};
-		pt::u32 j{}, u{}, v{};
-
-		for (; j < J; j++, it++) {
-			if (*it == 0)
-				q.push(j);
-
-			if (q.size() > 1) {
-				u = q.front();
-				q.pop();
-				v = q.front();
-
-				// if (u,v) are not adjacent & contain a
-				// difference
-				if ((v - u) > 1)
-					bounds.emplace_back(u, v);
+		for (qt::u32 i = 0; i < I; i++) {
+			for (qt::u32 j{}; j < J; j++) {
+				os << this->at(i, j);
+				if (J > 0 && j < J - 1)
+					os << "\t";
 			}
+			os << "\n";
 		}
-
-		return bounds;
 	}
 };
 
 template <typename T>
-std::vector<pt::op_t<pt::u32>> find_context(const matrix2d<T> &ref_matrix,
-					    const matrix2d<T> &result_matrix,
-					    pt::u32 i)
+struct repeated_row_matrix2d {
+	static constexpr layout LO_ = layout::RepeatedRow;
+	qt::u32 logical_I_;
+	qt::u32 J_;
+
+	// optional: track which rows and cols have data for quick filtering
+	qt::u8 row_has_data_ = 0;
+	std::vector<qt::u8> col_has_data_;
+
+	std::vector<T> row0; // only store one row
+
+	/**
+	 * I is a logical not actual row count
+	 */
+	repeated_row_matrix2d(qt::u32 I, qt::u32 J, T init = T{})
+	    : logical_I_(I), J_(J), row0(J, init), col_has_data_(J, 0)
+	{}
+
+	[[nodiscard]]
+	qt::u32 rows() const
+	{
+		return this->logical_I_;
+	}
+
+	[[nodiscard]]
+	qt::u32 cols() const
+	{
+		return this->J_;
+	}
+
+	[[nodiscard]]
+	bool is_row_blank(qt::u32 i) const
+	{
+		if (i >= this->rows()) {
+			// std::string err = pv_cmp::format(
+			//	"{} Invalid row index: {}", MODULE, i);
+			throw std::out_of_range("");
+		}
+
+		return this->row_has_data_;
+	}
+
+	void mark_non_blank(qt::u32 i, qt::u32 j)
+	{
+		if (i >= this->rows() || j >= this->cols()) {
+			// std::string err =
+			//	pv_cmp::format("{} ({}, {})", MODULE, i, j);
+			throw std::out_of_range("");
+		}
+
+		row_has_data_ = 1;
+		col_has_data_[j] = 1;
+	}
+
+	void set(qt::u32 i, qt::u32 j, T value)
+	{
+		if (i >= this->rows() || j >= this->cols()) {
+			// std::string err = pv_cmp::format(
+			//	"{} out of bounds access {}{}", MODULE, i, j);
+			throw std::out_of_range("");
+		}
+
+		row0[j] = value;
+
+		if (value != T{})
+			this->mark_non_blank(i, j);
+	}
+
+	[[nodiscard]]
+	const T &at(qt::u32 i, qt::u32 j) const
+	{
+		if (i >= this->rows() || j >= this->cols()) {
+			// std::string err = pv_cmp::format(
+			//	"{} out of bounds access {}{}", MODULE, i, j);
+			throw std::out_of_range("");
+		}
+
+		return row0[j];
+	}
+
+	// get row method
+	// return a slice into the matrix
+	[[nodiscard]]
+	std::vector<T> copy_row(qt::u32 i) const
+	{
+		if (i >= this->rows()) {
+			// std::string err = pv_cmp::format(
+			//	"{} Invalid row index: {}", MODULE, i);
+			throw std::out_of_range("");
+		}
+
+		return row0;
+	}
+
+	[[nodiscard]] std::pair<typename std::vector<T>::const_iterator,
+				typename std::vector<T>::const_iterator>
+	get_row_it(qt::u32 i) const
+	{
+		if (i >= this->rows()) {
+			// std::string err = pv_cmp::format(
+			//	"{} Invalid row index: {}", MODULE, i);
+			throw std::out_of_range("");
+		}
+
+		return std::make_pair(row0.begin(), row0.end());
+	}
+
+	void dbg_print(std::ostream &os) const
+	{
+		const qt::u32 I = this->rows();
+		const qt::u32 J = this->cols();
+
+		for (qt::u32 i = 0; i < I; i++) {
+			for (qt::u32 j{}; j < J; j++) {
+				os << this->at(i, j);
+				if (J > 0 && j < J - 1)
+					os << "\t";
+			}
+			os << "\n";
+		}
+	}
+};
+
+template <typename T>
+struct symmetric_square_matrix2d {
+	static constexpr layout LO_ = layout::LowerSymmetricSquare;
+
+	qt::u32 I_;
+	qt::u32 J_;
+	std::size_t N;
+
+	std::vector<qt::u8> row_has_data_;
+	std::vector<qt::u8> col_has_data_;
+
+	std::vector<T> data_; // only store lower triangle
+
+	// --------------
+	// constructor(s)
+	// --------------
+
+	explicit symmetric_square_matrix2d(qt::u32 I, qt::u32 J, T init = T{})
+	    : I_{I}, J_{J}, row_has_data_(I, 0), col_has_data_(J, 0)
+	{
+		if (I_ != J_) {
+			std::string err;
+			// =
+			// pv_cmp::format("{} For symmetric matrix, I and "
+			//	       "J must be equal "
+			//	       "(got I={}, J={})",
+			//	       MODULE, I_, J_);
+			throw std::invalid_argument(err);
+		}
+
+		if (init != T{}) {
+			std::fill(row_has_data_.begin(), row_has_data_.end(),
+				  1);
+			std::fill(col_has_data_.begin(), col_has_data_.end(),
+				  1);
+		}
+
+		this->N = static_cast<std::size_t>(I) * (I + 1) / 2;
+		this->data_.assign(N, init);
+	}
+
+	// ---------
+	// getter(s)
+	// ---------
+
+	[[nodiscard]]
+	qt::u32 rows() const
+	{
+		return this->I_;
+	}
+
+	[[nodiscard]]
+	qt::u32 cols() const
+	{
+		return this->J_;
+	}
+
+	[[nodiscard]]
+	const T &at(qt::u32 i, qt::u32 j) const
+	{
+		if (i >= this->rows() || j >= this->cols()) {
+			std::string err;
+			// = pv_cmp::format(
+			// "{} out of bounds access [{},{}]", MODULE, i,
+			// j);
+			throw std::out_of_range(err);
+		}
+
+		return data_[get_idx(i, j, LO_, this->I_, this->J_)];
+	}
+
+	// ----
+	// setters
+	// ----
+	void set(qt::u32 i, qt::u32 j, T value)
+	{
+		if (i >= this->rows() || j >= this->cols()) {
+			std::string err; // = pv_cmp::format(
+					 // "{} out of bounds access {}{}",
+					 // MODULE, i, j);
+			throw std::out_of_range(err);
+		}
+
+		data_[get_idx(i, j, LO_, this->I_, this->J_)] = value;
+	}
+};
+
+template <typename T>
+std::vector<T> prefix_sum(typename std::vector<T>::const_iterator start_it,
+			  typename std::vector<T>::const_iterator end_it,
+			  qt::u32 N)
 {
-	// matrix2d<T, U> res_vec = m2.clone_shape();
+	std::vector<T> result;
+	result.reserve(N);
+	auto curr_it = start_it;
+	result.push_back(*curr_it);
 
-	// pt::u32 I = ref_context.rows();
-	pt::u32 J = ref_matrix.cols();
+	curr_it = std::next(curr_it);
+	for (; curr_it != end_it; curr_it++)
+		result.push_back(result.back() + *curr_it);
 
-	// pt::u32 J = this->cols();
+	return result;
+}
 
-	// auto [start_it, _] = this->get_row_it(i);
+template <typename T>
+std::vector<qt::op_t<qt::u32>>
+find_context(const repeated_row_matrix2d<T> &ref_matrix,
+	     const dense_matrix2d<T> &result_matrix, qt::u32 i)
+{
+	qt::u32 J = ref_matrix.cols();
 
 	auto [ref_it, _] = ref_matrix.get_row_it(i);
-	auto [res_it, __] = result_matrix.get_row_it(i);
+	auto [res_it, res_it_end] = result_matrix.get_row_it(i);
 
 	if (J == 1)
 		return {};
 
-	std::vector<pt::op_t<pt::u32>> bounds;
-	std::queue<pt::u32> q; // a buffer to store similar cols
+	std::vector<T> sum_row = prefix_sum<T>(res_it, res_it_end, J);
 
-	// auto m1_it = ref_it;
-	// auto m2_it = m2_s_it;
+	std::vector<qt::op_t<qt::u32>> bounds;
+	std::queue<qt::u32> q; // a buffer to store similar cols
 
-	pt::u32 j{}, u{}, v{};
+	qt::u32 j{}, u{}, v{};
 
 	for (; j < J; j++, ref_it++, res_it++) {
 		if (*ref_it != 0 && *res_it == 0)
@@ -360,7 +472,7 @@ std::vector<pt::op_t<pt::u32>> find_context(const matrix2d<T> &ref_matrix,
 
 			// if (u,v) are not adjacent & contain a
 			// difference
-			if ((v - u) > 1)
+			if ((v - u) > 1 && sum_row[v] - sum_row[u] > 0)
 				bounds.emplace_back(u, v);
 		}
 	}
@@ -372,27 +484,27 @@ std::vector<pt::op_t<pt::u32>> find_context(const matrix2d<T> &ref_matrix,
  * row wise xor
  */
 template <typename T>
-matrix2d<T> vector_xor(const matrix2d<T> &m1, const matrix2d<T> &m2,
-		       const std::set<pt::u32> &skip_rows)
+dense_matrix2d<T> vector_xor(const repeated_row_matrix2d<T> &m1,
+			     const dense_matrix2d<T> &m2,
+			     const std::set<qt::u32> &skip_rows)
 {
-	matrix2d<T> res_vec = m2.clone_shape();
+	dense_matrix2d<T> res_vec = m2.copy_shape();
 
-	pt::u32 I = m1.rows();
-	pt::u32 J = m1.cols();
+	qt::u32 I = m1.rows();
+	qt::u32 J = m1.cols();
 
-	for (pt::u32 i{}; i < I; i++) {
+	for (qt::u32 i{}; i < I; i++) {
 		auto [m1_s_it, m1_e_it] = m1.get_row_it(i);
 		auto [m2_s_it, m2_e_it] = m2.get_row_it(i);
 
-		if (pv_cmp::contains(skip_rows, i))
+		if (qs::contains(skip_rows, i))
 			continue;
 
 		auto m1_it = m1_s_it;
 		auto m2_it = m2_s_it;
 
-		for (pt::u32 j{}; j < J; j++, m1_it++, m2_it++) {
+		for (qt::u32 j{}; j < J; j++, m1_it++, m2_it++) {
 			auto v_res = *m1_it ^ *m2_it;
-
 			res_vec.set(i, j, static_cast<T>(v_res));
 		}
 	}
@@ -410,173 +522,107 @@ struct row_names {
 	std::vector<W> names_;
 };
 
-template <typename T, typename U, typename W>
-struct ov_matrix {
-private:
-	explicit ov_matrix(matrix2d<T> &&m) : base_matrix_(std::move(m))
-	{}
-
-public:
-	matrix2d<T> base_matrix_;
+template <typename Derived, typename MatrixType, typename T, typename U,
+	  typename W>
+struct matrix_wrapper {
+	MatrixType base_matrix_;
 	col_names<U> col_names_;
 	row_names<W> row_names_;
-
-	// useful for overlays
 	bool is_tangled_ = false;
-	pt::u32 max_depth_ = 0;
+	qt::u32 max_depth_ = 0;
 
-	// --------------
-	// constructor(s)
-	// --------------
-
-	// TODO: make private and make disp matrix work in a different way
-	ov_matrix(pt::u32 I, pt::u32 J) : base_matrix_{I, J}
+	// Add this constructor
+	explicit matrix_wrapper(MatrixType &&m) : base_matrix_(std::move(m))
 	{}
 
-	static ov_matrix create_full(pt::u32 I, pt::u32 J)
-	{
-		return ov_matrix(I, J);
-	}
-
-	static ov_matrix create_repeated_row(pt::u32 false_row_count, pt::u32 J)
-	{
-		return ov_matrix(
-			matrix2d<T>::create_repeated_row(false_row_count, J));
-	}
-
-	static ov_matrix
-	create_from_base_matrix(matrix2d<T> &&m,
-				const ov_matrix<T, U, W> &filter_matrix)
-	{
-		auto ov_m = ov_matrix(std::move(m));
-		auto cn = filter_matrix.get_col_names();
-		auto rn = filter_matrix.get_row_names();
-		ov_m.add_col_names(std::move(cn));
-		ov_m.add_row_names(std::move(rn));
-
-		return ov_m;
-	}
-
-	// ---------------------------------
-	// forwading methods to matrix2dbase
-	// ---------------------------------
-
-	const matrix2d<T> &base() const
+	// --- Forwarding ---
+	const MatrixType &base() const
 	{
 		return base_matrix_;
 	}
 
-	matrix2d<T> &base_mut()
+	MatrixType &base_mut()
 	{
 		return base_matrix_;
 	}
 
-	// ---------
-	// getter(s)
-	// ---------
-
-	[[nodiscard]]
-	const std::vector<W> &get_col_names() const
+	// --- Getters ---
+	const std::vector<U> &get_col_names() const
 	{
-		return this->col_names_.names_;
+		return col_names_.names_;
 	}
 
-	[[nodiscard]]
 	const std::vector<W> &get_row_names() const
 	{
-		return this->row_names_.names_;
+		return row_names_.names_;
 	}
 
 	[[nodiscard]]
-	pt::u32 get_max_depth() const
+	qt::u32 get_max_depth() const
 	{
-		return this->max_depth_;
+		return max_depth_;
 	}
 
 	[[nodiscard]]
 	bool is_tangled() const
 	{
-		return this->is_tangled_;
+		return is_tangled_;
 	}
 
-	// ---------
-	// setter(s)
-	// ---------
-
-	void set_max_depth(pt::u32 max_depth)
+	// --- Setters ---
+	void set_max_depth(qt::u32 d)
 	{
-		this->max_depth_ = max_depth;
-	}
-
-	void set_value(pt::u32 i, pt::u32 j, T value)
-	{
-		this->base_mut().set(i, j, value);
+		max_depth_ = d;
 	}
 
 	void set_tangled(bool v)
 	{
-		this->is_tangled_ = v;
+		is_tangled_ = v;
 	}
 
-	void add_row_names(std::vector<U> &&names)
+	void set_value(qt::u32 i, qt::u32 j, T value)
 	{
-		const pt::u32 I = this->base().rows();
-		if (names.size() != I) {
-			std::string err =
-				pv_cmp::format("{} Row names size {} does "
-					       "not match row count {}",
-					       MODULE, names.size(), I);
-			throw std::invalid_argument(err);
-		}
+		base_mut().set(i, j, value);
+	}
 
-		this->row_names_.names_ = std::move(names);
+	void add_row_names(std::vector<W> &&names)
+	{
+		if (names.size() != base().rows()) {
+			throw std::invalid_argument("");
+			// throw std::invalid_argument(
+			//	pv_cmp::format("{} Row size mismatch", MODULE));
+		}
+		row_names_.names_ = std::move(names);
 	}
 
 	void add_col_names(std::vector<U> &&names)
 	{
-		const pt::u32 J = this->base().cols();
-		if (names.size() != J) {
-			std::string err =
-				pv_cmp::format("{} Column names size {} does "
-					       "not match column count {}",
-					       MODULE, names.size(), J);
-			throw std::invalid_argument(err);
+		if (names.size() != base().cols()) {
+			throw std::invalid_argument("");
+			// throw std::invalid_argument(
+			//	pv_cmp::format("{} Col size mismatch", MODULE));
 		}
-
-		this->col_names_.names_ = std::move(names);
+		col_names_.names_ = std::move(names);
 	}
+};
 
-	void dbg_print(std::ostream &os, bool inc_headers = false) const
-	{
-		// if (inc_headers) {
-		//	os << "\t"; // top-left cell is empty
-		//	for (pt::u32 j{}; j < this->cols(); j++) {
-		//		// Safe check: Use the name if it exists,
-		//		// otherwise use the index
-		//		if (j < col_names.size() && !col_names.empty())
-		//			os << col_names[j];
-		//		else
-		//			os << j;
+template <typename T, typename U, typename W>
+struct ov_matrix
+    : public matrix_wrapper<ov_matrix<T, U, W>, dense_matrix2d<T>, T, U, W> {
+	using Base = matrix_wrapper<ov_matrix, dense_matrix2d<T>, T, U, W>;
 
-		//		os << "\t";
-		//	}
-		//	os << "\n";
-		// }
+	ov_matrix(qt::u32 I, qt::u32 J) : Base(dense_matrix2d<T>{I, J})
+	{}
+};
 
-		// for (pt::u32 i = 0; i < this->rows(); i++) {
-		//	if (inc_headers && !this->row_names.empty())
-		//		os << this->row_names[i] << "\t";
-		//	else if (inc_headers) // row names is empty
-		//		os << i << "\t";
+template <typename T, typename U, typename W>
+struct rep_matrix : public matrix_wrapper<rep_matrix<T, U, W>,
+					  repeated_row_matrix2d<T>, T, U, W> {
+	using Base =
+		matrix_wrapper<rep_matrix, repeated_row_matrix2d<T>, T, U, W>;
 
-		//	for (pt::u32 j{}; j < this->cols(); j++) {
-		//		os << at(i, j);
-		//		if (this->cols() > 0 && j < this->cols() - 1)
-		//			os << "\t";
-		//	}
-		//	os << "\n";
-		// }
-	}
+	rep_matrix(qt::u32 I, qt::u32 J) : Base(repeated_row_matrix2d<T>{I, J})
+	{}
 };
 
 using path_matrix =
@@ -584,11 +630,13 @@ using path_matrix =
 
 // a depth matrix can have values of any ...
 // template <typename T, typename U, typename W>
-using at_matrix = ov_matrix<pt::u32, pt::u32, pt::u32>;
+using at_matrix = ov_matrix<qt::u32, qt::u32, qt::u32>;
 
 // a depth matrix can have values of any ...
 // template <typename T, typename U, typename W>
-using depth_matrix = ov_matrix<pt::u32, pt::u32, pt::u32>;
+using depth_matrix = ov_matrix<qt::u32, qt::u32, qt::u32>;
+
+using ref_matrix = rep_matrix<qt::u32, qt::u32, qt::u32>;
 
 }; // namespace meza::matrix
 

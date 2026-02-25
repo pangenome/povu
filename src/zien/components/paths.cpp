@@ -238,7 +238,7 @@ void comp_hap_rows(const bd::VG &g, pt::u32 hap_idx, pt::u32 start, pt::u32 end,
 
 		w += k.length();
 
-		cell &cell_ = dm.base_mut().at(row_idx, col_idx);
+		cell &cell_ = dm.base_mut().at_mut(row_idx, col_idx);
 		cell_.emplace_back(k);
 		dm.base_mut().mark_non_blank(row_idx, col_idx);
 		prev_pos = pos;

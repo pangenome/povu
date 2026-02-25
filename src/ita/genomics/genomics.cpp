@@ -4,10 +4,10 @@
 #include <cmath>     // for ceil
 #include <cstddef>   // for size_t
 #include <cstdlib>   // for std::max, exit, EXIT_FAILURE
-#include <optional>
-#include <set>	   // for set
-#include <utility> // for move
-#include <vector>  // for vector
+#include <optional>  // for optional
+#include <set>	     // for set
+#include <utility>   // for move
+#include <vector>    // for vector
 
 #include "dynamo/dynamo.hpp"		     // for dynamic_interval_tree
 #include "ita/convolutions/convolutions.hpp" // for run_convs
@@ -20,7 +20,8 @@
 #include "povu/common/core.hpp"		     // for pt, idx_t, id_t
 #include "povu/common/log.hpp"		     // for ERR
 #include "povu/common/thread.hpp"	     // for thread_pool, task_group
-#include "povu/refs/refs.hpp"		     // for lq_strand_to_char
+
+// #include "povu/refs/refs.hpp"		     // for lq_strand_to_char
 
 namespace ita::genomics
 {

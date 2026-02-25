@@ -138,6 +138,7 @@ set(POVULIB_SOURCES_DIR ${SRC_DIR}/povu)
 set(ZIENLIB_SOURCES_DIR ${SRC_DIR}/zien)
 set(ITA_SOURCES_DIR ${SRC_DIR}/ita)
 set(MTO_SOURCES_DIR ${SRC_DIR}/mto)
+set(MEZA_SOURCES_DIR ${SRC_DIR}/meza)
 
 # When set uses uses build dir for output binaries
 # set(BIN_DIR ${CMAKE_BINARY_DIR}/bin)
@@ -182,6 +183,9 @@ ADD_LIBRARY(mto # io library
   ${MTO_SOURCES_DIR}/from_vcf.cpp
 )
 
+ADD_LIBRARY(meza
+  ${MEZA_SOURCES_DIR}/matrix/matrix.cpp
+)
 
 ADD_LIBRARY(ita
   # align
@@ -196,10 +200,18 @@ ADD_LIBRARY(ita
   ${ITA_SOURCES_DIR}/graph/slice_tree.cpp
   ${ITA_SOURCES_DIR}/graph/graph.cpp
 
-  # variation
-  ${ITA_SOURCES_DIR}/variation/overlay.cpp
+  # convolutions
   ${ITA_SOURCES_DIR}/convolutions/convolutions.cpp
   ${ITA_SOURCES_DIR}/convolutions/at_matrix.cpp
+  ${ITA_SOURCES_DIR}/convolutions/at_matrix_tangled.cpp
+  ${ITA_SOURCES_DIR}/convolutions/at_matrix_no_tangle.cpp
+
+  # traversals
+  ${ITA_SOURCES_DIR}/traversals/traversals.cpp
+  ${ITA_SOURCES_DIR}/traversals/untangle.cpp
+
+  # variation
+  ${ITA_SOURCES_DIR}/variation/overlay.cpp
   ${ITA_SOURCES_DIR}/variation/sne.cpp
   ${ITA_SOURCES_DIR}/variation/rov.cpp
   ${ITA_SOURCES_DIR}/variation/color.cpp
@@ -269,6 +281,12 @@ add_compile_options_for_build_type(povulib)
 add_compile_options_for_build_type(povu)
 
 
+
+target_include_directories(meza
+  PUBLIC
+  ${INCLUDE_DIR}
+)
+
 target_include_directories(povulib
   PUBLIC
   ${INCLUDE_DIR}
@@ -277,10 +295,17 @@ target_include_directories(povulib
 
 # ---- linking -----
 
+
+target_link_libraries(meza
+  PRIVATE
+  fmt::fmt # formatting
+)
+
 target_link_libraries(povulib
   PRIVATE
   fmt::fmt # formatting
   liteseq  # gfa handling
+  meza
 )
 
 target_link_libraries(ita
@@ -288,6 +313,7 @@ target_link_libraries(ita
   povulib
   fmt::fmt     # formatting
   liteseq      # gfa handling
+  meza
 )
 
 target_link_libraries(mto
@@ -305,6 +331,7 @@ target_link_libraries(zien
   liteseq      # gfa handling
   fmt::fmt     # formatting
   ncurses
+  meza
 )
 
 target_link_libraries(povu
