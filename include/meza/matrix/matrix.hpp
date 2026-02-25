@@ -70,11 +70,9 @@ struct dense_matrix2d {
 	 */
 	void mark_non_blank(qt::u32 i, qt::u32 j)
 	{
-		if (i >= this->rows() || j >= this->cols()) {
-			throw std::out_of_range("");
-			// throw std::out_of_range(
-			//	pv_cmp::format("{} ({}, {})", MODULE, i, j));
-		}
+		if (i >= this->rows() || j >= this->cols())
+			throw std::out_of_range(
+				qs::format("{} ({}, {})", MODULE, i, j));
 
 		row_has_data_[i] = 1;
 		col_has_data_[j] = 1;
@@ -83,11 +81,9 @@ struct dense_matrix2d {
 	[[nodiscard]]
 	bool is_row_blank(qt::u32 i) const
 	{
-		if (i >= this->rows()) {
-			// std::string err = pv_cmp::format(
-			//	"{} Invalid row index: {}", MODULE, i);
-			throw std::out_of_range("");
-		}
+		if (i >= this->rows())
+			throw std::out_of_range(qs::format(
+				"{} Invalid row index: {}", MODULE, i));
 
 		return row_has_data_[i] == 0;
 	}
@@ -186,11 +182,9 @@ struct dense_matrix2d {
 		  typename std::vector<T>::const_iterator>
 	get_row_it(qt::u32 i) const
 	{
-		if (i >= this->rows()) {
-			// std::string err = pv_cmp::format(
-			//	"{} Invalid row index: {}", MODULE, i);
-			throw std::out_of_range("");
-		}
+		if (i >= this->rows())
+			throw std::out_of_range(qs::format(
+				"{} Invalid row index: {}", MODULE, i));
 
 		std::size_t offset = static_cast<std::size_t>(i) * this->cols();
 		return std::make_pair(data_.begin() + offset,
@@ -247,22 +241,18 @@ struct repeated_row_matrix2d {
 	[[nodiscard]]
 	bool is_row_blank(qt::u32 i) const
 	{
-		if (i >= this->rows()) {
-			// std::string err = pv_cmp::format(
-			//	"{} Invalid row index: {}", MODULE, i);
-			throw std::out_of_range("");
-		}
+		if (i >= this->rows())
+			throw std::out_of_range(qs::format(
+				"{} Invalid row index: {}", MODULE, i));
 
 		return this->row_has_data_;
 	}
 
 	void mark_non_blank(qt::u32 i, qt::u32 j)
 	{
-		if (i >= this->rows() || j >= this->cols()) {
-			// std::string err =
-			//	pv_cmp::format("{} ({}, {})", MODULE, i, j);
-			throw std::out_of_range("");
-		}
+		if (i >= this->rows() || j >= this->cols())
+			throw std::out_of_range(
+				qs::format("{} ({}, {})", MODULE, i, j));
 
 		row_has_data_ = 1;
 		col_has_data_[j] = 1;
@@ -270,11 +260,9 @@ struct repeated_row_matrix2d {
 
 	void set(qt::u32 i, qt::u32 j, T value)
 	{
-		if (i >= this->rows() || j >= this->cols()) {
-			// std::string err = pv_cmp::format(
-			//	"{} out of bounds access {}{}", MODULE, i, j);
-			throw std::out_of_range("");
-		}
+		if (i >= this->rows() || j >= this->cols())
+			throw std::out_of_range(qs::format(
+				"{} out of bounds access {}{}", MODULE, i, j));
 
 		row0[j] = value;
 
@@ -285,11 +273,9 @@ struct repeated_row_matrix2d {
 	[[nodiscard]]
 	const T &at(qt::u32 i, qt::u32 j) const
 	{
-		if (i >= this->rows() || j >= this->cols()) {
-			// std::string err = pv_cmp::format(
-			//	"{} out of bounds access {}{}", MODULE, i, j);
-			throw std::out_of_range("");
-		}
+		if (i >= this->rows() || j >= this->cols())
+			throw std::out_of_range(qs::format(
+				"{} out of bounds access {}{}", MODULE, i, j));
 
 		return row0[j];
 	}
@@ -299,11 +285,9 @@ struct repeated_row_matrix2d {
 	[[nodiscard]]
 	std::vector<T> copy_row(qt::u32 i) const
 	{
-		if (i >= this->rows()) {
-			// std::string err = pv_cmp::format(
-			//	"{} Invalid row index: {}", MODULE, i);
-			throw std::out_of_range("");
-		}
+		if (i >= this->rows())
+			throw std::out_of_range(qs::format(
+				"{} Invalid row index: {}", MODULE, i));
 
 		return row0;
 	}
@@ -312,11 +296,9 @@ struct repeated_row_matrix2d {
 				typename std::vector<T>::const_iterator>
 	get_row_it(qt::u32 i) const
 	{
-		if (i >= this->rows()) {
-			// std::string err = pv_cmp::format(
-			//	"{} Invalid row index: {}", MODULE, i);
-			throw std::out_of_range("");
-		}
+		if (i >= this->rows())
+			throw std::out_of_range(qs::format(
+				"{} Invalid row index: {}", MODULE, i));
 
 		return std::make_pair(row0.begin(), row0.end());
 	}
@@ -357,15 +339,12 @@ struct symmetric_square_matrix2d {
 	explicit symmetric_square_matrix2d(qt::u32 I, qt::u32 J, T init = T{})
 	    : I_{I}, J_{J}, row_has_data_(I, 0), col_has_data_(J, 0)
 	{
-		if (I_ != J_) {
-			std::string err;
-			// =
-			// pv_cmp::format("{} For symmetric matrix, I and "
-			//	       "J must be equal "
-			//	       "(got I={}, J={})",
-			//	       MODULE, I_, J_);
-			throw std::invalid_argument(err);
-		}
+		if (I_ != J_)
+			throw std::invalid_argument(
+				qs::format("{} For symmetric matrix, I and "
+					   "J must be equal "
+					   "(got I={}, J={})",
+					   MODULE, I_, J_));
 
 		if (init != T{}) {
 			std::fill(row_has_data_.begin(), row_has_data_.end(),
@@ -397,13 +376,10 @@ struct symmetric_square_matrix2d {
 	[[nodiscard]]
 	const T &at(qt::u32 i, qt::u32 j) const
 	{
-		if (i >= this->rows() || j >= this->cols()) {
-			std::string err;
-			// = pv_cmp::format(
-			// "{} out of bounds access [{},{}]", MODULE, i,
-			// j);
-			throw std::out_of_range(err);
-		}
+		if (i >= this->rows() || j >= this->cols())
+			throw std::out_of_range(
+				qs::format("{} out of bounds access [{},{}]",
+					   MODULE, i, j));
 
 		return data_[get_idx(i, j, LO_, this->I_, this->J_)];
 	}
@@ -413,12 +389,9 @@ struct symmetric_square_matrix2d {
 	// ----
 	void set(qt::u32 i, qt::u32 j, T value)
 	{
-		if (i >= this->rows() || j >= this->cols()) {
-			std::string err; // = pv_cmp::format(
-					 // "{} out of bounds access {}{}",
-					 // MODULE, i, j);
-			throw std::out_of_range(err);
-		}
+		if (i >= this->rows() || j >= this->cols())
+			throw std::out_of_range(qs::format(
+				"{} out of bounds access {}{}", MODULE, i, j));
 
 		data_[get_idx(i, j, LO_, this->I_, this->J_)] = value;
 	}
@@ -531,11 +504,17 @@ struct matrix_wrapper {
 	bool is_tangled_ = false;
 	qt::u32 max_depth_ = 0;
 
+	// --------------
+	// constructor(s)
+	// --------------
+
 	// Add this constructor
 	explicit matrix_wrapper(MatrixType &&m) : base_matrix_(std::move(m))
 	{}
 
-	// --- Forwarding ---
+	// ----------
+	// forwarding
+	// ----------
 	const MatrixType &base() const
 	{
 		return base_matrix_;
@@ -546,7 +525,10 @@ struct matrix_wrapper {
 		return base_matrix_;
 	}
 
-	// --- Getters ---
+	// -------
+	// getters
+	// -------
+
 	const std::vector<U> &get_col_names() const
 	{
 		return col_names_.names_;
@@ -569,7 +551,10 @@ struct matrix_wrapper {
 		return is_tangled_;
 	}
 
-	// --- Setters ---
+	// -------
+	// setters
+	// -------
+
 	void set_max_depth(qt::u32 d)
 	{
 		max_depth_ = d;
@@ -587,21 +572,19 @@ struct matrix_wrapper {
 
 	void add_row_names(std::vector<W> &&names)
 	{
-		if (names.size() != base().rows()) {
-			throw std::invalid_argument("");
-			// throw std::invalid_argument(
-			//	pv_cmp::format("{} Row size mismatch", MODULE));
-		}
+		if (names.size() != base().rows())
+			throw std::invalid_argument(
+				qs::format("{} Row size mismatch", MODULE));
+
 		row_names_.names_ = std::move(names);
 	}
 
 	void add_col_names(std::vector<U> &&names)
 	{
-		if (names.size() != base().cols()) {
-			throw std::invalid_argument("");
-			// throw std::invalid_argument(
-			//	pv_cmp::format("{} Col size mismatch", MODULE));
-		}
+		if (names.size() != base().cols())
+			throw std::invalid_argument(
+				qs::format("{} Col size mismatch", MODULE));
+
 		col_names_.names_ = std::move(names);
 	}
 };
@@ -628,12 +611,8 @@ struct rep_matrix : public matrix_wrapper<rep_matrix<T, U, W>,
 using path_matrix =
 	ov_matrix<std::vector<std::string>, std::string, std::string>;
 
-// a depth matrix can have values of any ...
-// template <typename T, typename U, typename W>
 using at_matrix = ov_matrix<qt::u32, qt::u32, qt::u32>;
 
-// a depth matrix can have values of any ...
-// template <typename T, typename U, typename W>
 using depth_matrix = ov_matrix<qt::u32, qt::u32, qt::u32>;
 
 using ref_matrix = rep_matrix<qt::u32, qt::u32, qt::u32>;
