@@ -9,8 +9,14 @@
 
 namespace ita::at_matrix::no_tangle
 {
-ita::at_matrix::rov_matrix_pool
-init_depth_matrices_no_tangle(const bd::VG &g, ir::RoV &rov,
-			      const std::set<pt::u32> &to_call_ref_ids);
+void from_no_tangle(const ir::RoV *rov,
+		    const std::set<pt::u32> &to_call_ref_ids,
+		    ita::depth_matrix::depth_matrix dm,
+		    meza::matrix_pool::matrix_pool<qt::u8> &ov_pool,
+		    rov_job_batch &batch);
+
+// ita::at_matrix::rov_matrix_pool
+// init_depth_matrices_no_tangle(const bd::VG &g, const ir::RoV *rov,
+//			      const std::set<pt::u32> &to_call_ref_ids);
 
 } // namespace ita::at_matrix::no_tangle

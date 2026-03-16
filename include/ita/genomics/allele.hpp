@@ -471,10 +471,11 @@ public:
 	{}
 
 	minimal_rov(rov_boundaries cxt, hap_slice ref_as,
-		    std::set<pt::u32> &&ref_haps, std::set<pt::u32> &&alt_haps,
+		    std::set<pt::u32> ref_haps, std::set<pt::u32> alt_haps,
 		    alt_set &&min_rov_alt_set)
-	    : cxt_(cxt), ref_as_(ref_as), haps_matching_ref(ref_haps),
-	      alt_haps(alt_haps), alts_(min_rov_alt_set)
+	    : cxt_(cxt), ref_as_(ref_as),
+	      haps_matching_ref(std::move(ref_haps)),
+	      alt_haps(std::move(alt_haps)), alts_(min_rov_alt_set)
 	{}
 
 	// ---------

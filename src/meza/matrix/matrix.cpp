@@ -39,8 +39,6 @@ std::size_t get_idx(qt::u32 i, qt::u32 j, layout l, const qt::u32 I,
 		return j;
 	default:
 		throw std::invalid_argument("");
-		// pv_cmp::format(
-		//"{} invalid layout {}", MODULE, static_cast<int>(l))
 	}
 }
 } // namespace meza::matrix

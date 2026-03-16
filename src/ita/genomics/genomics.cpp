@@ -9,11 +9,13 @@
 #include <utility>   // for move
 #include <vector>    // for vector
 
+#include <convo/pool.hpp> // for matrix_pool, rov_matrix_pool
+
 #include "dynamo/dynamo.hpp"		     // for dynamic_interval_tree
+#include "ita/convolutions/at_matrix.hpp"    // rov_matrix_set
 #include "ita/convolutions/convolutions.hpp" // for run_convs
 #include "ita/genomics/allele.hpp"	     // for Exp, comp_itineraries
 #include "ita/genomics/vcf.hpp"		     // for VcfRecIdx, gen_vcf_records
-#include "ita/variation/overlay.hpp"	     // for comp_itineraries3, sub_inv
 #include "ita/variation/rov.hpp"	     // for RoV, gen_rov
 #include "ita/variation/sne.hpp"	     // for sne
 #include "povu/common/app.hpp"		     // for config
@@ -21,10 +23,12 @@
 #include "povu/common/log.hpp"		     // for ERR
 #include "povu/common/thread.hpp"	     // for thread_pool, task_group
 
+// #include "ita/variation/overlay.hpp"	     // for comp_itineraries3, sub_inv
 // #include "povu/refs/refs.hpp"		     // for lq_strand_to_char
 
 namespace ita::genomics
 {
+
 void find_inversions_new(const bd::VG &g,
 			 const std::set<pt::id_t> &to_call_ref_ids,
 			 std::map<pt::u32, std::vector<ia::inv_slice>> &res)
@@ -96,36 +100,22 @@ void find_inversions_new(const bd::VG &g,
 void comp_expeditions(const bd::VG &g, std::vector<ir::RoV> &all_rovs,
 		      pt::idx_t start, pt::idx_t count,
 		      const std::set<pt::id_t> &to_call_ref_ids,
+		      meza::matrix_pool::matrix_pool<qt::u8> &ov_pool,
+		      meza::matrix_pool::joint_pool<qt::u32> &dm_pool,
+		      ita::at_matrix::rov_job_batch &batch,
 		      std::vector<ia::trek> &treks)
 {
 	const std::size_t N = all_rovs.size();
-	for (pt::idx_t i = start; i < start + count && i < N; ++i) {
-		ir::RoV &rov = all_rovs[i];
+	for (pt::idx_t i{start}; i < start + count && i < N; i++) {
+		bool last = i == ((start + count) - 1) || i == (N - 1);
+		const ir::RoV *rov = &all_rovs[i];
 
-		std::optional<ia::trek> opt_tk =
-			ita::convolutions::comp_expedition(g, rov,
-							   to_call_ref_ids);
+		bool drain = last;
+		ita::convolutions::populate_trips(g, rov, to_call_ref_ids,
+						  dm_pool, ov_pool, batch,
+						  treks, drain);
 
-		if (opt_tk.has_value())
-			treks.emplace_back(std::move(opt_tk.value()));
-	}
-
-	return;
-}
-
-void comp_expeditions_serial(const bd::VG &g, std::vector<ir::RoV> &all_rovs,
-			     pt::idx_t start, pt::idx_t count,
-			     const std::set<pt::id_t> &to_call_ref_ids,
-			     ise::pin_cushion &pc, std::vector<ia::trek> &treks)
-{
-	const std::size_t N = all_rovs.size();
-	for (pt::idx_t i = start; i < start + count && i < N; ++i) {
-		ir::RoV &rov = all_rovs[i];
-		auto rov_treks =
-			po::overlay_generic(g, rov, to_call_ref_ids, pc);
-
-		for (auto &tk : rov_treks)
-			treks.emplace_back(std::move(tk));
+		dm_pool.reset(); // reset depth matrix pool for next RoV
 	}
 
 	return;
@@ -198,6 +188,27 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 	// std::map<pt::u32, ita::interval_tree::interval_tree> invs;
 	std::map<pt::u32, std::vector<ia::inv_slice>> inv_slices;
 
+	meza::matrix_pool::matrix_pool<qt::u8> &ov_pool =
+		meza::matrix_pool::matrix_pool<qt::u8>::init();
+
+	ov_pool.cuda_setup_haps_xor();
+	// auto &ov_pool = meza::matrix_pool::matrix_pool<qt::u8>::init();
+
+	// 4 bytes per u32 value
+	// (1024*1024) / 4 = 262,144
+	// 262144 u32 values are ~1M
+	// 1024 values of u32 are 1M
+	// 2,621,440 u32 values are ~10M
+	constexpr std::size_t target_bytes = 10ull * 1024 * 1024; // 10 MiB
+	constexpr std::size_t depth_matrix_pool_size =
+		target_bytes / sizeof(qt::u32);
+
+	meza::matrix_pool::joint_pool<qt::u32> dm_pool =
+		meza::matrix_pool::joint_pool<qt::u32>::init(
+			depth_matrix_pool_size);
+
+	ita::at_matrix::rov_job_batch batch;
+
 	try {
 		for (pt::idx_t base{}; base < N; base += CHUNK_SIZE) {
 			pt::u32 end = std::min(base + CHUNK_SIZE, N);
@@ -207,11 +218,14 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 			if (app_config.verbosity() > 0)
 				INFO("\t{}/{}", chunk_num, total_chunks);
 
+			INFO("\t{}/{}", chunk_num, total_chunks);
+
 			// comp_expeditions_serial(g, all_rovs, base, count,
 			//			to_call_ref_ids, pc, treks);
 
 			comp_expeditions(g, all_rovs, base, count,
-					 to_call_ref_ids, treks);
+					 to_call_ref_ids, ov_pool, dm_pool,
+					 batch, treks);
 
 			// if (chunk_num == CHUNK_SIZE)
 			//	i_trees = ise::sne(g, pc, to_call_ref_ids);

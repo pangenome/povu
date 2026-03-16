@@ -32,6 +32,13 @@ CPMAddPackage(
   "LITESEQ_ENABLE_TESTING OFF"
 )
 
+CPMAddPackage(
+  NAME              convo
+  SOURCE_DIR        /home/sluggie/src/hprc/convo
+  OPTIONS
+  "CONVO_ENABLE_CUDA ON"
+)
+
 if (POVU_ENABLE_TESTING)
 CPMAddPackage(
   NAME              googletest

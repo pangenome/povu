@@ -138,7 +138,7 @@ set(POVULIB_SOURCES_DIR ${SRC_DIR}/povu)
 set(ZIENLIB_SOURCES_DIR ${SRC_DIR}/zien)
 set(ITA_SOURCES_DIR ${SRC_DIR}/ita)
 set(MTO_SOURCES_DIR ${SRC_DIR}/mto)
-set(MEZA_SOURCES_DIR ${SRC_DIR}/meza)
+# set(MEZA_SOURCES_DIR ${SRC_DIR}/meza)
 
 # When set uses uses build dir for output binaries
 # set(BIN_DIR ${CMAKE_BINARY_DIR}/bin)
@@ -183,9 +183,9 @@ ADD_LIBRARY(mto # io library
   ${MTO_SOURCES_DIR}/from_vcf.cpp
 )
 
-ADD_LIBRARY(meza
-  ${MEZA_SOURCES_DIR}/matrix/matrix.cpp
-)
+#ADD_LIBRARY(meza
+#  ${MEZA_SOURCES_DIR}/matrix/matrix.cpp
+#)
 
 ADD_LIBRARY(ita
   # align
@@ -201,10 +201,12 @@ ADD_LIBRARY(ita
   ${ITA_SOURCES_DIR}/graph/graph.cpp
 
   # convolutions
-  ${ITA_SOURCES_DIR}/convolutions/convolutions.cpp
   ${ITA_SOURCES_DIR}/convolutions/at_matrix.cpp
   ${ITA_SOURCES_DIR}/convolutions/at_matrix_tangled.cpp
   ${ITA_SOURCES_DIR}/convolutions/at_matrix_no_tangle.cpp
+  ${ITA_SOURCES_DIR}/convolutions/convolutions.cpp
+  # ${ITA_SOURCES_DIR}/convolutions/trip.cpp
+  ${ITA_SOURCES_DIR}/convolutions/depth_matrix.cpp
 
   # traversals
   ${ITA_SOURCES_DIR}/traversals/traversals.cpp
@@ -216,7 +218,6 @@ ADD_LIBRARY(ita
   ${ITA_SOURCES_DIR}/variation/rov.cpp
   ${ITA_SOURCES_DIR}/variation/color.cpp
 )
-
 
 ADD_LIBRARY(zien
   ${ZIENLIB_SOURCES_DIR}/tui/tui.cpp
@@ -282,10 +283,10 @@ add_compile_options_for_build_type(povu)
 
 
 
-target_include_directories(meza
-  PUBLIC
-  ${INCLUDE_DIR}
-)
+#target_include_directories(meza
+#  PUBLIC
+#  ${INCLUDE_DIR}
+#)
 
 target_include_directories(povulib
   PUBLIC
@@ -296,16 +297,17 @@ target_include_directories(povulib
 # ---- linking -----
 
 
-target_link_libraries(meza
-  PRIVATE
-  fmt::fmt # formatting
-)
+#target_link_libraries(meza
+#  PRIVATE
+#  fmt::fmt # formatting
+#)
 
 target_link_libraries(povulib
   PRIVATE
   fmt::fmt # formatting
   liteseq  # gfa handling
-  meza
+  #meza
+  convo
 )
 
 target_link_libraries(ita
@@ -313,8 +315,17 @@ target_link_libraries(ita
   povulib
   fmt::fmt     # formatting
   liteseq      # gfa handling
-  meza
+  #meza
+  convo
 )
+
+if(TARGET convo)
+  message(STATUS "convo target exists")
+  get_target_property(_incs convo INTERFACE_INCLUDE_DIRECTORIES)
+  message(STATUS "convo INTERFACE_INCLUDE_DIRECTORIES=${_incs}")
+else()
+  message(FATAL_ERROR "convo is not a target here; you're linking -lconvo")
+endif()
 
 target_link_libraries(mto
   PRIVATE
@@ -322,6 +333,7 @@ target_link_libraries(mto
   fmt::fmt     # formatting
   liteseq      # gfa handling
   ita
+  convo
 )
 
 target_link_libraries(zien
@@ -331,7 +343,7 @@ target_link_libraries(zien
   liteseq      # gfa handling
   fmt::fmt     # formatting
   ncurses
-  meza
+  convo
 )
 
 target_link_libraries(povu
@@ -347,6 +359,7 @@ target_link_libraries(povu
   fmt::fmt     # formatting
   taywee::args # argument parsing
   ncurses
+  convo
 )
 
 # =================== Set Build-Time Output Directory ========================

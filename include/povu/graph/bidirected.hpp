@@ -1,22 +1,22 @@
 #ifndef BIDIRECTED_HPP
 #define BIDIRECTED_HPP
 
-#include <cstddef>	 // for size_t
-#include <iostream>	 // for ostream
-#include <liteseq/gfa.h> // for gfa_free, gfa_props
-#include <optional>	 // for optional
-#include <set>		 // for set
-#include <string>	 // for string, basic_string
-#include <string_view>	 // for string_view
-#include <vector>	 // for vector
+#include <cstddef>     // for size_t
+#include <iostream>    // for ostream
+#include <optional>    // for optional
+#include <set>	       // for set
+#include <string>      // for string, basic_string
+#include <string_view> // for string_view
+#include <vector>      // for vector
 
-#include <liteseq/refs.h> // for ref
+#include <convo/matrix.hpp> // for dense_matrix2d
+#include <liteseq/gfa.h>    // for gfa_free, gfa_props
+#include <liteseq/refs.h>   // for ref
 
-#include "meza/matrix/matrix.hpp" // for matrix2d
-#include "povu/common/core.hpp"	  // for pt, idx_t, id_t, op_t
-#include "povu/common/utils.hpp"  // for pu, TwoWayMap
-#include "povu/graph/types.hpp"	  // for v_end_e, side_n_id_t, side_n_idx_t
-#include "povu/refs/refs.hpp"	  // for pr, Ref, Refs
+#include "povu/common/core.hpp"	 // for pt, idx_t, id_t, op_t
+#include "povu/common/utils.hpp" // for pu, TwoWayMap
+#include "povu/graph/types.hpp"	 // for v_end_e, side_n_id_t, side_n_idx_t
+#include "povu/refs/refs.hpp"	 // for pr, Ref, Refs
 
 namespace povu::bidirected
 {

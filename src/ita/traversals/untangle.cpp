@@ -18,7 +18,6 @@
 namespace ita::traversals::untangle
 {
 namespace lq = liteseq;
-using matrix_pool = ita::at_matrix::matrix_pool;
 using namespace ita::traversals::traversals;
 
 ia::at_itn gen_at_itn(const bd::VG &g, const itinerary &steps_itn,
