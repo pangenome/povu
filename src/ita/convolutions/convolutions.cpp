@@ -1,30 +1,22 @@
 #include "ita/convolutions/convolutions.hpp"
 
-// #include <algorithm>
 #include <cassert>
 #include <optional>
 #include <set>
-// #include <thread>
 #include <vector>
 
+#include <liteseq/refs.h>      // for ref_walk, ref
 #include <meza/pool/joint.hpp> // for joint_pool
 #include <meza/pool/split.hpp> // for matrix_pool
-
-// #include <convo/pool_joint.hpp> // for joint_pool
-// #include <convo/pool_split.hpp> // for matrix_pool, ov_mat_t
-
-// #include <convo/pool.hpp> // for matrix_pool,
-#include <liteseq/refs.h> // for ref_walk, ref
 
 #include "ita/convolutions/at_matrix.hpp"    // for matrix_pool, rov_matrix_set
 #include "ita/convolutions/depth_matrix.hpp" // for comp_depth_matrix
 #include "ita/convolutions/trip.hpp"	     // for gen_trip
 #include "ita/genomics/allele.hpp"	     // for hap_slice, trek
 #include "ita/variation/rov.hpp"	     // for RoV
-// #include "povu/common/constants.hpp"
-#include "povu/common/core.hpp"	     // for pt
-#include "povu/graph/bidirected.hpp" // for VG
-#include "quilt/types.hpp"
+#include "povu/common/core.hpp"		     // for pt
+#include "povu/graph/bidirected.hpp"	     // for VG
+#include "quilt/types.hpp"		     // for u8, u32
 
 namespace ita::convolutions
 {
