@@ -1,9 +1,12 @@
 #pragma once
 
-#include <convo/matrix.hpp> // for ref_matrix, depth_matrix, at_matrix
-#include <liteseq/refs.h>   // for ref_walk, ref
+#include <meza/owned/matrix.hpp> // for dense_matrix2d
+#include <meza/pool/split.hpp>	 // for matrix_pool
+// #include <convo/matrix.hpp> // for ref_matrix, depth_matrix, at_matrix
+#include <liteseq/refs.h>      // for ref_walk, ref
+#include <meza/pool/joint.hpp> // for joint_pool
 
-#include <convo/pool.hpp> // for joint_pool, depth_matrix
+// #include <convo/pool_joint.hpp> // for joint_pool, depth_matrix
 
 #include "ita/variation/rov.hpp"     // for RoV
 #include "povu/graph/bidirected.hpp" // for VG
@@ -15,14 +18,14 @@ struct depth_matrix {
 private:
 	bool tangled_ = false;
 	qt::u32 max_depth_ = 0;
-	meza::matrix_pool::full_view<qt::u32> view;
+	meza::pool::joint::full_view<qt::u32> view;
 
 public:
 	// -----------
 	// constructor
 	// -----------
 
-	depth_matrix(meza::matrix_pool::joint_pool<qt::u32> &pool, qt::u32 I,
+	depth_matrix(meza::pool::joint::joint_pool<qt::u32> &pool, qt::u32 I,
 		     qt::u32 J)
 	    : view(pool.alloc_full(I, J))
 	{}
@@ -82,6 +85,6 @@ public:
 };
 
 depth_matrix comp_depth_matrix(const bd::VG &g, const ir::RoV *rov,
-			       meza::matrix_pool::joint_pool<qt::u32> &dm_pool);
+			       meza::pool::joint::joint_pool<qt::u32> &dm_pool);
 
 }; // namespace ita::depth_matrix

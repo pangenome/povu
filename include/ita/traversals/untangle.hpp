@@ -2,12 +2,12 @@
 #define ITA_TR_UN_HPP
 
 #include <map>
-// #include <string>
 #include <vector>
 
 #include "ita/traversals/traversals.hpp" // for itinerary
 #include "ita/variation/rov.hpp"	 // for RoV
 #include "povu/common/core.hpp"		 // for pt
+#include "quilt/types.hpp"
 
 namespace ita::traversals::untangle
 {
@@ -72,9 +72,24 @@ struct aln_chain {
 		return std::nullopt;
 	}
 
-	// ---------
-	// setter(s)
-	// ---------
+	[[nodiscard]]
+	std::optional<qt::u32> get_alt_loop_no(pt::u32 ref_h_idx,
+					       pt::u32 alt_h_idx,
+					       pt::u32 ref_loop_no) const
+	{
+		const std::vector<chain_link> &cl =
+			this->all_chains.at(ref_h_idx).loop2ats.at(ref_loop_no);
+
+		for (auto &link : cl)
+			if (link.alt_h_idx == alt_h_idx)
+				return link.alt_loop_no;
+
+		return std::nullopt;
+	}
+
+	// ------
+	// setter
+	// ------
 
 	void add(const chain_link &link)
 	{

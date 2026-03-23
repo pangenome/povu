@@ -3,10 +3,9 @@
 #include <string>
 #include <vector>
 
-#include <convo/matrix.hpp>
-#include <liteseq/refs.h> // for ref_walk, ref
+#include <liteseq/refs.h>	 // for ref_walk, ref
+#include <meza/owned/matrix.hpp> // for dense_matrix2d
 
-// #include "meza/matrix/matrix.hpp"	  // for matrix2d
 #include "povu/common/constants.hpp"	  // for pv_cmp
 #include "povu/common/core.hpp"		  // for pt, pc
 #include "povu/graph/bidirected.hpp"	  // for VG

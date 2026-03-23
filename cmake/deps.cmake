@@ -32,11 +32,21 @@ CPMAddPackage(
   "LITESEQ_ENABLE_TESTING OFF"
 )
 
+
 CPMAddPackage(
-  NAME              convo
-  SOURCE_DIR        /home/sluggie/src/hprc/convo
+  NAME              quilt
+  GITHUB_REPOSITORY urbanslug/quilt
+  GIT_TAG           0d0c7e238887518a2e602d11b0f0d16cddfce9f0 # v0.0.1
+)
+
+CPMAddPackage(
+  NAME              meza
+  GITHUB_REPOSITORY urbanslug/meza
+  GIT_TAG           329bb3a2ce96f363d55988467d0a7d85c71508d5
   OPTIONS
-  "CONVO_ENABLE_CUDA ON"
+  "MEZA_ENABLE_TESTS OFF"
+  "MEZA_BUILD_EXAMPLE OFF"
+  "MEZA_ENABLE_CUDA ON"
 )
 
 if (POVU_ENABLE_TESTING)

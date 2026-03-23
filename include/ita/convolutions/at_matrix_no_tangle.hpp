@@ -1,22 +1,19 @@
-#include <set>
+#include <set> // for set
 
-#include <liteseq/refs.h> // for ref_walk, ref
+#include <liteseq/refs.h>      // for ref_walk, ref
+#include <meza/pool/split.hpp> // for matrix_pool
 
-#include "ita/convolutions/at_matrix.hpp" // for rov_matrix_pool
-#include "ita/variation/rov.hpp"	  // for RoV
-#include "povu/common/core.hpp"		  // for pt
-#include "povu/graph/bidirected.hpp"	  // for VG
+#include "ita/convolutions/at_matrix.hpp"    // for rov_job_batch
+#include "ita/convolutions/depth_matrix.hpp" // for depth_matrix
+#include "ita/variation/rov.hpp"	     // for RoV
+#include "povu/common/core.hpp"		     // for pt
 
 namespace ita::at_matrix::no_tangle
 {
 void from_no_tangle(const ir::RoV *rov,
 		    const std::set<pt::u32> &to_call_ref_ids,
 		    ita::depth_matrix::depth_matrix dm,
-		    meza::matrix_pool::matrix_pool<qt::u8> &ov_pool,
+		    meza::pool::split::matrix_pool<qt::u8> &ov_pool,
 		    rov_job_batch &batch);
-
-// ita::at_matrix::rov_matrix_pool
-// init_depth_matrices_no_tangle(const bd::VG &g, const ir::RoV *rov,
-//			      const std::set<pt::u32> &to_call_ref_ids);
 
 } // namespace ita::at_matrix::no_tangle

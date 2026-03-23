@@ -9,9 +9,9 @@
 #include <string_view> // for string_view
 #include <vector>      // for vector
 
-#include <convo/matrix.hpp> // for dense_matrix2d
-#include <liteseq/gfa.h>    // for gfa_free, gfa_props
-#include <liteseq/refs.h>   // for ref
+#include <liteseq/gfa.h>	 // for gfa_free, gfa_props
+#include <liteseq/refs.h>	 // for ref
+#include <meza/owned/matrix.hpp> // for dense_matrix2d
 
 #include "povu/common/core.hpp"	 // for pt, idx_t, id_t, op_t
 #include "povu/common/utils.hpp" // for pu, TwoWayMap
@@ -24,7 +24,6 @@ inline constexpr std::string_view MODULE = "povu::bidirected";
 
 using namespace povu::types::graph;
 namespace pgt = povu::types::graph;
-
 namespace lq = liteseq;
 
 /**

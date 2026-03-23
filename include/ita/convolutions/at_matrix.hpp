@@ -1,14 +1,12 @@
 #ifndef ITA_AT_MATRIX_HPP
 #define ITA_AT_MATRIX_HPP
 
-#include <cstddef> // for size_t
 #include <optional>
 #include <set>	  // for set
 #include <vector> // for vector
 
-#include <convo/matrix.hpp> // for ref_matrix, depth_matrix, at_matrix
-#include <convo/pool.hpp>   // for matrix_pool
-#include <liteseq/refs.h>   // for ref_walk, ref
+#include <liteseq/refs.h>      // for ref_walk, ref
+#include <meza/pool/split.hpp> // for matrix_pool
 
 #include "ita/convolutions/depth_matrix.hpp" // for depth_matrix
 #include "ita/genomics/allele.hpp"	     // for hap_slice
@@ -20,8 +18,32 @@
 
 namespace ita::at_matrix
 {
+using meza::pool::split::ov_mat_t;
 
-using ov_mat_t = meza::matrix_view::ov_matrix<qt::u8, std::string, std::string>;
+struct hap2loop {
+private:
+	std::map<qt::u32, qt::u32> loop_pairing = {};
+
+public:
+	hap2loop() = default;
+
+	hap2loop(std::map<qt::u32, qt::u32> loop_pairing)
+	    : loop_pairing(std::move(loop_pairing))
+	{}
+
+	// ------
+	// getter
+	// ------
+
+	[[nodiscard]]
+	qt::u32 get_loop_no(qt::u32 h_idx) const
+	{
+		if (!qs::contains(loop_pairing, h_idx))
+			return 0;
+
+		return loop_pairing.at(h_idx);
+	}
+};
 
 struct mat3 {
 	ov_mat_t ref;
@@ -31,6 +53,21 @@ struct mat3 {
 	qt::u32 j_offset = 0; // TODO: rename to pool j offset
 	qt::u32 I = 0;
 	qt::u32 J = 0;
+
+	// useful in tangling
+	// {h_idx, loop_no} pair to alt_h_idx
+	// std::map<qt::u32, qt::u32> loop_pairing = {};
+
+	hap2loop h2l{};
+
+	// [[nodiscard]]
+	// qt::u32 get_loop_no(qt::u32 h_idx) const
+	// {
+	//	if (!qs::contains(loop_pairing, h_idx))
+	//		return 0;
+
+	//	return loop_pairing.at(h_idx);
+	// }
 
 	void dbg_print() const
 	{
@@ -50,7 +87,7 @@ struct tangle_info {
 
 struct mat3_item {
 	mat3 mats;
-	std::optional<tangle_info> tangle; // empty when untangled
+	std::optional<tangle_info> tangle; // empty when no tangling
 
 	// ------------
 	// constructors
@@ -62,6 +99,12 @@ struct mat3_item {
 
 	mat3_item(mat3 &&m) : mats(std::move(m)), tangle(std::nullopt)
 	{}
+
+	[[nodiscard]]
+	bool is_tangled() const
+	{
+		return this->tangle != std::nullopt;
+	}
 };
 
 struct rov_job {
@@ -166,7 +209,7 @@ struct rov_job_batch {
 void init_pool(const bd::VG &g, const ir::RoV *rov,
 	       const std::set<pt::u32> &to_call_ref_ids,
 	       const ita::depth_matrix::depth_matrix &dm,
-	       meza::matrix_pool::matrix_pool<qt::u8> &ov_pool,
+	       meza::pool::split::matrix_pool<qt::u8> &ov_pool,
 	       rov_job_batch &batch);
 
 // struct rov_mat_set {

@@ -1,24 +1,19 @@
-#include <thread>
 #include <vector>
 
-#include <convo/matrix.hpp> // for ref_matrix, depth_matrix, at_matrix
-#include <liteseq/refs.h>   // for ref_walk, ref
+#include <liteseq/refs.h>      // for ref_walk, ref
+#include <meza/pool/split.hpp> // for matrix_pool
+#include <quilt/types.hpp>
 
+#include "ita/convolutions/at_matrix.hpp"    //
 #include "ita/convolutions/depth_matrix.hpp" // for depth_matrix, comp_depth_matrix
-
-#include "ita/convolutions/at_matrix.hpp" //
-#include "ita/variation/rov.hpp"	  // for RoV
-#include "povu/common/core.hpp"		  // for pt
-#include "povu/graph/bidirected.hpp"	  // for VG
-#include "povu/graph/types.hpp"		  // for ptg: or_e
-#include "quilt/types.hpp"
+#include "ita/variation/rov.hpp"	     // for RoV
+#include "povu/common/core.hpp"		     // for pt
+#include "povu/graph/bidirected.hpp"	     // for VG
+#include "povu/graph/types.hpp"		     // for ptg: or_e
 
 namespace ita::at_matrix::no_tangle
 {
 namespace lq = liteseq;
-
-// using ita::at_matrix::matrix_pool;
-// using ita::at_matrix::rov_matrix_pool;
 using meza::matrix::depth_matrix;
 
 void fill_filter_matrix(const bd::VG &g, const ir::RoV &rov, pt::u32 I,
@@ -266,32 +261,29 @@ void populate_ref(const qt::u32 I, const qt::u32 J, qt::u32 ref_i,
 void from_no_tangle(const ir::RoV *rov,
 		    const std::set<pt::u32> &to_call_ref_ids,
 		    const ita::depth_matrix::depth_matrix dm,
-		    meza::matrix_pool::matrix_pool<qt::u8> &ov_pool,
+		    meza::pool::split::matrix_pool<qt::u8> &ov_pool,
 		    rov_job_batch &batch)
 {
 	qt::u32 I = dm.rows();
 	qt::u32 J = dm.cols();
 
-	qt::u32 j_off = batch.pool_j_offset;
-
 	rov_job j{rov, {}};
-	std::size_t filter_size;
 
 	for (const pt::u32 ref_h_idx : to_call_ref_ids) {
 		auto ref_mat =
 			ov_pool.alloc_ov_matrix<std::string, std::string>(
 				I, J,
-				meza::matrix_pool::pool_region::Reference);
+				meza::pool::split::pool_region::Reference);
 
 		auto filter_mat =
 			ov_pool.alloc_ov_matrix<std::string, std::string>(
-				I, J, meza::matrix_pool::pool_region::Filter);
+				I, J, meza::pool::split::pool_region::Filter);
 
 		auto xor_mat =
 			ov_pool.alloc_ov_matrix<std::string, std::string>(
-				I, J, meza::matrix_pool::pool_region::Xor);
+				I, J, meza::pool::split::pool_region::Xor);
 
-		filter_size = filter_mat.base().size();
+		qt::u32 filter_size = filter_mat.base().size();
 
 		populate_filter(I, J, dm, filter_mat);
 		populate_ref(I, J, ref_h_idx, dm, ref_mat);
@@ -307,11 +299,10 @@ void from_no_tangle(const ir::RoV *rov,
 
 		j.add_item(ref_h_idx, std::move(item));
 
-		j_off += filter_size;
+		batch.pool_j_offset += filter_size;
 	}
 
 	batch.add(std::move(j));
-	batch.pool_j_offset = j_off;
 }
 
 } // namespace ita::at_matrix::no_tangle

@@ -2,10 +2,8 @@
 
 #include <vector>
 
-#include <convo/matrix.hpp> // for ref_matrix, depth_matrix, at_matrix
-#include <liteseq/refs.h>   // for ref_walk, ref
-
-#include <convo/pool.hpp> // for joint_pool, depth_matrix
+#include <liteseq/refs.h>      // for ref_walk, ref
+#include <meza/pool/joint.hpp> // for joint_pool
 
 #include "ita/convolutions/at_matrix_no_tangle.hpp" // for no_tangle
 #include "ita/variation/rov.hpp"		    // for RoV
@@ -16,7 +14,7 @@ namespace ita::depth_matrix
 {
 
 depth_matrix comp_depth_matrix(const bd::VG &g, const ir::RoV *rov,
-			       meza::matrix_pool::joint_pool<qt::u32> &dm_pool)
+			       meza::pool::joint::joint_pool<qt::u32> &dm_pool)
 {
 	const pt::u32 I = g.get_hap_count();
 	const pt::u32 J = rov->get_vertex_count();

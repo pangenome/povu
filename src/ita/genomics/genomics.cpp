@@ -5,11 +5,11 @@
 #include <cstddef>   // for size_t
 #include <cstdlib>   // for std::max, exit, EXIT_FAILURE
 #include <optional>  // for optional
-#include <set>	     // for set
-#include <utility>   // for move
-#include <vector>    // for vector
+// #include <set>	     // for set
+#include <utility> // for move
+// #include <vector>    // for vector
 
-#include <convo/pool.hpp> // for matrix_pool, rov_matrix_pool
+#include <meza/pool/split.hpp> // for matrix_poole
 
 #include "dynamo/dynamo.hpp"		     // for dynamic_interval_tree
 #include "ita/convolutions/at_matrix.hpp"    // rov_matrix_set
@@ -100,8 +100,8 @@ void find_inversions_new(const bd::VG &g,
 void comp_expeditions(const bd::VG &g, std::vector<ir::RoV> &all_rovs,
 		      pt::idx_t start, pt::idx_t count,
 		      const std::set<pt::id_t> &to_call_ref_ids,
-		      meza::matrix_pool::matrix_pool<qt::u8> &ov_pool,
-		      meza::matrix_pool::joint_pool<qt::u32> &dm_pool,
+		      meza::pool::split::matrix_pool<qt::u8> &ov_pool,
+		      meza::pool::joint::joint_pool<qt::u32> &dm_pool,
 		      ita::at_matrix::rov_job_batch &batch,
 		      std::vector<ia::trek> &treks)
 {
@@ -188,11 +188,11 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 	// std::map<pt::u32, ita::interval_tree::interval_tree> invs;
 	std::map<pt::u32, std::vector<ia::inv_slice>> inv_slices;
 
-	meza::matrix_pool::matrix_pool<qt::u8> &ov_pool =
-		meza::matrix_pool::matrix_pool<qt::u8>::init();
+	meza::pool::split::matrix_pool<qt::u8> &ov_pool =
+		meza::pool::split::matrix_pool<qt::u8>::init();
 
-	ov_pool.cuda_setup_haps_xor();
-	// auto &ov_pool = meza::matrix_pool::matrix_pool<qt::u8>::init();
+	// ov_pool.cuda_setup_haps_xor();
+	//  auto &ov_pool = meza::matrix_pool::matrix_pool<qt::u8>::init();
 
 	// 4 bytes per u32 value
 	// (1024*1024) / 4 = 262,144
@@ -203,8 +203,8 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 	constexpr std::size_t depth_matrix_pool_size =
 		target_bytes / sizeof(qt::u32);
 
-	meza::matrix_pool::joint_pool<qt::u32> dm_pool =
-		meza::matrix_pool::joint_pool<qt::u32>::init(
+	meza::pool::joint::joint_pool<qt::u32> dm_pool =
+		meza::pool::joint::joint_pool<qt::u32>::init(
 			depth_matrix_pool_size);
 
 	ita::at_matrix::rov_job_batch batch;
@@ -218,8 +218,9 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 			if (app_config.verbosity() > 0)
 				INFO("\t{}/{}", chunk_num, total_chunks);
 
-			INFO("\t{}/{}", chunk_num, total_chunks);
-
+			// if (chunk_num != 169)
+			//	continue;
+			// INFO("\tchunk {}/{}", chunk_num, total_chunks);
 			// comp_expeditions_serial(g, all_rovs, base, count,
 			//			to_call_ref_ids, pc, treks);
 
