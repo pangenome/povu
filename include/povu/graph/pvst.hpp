@@ -2,9 +2,13 @@
 #define POVU_TYPES_PVST_HPP
 
 #include <algorithm>
+#include <iostream>
+#include <memory>
 #include <optional>
+#include <ostream>
 #include <stack>
 #include <string_view>
+#include <vector>
 
 #include "povu/common/compat.hpp"
 #include "povu/common/constants.hpp"

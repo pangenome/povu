@@ -1,27 +1,19 @@
-// #include <optional>
 #include <set>
 #include <vector>
 
 #include <meza/pool/split.hpp> // for matrix_pool
 
-// #include <convo/matrix.hpp> // for ref_matrix, depth_matrix, at_matrix
-
-#include "ita/convolutions/at_matrix.hpp" // for matrix_pool
-// #include "ita/genomics/allele.hpp"	  // for hap_slice
-// #include "ita/traversals/traversals.hpp"
-#include "ita/traversals/untangle.hpp"
-#include "ita/variation/rov.hpp" // for RoV
-// #include "liteseq/types.h"
-
-#include "povu/common/core.hpp"	     // for pt
-#include "povu/graph/bidirected.hpp" // for VG
+#include "ita/traversals/at_matrix.hpp" // for matrix_pool
+#include "ita/traversals/untangle.hpp"	// for aln_chain, chain_link
+#include "ita/variation/rov.hpp"	// for RoV
+#include "povu/common/core.hpp"		// for pt
+#include "povu/graph/bidirected.hpp"	// for VG
 #include "quilt/types.hpp"
 
 namespace ita::at_matrix::tangled
 {
 namespace lq = liteseq;
 
-// using ita::at_matrix::matrix_pool;
 using ita::traversals::traversals::allele_traversal;
 using ita::traversals::traversals::itinerary;
 using ita::traversals::untangle::aln_chain;
@@ -84,15 +76,12 @@ void from_tangled(const bd::VG &g, const ir::RoV *rov,
 		  meza::pool::split::matrix_pool<qt::u8> &ov_pool,
 		  const aln_chain &ac, rov_job_batch &batch)
 {
-
 	const std::vector<itinerary> &hap_itns = ac.hap_itns;
-
-	std::vector<mat3_item> items;
 
 	pt::u32 I = g.get_hap_count();
 	pt::u32 J = rov->get_vertex_count();
 
-	rov_job j{rov, hap_itns};
+	rov_job j{rov, I, hap_itns};
 
 	for (pt::u32 ref_h_idx : to_call_ref_ids) {
 		if (!pv_cmp::contains(ac.all_chains, ref_h_idx))
@@ -118,13 +107,6 @@ void from_tangled(const bd::VG &g, const ir::RoV *rov,
 			const allele_traversal &ref_at =
 				hap_itns.at(ref_h_idx).at(ref_loop_no);
 
-			// std::cerr << "allele traversal " << rov->as_str()
-			//	  << " loop no " << ref_loop_no
-			//	  << " for ref hap " << ref_h_idx << "\n";
-			// for (auto v : ref_at)
-			//	std::cerr << v << ", ";
-			// std::cerr << "\n";
-
 			loop_pairing.insert({ref_h_idx, ref_loop_no});
 
 			populate_ref(g, rov, ref_h_idx, ref_at, I, J, ref_mat);
@@ -137,10 +119,6 @@ void from_tangled(const bd::VG &g, const ir::RoV *rov,
 			auto filter_mat = ov_pool.alloc_ov_matrix<std::string,
 								  std::string>(
 				I, J, meza::pool::split::pool_region::Filter);
-
-			// std::cerr << "created filter mat\n";
-			// filter_mat.dbg_print();
-			// std::cerr << "\n";
 
 			for (qt::u32 alt_h_idx{}; alt_h_idx < I; alt_h_idx++) {
 
@@ -187,7 +165,7 @@ void from_tangled(const bd::VG &g, const ir::RoV *rov,
 			mat3 m{std::move(ref_mat),
 			       std::move(filter_mat),
 			       std::move(xor_mat),
-			       batch.pool_j_offset,
+			       batch.get_pool_j_offset(),
 			       I,
 			       J,
 			       loop_pairing};
@@ -200,7 +178,9 @@ void from_tangled(const bd::VG &g, const ir::RoV *rov,
 
 			j.add_item(ref_h_idx, std::move(item));
 
-			batch.pool_j_offset += filter_size;
+			qt::u32 offset =
+				batch.get_pool_j_offset() + filter_size;
+			batch.set_pool_j_offset(offset);
 		}
 	}
 

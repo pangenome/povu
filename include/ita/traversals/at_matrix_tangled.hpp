@@ -3,7 +3,7 @@
 
 #include <meza/pool/split.hpp> // for matrix_pool
 
-#include "ita/convolutions/at_matrix.hpp"
+#include "ita/traversals/at_matrix.hpp"
 #include "ita/traversals/untangle.hpp"
 
 namespace ita::at_matrix::tangled

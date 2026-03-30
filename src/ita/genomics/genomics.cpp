@@ -1,7 +1,6 @@
 #include "ita/genomics/genomics.hpp"
 
 #include <algorithm> // for min, max
-#include <cmath>     // for ceil
 #include <cstddef>   // for size_t
 #include <cstdlib>   // for std::max, exit, EXIT_FAILURE
 #include <optional>  // for optional
@@ -10,16 +9,15 @@
 #include <meza/pool/split.hpp> // for matrix_poole
 
 #include "dynamo/dynamo.hpp"		     // for dynamic_interval_tree
-#include "ita/convolutions/at_matrix.hpp"    // rov_matrix_set
 #include "ita/convolutions/convolutions.hpp" // for run_convs
 #include "ita/genomics/allele.hpp"	     // for Exp, comp_itineraries
 #include "ita/genomics/vcf.hpp"		     // for VcfRecIdx, gen_vcf_records
+#include "ita/traversals/at_matrix.hpp"	     // rov_matrix_set
 #include "ita/variation/rov.hpp"	     // for RoV, gen_rov
 #include "ita/variation/sne.hpp"	     // for sne
 #include "povu/common/app.hpp"		     // for config
 #include "povu/common/core.hpp"		     // for pt, idx_t, id_t
 #include "povu/common/log.hpp"		     // for ERR
-#include "povu/common/thread.hpp"	     // for thread_pool, task_group
 
 namespace ita::genomics
 {
@@ -103,9 +101,9 @@ void comp_expeditions(const bd::VG &g, std::vector<ir::RoV> &all_rovs,
 	const std::size_t N = all_rovs.size();
 	for (pt::idx_t i{start}; i < start + count && i < N; i++) {
 		bool last = i == ((start + count) - 1) || i == (N - 1);
-		const ir::RoV *rov = &all_rovs[i];
-
 		bool drain = last;
+
+		const ir::RoV *rov = &all_rovs[i];
 		ita::convolutions::populate_trips(g, rov, to_call_ref_ids,
 						  dm_pool, ov_pool, batch,
 						  treks, drain);
@@ -114,33 +112,6 @@ void comp_expeditions(const bd::VG &g, std::vector<ir::RoV> &all_rovs,
 	}
 
 	return;
-}
-
-struct ThreadSplit {
-	std::size_t outer;
-	std::size_t inner;
-};
-
-// Prefer inner >> outer; cap outer to a small number (default 2).
-inline ThreadSplit
-split_threads(std::size_t total, std::size_t outer_cap = 2,
-	      double outer_ratio = 0.25) // use ≤25% of pool for outer
-{
-	total = std::max<std::size_t>(1, total);
-	if (total == 1)
-		return {1, 0}; // outer runs; inner is serial
-
-	// Suggested outer from ratio, but no more than outer_cap
-	std::size_t suggested_outer = std::max<std::size_t>(
-		1, static_cast<std::size_t>(std::ceil(total * outer_ratio)));
-	std::size_t outer = std::min(outer_cap, suggested_outer);
-
-	// Always leave at least one thread for inner
-	if (outer >= total)
-		outer = total - 1;
-
-	std::size_t inner = total - outer; // guaranteed ≥ 1
-	return {outer, inner};
 }
 
 void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
@@ -172,15 +143,9 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 	if (app_config.verbosity() > 0)
 		INFO("Processing chunks. Chunk count: {}", total_chunks);
 
-	// set up thread pool & decide on thread split
-	std::size_t thread_count = app_config.thread_count();
-	povu::thread::thread_pool pool(thread_count);
-	// auto [outer, inner] = split_threads(pool.size());
-
 	ise::pin_cushion pc;
 	std::vector<ia::trek> treks;
 	std::vector<ist::st> i_trees;
-	// std::map<pt::u32, ita::interval_tree::interval_tree> invs;
 	std::map<pt::u32, std::vector<ia::inv_slice>> inv_slices;
 
 	meza::pool::split::matrix_pool<qt::u8> &ov_pool =
@@ -213,18 +178,9 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 			if (app_config.verbosity() > 0)
 				INFO("\t{}/{}", chunk_num, total_chunks);
 
-			// if (chunk_num != 169)
-			//	continue;
-			// INFO("\tchunk {}/{}", chunk_num, total_chunks);
-			// comp_expeditions_serial(g, all_rovs, base, count,
-			//			to_call_ref_ids, pc, treks);
-
 			comp_expeditions(g, all_rovs, base, count,
 					 to_call_ref_ids, ov_pool, dm_pool,
 					 batch, treks);
-
-			// if (chunk_num == CHUNK_SIZE)
-			//	i_trees = ise::sne(g, pc, to_call_ref_ids);
 
 			iv::VcfRecIdx rs = iv::gen_vcf_records(
 				g, treks, i_trees, inv_slices);

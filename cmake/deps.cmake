@@ -18,7 +18,8 @@ CPMAddPackage(
 CPMAddPackage(
   NAME              fmt
   GITHUB_REPOSITORY fmtlib/fmt
-  GIT_TAG           e69e5f977d458f2650bb346dadf2ad30c5320281 # v10.2.1
+  GIT_TAG           12.1.0
+  VERSION           12.1.0
   OPTIONS
   "CMAKE_POSITION_INDEPENDENT_CODE ON" # Ensure -fPIC is enabled
 )
@@ -32,7 +33,6 @@ CPMAddPackage(
   "LITESEQ_ENABLE_TESTING OFF"
 )
 
-
 CPMAddPackage(
   NAME              quilt
   GITHUB_REPOSITORY urbanslug/quilt
@@ -41,13 +41,22 @@ CPMAddPackage(
 
 CPMAddPackage(
   NAME              meza
-  GITHUB_REPOSITORY urbanslug/meza
-  GIT_TAG           329bb3a2ce96f363d55988467d0a7d85c71508d5
+  SOURCE_DIR        /home/sluggie/src/pangenomics/meza
   OPTIONS
   "MEZA_ENABLE_TESTS OFF"
   "MEZA_BUILD_EXAMPLE OFF"
   "MEZA_ENABLE_CUDA ON"
 )
+
+# CPMAddPackage(
+#   NAME              meza
+#   GITHUB_REPOSITORY urbanslug/meza
+#   GIT_TAG           c95166f3fad8bbef697dfb91d44a9301aad485a8
+#   OPTIONS
+#   "MEZA_ENABLE_TESTS OFF"
+#   "MEZA_BUILD_EXAMPLE OFF"
+#   "MEZA_ENABLE_CUDA ON"
+# )
 
 if (POVU_ENABLE_TESTING)
 CPMAddPackage(

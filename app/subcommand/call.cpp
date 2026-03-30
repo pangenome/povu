@@ -3,12 +3,11 @@
 #include <cassert>    // for assert
 #include <cstdlib>    // for size_t, exit, EXIT_FAILURE
 #include <filesystem> // for path
-// #include <optional>   // for optional
-#include <set>	   // for set
-#include <string>  // for basic_string, string, cha...
-#include <thread>  // for thread
-#include <utility> // for move
-#include <vector>  // for vector
+#include <set>	      // for set
+#include <string>     // for basic_string, string, cha...
+#include <thread>     // for thread
+#include <utility>    // for move
+#include <vector>     // for vector
 
 #include "ita/genomics/genomics.hpp" // for gen_vcf_rec_map
 #include "ita/genomics/vcf.hpp"	     // for VcfRecIdx
@@ -59,9 +58,8 @@ void get_ref_prefixes_from_file(core::config &app_config)
 		std::vector<std::string> refs;
 		mto::common::read_lines_to_vec_str(
 			app_config.get_references_txt(), &refs);
-		for (auto &&r : refs) {
+		for (auto &&r : refs)
 			app_config.add_ref_name_prefix(r);
-		}
 	}
 }
 

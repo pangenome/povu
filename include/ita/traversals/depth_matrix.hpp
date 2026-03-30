@@ -1,12 +1,9 @@
 #pragma once
 
+#include <liteseq/refs.h>	 // for ref_walk, ref
 #include <meza/owned/matrix.hpp> // for dense_matrix2d
+#include <meza/pool/joint.hpp>	 // for joint_pool
 #include <meza/pool/split.hpp>	 // for matrix_pool
-// #include <convo/matrix.hpp> // for ref_matrix, depth_matrix, at_matrix
-#include <liteseq/refs.h>      // for ref_walk, ref
-#include <meza/pool/joint.hpp> // for joint_pool
-
-// #include <convo/pool_joint.hpp> // for joint_pool, depth_matrix
 
 #include "ita/variation/rov.hpp"     // for RoV
 #include "povu/graph/bidirected.hpp" // for VG
@@ -44,6 +41,12 @@ public:
 	qt::u32 cols() const
 	{
 		return view.cols();
+	}
+
+	[[nodiscard]]
+	std::pair<const qt::u32 *, qt::u32> get_slice() const
+	{
+		return this->view.get_slice();
 	}
 
 	[[nodiscard]]

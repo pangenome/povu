@@ -193,7 +193,6 @@ ADD_LIBRARY(ita
 
   # genomics
   ${ITA_SOURCES_DIR}/genomics/genomics.cpp
-  ${ITA_SOURCES_DIR}/genomics/untangle.cpp
   ${ITA_SOURCES_DIR}/genomics/vcf.cpp
 
   # trees
@@ -201,19 +200,18 @@ ADD_LIBRARY(ita
   ${ITA_SOURCES_DIR}/graph/graph.cpp
 
   # convolutions
-  ${ITA_SOURCES_DIR}/convolutions/at_matrix.cpp
-  ${ITA_SOURCES_DIR}/convolutions/at_matrix_tangled.cpp
-  ${ITA_SOURCES_DIR}/convolutions/at_matrix_no_tangle.cpp
   ${ITA_SOURCES_DIR}/convolutions/convolutions.cpp
   ${ITA_SOURCES_DIR}/convolutions/trip.cpp
-  ${ITA_SOURCES_DIR}/convolutions/depth_matrix.cpp
 
   # traversals
+  ${ITA_SOURCES_DIR}/traversals/at_matrix.cpp
+  ${ITA_SOURCES_DIR}/traversals/at_matrix_tangled.cpp
+  ${ITA_SOURCES_DIR}/traversals/at_matrix_no_tangle.cpp
+  ${ITA_SOURCES_DIR}/traversals/depth_matrix.cpp
   ${ITA_SOURCES_DIR}/traversals/traversals.cpp
   ${ITA_SOURCES_DIR}/traversals/untangle.cpp
 
   # variation
-  ${ITA_SOURCES_DIR}/variation/overlay.cpp
   ${ITA_SOURCES_DIR}/variation/sne.cpp
   ${ITA_SOURCES_DIR}/variation/rov.cpp
   ${ITA_SOURCES_DIR}/variation/color.cpp

@@ -3,13 +3,12 @@
 #include <algorithm> // for std::min, std::max
 #include <optional>  // for std::optional
 #include <set>	     // for std::set
-#include <thread>    // for std::thread
 #include <vector>    // for std::vector
 
 #include <liteseq/refs.h>      // for ref_walk, ref
 #include <meza/pool/split.hpp> // for matrix_pool
 
-#include "ita/convolutions/at_matrix.hpp" // for matrix_pool, rov_matrix_set
+#include "ita/traversals/at_matrix.hpp" // for matrix_pool, rov_matrix_set
 #include "quilt/types.hpp"
 
 namespace ita::trip
@@ -318,35 +317,70 @@ gen_trip(const bd::VG &g, const ir::RoV *rov, bool is_tangled,
 	// always add the ref hap to the matches_ref
 	matches_ref.insert(ref_h_idx);
 
-	std::thread t1(
-		[&matches, &matches_ref, ref_h_idx]()
-		{
-			for (auto [ha, hb] : matches) {
-				if (ha == ref_h_idx)
-					matches_ref.insert(hb);
-				else if (hb == ref_h_idx)
-					matches_ref.insert(ha);
-			}
-		});
+	// auto start_t = std::chrono::steady_clock::now();
 
-	std::thread t2(
-		[&mismatches, &variant_refs, ref_h_idx]()
-		{
-			for (auto [ha, hb] : mismatches) {
-				if (ha == ref_h_idx)
-					variant_refs.insert(hb);
-				else if (hb == ref_h_idx)
-					variant_refs.insert(ha);
-			}
-		});
+	// std::thread t1(
+	//	[&matches, &matches_ref, ref_h_idx]()
+	//	{
+	//		for (auto [ha, hb] : matches) {
+	//			if (ha == ref_h_idx)
+	//				matches_ref.insert(hb);
+	//			else if (hb == ref_h_idx)
+	//				matches_ref.insert(ha);
+	//		}
+	//	});
 
-	t1.join();
-	t2.join();
+	// std::thread t2(
+	//	[&mismatches, &variant_refs, ref_h_idx]()
+	//	{
+	//		for (auto [ha, hb] : mismatches) {
+	//			if (ha == ref_h_idx)
+	//				variant_refs.insert(hb);
+	//			else if (hb == ref_h_idx)
+	//				variant_refs.insert(ha);
+	//		}
+	//	});
 
+	for (auto [ha, hb] : matches) {
+		if (ha == ref_h_idx)
+			matches_ref.insert(hb);
+		else if (hb == ref_h_idx)
+			matches_ref.insert(ha);
+	}
+
+	for (auto [ha, hb] : mismatches) {
+		if (ha == ref_h_idx)
+			variant_refs.insert(hb);
+		else if (hb == ref_h_idx)
+			variant_refs.insert(ha);
+	}
+
+	// auto end_t = std::chrono::steady_clock::now();
+	// auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
+	//	end_t - start_t);
+	// INFO("Identified matches and mismatches in {} us", elapsed.count());
+
+	// start_t = std::chrono::steady_clock::now();
+
+	// t2.join();
 	cxt_idx_t vci = find_variant_mat_contexts(mat_set, variant_refs);
 
+	// end_t = std::chrono::steady_clock::now();
+	// elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
+	//	end_t - start_t);
+	// INFO("Identified variant contexts in {} us", elapsed.count());
+
+	// start_t = std::chrono::steady_clock::now();
+
+	// t1.join();
 	gen_trip(g, vci, ref_h_idx, h2l, hap_itns, sorted_vertices, matches_ref,
 		 mat_set.filter, tk);
+
+	// end_t = std::chrono::steady_clock::now();
+	// elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
+	//	end_t - start_t);
+
+	// INFO("Generated trip in {} us", elapsed.count());
 
 	if (tk.has_data())
 		return tk;

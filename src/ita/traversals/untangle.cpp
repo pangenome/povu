@@ -5,9 +5,9 @@
 #include <utility> // for move
 #include <vector>  // for vector
 
-#include "ita/align/align.hpp"		  // for align, aln_level_e
-#include "ita/convolutions/at_matrix.hpp" // for matrix_pool
-#include "ita/genomics/allele.hpp"	  // for Exp, itn_t
+#include "ita/align/align.hpp"		// for align, aln_level_e
+#include "ita/genomics/allele.hpp"	// for Exp, itn_t
+#include "ita/traversals/at_matrix.hpp" // for matrix_pool
 #include "ita/traversals/traversals.hpp" // for unroll_haps, itinerary, allele_traversal
 #include "povu/common/core.hpp"		 // for pt, id_t, up_t, operator<
 // #include "povu/common/utils.hpp"

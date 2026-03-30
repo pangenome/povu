@@ -8,9 +8,9 @@
 #include <meza/pool/joint.hpp> // for joint_pool
 #include <meza/pool/split.hpp> // for matrix_pool
 
-#include "ita/convolutions/at_matrix.hpp" // rov_matrix_set
-#include "ita/genomics/allele.hpp"	  // for trek
-#include "ita/variation/rov.hpp"	  // for RoV
+#include "ita/genomics/allele.hpp"	// for trek
+#include "ita/traversals/at_matrix.hpp" // rov_matrix_set
+#include "ita/variation/rov.hpp"	// for RoV
 #include "povu/common/core.hpp"
 #include "povu/graph/bidirected.hpp" // for VG
 

@@ -5,8 +5,8 @@
 #include <liteseq/refs.h>      // for ref_walk, ref
 #include <meza/pool/split.hpp> // for matrix_pool
 
-#include "ita/convolutions/at_matrix.hpp" // for matrix_pool, rov_matrix_set
-#include "quilt/types.hpp"		  // for qt::u32
+#include "ita/traversals/at_matrix.hpp" // for matrix_pool, rov_matrix_set
+#include "quilt/types.hpp"		// for qt::u32
 
 namespace ita::trip
 {
