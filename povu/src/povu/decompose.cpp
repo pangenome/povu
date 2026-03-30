@@ -1,4 +1,4 @@
-#include "./decompose.hpp"
+#include "povu/decompose.hpp"
 
 #include <cstddef>    // for size_t
 #include <cstdint>    // for uint32_t

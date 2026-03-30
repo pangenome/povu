@@ -129,15 +129,15 @@ include(cmake/deps.cmake)
 
 # These variables define paths for source code, headers, and tests.
 # Used later in the project to organize sources and targets.
-set(APP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/app)
-set(INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
-set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
-set(TESTS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests)
+# set(APP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/app)
+# set(INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
+# set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+# set(TESTS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests)
 set(BIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bin)
-set(POVULIB_SOURCES_DIR ${SRC_DIR}/povu)
-set(ZIENLIB_SOURCES_DIR ${SRC_DIR}/zien)
-set(ITA_SOURCES_DIR ${SRC_DIR}/ita)
-set(MTO_SOURCES_DIR ${SRC_DIR}/mto)
+# set(POVULIB_SOURCES_DIR ${SRC_DIR}/povu)
+# set(ZIENLIB_SOURCES_DIR ${SRC_DIR}/zien)
+# set(ITA_SOURCES_DIR ${SRC_DIR}/ita)
+# set(MTO_SOURCES_DIR ${SRC_DIR}/mto)
 # set(MEZA_SOURCES_DIR ${SRC_DIR}/meza)
 
 # When set uses uses build dir for output binaries
@@ -151,114 +151,13 @@ set(MTO_SOURCES_DIR ${SRC_DIR}/mto)
 
 #  ........ Define the library target ............
 
-ADD_LIBRARY(povulib
-  # algorithms
-  ${POVULIB_SOURCES_DIR}/algorithms/concealed.cpp
-  ${POVULIB_SOURCES_DIR}/algorithms/midi.cpp
-  ${POVULIB_SOURCES_DIR}/algorithms/smothered.cpp
-  ${POVULIB_SOURCES_DIR}/algorithms/parallel.cpp
-  ${POVULIB_SOURCES_DIR}/algorithms/tiny.cpp
-  ${POVULIB_SOURCES_DIR}/algorithms/flubbles.cpp
 
-  ${POVULIB_SOURCES_DIR}/refs/refs.cpp
-
-  # common
-  ${POVULIB_SOURCES_DIR}/common/utils.cpp
-
-  # graph
-  ${POVULIB_SOURCES_DIR}/graph/types.cpp
-  ${POVULIB_SOURCES_DIR}/graph/bidirected.cpp
-  ${POVULIB_SOURCES_DIR}/graph/bracket_list.cpp
-  ${POVULIB_SOURCES_DIR}/graph/spanning_tree.cpp
-  ${POVULIB_SOURCES_DIR}/graph/tree_utils.cpp
-)
-
-ADD_LIBRARY(mto # io library
-  ${MTO_SOURCES_DIR}/from_pvst.cpp
-  ${MTO_SOURCES_DIR}/to_pvst.cpp
-  ${MTO_SOURCES_DIR}/from_gfa.cpp
-  ${MTO_SOURCES_DIR}/to_gfa.cpp
-  ${MTO_SOURCES_DIR}/common.cpp
-  ${MTO_SOURCES_DIR}/to_vcf.cpp
-  ${MTO_SOURCES_DIR}/from_vcf.cpp
-)
-
-#ADD_LIBRARY(meza
-#  ${MEZA_SOURCES_DIR}/matrix/matrix.cpp
-#)
-
-ADD_LIBRARY(ita
-  # align
-  ${ITA_SOURCES_DIR}/align/align.cpp
-
-  # genomics
-  ${ITA_SOURCES_DIR}/genomics/genomics.cpp
-  ${ITA_SOURCES_DIR}/genomics/vcf.cpp
-
-  # trees
-  ${ITA_SOURCES_DIR}/graph/slice_tree.cpp
-  ${ITA_SOURCES_DIR}/graph/graph.cpp
-
-  # convolutions
-  ${ITA_SOURCES_DIR}/convolutions/convolutions.cpp
-  ${ITA_SOURCES_DIR}/convolutions/trip.cpp
-
-  # traversals
-  ${ITA_SOURCES_DIR}/traversals/at_matrix.cpp
-  ${ITA_SOURCES_DIR}/traversals/at_matrix_tangled.cpp
-  ${ITA_SOURCES_DIR}/traversals/at_matrix_no_tangle.cpp
-  ${ITA_SOURCES_DIR}/traversals/depth_matrix.cpp
-  ${ITA_SOURCES_DIR}/traversals/traversals.cpp
-  ${ITA_SOURCES_DIR}/traversals/untangle.cpp
-
-  # variation
-  ${ITA_SOURCES_DIR}/variation/sne.cpp
-  ${ITA_SOURCES_DIR}/variation/rov.cpp
-  ${ITA_SOURCES_DIR}/variation/color.cpp
-)
-
-ADD_LIBRARY(zien
-  ${ZIENLIB_SOURCES_DIR}/tui/tui.cpp
-  ${ZIENLIB_SOURCES_DIR}/tui/state.cpp
-  ${ZIENLIB_SOURCES_DIR}/tui/input.cpp
-
-  #common
-  ${ZIENLIB_SOURCES_DIR}/common/common.cpp
-
-  #components
-  ${ZIENLIB_SOURCES_DIR}/components/repeats.cpp
-  ${ZIENLIB_SOURCES_DIR}/components/common.cpp
-  ${ZIENLIB_SOURCES_DIR}/components/genotypes.cpp
-  ${ZIENLIB_SOURCES_DIR}/components/refs.cpp
-  ${ZIENLIB_SOURCES_DIR}/components/alts.cpp
-  ${ZIENLIB_SOURCES_DIR}/components/paths.cpp
-  ${ZIENLIB_SOURCES_DIR}/components/vcf.cpp
-
-  #validate
-  ${ZIENLIB_SOURCES_DIR}/validate/validate.cpp
-
-  #repeats
-  ${ZIENLIB_SOURCES_DIR}/repeats/repeats.cpp
-)
-
-# ..... executable .......
-#
-# Main executable source files are listed here.
-# Define the main executable target
-add_executable(povu
-  # cli
-  ${APP_DIR}/cli/cli.cpp
-
-  # subcommand
-  ${APP_DIR}/subcommand/decompose.cpp
-  ${APP_DIR}/subcommand/info.cpp
-  ${APP_DIR}/subcommand/call.cpp
-  ${APP_DIR}/subcommand/prune.cpp
-  ${APP_DIR}/subcommand/gfa2vcf.cpp
-  ${APP_DIR}/subcommand/vcf.cpp
-  ${APP_DIR}/subcommand/view.cpp
-  ${APP_DIR}/main.cpp
-)
+add_subdirectory(dynamo)
+add_subdirectory(oza)
+add_subdirectory(ita)
+add_subdirectory(mto)
+add_subdirectory(zien)
+add_subdirectory(povu)
 
 function(add_compile_options_for_build_type target)
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -275,46 +174,22 @@ function(add_compile_options_for_build_type target)
   endif()
 endfunction()
 
-# Apply compile options only to your own targets
-add_compile_options_for_build_type(povulib)
 add_compile_options_for_build_type(povu)
+add_compile_options_for_build_type(oza)
 
-
-target_include_directories(povulib
-  PUBLIC
-  ${INCLUDE_DIR}
-  ${APP_DIR}
-)
-
-# ---- linking -----
-
-target_link_libraries(povulib
-  PRIVATE
-  fmt::fmt # formatting
-  liteseq  # gfa handling
-  quilt
-  meza
-)
 
 target_link_libraries(ita
   PRIVATE
-  povulib
+  oza
   fmt::fmt     # formatting
   liteseq      # gfa handling
   meza
+  dynamo
 )
-
-if(TARGET meza)
-  message(STATUS "meza target exists")
-  get_target_property(_incs meza INTERFACE_INCLUDE_DIRECTORIES)
-  message(STATUS "meza INTERFACE_INCLUDE_DIRECTORIES=${_incs}")
-else()
-  message(FATAL_ERROR "meza is not a target here; you're linking -lmeza")
-endif()
 
 target_link_libraries(mto
   PRIVATE
-  povulib
+  oza
   fmt::fmt     # formatting
   liteseq      # gfa handling
   ita
@@ -323,7 +198,7 @@ target_link_libraries(mto
 
 target_link_libraries(zien
   PRIVATE
-  povulib
+  oza
   ita
   liteseq      # gfa handling
   fmt::fmt     # formatting
@@ -333,8 +208,9 @@ target_link_libraries(zien
 
 target_link_libraries(povu
   PRIVATE
+
   # internal libraries
-  povulib
+  oza
   zien
   ita
   mto
@@ -347,7 +223,201 @@ target_link_libraries(povu
   meza
 )
 
-# =================== Set Build-Time Output Directory ========================
+
+# ADD_LIBRARY(povulib
+#   # algorithms
+#   ${POVULIB_SOURCES_DIR}/algorithms/concealed.cpp
+#   ${POVULIB_SOURCES_DIR}/algorithms/midi.cpp
+#   ${POVULIB_SOURCES_DIR}/algorithms/smothered.cpp
+#   ${POVULIB_SOURCES_DIR}/algorithms/parallel.cpp
+#   ${POVULIB_SOURCES_DIR}/algorithms/tiny.cpp
+#   ${POVULIB_SOURCES_DIR}/algorithms/flubbles.cpp
+
+#   ${POVULIB_SOURCES_DIR}/refs/refs.cpp
+
+#   # common
+#   ${POVULIB_SOURCES_DIR}/common/utils.cpp
+
+#   # graph
+#   ${POVULIB_SOURCES_DIR}/graph/types.cpp
+#   ${POVULIB_SOURCES_DIR}/graph/bidirected.cpp
+#   ${POVULIB_SOURCES_DIR}/graph/bracket_list.cpp
+#   ${POVULIB_SOURCES_DIR}/graph/spanning_tree.cpp
+#   ${POVULIB_SOURCES_DIR}/graph/tree_utils.cpp
+# )
+
+# ADD_LIBRARY(mto # io library
+#   ${MTO_SOURCES_DIR}/from_pvst.cpp
+#   ${MTO_SOURCES_DIR}/to_pvst.cpp
+#   ${MTO_SOURCES_DIR}/from_gfa.cpp
+#   ${MTO_SOURCES_DIR}/to_gfa.cpp
+#   ${MTO_SOURCES_DIR}/common.cpp
+#   ${MTO_SOURCES_DIR}/to_vcf.cpp
+#   ${MTO_SOURCES_DIR}/from_vcf.cpp
+# )
+
+# ADD_LIBRARY(ita
+#   # align
+#   ${ITA_SOURCES_DIR}/align/align.cpp
+
+#   # genomics
+#   ${ITA_SOURCES_DIR}/genomics/genomics.cpp
+#   ${ITA_SOURCES_DIR}/genomics/vcf.cpp
+
+#   # trees
+#   ${ITA_SOURCES_DIR}/graph/slice_tree.cpp
+#   ${ITA_SOURCES_DIR}/graph/graph.cpp
+
+#   # convolutions
+#   ${ITA_SOURCES_DIR}/convolutions/convolutions.cpp
+#   ${ITA_SOURCES_DIR}/convolutions/trip.cpp
+
+#   # traversals
+#   ${ITA_SOURCES_DIR}/traversals/at_matrix.cpp
+#   ${ITA_SOURCES_DIR}/traversals/at_matrix_tangled.cpp
+#   ${ITA_SOURCES_DIR}/traversals/at_matrix_no_tangle.cpp
+#   ${ITA_SOURCES_DIR}/traversals/depth_matrix.cpp
+#   ${ITA_SOURCES_DIR}/traversals/traversals.cpp
+#   ${ITA_SOURCES_DIR}/traversals/untangle.cpp
+
+#   # variation
+#   ${ITA_SOURCES_DIR}/variation/sne.cpp
+#   ${ITA_SOURCES_DIR}/variation/rov.cpp
+#   ${ITA_SOURCES_DIR}/variation/color.cpp
+# )
+
+# ADD_LIBRARY(zien
+#   ${ZIENLIB_SOURCES_DIR}/tui/tui.cpp
+#   ${ZIENLIB_SOURCES_DIR}/tui/state.cpp
+#   ${ZIENLIB_SOURCES_DIR}/tui/input.cpp
+
+#   #common
+#   ${ZIENLIB_SOURCES_DIR}/common/common.cpp
+
+#   #components
+#   ${ZIENLIB_SOURCES_DIR}/components/repeats.cpp
+#   ${ZIENLIB_SOURCES_DIR}/components/common.cpp
+#   ${ZIENLIB_SOURCES_DIR}/components/genotypes.cpp
+#   ${ZIENLIB_SOURCES_DIR}/components/refs.cpp
+#   ${ZIENLIB_SOURCES_DIR}/components/alts.cpp
+#   ${ZIENLIB_SOURCES_DIR}/components/paths.cpp
+#   ${ZIENLIB_SOURCES_DIR}/components/vcf.cpp
+
+#   #validate
+#   ${ZIENLIB_SOURCES_DIR}/validate/validate.cpp
+
+#   #repeats
+#   ${ZIENLIB_SOURCES_DIR}/repeats/repeats.cpp
+# )
+
+# # ..... executable .......
+# #
+# # Main executable source files are listed here.
+# # Define the main executable target
+# add_executable(povu
+#   # cli
+#   ${APP_DIR}/cli/cli.cpp
+
+#   # subcommand
+#   ${APP_DIR}/subcommand/decompose.cpp
+#   ${APP_DIR}/subcommand/info.cpp
+#   ${APP_DIR}/subcommand/call.cpp
+#   ${APP_DIR}/subcommand/prune.cpp
+#   ${APP_DIR}/subcommand/gfa2vcf.cpp
+#   ${APP_DIR}/subcommand/vcf.cpp
+#   ${APP_DIR}/subcommand/view.cpp
+#   ${APP_DIR}/main.cpp
+# )
+
+# function(add_compile_options_for_build_type target)
+#   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+#     target_compile_options(${target} PRIVATE
+#       ${COMMON_WARNINGS}
+#       ${DEBUG_WARNINGS}
+#       -g -Wno-system-headers)
+#     target_compile_definitions(${target} PRIVATE DEBUG)
+#   elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
+#     target_compile_options(${target} PRIVATE
+#       ${COMMON_WARNINGS}
+#       -O3 -Wno-system-headers)
+#     target_compile_definitions(${target} PRIVATE RELEASE)
+#   endif()
+# endfunction()
+
+# Apply compile options only to your own targets
+# add_compile_options_for_build_type(povulib)
+# add_compile_options_for_build_type(povu)
+
+
+# target_include_directories(povulib
+#   PUBLIC
+#   ${INCLUDE_DIR}
+#   ${APP_DIR}
+# )
+
+# ---- linking -----
+
+# target_link_libraries(povulib
+#   PRIVATE
+#   fmt::fmt # formatting
+#   liteseq  # gfa handling
+#   quilt
+#   meza
+# )
+
+# target_link_libraries(ita
+#   PRIVATE
+#   povulib
+#   fmt::fmt     # formatting
+#   liteseq      # gfa handling
+#   meza
+#   dynamo
+# )
+
+# if(TARGET meza)
+#   message(STATUS "meza target exists")
+#   get_target_property(_incs meza INTERFACE_INCLUDE_DIRECTORIES)
+#   message(STATUS "meza INTERFACE_INCLUDE_DIRECTORIES=${_incs}")
+# else()
+#   message(FATAL_ERROR "meza is not a target here; you're linking -lmeza")
+# endif()
+
+# target_link_libraries(mto
+#   PRIVATE
+#   povulib
+#   fmt::fmt     # formatting
+#   liteseq      # gfa handling
+#   ita
+#   meza
+# )
+
+# target_link_libraries(zien
+#   PRIVATE
+#   povulib
+#   ita
+#   liteseq      # gfa handling
+#   fmt::fmt     # formatting
+#   ncurses
+#   meza
+# )
+
+# target_link_libraries(povu
+#   PRIVATE
+#   # internal libraries
+#   povulib
+#   zien
+#   ita
+#   mto
+
+#   # external libraries
+#   liteseq      # gfa handling
+#   fmt::fmt     # formatting
+#   taywee::args # argument parsing
+#   ncurses
+#   meza
+# )
+
+# # =================== Set Build-Time Output Directory ========================
 
 # Set the runtime output directory for the binary
 set_target_properties(povu PROPERTIES
@@ -355,41 +425,41 @@ set_target_properties(povu PROPERTIES
 )
 message(STATUS "Build-time binary output directory: ${BIN_DIR}")
 
-# ========================== Installation ====================================
-# Installation configuration for install() actions (system-wide install)
-# triggered by 'cmake --install .'
+# # ========================== Installation ====================================
+# # Installation configuration for install() actions (system-wide install)
+# # triggered by 'cmake --install .'
 
-# Install configuration
-include(GNUInstallDirs)
+# # Install configuration
+# include(GNUInstallDirs)
 
-# Install the povulib library
-install(TARGETS povulib
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}  # Static Libraries
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}  # Shared Libraries
-)
+# # Install the povulib library
+# install(TARGETS povulib
+#   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}  # Static Libraries
+#   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}  # Shared Libraries
+# )
 
-# Install the povu binary into the system bin directory
-install(TARGETS povu
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}  # Executables
-)
+# # Install the povu binary into the system bin directory
+# install(TARGETS povu
+#   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}  # Executables
+# )
 
-# Install header files (if applicable)
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-  FILES_MATCHING PATTERN "*.h"
-)
+# # Install header files (if applicable)
+# install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
+#   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+#   FILES_MATCHING PATTERN "*.h"
+# )
 
-# Log where items are being installed
-message(STATUS "Install include directory: ${CMAKE_INSTALL_INCLUDEDIR}")
-message(STATUS "Install library directory: ${CMAKE_INSTALL_LIBDIR}")
-message(STATUS "Install binary directory: ${CMAKE_INSTALL_BINDIR}")
+# # Log where items are being installed
+# message(STATUS "Install include directory: ${CMAKE_INSTALL_INCLUDEDIR}")
+# message(STATUS "Install library directory: ${CMAKE_INSTALL_LIBDIR}")
+# message(STATUS "Install binary directory: ${CMAKE_INSTALL_BINDIR}")
 
-# ================================ Tests =====================================
+# # ================================ Tests =====================================
 
-if (POVU_ENABLE_TESTING)
-  # Add the global TESTING definition
-  add_compile_definitions(TESTING)
+# if (POVU_ENABLE_TESTING)
+#   # Add the global TESTING definition
+#   add_compile_definitions(TESTING)
 
-  enable_testing()
-  add_subdirectory(${TESTS_DIR})
-endif()
+#   enable_testing()
+#   add_subdirectory(${TESTS_DIR})
+# endif()

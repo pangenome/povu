@@ -1,4 +1,4 @@
-#include "./info.hpp"
+#include "povu/info.hpp"
 
 #include <iostream> // for basic_ostream, basic_ios, cerr
 #include <string>   // for basic_string, operator<<, string

@@ -1,4 +1,4 @@
-#include "./cli.hpp"
+#include "povu/cli.hpp"
 
 #include <cstdlib>    // for exit, size_t, EXIT_SUCCESS
 #include <functional> // for function

@@ -1,12 +1,12 @@
-#include "./cli/cli.hpp"	      // for cli
-#include "./subcommand/call.hpp"      // for do_call
-#include "./subcommand/decompose.hpp" // for do_decompose
-#include "./subcommand/gfa2vcf.hpp"   // for do_gfa2vcf
-#include "./subcommand/info.hpp"      // for do_info
-#include "./subcommand/prune.hpp"     // for do_prune
-#include "./subcommand/vcf.hpp"	      // for do_vcf
-#include "./subcommand/view.hpp"      // for do_view
-#include "povu/common/app.hpp"	      // for task_e, config
+#include "povu/call.hpp"       // for do_call
+#include "povu/cli.hpp"	       // for cli
+#include "povu/common/app.hpp" // for task_e, config
+#include "povu/decompose.hpp"  // for do_decompose
+#include "povu/gfa2vcf.hpp"    // for do_gfa2vcf
+#include "povu/info.hpp"       // for do_info
+#include "povu/prune.hpp"      // for do_prune
+#include "povu/vcf.hpp"	       // for do_vcf
+#include "povu/view.hpp"       // for do_view
 
 namespace pv = povu::subcommands;
 

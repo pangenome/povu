@@ -1,4 +1,4 @@
-#include "./vcf.hpp"
+#include "povu/vcf.hpp"
 
 #include <atomic> // for atomic
 #include <thread> // for thread
@@ -15,7 +15,7 @@
 #include "zien/tui/tui.hpp"	      // for view
 #include "zien/validate/validate.hpp" // for validate_vcf_records
 
-namespace povu::subcommands::vcf
+namespace povu::subcommands::view
 {
 
 std::pair<bd::VG *, mto::from_vcf::VCFile>
@@ -113,26 +113,18 @@ void handle_tui(const core::config &app_config)
 	delete g;
 }
 
-void handle_report(const core::config &app_config)
+void do_view(const core::config &app_config)
 {
-	auto [g, vcf_file] = data_loader(app_config);
-	zv::validate_vcf_records(*g, vcf_file, app_config);
-	delete g;
-}
+	const core::view_opts &view_opts = app_config.get_view_opts();
 
-void do_vcf(const core::config &app_config)
-{
-
-	const core::vcf_subcommand &vcf_opts = app_config.get_vcf_subcommand();
-
-	switch (vcf_opts.get_vcf_options()) {
-	case core::vcf_options::report:
-		handle_report(app_config);
-		break;
-	case core::vcf_options::tui:
+	switch (view_opts) {
+	case core::view_opts::paths:
 		handle_tui_gfa(app_config);
+		break;
+	case core::view_opts::variation:
+		handle_tui(app_config);
 		break;
 	}
 }
 
-} // namespace povu::subcommands::vcf
+} // namespace povu::subcommands::view

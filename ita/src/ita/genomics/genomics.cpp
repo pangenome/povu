@@ -8,7 +8,8 @@
 
 #include <meza/pool/split.hpp> // for matrix_poole
 
-#include "dynamo/dynamo.hpp"		     // for dynamic_interval_tree
+#include <dynamo/dynamo.hpp> // for dynamic_interval_tree
+
 #include "ita/convolutions/convolutions.hpp" // for run_convs
 #include "ita/genomics/allele.hpp"	     // for Exp, comp_itineraries
 #include "ita/genomics/vcf.hpp"		     // for VcfRecIdx, gen_vcf_records
