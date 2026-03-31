@@ -8,6 +8,9 @@ if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
   cmake_policy(SET CMP0135 NEW)
 endif()
 
+option(MEZA_ENABLE_CUDA "Enable CUDA acceleration (build CUDA targets)" ON)
+option(MEZA_BUILD_EXAMPLE "Build examples for meza" OFF)
+
 # === Project Metadata ===
 project(povu VERSION 0.0.1 LANGUAGES C CXX)
 
@@ -151,6 +154,48 @@ set(BIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
 #  ........ Define the library target ............
 
+add_subdirectory(quilt)
+add_subdirectory(meza)
+
+target_link_libraries(meza
+  PUBLIC
+  quilt)
+
+# if(MEZA_ENABLE_CUDA)
+#   target_link_libraries(meza PUBLIC CUDA::cudart)
+# endif()
+
+# if(MEZA_ENABLE_CUDA)
+#   target_compile_options(meza PRIVATE
+#     $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-Wno-pedantic>
+#   )
+# endif()
+
+
+
+# # After you decide whether CUDA is enabled
+# target_compile_definitions(meza
+#   PUBLIC
+#   MEZA_USE_CUDA=$<BOOL:${MEZA_ENABLE_CUDA}>
+# )
+
+add_subdirectory(log)
+add_subdirectory(liteseq)
+
+# --- Silence compiler warnings for dependencies ---
+function(silence_warnings target)
+  if(TARGET ${target})
+    get_target_property(type ${target} TYPE)
+    if(type STREQUAL "INTERFACE_LIBRARY")
+      target_compile_options(${target} INTERFACE -w)
+    else()
+      target_compile_options(${target} PRIVATE -w)
+    endif()
+  endif()
+endfunction()
+
+silence_warnings(log)
+target_link_libraries(liteseq PRIVATE log)
 
 add_subdirectory(dynamo)
 add_subdirectory(oza)
@@ -177,6 +222,18 @@ endfunction()
 add_compile_options_for_build_type(povu)
 add_compile_options_for_build_type(oza)
 
+target_link_libraries(quilt
+  INTERFACE
+  fmt::fmt
+)
+
+target_link_libraries(oza
+  PRIVATE
+  fmt::fmt # formatting
+  liteseq  # gfa handling
+  quilt
+  meza
+)
 
 target_link_libraries(ita
   PRIVATE

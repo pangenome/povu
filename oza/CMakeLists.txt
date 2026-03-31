@@ -192,13 +192,6 @@ target_include_directories(oza
 
 # ---- linking -----
 
-target_link_libraries(oza
-  PRIVATE
-  fmt::fmt # formatting
-  liteseq  # gfa handling
-  quilt
-  meza
-)
 
 # # =================== Set Build-Time Output Directory ========================
 

@@ -24,29 +24,29 @@ CPMAddPackage(
   "CMAKE_POSITION_INDEPENDENT_CODE ON" # Ensure -fPIC is enabled
 )
 
-CPMAddPackage(
-  NAME              liteseq
-  GITHUB_REPOSITORY urbanslug/liteseq
-  GIT_TAG           3678c8b7d1c5e1bfaa9e3f07133e6e3f00567015
-  OPTIONS
-  "LITESEQ_BUILD_EXAMPLE OFF"
-  "LITESEQ_ENABLE_TESTING OFF"
-)
+# CPMAddPackage(
+#   NAME              liteseq
+#   GITHUB_REPOSITORY urbanslug/liteseq
+#   GIT_TAG           3678c8b7d1c5e1bfaa9e3f07133e6e3f00567015
+#   OPTIONS
+#   "LITESEQ_BUILD_EXAMPLE OFF"
+#   "LITESEQ_ENABLE_TESTING OFF"
+# )
 
-CPMAddPackage(
-  NAME              quilt
-  GITHUB_REPOSITORY urbanslug/quilt
-  GIT_TAG           0d0c7e238887518a2e602d11b0f0d16cddfce9f0 # v0.0.1
-)
+# CPMAddPackage(
+#   NAME              quilt
+#   GITHUB_REPOSITORY urbanslug/quilt
+#   GIT_TAG           0d0c7e238887518a2e602d11b0f0d16cddfce9f0 # v0.0.1
+# )
 
-CPMAddPackage(
-  NAME              meza
-  SOURCE_DIR        /home/sluggie/src/pangenomics/meza
-  OPTIONS
-  "MEZA_ENABLE_TESTS OFF"
-  "MEZA_BUILD_EXAMPLE OFF"
-  "MEZA_ENABLE_CUDA ON"
-)
+# CPMAddPackage(
+#   NAME              meza
+#   SOURCE_DIR        /home/sluggie/src/pangenomics/meza
+#   OPTIONS
+#   "MEZA_ENABLE_TESTS OFF"
+#   "MEZA_BUILD_EXAMPLE OFF"
+#   "MEZA_ENABLE_CUDA ON"
+# )
 
 # CPMAddPackage(
 #   NAME              meza
