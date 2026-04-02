@@ -303,7 +303,7 @@ gen_trip(const bd::VG &g, const ir::RoV *rov, bool is_tangled,
 	 const std::vector<ita::traversals::traversals::itinerary> &hap_itns,
 	 const ita::at_matrix::mat3 &mat_set,
 	 const std::vector<pt::u32> &sorted_vertices,
-	 const meza::pool::split::haps_comp_set &hap_cmp)
+	 const meza::pool::hap_comp::haps_comp_set &hap_cmp)
 {
 	auto tk = ia::trek::create_new(rov, g.get_hap_count(), is_tangled);
 

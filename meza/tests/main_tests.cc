@@ -1,1 +1,3 @@
-#include "./shared_pool_tests.cc"
+#include <gtest/gtest.h>
+
+#include "./split_pool_tests.cc"

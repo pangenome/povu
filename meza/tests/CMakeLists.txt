@@ -11,11 +11,18 @@ target_include_directories(test_meza
 
 target_link_libraries(test_meza
   PRIVATE
+  gtest
+  gtest_main
   quilt
   meza
-  gtest_main
 )
+
+if(MEZA_ENABLE_CUDA)
+  target_link_libraries(test_meza PRIVATE CUDA::cudart)
+endif()
 
 # Discover GoogleTest tests
 include(GoogleTest)
-gtest_discover_tests(test_meza)
+gtest_discover_tests(test_meza
+  TEST_PREFIX "meza."
+)

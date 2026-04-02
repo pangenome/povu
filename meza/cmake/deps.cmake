@@ -7,12 +7,6 @@ file(
 )
 include(${CMAKE_CURRENT_BINARY_DIR}/cmake/CPM.cmake)
 
-# CPMAddPackage(
-#   NAME              quilt
-#   GITHUB_REPOSITORY urbanslug/quilt
-#   GIT_TAG           0d0c7e238887518a2e602d11b0f0d16cddfce9f0 # v0.0.1
-# )
-
 if (MEZA_ENABLE_TESTS)
   CPMAddPackage(
     googletest

@@ -1,7 +1,7 @@
 #ifndef MZ_SHARED_HPP
 #define MZ_SHARED_HPP
 
-#include "quilt/types.hpp" // for qt::u32, qt::u8, qt::op_t
+#include "quilt/types.hpp" // for qt::u8
 
 namespace meza::shared
 {

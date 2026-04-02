@@ -5,9 +5,10 @@
 #include <set>
 #include <vector>
 
-#include <liteseq/refs.h>      // for ref_walk, ref
-#include <meza/pool/joint.hpp> // for joint_pool
-#include <meza/pool/split.hpp> // for matrix_pool
+#include <liteseq/refs.h>	  // for ref_walk, ref
+#include <meza/pool/hap_comp.hpp> // for hap_comp_matrix, haps_comp_set, handle_set
+#include <meza/pool/joint.hpp>	  // for joint_pool
+#include <meza/pool/split.hpp>	  // for matrix_pool
 
 #include "ita/convolutions/trip.hpp"	   // for gen_trip
 #include "ita/genomics/allele.hpp"	   // for hap_slice, trek
@@ -28,7 +29,7 @@ void comp_conv(meza::pool::split::matrix_pool<qt::u8> &ov_pool, qt::u32 I,
 	//  copy the pool to the device before launching the kernel
 	ov_pool.copy_to_device();
 
-	ov_pool.xor_on_device(pool_j_offset);
+	ov_pool.run_filter(pool_j_offset);
 
 	// copy the pool back to the host after the kernel has finished
 	ov_pool.copy_to_host_thirds(meza::pool::split::pool_region::Xor);
@@ -57,9 +58,9 @@ void process_mat3(
 
 		const ita::at_matrix::hap2loop &h2l = mat_set.h2l;
 
-		const meza::pool::split::haps_comp_set &hap_cmp =
-			meza::pool::split::handle_set(ov_pool, filter_mat,
-						      pool_offset);
+		const meza::pool::hap_comp::haps_comp_set &hap_cmp =
+			meza::pool::hap_comp::handle_set(ov_pool, filter_mat,
+							 pool_offset);
 
 		std::optional<ia::trek> opt_tk = ita::trip::gen_trip(
 			g, rov, is_tangled, ref_h_idx, h2l, hap_itns, mat_set,

@@ -1,4 +1,4 @@
-# === CMake Setup ===
+# ================================= CMake Setup ==============================
 # Minimum version required for FetchContent and modern features
 cmake_minimum_required(VERSION 3.14)
 
@@ -11,7 +11,7 @@ if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
 endif()
 
 
-# === Build Configuration Options ===
+# ========================= Build Configuration Options =====================
 
 option(MEZA_ENABLE_CUDA "Enable CUDA acceleration (build CUDA targets)" OFF)
 if(MEZA_ENABLE_CUDA)
@@ -34,7 +34,7 @@ else()
 endif()
 
 
-# ==== Project Definition ===
+# ============================ Project Definition ===========================
 project(meza VERSION 0.0.1 LANGUAGES CXX)
 
 
@@ -167,9 +167,9 @@ set(EXAMPLES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/examples)
 #  ........ Define the library target ............
 
 ADD_LIBRARY(meza
+  ${MEZA_SOURCES_DIR}/ops/ops.cpp
+  ${MEZA_SOURCES_DIR}/pool/hap_comp.cpp
   ${MEZA_SOURCES_DIR}/owned/matrix.cpp
-  # ${MEZA_SOURCES_DIR}/view/matrix_view.cpp
-  ${MEZA_SOURCES_DIR}/pool/split.cpp
 )
 
 set_target_properties(meza PROPERTIES
@@ -235,9 +235,10 @@ target_compile_definitions(meza
   MEZA_USE_CUDA=$<BOOL:${MEZA_ENABLE_CUDA}>
 )
 
-# === Tests ===
+# ============================= Tests =====================================
 
-if(MEZA_ENABLE_TESTS)
+if(TEST_MEZA)
+  message(STATUS "Tests enabled for meza")
   # Add the global TESTING definition
   add_compile_definitions(TESTING)
 

@@ -1,13 +1,22 @@
-add_executable(test_povu main_tests.cc)
-target_link_libraries(test_povu
+add_executable(test_oza
+  main_tests.cc
+)
+
+target_link_libraries(test_oza
   PRIVATE
+
+  gtest
   gtest_main
-  povulib  # Replace with your actual target
-  liteseq      # gfa handling
-  fmt::fmt     # formatting
-  taywee::args # argument parsing
+
+  fmt::fmt
+  taywee::args
+
+  oza
+  liteseq
   meza
 )
 
 include(GoogleTest)
-gtest_discover_tests(test_povu)
+gtest_discover_tests(test_oza
+  TEST_PREFIX "oza."
+)

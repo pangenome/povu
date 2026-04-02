@@ -3,7 +3,7 @@
 
 #include <cstddef>
 #include <ostream>
-#include <set>
+// #include <set>
 #include <stdexcept>
 #include <string_view>
 #include <vector>
@@ -13,9 +13,12 @@
 #include <cuda_runtime_api.h>
 #include <driver_types.h>
 #include <vector_types.h>
-#endif
 
 #include "meza/ops/ops.cuh"
+#else
+#include "meza/ops/ops.hpp"
+#endif
+
 #include "meza/shared/shared.hpp" // for layout
 #include "meza/view/view.hpp"
 #include "quilt/types.hpp"
@@ -24,23 +27,29 @@ namespace meza::pool::split
 {
 inline constexpr std::string_view MODULE = "meza::matrix_pool";
 
-// ---
-//
-// ---
+// -------
+// aliases
+// -------
 
 using layout = meza::shared::layout;
-using u32 = qt::u32;
-using u8 = qt::u8;
+using qt::u32;
+using qt::u8;
 
-using ov_mat_t = meza::view::ov_matrix<qt::u8, std::string, std::string>;
+using ov_mat_t = meza::view::ov_matrix<u8, std::string, std::string>;
 
-// ---
-//
-// ---
+// --------------
+// helper structs
+// --------------
 
 enum comparison_op : qt::u8 {
-	SUM,
-	XOR,
+	sum,
+	bitwise_xor,
+};
+
+enum class pool_region : qt::u8 {
+	Reference,
+	Filter,
+	Xor,
 };
 
 struct rov_mat_set {
@@ -61,6 +70,8 @@ struct rov_mat_set {
 	}
 };
 
+using comparison_matrices = rov_mat_set;
+
 template <typename T>
 void print_ptr(std::ostream &os, T *ptr)
 {
@@ -68,12 +79,34 @@ void print_ptr(std::ostream &os, T *ptr)
 	   << std::dec << "\n";
 }
 
-struct pool_split {
+/**
+ * the starting offsets for each region of the pool
+ */
+struct partition_offsets {
+	std::size_t ref_start = 0;
+	std::size_t filter_start = 0;
+	std::size_t xor_start = 0;
+
+	friend std::ostream &operator<<(std::ostream &os,
+					const partition_offsets &po)
+	{
+		os << "PoolOffsets {ref_start= " << po.ref_start
+		   << ", filter_start= " << po.filter_start
+		   << ", xor_start= " << po.xor_start << "}";
+		return os;
+	}
+};
+
+/**
+ * the number of elements for each region of the pool
+ */
+struct partition_sizes {
 	qt::u32 ref_len;
 	qt::u32 filter_len;
 	qt::u32 xor_len;
 
-	friend std::ostream &operator<<(std::ostream &os, const pool_split &ps)
+	friend std::ostream &operator<<(std::ostream &os,
+					const partition_sizes &ps)
 	{
 		os << "PoolSplit {ref_len= " << ps.ref_len
 		   << ", filter_len= " << ps.filter_len
@@ -82,24 +115,19 @@ struct pool_split {
 	}
 };
 
-struct usage {
+struct partition_usage {
 	std::size_t ref_used;
 	std::size_t filter_used;
 	std::size_t xor_used;
 
-	friend std::ostream &operator<<(std::ostream &os, const usage &u)
+	friend std::ostream &operator<<(std::ostream &os,
+					const partition_usage &u)
 	{
 		os << "Usage {ref_used= " << u.ref_used
 		   << ", filter_used= " << u.filter_used
 		   << ", xor_used= " << u.xor_used << "}";
 		return os;
 	}
-};
-
-enum class pool_region : qt::u8 {
-	Reference,
-	Filter,
-	Xor,
 };
 
 /**
@@ -144,9 +172,9 @@ private:
 	T *h_haps_sum_store = nullptr;
 	T *d_haps_sum_store = nullptr;
 
-	// ----------------
-	// helper functions
-	// ----------------
+	// ------------------------
+	// private helper functions
+	// ------------------------
 
 	static size_t required_elements(std::size_t I, std::size_t J, layout lo)
 	{
@@ -166,7 +194,7 @@ private:
 		return 0;
 	}
 
-	[[nodiscard]] pool_split default_lens() const
+	[[nodiscard]] partition_sizes default_lens() const
 	{
 		std::size_t ref_len = capacity / 3;
 		std::size_t filter_len = capacity / 3;
@@ -178,13 +206,13 @@ private:
 
 	void cuda_setup_haps_xor()
 	{
-		std::size_t exp_bytes =
-			50 * 1024 * 1024; // we want 50MiB of u8s
+		std::size_t default_bytes = 50; // we want 50MiB of u8s
+		std::size_t exp_bytes = default_bytes * 1024 * 1024;
 		cudaError_t e;
 
-		// ---------------------------
+		// --------------------------------
 		// allocate device mem for haps xor
-		// ---------------------------
+		// --------------------------------
 		e = cudaMalloc((void **)&d_haps_xor_store, exp_bytes);
 		if (e != cudaSuccess)
 			throw std::runtime_error(cudaGetErrorString(e));
@@ -194,9 +222,9 @@ private:
 		if (e != cudaSuccess)
 			throw std::runtime_error(cudaGetErrorString(e));
 
-		// ---------------------------
+		// --------------------------------
 		// allocate device mem for haps sum
-		// ---------------------------
+		// --------------------------------
 		e = cudaMalloc((void **)&d_haps_sum_store, exp_bytes);
 		if (e != cudaSuccess)
 			throw std::runtime_error(cudaGetErrorString(e));
@@ -207,6 +235,104 @@ private:
 	}
 
 public:
+	// -----------------------
+	// public helper functions
+	// -----------------------
+
+	[[nodiscard]] partition_offsets default_offsets() const
+	{
+		partition_sizes ps = default_lens();
+		auto [ref_len, filter_len, xor_len] = ps;
+
+		partition_offsets po;
+		po.ref_start = 0;
+		po.filter_start = po.ref_start + ref_len;
+		po.xor_start = po.filter_start + filter_len;
+
+		return po;
+	}
+
+	/**
+	 * reset the pool by moving the head back to the beginning
+	 * Note: this does not actually free any memory, but allows us
+	 * to reuse the existing storage for new matrices. The caller is
+	 * responsible for ensuring that any matrices allocated from the
+	 * pool are no longer in use before calling reset.
+	 */
+	partition_sizes reset()
+	{
+		partition_sizes ps = default_lens();
+		auto [ref_len, filter_len, xor_len] = ps;
+
+		ref_start = 0;
+		filter_start = ref_start + ref_len;
+		xor_start = filter_start + filter_len;
+
+		head_ref = ref_start;
+		head_filter = filter_start;
+		head_xor = xor_start;
+
+		return ps;
+	}
+
+	void clear()
+	{
+		// overwrite with zeros for safety/debugging
+		// auto [ref_used, filter_used, xor_used]this->used();
+		std::fill(host_storage, host_storage + capacity, T{});
+		std::size_t exp_bytes = 50 * 1024 * 1024; // we want 5MiB of u8s
+		std::fill(h_haps_xor_store, h_haps_xor_store + exp_bytes, T{});
+		std::fill(h_haps_sum_store, h_haps_sum_store + exp_bytes, T{});
+
+		reset();
+	}
+
+	[[nodiscard]] partition_usage usage_split()
+	{
+		std::size_t ref_len = capacity / 3;
+		std::size_t filter_len = capacity / 3;
+		std::size_t xor_len = capacity - ref_len - filter_len;
+
+		return {ref_len, filter_len, xor_len};
+	}
+
+	/**
+	 * returns the number of elements used in each region of the pool
+	 */
+	[[nodiscard]] partition_usage used() const
+	{
+		return {
+			head_ref - ref_start,	    //
+			head_filter - filter_start, //
+			head_xor - xor_start	    //
+		};
+	}
+
+	[[nodiscard]] size_t free() const
+	{
+		return capacity - used();
+	}
+
+	[[nodiscard]] bool empty() const
+	{
+		auto [exp_head_ref, exp_head_filter, exp_head_xor] =
+			default_offsets();
+
+		return head_ref == exp_head_ref &&
+		       head_filter == exp_head_filter &&
+		       head_xor == exp_head_xor;
+	}
+
+	[[nodiscard]] bool is_full()
+	{
+		auto [ref_used, _, __] = this->used();
+		auto [ref_capacity, ___, ____] = this->usage_split();
+
+		// is full at 80 %
+		return (static_cast<double>(ref_used) /
+			static_cast<double>(ref_capacity)) >= 0.8;
+	}
+
 	// ------------
 	// constructors
 	// ------------
@@ -232,9 +358,9 @@ public:
 		};
 
 		size_t bytes = capacity * sizeof(T);
-		cudaError_t e = cudaMallocHost((void **)&host_storage, bytes);
-		if (e != cudaSuccess)
-			throw std::runtime_error(cudaGetErrorString(e));
+		cudaError_t err = cudaMallocHost((void **)&host_storage, bytes);
+		if (err != cudaSuccess)
+			throw std::runtime_error(cudaGetErrorString(err));
 
 		// bytes div by three
 		// allocate device storage for the pool
@@ -249,7 +375,7 @@ public:
 			alloc_cuda((void **)&d_filter_store, bytes1);
 			alloc_cuda((void **)&d_xor_store, bytes2);
 		}
-		catch (const std::runtime_error &e) {
+		catch (...) {
 			// Free any allocated resources before rethrowing
 			if (d_ref_store)
 				cudaFree(d_ref_store);
@@ -334,11 +460,12 @@ public:
 
 	static matrix_pool &init()
 	{
-		// 256 MB is a reasonable default size for the pool,
+		// 512 MB is a reasonable default size for the pool,
 		// also		static matrix_pool pool{1u << 28};
 		static constexpr std::size_t space_mb = 512;
 		static constexpr size_t BYTES = space_mb * 1024 * 1024;
-		static matrix_pool pool{BYTES / sizeof(T)};
+		std::size_t elements{BYTES / sizeof(T)};
+		static matrix_pool pool{elements};
 
 		pool.cuda_setup_haps_xor();
 
@@ -450,13 +577,34 @@ public:
 #endif
 	}
 
-	void xor_on_device(qt::u32 N)
+	//	void run_filter(u32 I, u32 J)
+	//	{
+	// #if MEZA_USE_CUDA
+	//		xor_on_device(I, J);
+	// #else
+	//		std::cerr << qs::format("{}{}", MODULE, __func__)
+	//			  << "operation on device is not "
+	//			     "implemented in non-CUDA mode\n";
+	// #endif
+	//	}
+
+	void run_filter(u32 N)
 	{
 #if MEZA_USE_CUDA
 		meza::cuda_ops::cuda_mat_xor(d_ref_store, d_filter_store,
 					     d_xor_store, N);
+#else
+		meza::cpu_ops::cpu_mat_xor(ref_start, filter_start, xor_start,
+					   N);
 #endif
 	}
+
+	// void xor_on_device(qt::u32 N)
+	//	{
+	// #if MEZA_USE_CUDA
+	//		meza::cuda_ops::cuda_mat_xor(d_ref_store,
+	// d_filter_store, d_xor_store, N); #endif
+	//	}
 
 	[[nodiscard]]
 	T *get_haps_xor()
@@ -594,19 +742,8 @@ public:
 		hap_sum_gpu(pool_off, len, col_shift, res_shift, stream);
 		// #if CONVO_USE_CUDA
 		//		hap_sum_gpu(pool_off, len, col_shift,
-		// res_shift); #else		hap_xor_cpu(pool_off, len,
-		// col_shift, res_shift); #endif
-	}
-
-	void run_filter(u32 I, u32 J)
-	{
-#if MEZA_USE_CUDA
-		xor_on_device(I, J);
-#else
-		std::cerr << qs::format("{}{}", MODULE, __func__)
-			  << "operation on device is not "
-			     "implemented in non-CUDA mode\n";
-#endif
+		// res_shift); #else		hap_xor_cpu(pool_off,
+		// len, col_shift, res_shift); #endif
 	}
 
 	void copy_to_host_thirds(pool_region region, cudaStream_t stream = 0)
@@ -640,9 +777,10 @@ public:
 
 		if (region == pool_region::Xor && used_xor) {
 			std::size_t bytes = used_xor * sizeof(T);
-			// std::cerr << "copying " << used_xor << " " << bytes
-			//	  << " bytes from device to host for Xor "
-			//	     "region\n";
+			// std::cerr << "copying " << used_xor << " " <<
+			// bytes
+			//	  << " bytes from device to host for Xor
+			//"	     "region\n";
 			e = cudaMemcpyAsync(h_xor, d_xor_store, bytes,
 					    cudaMemcpyDeviceToHost, stream);
 			if (e != cudaSuccess)
@@ -660,82 +798,9 @@ public:
 #endif
 	}
 
-	/**
-	 * reset the pool by moving the head back to the beginning
-	 * Note: this does not actually free any memory, but allows us to reuse
-	 * the existing storage for new matrices. The caller is responsible for
-	 * ensuring that any matrices allocated from the pool are no longer in
-	 * use before calling reset.
-	 */
-	pool_split reset()
-	{
-		pool_split ps = default_lens();
-		auto [ref_len, filter_len, xor_len] = ps;
-
-		ref_start = 0;
-		filter_start = ref_start + ref_len;
-		xor_start = filter_start + filter_len;
-
-		head_ref = ref_start;
-		head_filter = filter_start;
-		head_xor = xor_start;
-
-		return ps;
-	}
-
-	void clear()
-	{
-		// overwrite with zeros for safety/debugging
-		// auto [ref_used, filter_used, xor_used]this->used();
-		std::fill(host_storage, host_storage + capacity, T{});
-		std::size_t exp_bytes = 50 * 1024 * 1024; // we want 5MiB of u8s
-		std::fill(h_haps_xor_store, h_haps_xor_store + exp_bytes, T{});
-		std::fill(h_haps_sum_store, h_haps_sum_store + exp_bytes, T{});
-
-		reset();
-	}
-
 	// -------
 	// getters
 	// -------
-
-	[[nodiscard]] bool empty() const
-	{
-		return head_ref == 0 && head_filter == 0 && head_xor == 0;
-	}
-
-	[[nodiscard]] usage usage_split()
-	{
-		std::size_t ref_len = capacity / 3;
-		std::size_t filter_len = capacity / 3;
-		std::size_t xor_len = capacity - ref_len - filter_len;
-
-		return {ref_len, filter_len, xor_len};
-	}
-
-	[[nodiscard]] usage used() const
-	{
-		return {
-			head_ref - ref_start,	    //
-			head_filter - filter_start, //
-			head_xor - xor_start	    //
-		};
-	}
-
-	[[nodiscard]] size_t free() const
-	{
-		return capacity - used();
-	}
-
-	[[nodiscard]] bool is_full()
-	{
-		auto [ref_used, _, __] = this->used();
-		auto [ref_capacity, ___, ____] = this->usage_split();
-
-		// is full at 80 %
-		return (static_cast<double>(ref_used) /
-			static_cast<double>(ref_capacity)) >= 0.8;
-	}
 
 	void dbg_print(std::ostream &os) const
 	{
@@ -764,283 +829,305 @@ public:
 	}
 };
 
-/**
- * haplotype comparison matrix
- *
- *
- * a square matrix
- *
- * stores from diagonal 1 upwards
- */
-struct hap_comp_matrix {
-private:
-	const ov_mat_t &filter;
-	qt::u32 pool_offset;
+// /**
+//  * haplotype comparison matrix
+//  *
+//  *
+//  * a square matrix
+//  *
+//  * stores from diagonal 1 upwards
+//  */
+// struct hap_comp_matrix {
+// private:
+//	// a reference to the filter matrix
+//	const ov_mat_t &filter;
 
-	// the number of rows and cols in the hap comp matrix
-	qt::u32 H; // number of haplotypes (rows in the filter matrix)
+//	// the offset in the pool where the haplotype comparison matrix
+//	// starts.
+//	// This is used to calculate the correct offsets for
+//	// accessing the data in the pool when performing comparisons.
+//	qt::u32 pool_offset;
 
-	qt::u32 data_size_;
-	// qt::u8 *data_;
+//	// number of haplotypes
+//	// also no of rows in the filter matrix
+//	// also the number of rows and cols in the haplotype comparison matrix
+//	//
+//	// matrix the number of rows and cols in the hap comp matrix
+//	qt::u32 H;
 
-	qt::u8 *xor_data_;
-	qt::u8 *sum_data_;
+//	// the total number of elements in the haplotype comparison matrix
+//	// diagonal 1 upwards
+//	qt::u32 data_size_;
 
-	std::vector<qt::u32> xor_ps; // prefix sum
+//	// pointers to the data in the pool for the xor and sum results
+//	// these are used to store the results of the comparisons for each
+//	// pair of haplotypes. The data is stored in a flattened format,
+//	// where the comparisons for each pair of haplotypes are stored
+//	// contiguously in memory. The offsets for accessing the correct
+//	// data for each pair of haplotypes are calculated based on the
+//	// k value and the number of comparisons that come before it in the
+//	// upper triangle of the matrix.
+//	qt::u8 *xor_data_;
+//	qt::u8 *sum_data_;
 
-	// std::vector<qt::u32> sum_ps; // prefix sum
+//	std::vector<qt::u32> xor_ps; // prefix sum
 
-	// -----------------
-	// helpers (private)
-	// -----------------
-	/**
-	 * calculates the number of elements in the upper triangle of an n x n
-	 * matrix excluding the diagonal
-	 */
-	[[nodiscard]]
-	static qt::u32 triangle_number(qt::u32 n)
-	{
-		return n * (n + 1) / 2;
-	}
+//	// -----------------
+//	// helpers (private)
+//	// -----------------
+//	/**
+//	 * calculates the number of elements in the upper triangle of an
+//	 * n x n matrix excluding the diagonal
+//	 */
+//	[[nodiscard]]
+//	static qt::u32 triangle_number(qt::u32 n)
+//	{
+//		return n * (n + 1) / 2;
+//	}
 
-	/**
-	 * total filter size
-	 */
-	[[nodiscard]]
-	qt::u32 filter_size() const
-	{
-		return filter.rows() * filter.rows();
-	}
+//	/**
+//	 * total filter size
+//	 */
+//	[[nodiscard]]
+//	qt::u32 filter_size() const
+//	{
+//		return filter.rows() * filter.rows();
+//	}
 
-	[[nodiscard]]
-	qt::u32 k_len(qt::u32 k) const
-	{
-		return this->H - k;
-	}
+//	[[nodiscard]]
+//	qt::u32 k_len(qt::u32 k) const
+//	{
+//		return this->H - k;
+//	}
 
-	/**
-	 * calculates the expected size of the haplotype comparison matrix based
-	 * on the number of haplotypes (H) and the number of elements per row in
-	 * the filter matrix
-	 */
-	[[nodiscard]]
-	qt::u32 expected_size(const ov_mat_t &f, qt::u32 H)
-	{
-		qt::u32 exp_comparisons =
-			(k_len(1) * H) - triangle_number(H - 1);
-		qt::u32 elements_per_row = f.cols();
-		qt::u32 exp_size = exp_comparisons * elements_per_row;
+//	/**
+//	 * Ensure H is set before calling this fn
+//	 *
+//	 * calculates the expected size of the haplotype comparison
+//	 * matrix based on the number of haplotypes (H) and the number
+//	 * of elements per row in the filter matrix
+//	 *
+//	 */
+//	[[nodiscard]] qt::u32 expected_size(const ov_mat_t &f)
+//	{
+//		qt::u32 exp_comparisons =
+//			(k_len(1) * H) - triangle_number(H - 1);
+//		qt::u32 elements_per_row = f.cols();
+//		qt::u32 exp_size = exp_comparisons * elements_per_row;
 
-		// std::cerr << __func__ << " l_k(1) " << k_len(1)
-		//	  << " exp comparisons " << exp_comparisons
-		//	  << " elements per row " << elements_per_row
-		//	  << " exp size " << exp_size << "\n";
+//		// std::cerr << __func__ << " l_k(1) " << k_len(1)
+//		//	  << " exp comparisons " << exp_comparisons
+//		//	  << " elements per row " << elements_per_row
+//		//	  << " exp size " << exp_size << "\n";
 
-		return exp_size;
-	}
+//		return exp_size;
+//	}
 
-	/**
-	 * @brief Given k & k-offset, calculate the row & col pair in the
-	 * matrix
-	 */
-	static qt::up_t<qt::u32> comp_hap_pair(qt::u32 k, qt::u32 k_offset)
-	{
-		return {k_offset, k + k_offset}; // {h1, h2}
-	}
+//	/**
+//	 * @brief Given k & k-offset, calculate the row & col pair in
+//	 * the matrix
+//	 */
+//	static qt::up_t<qt::u32> comp_hap_pair(qt::u32 k, qt::u32 k_offset)
+//	{
+//		return {k_offset, k + k_offset}; // {h1, h2}
+//	}
 
-public:
-	// ------------
-	// constructors
-	// ------------
+// public:
+//	// ------------
+//	// constructors
+//	// ------------
 
-	// delete default constructor
-	hap_comp_matrix() = delete;
+//	// delete default constructor
+//	hap_comp_matrix() = delete;
 
-	hap_comp_matrix(qt::u8 *pool_xor_ptr, qt::u8 *pool_sum_ptr,
-			const ov_mat_t &filter, u32 pool_offset)
-	    : filter(filter), pool_offset(pool_offset), H(filter.rows()),
-	      data_size_(expected_size(filter, H)), xor_data_(pool_xor_ptr),
-	      sum_data_(pool_sum_ptr)
-	{}
+//	hap_comp_matrix(qt::u8 *pool_xor_ptr, qt::u8 *pool_sum_ptr,
+//			const ov_mat_t &filter, u32 pool_offset)
+//	    : filter(filter), pool_offset(pool_offset), H(filter.rows()),
+//	      data_size_(expected_size(filter)), xor_data_(pool_xor_ptr),
+//	      sum_data_(pool_sum_ptr)
+//	{}
 
-	// ----------------
-	// helpers (public)
-	// ----------------
+//	// ----------------
+//	// helpers (public)
+//	// ----------------
 
-	/**
-	 * calculates the offset in the haplotype comparison matrix for a given
-	 * k value. This is based on the number of comparisons that come before
-	 * the k-th diagonal in the upper triangle of the matrix.
-	 */
-	[[nodiscard]]
-	qt::u32 k_offset(qt::u32 k) const
-	{
-		return (k * k_len(1)) - triangle_number(k - 1) - (k_len(k));
-	}
+//	/**
+//	 * calculates the offset in the haplotype comparison matrix for
+//	 * a given k value. This is based on the number of comparisons
+//	 * that come before the k-th diagonal in the upper triangle of
+//	 * the matrix.
+//	 */
+//	[[nodiscard]]
+//	qt::u32 k_offset(qt::u32 k) const
+//	{
+//		return (k * k_len(1)) - triangle_number(k - 1) - (k_len(k));
+//	}
 
-	void run_in_haps(matrix_pool<qt::u8> &ov_pool, comparison_op op,
-			 cudaStream_t stream = 0)
-	{
-		qt::u32 J = filter.cols();
-		qt::u32 K = H;
+//	void run_in_haps(matrix_pool<qt::u8> &ov_pool, comparison_op op,
+//			 cudaStream_t stream = 0)
+//	{
+//		qt::u32 J = filter.cols();
+//		qt::u32 K = H;
 
-		// std::cerr << __func__ << " data size: " << data_size_ <<
-		// "\n";
+//		// std::cerr << __func__ << " data size: " << data_size_
+//		// <<
+//		// "\n";
 
-		for (qt::u32 k{1}; k < K; k++) {
-			qt::u32 col_shift = k * J;
-			qt::u32 xor_shift = k_offset(k) * J;
-			qt::u32 len = k_len(k) * J;
+//		for (qt::u32 k{1}; k < K; k++) {
+//			qt::u32 col_shift = k * J;
+//			qt::u32 xor_shift = k_offset(k) * J;
+//			qt::u32 len = k_len(k) * J;
 
-			// std::cerr << "k " << k << " pool offset " <<
-			// pool_offset
-			//	  << " k offset " << k_offset(k)
-			//	  << " col_shift " << col_shift << " xor_shift "
-			//	  << xor_shift << " len " << len << "\n";
+//			// std::cerr << "k " << k << " pool offset " <<
+//			// pool_offset
+//			//	  << " k offset " << k_offset(k)
+//			//	  << " col_shift " << col_shift << "
+//			// xor_shift "
+//			//	  << xor_shift << " len " << len <<
+//			//"\n";
 
-			// ov_pool.hap_xor_new(pool_offset, len, col_shift,
-			//		    xor_shift);
+//			// ov_pool.hap_xor_new(pool_offset, len,
+//			// col_shift,
+//			//		    xor_shift);
 
-			if (op == comparison_op::XOR)
-				ov_pool.haps_xor(pool_offset, len, col_shift,
-						 xor_shift, stream);
-			else if (op == comparison_op::SUM)
-				ov_pool.hap_sum(pool_offset, len, col_shift,
-						xor_shift, stream);
-		}
+//			if (op == comparison_op::bitwise_xor)
+//				ov_pool.haps_xor(pool_offset, len, col_shift,
+//						 xor_shift, stream);
+//			else if (op == comparison_op::sum)
+//				ov_pool.hap_sum(pool_offset, len, col_shift,
+//						xor_shift, stream);
+//		}
 
-		if (op == comparison_op::XOR)
-			ov_pool.copy_haps_xor_to_host(data_size_);
-		else if (op == comparison_op::SUM)
-			ov_pool.copy_haps_sum_to_host(data_size_);
+//		if (op == comparison_op::bitwise_xor)
+//			ov_pool.copy_haps_xor_to_host(data_size_);
+//		else if (op == comparison_op::sum)
+//			ov_pool.copy_haps_sum_to_host(data_size_);
 
-		ov_pool.sync_device(stream); // TODO: don't do this in prod
+//		ov_pool.sync_device(stream); // TODO: don't do this in prod
 
-		if (op == comparison_op::SUM)
-			return;
+//		if (op == comparison_op::sum)
+//			return;
 
-		xor_ps.assign(xor_data_, xor_data_ + data_size_);
+//		xor_ps.assign(xor_data_, xor_data_ + data_size_);
 
-		meza::cuda_ops::prefix_sum(xor_ps.data(), data_size_);
-	}
+//		meza::cuda_ops::prefix_sum(xor_ps.data(), data_size_);
+//	}
 
-	qt::op_t<std::set<qt::up_t<qt::u32>>> explore_pairs()
-	{
-		std::set<qt::up_t<qt::u32>> matches;
-		std::set<qt::up_t<qt::u32>> mismatches;
+//	qt::op_t<std::set<qt::up_t<qt::u32>>> explore_pairs()
+//	{
+//		std::set<qt::up_t<qt::u32>> matches;
+//		std::set<qt::up_t<qt::u32>> mismatches;
 
-		auto no_inc = [&](qt::u32 start, qt::u32 end) -> bool
-		{
-			if (start == 0)
-				return xor_ps[end] == 0;
+//		auto no_inc = [&](qt::u32 start, qt::u32 end) -> bool
+//		{
+//			if (start == 0)
+//				return xor_ps[end] == 0;
 
-			// start > 0
-			start--;
-			return (xor_ps[end] - xor_ps[start]) == 0;
-		};
+//			// start > 0
+//			start--;
+//			return (xor_ps[end] - xor_ps[start]) == 0;
+//		};
 
-		qt::u32 J = filter.cols();
-		qt::u32 K = H;
-		for (qt::u32 k{1}; k < K; k++) {
-			qt::u32 k_len = this->k_len(k);
-			for (qt::u32 k_off{}; k_off < k_len; k_off++) {
-				auto [h1, h2] = comp_hap_pair(k, k_off);
+//		qt::u32 J = filter.cols();
+//		qt::u32 K = H;
+//		for (qt::u32 k{1}; k < K; k++) {
+//			qt::u32 k_len = this->k_len(k);
+//			for (qt::u32 k_off{}; k_off < k_len; k_off++) {
+//				auto [h1, h2] = comp_hap_pair(k, k_off);
 
-				if (filter.base().is_row_blank(h1) ||
-				    filter.base().is_row_blank(h2)) {
-					continue;
-				}
+//				if (filter.base().is_row_blank(h1) ||
+//				    filter.base().is_row_blank(h2)) {
+//					continue;
+//				}
 
-				qt::u32 start = (k_offset(k) + k_off) * J;
-				qt::u32 end = (start + J) - 1;
+//				qt::u32 start = (k_offset(k) + k_off) * J;
+//				qt::u32 end = (start + J) - 1;
 
-				if (no_inc(start, end))
-					matches.insert({h1, h2});
-				else
-					mismatches.insert({h1, h2});
-			}
-		}
+//				if (no_inc(start, end))
+//					matches.insert({h1, h2});
+//				else
+//					mismatches.insert({h1, h2});
+//			}
+//		}
 
-		return {matches, mismatches};
-	}
+//		return {matches, mismatches};
+//	}
 
-	std::set<qt::up_t<qt::u32>> find_reversals()
-	{
-		std::set<qt::up_t<qt::u32>> reversals;
+//	std::set<qt::up_t<qt::u32>> find_reversals()
+//	{
+//		std::set<qt::up_t<qt::u32>> reversals;
 
-		// std::cerr << __func__ << " sum data:\n";
-		// for (qt::u32 i{}; i < data_size_; i++)
-		//	std::cerr << static_cast<u32>(sum_data_[i]) << ", ";
-		// std::cerr << "\n";
+//		// std::cerr << __func__ << " sum data:\n";
+//		// for (qt::u32 i{}; i < data_size_; i++)
+//		//	std::cerr << static_cast<u32>(sum_data_[i]) <<
+//		//", ";
+//		// std::cerr << "\n";
 
-		std::vector<qt::u32> mask(data_size_, 0);
-		for (qt::u32 i{}; i < data_size_; i++)
-			if (sum_data_[i] == 1 || sum_data_[i] == 2)
-				mask[i] = sum_data_[i];
+//		std::vector<qt::u32> mask(data_size_, 0);
+//		for (qt::u32 i{}; i < data_size_; i++)
+//			if (sum_data_[i] == 1 || sum_data_[i] == 2)
+//				mask[i] = sum_data_[i];
 
-		meza::cuda_ops::prefix_sum(mask.data(), data_size_);
+//		meza::cuda_ops::prefix_sum(mask.data(), data_size_);
 
-		// Precompute the `presence` array
-		// - tracks whether `1` or `2` exist up to each index
-		std::vector<qt::u32> presence(data_size_, 0);
-		for (qt::u32 i{}; i < data_size_; i++)
-			presence[i] = (i > 0 ? presence[i - 1] : 0) +
-				      (sum_data_[i] == 1 || sum_data_[i] == 2);
+//		// Precompute the `presence` array
+//		// - tracks whether `1` or `2` exist up to each index
+//		std::vector<qt::u32> presence(data_size_, 0);
+//		for (qt::u32 i{}; i < data_size_; i++)
+//			presence[i] = (i > 0 ? presence[i - 1] : 0) +
+//				      (sum_data_[i] == 1 || sum_data_[i] == 2);
 
-		// Lambda for the range check
-		auto no_inc = [&mask, &presence](qt::u32 start,
-						 qt::u32 end) -> bool
-		{
-			if (start > 0) {
-				// Check if prefix sum is constant in range and
-				// `1`/`2` exists
-				return (mask[end] - mask[start - 1]) == 0 &&
-				       (presence[end] - presence[start - 1]) >
-					       0;
-			}
-			else {
-				// Special case when start is 0
-				return (mask[end] == 0) && presence[end] > 0;
-			}
-		};
+//		// Lambda for the range check
+//		auto no_inc = [&mask, &presence](qt::u32 start,
+//						 qt::u32 end) -> bool
+//		{
+//			if (start > 0) {
+//				// Check if prefix sum is constant in
+//				// range and `1`/`2` exists
+//				return (mask[end] - mask[start - 1]) == 0 &&
+//				       (presence[end] - presence[start - 1]) >
+//					       0;
+//			}
+//			else {
+//				// Special case when start is 0
+//				return (mask[end] == 0) && presence[end] > 0;
+//			}
+//		};
 
-		// std::cerr << __func__ << " sum data summed:\n";
-		// for (qt::u32 i{}; i < data_size_; i++)
-		//	std::cerr << static_cast<u32>(mask[i]) << ", ";
-		// std::cerr << "\n";
+//		// std::cerr << __func__ << " sum data summed:\n";
+//		// for (qt::u32 i{}; i < data_size_; i++)
+//		//	std::cerr << static_cast<u32>(mask[i]) << ", ";
+//		// std::cerr << "\n";
 
-		qt::u32 J = filter.cols();
-		qt::u32 K = H;
-		for (qt::u32 k{1}; k < K; k++) {
-			qt::u32 k_len = this->k_len(k);
-			for (qt::u32 k_off{}; k_off < k_len; k_off++) {
-				auto [h1, h2] = comp_hap_pair(k, k_off);
+//		qt::u32 J = filter.cols();
+//		qt::u32 K = H;
+//		for (qt::u32 k{1}; k < K; k++) {
+//			qt::u32 k_len = this->k_len(k);
+//			for (qt::u32 k_off{}; k_off < k_len; k_off++) {
+//				auto [h1, h2] = comp_hap_pair(k, k_off);
 
-				if (filter.base().is_row_blank(h1) ||
-				    filter.base().is_row_blank(h2)) {
-					continue;
-				}
+//				if (filter.base().is_row_blank(h1) ||
+//				    filter.base().is_row_blank(h2)) {
+//					continue;
+//				}
 
-				qt::u32 start = (k_offset(k) + k_off) * J;
-				qt::u32 end = (start + J) - 1;
+//				qt::u32 start = (k_offset(k) + k_off) * J;
+//				qt::u32 end = (start + J) - 1;
 
-				if (no_inc(start, end))
-					reversals.insert({h1, h2});
-			}
-		}
+//				if (no_inc(start, end))
+//					reversals.insert({h1, h2});
+//			}
+//		}
 
-		return reversals;
-	}
-};
+//		return reversals;
+//	}
+// };
 
-struct haps_comp_set {
-	std::set<qt::up_t<qt::u32>> reversals;
-	std::set<qt::up_t<qt::u32>> matches;
-	std::set<qt::up_t<qt::u32>> mismatches;
-};
-
-haps_comp_set handle_set(matrix_pool<qt::u8> &ov_pool,
-			 const ov_mat_t &filter_mat, qt::u32 pool_offset);
+// struct haps_comp_set {
+//	std::set<qt::up_t<qt::u32>> reversals;
+//	std::set<qt::up_t<qt::u32>> matches;
+//	std::set<qt::up_t<qt::u32>> mismatches;
+// };
 
 } // namespace meza::pool::split
 #endif // MZ_MATRIX_POOL_SPLIT_HPP
