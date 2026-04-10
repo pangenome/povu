@@ -1,7 +1,9 @@
 #include <set>
 #include <vector>
 
-#include <meza/pool/split.hpp> // for matrix_pool
+#include <meza/pool/pool.hpp> // for pool
+
+// #include <meza/pool/split.hpp> // for matrix_pool
 
 #include "ita/traversals/at_matrix.hpp" // for matrix_pool
 #include "ita/traversals/untangle.hpp"	// for aln_chain, chain_link
@@ -20,6 +22,16 @@ using ita::traversals::untangle::aln_chain;
 using ita::traversals::untangle::chain_link;
 
 using meza::matrix::depth_matrix;
+
+using pool_t = meza::pool::pool<qt::u8, qt::u32>;
+
+constexpr meza::pool::pool_region region_ref =
+	meza::pool::pool_region::Reference;
+
+constexpr meza::pool::pool_region region_filter =
+	meza::pool::pool_region::Filter;
+
+constexpr meza::pool::pool_region region_xor = meza::pool::pool_region::Xor;
 
 void populate_ref(const bd::VG &g, const ir::RoV *rov, pt::u32 h_idx,
 		  const allele_traversal &at, const pt::u32 I, const pt::u32 J,
@@ -72,8 +84,7 @@ void populate_filter(const bd::VG &g, const ir::RoV *rov, pt::u32 h_idx,
 }
 
 void from_tangled(const bd::VG &g, const ir::RoV *rov,
-		  const std::set<pt::u32> &to_call_ref_ids,
-		  meza::pool::split::matrix_pool<qt::u8> &ov_pool,
+		  const std::set<pt::u32> &to_call_ref_ids, pool_t &p,
 		  const aln_chain &ac, rov_job_batch &batch)
 {
 	const std::vector<itinerary> &hap_itns = ac.hap_itns;
@@ -99,10 +110,9 @@ void from_tangled(const bd::VG &g, const ir::RoV *rov,
 			// that is linked to the ref hap in the current loop
 			// -----------------------------------------------------
 
-			auto ref_mat = ov_pool.alloc_ov_matrix<std::string,
-							       std::string>(
-				I, J,
-				meza::pool::split::pool_region::Reference);
+			auto ref_mat =
+				p.alloc_ov_matrix<std::string, std::string>(
+					I, J, region_ref);
 
 			const allele_traversal &ref_at =
 				hap_itns.at(ref_h_idx).at(ref_loop_no);
@@ -116,9 +126,9 @@ void from_tangled(const bd::VG &g, const ir::RoV *rov,
 			//
 			// -----------------------------------------------------
 
-			auto filter_mat = ov_pool.alloc_ov_matrix<std::string,
-								  std::string>(
-				I, J, meza::pool::split::pool_region::Filter);
+			auto filter_mat =
+				p.alloc_ov_matrix<std::string, std::string>(
+					I, J, region_filter);
 
 			for (qt::u32 alt_h_idx{}; alt_h_idx < I; alt_h_idx++) {
 
@@ -151,9 +161,9 @@ void from_tangled(const bd::VG &g, const ir::RoV *rov,
 			//
 			// -----------------------------------------------------
 
-			auto xor_mat = ov_pool.alloc_ov_matrix<std::string,
-							       std::string>(
-				I, J, meza::pool::split::pool_region::Xor);
+			auto xor_mat =
+				p.alloc_ov_matrix<std::string, std::string>(
+					I, J, region_xor);
 
 			// -----------------------------------------------------
 			//

@@ -6,29 +6,31 @@
 #include <iostream>
 #include <vector>
 
+#include <quilt/types.hpp>
+
 #if MEZA_USE_CUDA
 #include <cuda_runtime.h>
 #endif
 
-#include "quilt/types.hpp"
+#include "meza/pool/hap_comp.hpp"
+#include "meza/pool/matrix_pool_cuda.cuh"
 
 namespace meza::cuda_ops
 {
-using qt::u32;
-using qt::u8;
+void cuda_mat_xor(const qt::u8 *d_a, const qt::u8 *d_b, qt::u8 *d_c, qt::u32 N);
 
-void cuda_mat_xor(const qt::u8 *a, const qt::u8 *b, qt::u8 *c, qt::u32 N);
+void cuda_haps_sum(const qt::u8 *d_f, qt::u8 *d_out, qt::u32 mat_off,
+		   qt::u32 col_shift, qt::u32 res_shift, qt::u32 len,
+		   cudaStream_t stream);
 
-void cuda_haps_xor(const u8 *d_f, u8 *d_out, u32 mat_off, u32 col_shift,
-		   u32 res_shift, u32 len, cudaStream_t stream);
-
-void cuda_haps_sum(const u8 *d_f, u8 *d_out, u32 mat_off, u32 col_shift,
-		   u32 res_shift, u32 len, cudaStream_t stream);
+void cuda_haps_xor(const qt::u8 *d_f, qt::u8 *d_out, qt::u32 mat_off,
+		   qt::u32 col_shift, qt::u32 res_shift, qt::u32 len,
+		   cudaStream_t stream);
 
 template <typename T>
-void cpu_prefix_sum(T *v, size_t len)
+void cpu_prefix_sum(T *v, std::size_t len)
 {
-	for (size_t i = 1; i < len; ++i)
+	for (std::size_t i = 1; i < len; ++i)
 		v[i] = v[i] + v[i - 1];
 }
 

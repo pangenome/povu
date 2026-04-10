@@ -2,7 +2,6 @@
 #define MZ_MATRIX_POOL_JOINT_HPP
 
 #include <cstddef>
-#include <driver_types.h>
 #include <vector>
 #include <vector_types.h>
 
@@ -131,9 +130,14 @@ public:
 	// modifiers
 	// ---------
 
-	void reset()
+	void clear()
 	{
 		std::fill(data_.begin(), data_.end(), T{});
+		reset();
+	}
+
+	void reset()
+	{
 		free_ = data_.size();
 		used_ = 0;
 		start_ = 0;

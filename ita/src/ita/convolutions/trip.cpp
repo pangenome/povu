@@ -5,8 +5,9 @@
 #include <set>	     // for std::set
 #include <vector>    // for std::vector
 
-#include <liteseq/refs.h>      // for ref_walk, ref
-#include <meza/pool/split.hpp> // for matrix_pool
+#include <liteseq/refs.h>		  // for ref_walk, ref
+#include <meza/pool/hap_comp.hpp>	  // for haps_comp_set
+#include <meza/pool/split_pool_types.hpp> // for ov_mat_t
 
 #include "ita/traversals/at_matrix.hpp" // for matrix_pool, rov_matrix_set
 #include "quilt/types.hpp"
@@ -14,9 +15,10 @@
 namespace ita::trip
 {
 namespace lq = liteseq;
-using meza::pool::split::ov_mat_t;
+using meza::pool::ov_mat_t;
 using mat_context_t = qt::op_t<qt::u32>;
 using graph_context_t = qt::op_t<qt::u32>;
+using meza::pool::hap_comp::haps_comp_set;
 
 // map of context to the set of hap indexes with that context as a variant
 using cxt_idx_t = std::map<mat_context_t, std::set<pt::u32>>;
@@ -303,7 +305,7 @@ gen_trip(const bd::VG &g, const ir::RoV *rov, bool is_tangled,
 	 const std::vector<ita::traversals::traversals::itinerary> &hap_itns,
 	 const ita::at_matrix::mat3 &mat_set,
 	 const std::vector<pt::u32> &sorted_vertices,
-	 const meza::pool::hap_comp::haps_comp_set &hap_cmp)
+	 const haps_comp_set &hap_cmp)
 {
 	auto tk = ia::trek::create_new(rov, g.get_hap_count(), is_tangled);
 

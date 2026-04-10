@@ -169,6 +169,7 @@ set(EXAMPLES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/examples)
 ADD_LIBRARY(meza
   ${MEZA_SOURCES_DIR}/ops/ops.cpp
   ${MEZA_SOURCES_DIR}/pool/hap_comp.cpp
+  ${MEZA_SOURCES_DIR}/pool/pool_ops.cpp
   ${MEZA_SOURCES_DIR}/owned/matrix.cpp
 )
 

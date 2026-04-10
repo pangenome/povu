@@ -1,18 +1,29 @@
 #include <utility>
 
-#include <liteseq/refs.h>      // for ref_walk, ref
-#include <meza/pool/split.hpp> // for matrix_pool
+#include <liteseq/refs.h>	     // for ref_walk, ref
+#include <meza/pool/matrix_pool.hpp> // for matrix_pool
 #include <quilt/types.hpp>
 
 #include "ita/traversals/at_matrix.hpp"	   //
 #include "ita/traversals/depth_matrix.hpp" // for depth_matrix, comp_depth_matrix
 #include "ita/variation/rov.hpp"	   // for RoV
-#include "povu/common/core.hpp"		   // for pt
+#include "meza/pool/split_pool_types.hpp"
+#include "povu/common/core.hpp" // for pt
+
+#include <meza/pool/pool.hpp> // for pool
 
 namespace ita::at_matrix::no_tangle
 {
 namespace lq = liteseq;
 using meza::matrix::depth_matrix;
+
+constexpr meza::pool::pool_region region_ref =
+	meza::pool::pool_region::Reference;
+
+constexpr meza::pool::pool_region region_filter =
+	meza::pool::pool_region::Filter;
+
+constexpr meza::pool::pool_region region_xor = meza::pool::pool_region::Xor;
 
 void populate_filter2(const ita::depth_matrix::depth_matrix &dm,
 		      ov_mat_t &filter_mat)
@@ -35,8 +46,7 @@ void populate_ref2(const qt::u32 I, const qt::u32 J, qt::u32 ref_i,
 
 void from_no_tangle(const ir::RoV *rov,
 		    const std::set<pt::u32> &to_call_ref_ids,
-		    const ita::depth_matrix::depth_matrix dm,
-		    meza::pool::split::matrix_pool<qt::u8> &ov_pool,
+		    const ita::depth_matrix::depth_matrix dm, pool_t &p,
 		    rov_job_batch &batch)
 {
 	qt::u32 I = dm.rows();
@@ -45,18 +55,14 @@ void from_no_tangle(const ir::RoV *rov,
 	rov_job j{rov, I, {}};
 
 	for (const pt::u32 ref_h_idx : to_call_ref_ids) {
-		auto ref_mat =
-			ov_pool.alloc_ov_matrix<std::string, std::string>(
-				I, J,
-				meza::pool::split::pool_region::Reference);
+		auto ref_mat = p.alloc_ov_matrix<std::string, std::string>(
+			I, J, region_ref);
 
-		auto filter_mat =
-			ov_pool.alloc_ov_matrix<std::string, std::string>(
-				I, J, meza::pool::split::pool_region::Filter);
+		auto filter_mat = p.alloc_ov_matrix<std::string, std::string>(
+			I, J, region_filter);
 
-		auto xor_mat =
-			ov_pool.alloc_ov_matrix<std::string, std::string>(
-				I, J, meza::pool::split::pool_region::Xor);
+		auto xor_mat = p.alloc_ov_matrix<std::string, std::string>(
+			I, J, region_xor);
 
 		qt::u32 filter_size = filter_mat.base().size();
 

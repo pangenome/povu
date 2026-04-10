@@ -5,6 +5,8 @@
 #include <liteseq/refs.h>      // for ref_walk, ref
 #include <meza/pool/joint.hpp> // for joint_pool
 
+#include <meza/pool/pool.hpp> // for pool
+
 #include "ita/traversals/at_matrix_no_tangle.hpp" // for no_tangle
 #include "ita/variation/rov.hpp"		  // for RoV
 #include "povu/common/core.hpp"			  // for pt
@@ -13,13 +15,15 @@
 namespace ita::depth_matrix
 {
 
-depth_matrix comp_depth_matrix(const bd::VG &g, const ir::RoV *rov,
-			       meza::pool::joint::joint_pool<qt::u32> &dm_pool)
+depth_matrix comp_depth_matrix(const bd::VG &g, const ir::RoV *rov, pool_t &p)
 {
 	const pt::u32 I = g.get_hap_count();
 	const pt::u32 J = rov->get_vertex_count();
 
-	depth_matrix d_mat = depth_matrix(dm_pool, I, J);
+	// meza::pool::joint::full_view<qt::u32> dm_view =
+	//	p.alloc_depth_matrix(I, J);
+
+	depth_matrix d_mat = depth_matrix{p.alloc_depth_matrix(I, J)};
 
 	const std::vector<pt::u32> &sorted_vertices =
 		rov->get_sorted_vertices();

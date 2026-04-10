@@ -6,9 +6,8 @@
 #include <optional>  // for optional
 #include <utility>   // for move
 
-#include <meza/pool/split.hpp> // for matrix_poole
-
-#include <dynamo/dynamo.hpp> // for dynamic_interval_tree
+#include <dynamo/dynamo.hpp>  // for dynamic_interval_tree
+#include <meza/pool/pool.hpp> // for matrix_pool
 
 #include "ita/convolutions/convolutions.hpp" // for run_convs
 #include "ita/genomics/allele.hpp"	     // for Exp, comp_itineraries
@@ -19,9 +18,11 @@
 #include "povu/common/app.hpp"		     // for config
 #include "povu/common/core.hpp"		     // for pt, idx_t, id_t
 #include "povu/common/log.hpp"		     // for ERR
+#include "quilt/types.hpp"
 
 namespace ita::genomics
 {
+using pool_t = meza::pool::pool<qt::u8, qt::u32>;
 
 void find_inversions_new(const bd::VG &g,
 			 const std::set<pt::id_t> &to_call_ref_ids,
@@ -93,9 +94,7 @@ void find_inversions_new(const bd::VG &g,
 
 void comp_expeditions(const bd::VG &g, std::vector<ir::RoV> &all_rovs,
 		      pt::idx_t start, pt::idx_t count,
-		      const std::set<pt::id_t> &to_call_ref_ids,
-		      meza::pool::split::matrix_pool<qt::u8> &ov_pool,
-		      meza::pool::joint::joint_pool<qt::u32> &dm_pool,
+		      const std::set<pt::id_t> &to_call_ref_ids, pool_t &p,
 		      ita::at_matrix::rov_job_batch &batch,
 		      std::vector<ia::trek> &treks)
 {
@@ -105,11 +104,10 @@ void comp_expeditions(const bd::VG &g, std::vector<ir::RoV> &all_rovs,
 		bool drain = last;
 
 		const ir::RoV *rov = &all_rovs[i];
-		ita::convolutions::populate_trips(g, rov, to_call_ref_ids,
-						  dm_pool, ov_pool, batch,
-						  treks, drain);
+		ita::convolutions::populate_trips(g, rov, to_call_ref_ids, p,
+						  batch, treks, drain);
 
-		dm_pool.reset(); // reset depth matrix pool for next RoV
+		p.reset_depth_matrix(); // reset depth matrix pool for next RoV
 	}
 
 	return;
@@ -149,8 +147,13 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 	std::vector<ist::st> i_trees;
 	std::map<pt::u32, std::vector<ia::inv_slice>> inv_slices;
 
-	meza::pool::split::matrix_pool<qt::u8> &ov_pool =
-		meza::pool::split::matrix_pool<qt::u8>::init();
+	// meza::pool::split::matrix_pool<qt::u8> &ov_pool =
+	//	meza::pool::split::matrix_pool<qt::u8>::init();
+
+	auto p = meza::pool::pool<qt::u8, qt::u32>();
+
+	// auto ov_pool =
+	// meza::pool::matrix_pool<qt::u8>::create_from_megabytes();
 
 	// ov_pool.cuda_setup_haps_xor();
 	//  auto &ov_pool = meza::matrix_pool::matrix_pool<qt::u8>::init();
@@ -160,13 +163,13 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 	// 262144 u32 values are ~1M
 	// 1024 values of u32 are 1M
 	// 2,621,440 u32 values are ~10M
-	constexpr std::size_t target_bytes = 10ull * 1024 * 1024; // 10 MiB
-	constexpr std::size_t depth_matrix_pool_size =
-		target_bytes / sizeof(qt::u32);
+	// constexpr std::size_t target_bytes = 10ull * 1024 * 1024; // 10 MiB
+	// constexpr std::size_t depth_matrix_pool_size =
+	//	target_bytes / sizeof(qt::u32);
 
-	meza::pool::joint::joint_pool<qt::u32> dm_pool =
-		meza::pool::joint::joint_pool<qt::u32>::init(
-			depth_matrix_pool_size);
+	// meza::pool::joint::joint_pool<qt::u32> dm_pool =
+	//	meza::pool::joint::joint_pool<qt::u32>::init(
+	//		depth_matrix_pool_size);
 
 	ita::at_matrix::rov_job_batch batch;
 
@@ -180,8 +183,7 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 				INFO("\t{}/{}", chunk_num, total_chunks);
 
 			comp_expeditions(g, all_rovs, base, count,
-					 to_call_ref_ids, ov_pool, dm_pool,
-					 batch, treks);
+					 to_call_ref_ids, p, batch, treks);
 
 			iv::VcfRecIdx rs = iv::gen_vcf_records(
 				g, treks, i_trees, inv_slices);

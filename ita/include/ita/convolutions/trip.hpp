@@ -3,10 +3,11 @@
 
 #include <liteseq/refs.h>	  // for ref_walk, ref
 #include <meza/pool/hap_comp.hpp> // for haps_comp_set
-#include <meza/pool/split.hpp>	  // for matrix_pool
+// #include <meza/pool/split.hpp>	  // for matrix_pool
 
-#include "ita/traversals/at_matrix.hpp" // for matrix_pool, rov_matrix_set
-#include "quilt/types.hpp"		// for qt::u32
+#include "ita/traversals/at_matrix.hpp"	 // for matrix_pool, rov_matrix_set
+#include "ita/traversals/traversals.hpp" // for itinerary
+#include "quilt/types.hpp"		 // for qt::u32
 
 namespace ita::trip
 {

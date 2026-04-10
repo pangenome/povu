@@ -15,21 +15,24 @@
 namespace meza::pool::hap_comp
 {
 
-haps_comp_set handle_set(matrix_pool<qt::u8> &ov_pool,
-			 const ov_mat_t &filter_mat, qt::u32 pool_offset)
-{
-	hap_comp_matrix comp_mat{ov_pool.get_haps_xor(), ov_pool.get_haps_sum(),
-				 filter_mat, pool_offset};
+// haps_comp_set handle_set(matrix_pool<qt::u8> &ov_pool,
+//			 const ov_mat_t &filter_mat, qt::u32 pool_offset)
+// {
+//	// hap_comp_matrix comp_mat{ov_pool.get_haps_xor(),
+//	// ov_pool.get_haps_sum(),			 filter_mat,
+// pool_offset};
 
-	// TODO: parallelise the run_in_haps calls
-	comp_mat.run_in_haps(ov_pool, comparison_op::bitwise_xor);
-	comp_mat.run_in_haps(ov_pool, comparison_op::sum);
+//	// // TODO: parallelise the run_in_haps calls
+//	// comp_mat.run_in_haps(ov_pool, comparison_op::bitwise_xor);
+//	// comp_mat.run_in_haps(ov_pool, comparison_op::sum);
 
-	std::set<qt::up_t<qt::u32>> reversals = comp_mat.find_reversals();
+//	// std::set<qt::up_t<qt::u32>> reversals = comp_mat.find_reversals();
 
-	auto [matches, mismatches] = comp_mat.explore_pairs();
+//	// auto [matches, mismatches] = comp_mat.explore_pairs();
 
-	return {reversals, matches, mismatches};
-}
+//	// return {reversals, matches, mismatches};
+
+//	return {{}, {}, {}};
+// }
 
 } // namespace meza::pool::hap_comp

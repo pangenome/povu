@@ -5,10 +5,9 @@
 #include <set>
 #include <vector>
 
-#include <liteseq/refs.h>	  // for ref_walk, ref
-#include <meza/pool/hap_comp.hpp> // for hap_comp_matrix, haps_comp_set, handle_set
-#include <meza/pool/joint.hpp>	  // for joint_pool
-#include <meza/pool/split.hpp>	  // for matrix_pool
+#include <liteseq/refs.h> // for ref_walk, ref
+
+#include <meza/pool/pool.hpp> // for pool
 
 #include "ita/convolutions/trip.hpp"	   // for gen_trip
 #include "ita/genomics/allele.hpp"	   // for hap_slice, trek
@@ -22,24 +21,14 @@
 namespace ita::convolutions
 {
 namespace lq = liteseq;
+using meza::pool::hap_comp::haps_comp_set;
 
-void comp_conv(meza::pool::split::matrix_pool<qt::u8> &ov_pool, qt::u32 I,
-	       qt::u32 pool_j_offset)
-{
-	//  copy the pool to the device before launching the kernel
-	ov_pool.copy_to_device();
-
-	ov_pool.run_filter(pool_j_offset);
-
-	// copy the pool back to the host after the kernel has finished
-	ov_pool.copy_to_host_thirds(meza::pool::split::pool_region::Xor);
-}
+using pool_t = meza::pool::pool<qt::u8, qt::u32>;
 
 void process_mat3(
 	const bd::VG &g, const ir::RoV *rov, qt::u32 ref_h_idx,
 	const std::vector<ita::traversals::traversals::itinerary> &hap_itns,
-	const std::vector<ita::at_matrix::mat3_item> &ji,
-	meza::pool::split::matrix_pool<qt::u8> &ov_pool,
+	const std::vector<ita::at_matrix::mat3_item> &ji, pool_t &p,
 	std::vector<ia::trek> &treks)
 {
 	const std::vector<pt::u32> &sorted_vertices =
@@ -47,7 +36,7 @@ void process_mat3(
 
 	for (const ita::at_matrix::mat3_item &item : ji) {
 		const ita::at_matrix::mat3 &mat_set = item.mats;
-		const meza::pool::split::ov_mat_t &filter_mat = mat_set.filter;
+		const meza::pool::ov_mat_t &filter_mat = mat_set.filter;
 
 		if (filter_mat.base().is_row_blank(ref_h_idx))
 			continue;
@@ -58,9 +47,8 @@ void process_mat3(
 
 		const ita::at_matrix::hap2loop &h2l = mat_set.h2l;
 
-		const meza::pool::hap_comp::haps_comp_set &hap_cmp =
-			meza::pool::hap_comp::handle_set(ov_pool, filter_mat,
-							 pool_offset);
+		const haps_comp_set &hap_cmp =
+			p.handle_set(filter_mat, pool_offset);
 
 		std::optional<ia::trek> opt_tk = ita::trip::gen_trip(
 			g, rov, is_tangled, ref_h_idx, h2l, hap_itns, mat_set,
@@ -74,11 +62,10 @@ void process_mat3(
 }
 
 void process_batches(const bd::VG &g, const std::set<pt::u32> &to_call_ref_ids,
-		     meza::pool::split::matrix_pool<qt::u8> &ov_pool,
-		     ita::at_matrix::rov_job_batch &batch,
+		     pool_t &p, ita::at_matrix::rov_job_batch &batch,
 		     std::vector<ia::trek> &treks)
 {
-	comp_conv(ov_pool, g.get_hap_count(), batch.get_pool_j_offset());
+	p.run_convolutions(batch.get_pool_j_offset());
 
 	for (const ita::at_matrix::rov_job &job : batch.get_jobs()) {
 		const ir::RoV *rov = job.get_rov();
@@ -90,30 +77,28 @@ void process_batches(const bd::VG &g, const std::set<pt::u32> &to_call_ref_ids,
 			const std::vector<ita::at_matrix::mat3_item> &job_item =
 				job.get_items_for_ref2(ref_h_idx);
 
-			process_mat3(g, rov, ref_h_idx, hap_itns, job_item,
-				     ov_pool, treks);
+			process_mat3(g, rov, ref_h_idx, hap_itns, job_item, p,
+				     treks);
 		}
 	}
 
-	ov_pool.clear();
+	p.clear_split_pool();
 	batch.reset();
 }
 
 void populate_trips(const bd::VG &g, const ir::RoV *rov,
-		    const std::set<pt::u32> &to_call_ref_ids,
-		    meza::pool::joint::joint_pool<qt::u32> &dm_pool,
-		    meza::pool::split::matrix_pool<qt::u8> &ov_pool,
+		    const std::set<pt::u32> &to_call_ref_ids, pool_t &p,
 		    ita::at_matrix::rov_job_batch &batch,
 		    std::vector<ia::trek> &treks, bool drain)
 {
-	if (ov_pool.is_full() || drain)
-		process_batches(g, to_call_ref_ids, ov_pool, batch, treks);
+	if (p.is_full() || drain)
+		process_batches(g, to_call_ref_ids, p, batch, treks);
 
 	ita::depth_matrix::depth_matrix dm =
-		ita::depth_matrix::comp_depth_matrix(g, rov, dm_pool);
+		ita::depth_matrix::comp_depth_matrix(g, rov, p);
 
 	// loads data from the depth matrix into
-	ita::at_matrix::init_pool(g, rov, to_call_ref_ids, dm, ov_pool, batch);
+	ita::at_matrix::init_pool(g, rov, to_call_ref_ids, dm, p, batch);
 }
 
 } // namespace ita::convolutions

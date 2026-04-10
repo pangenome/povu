@@ -5,8 +5,9 @@
 #include <set>	  // for set
 #include <vector> // for vector
 
-#include <liteseq/refs.h>      // for ref_walk, ref
-#include <meza/pool/split.hpp> // for matrix_pool
+#include <liteseq/refs.h>		  // for ref_walk, ref
+#include <meza/pool/pool.hpp>		  // for pool
+#include <meza/pool/split_pool_types.hpp> // for ov_mat_t
 
 #include "ita/genomics/allele.hpp"	   // for hap_slice
 #include "ita/traversals/depth_matrix.hpp" // for depth_matrix
@@ -20,7 +21,8 @@
 
 namespace ita::at_matrix
 {
-using meza::pool::split::ov_mat_t;
+using meza::pool::ov_mat_t;
+using pool_t = meza::pool::pool<qt::u8, qt::u32>;
 
 struct hap2loop {
 private:
@@ -259,8 +261,7 @@ public:
 
 void init_pool(const bd::VG &g, const ir::RoV *rov,
 	       const std::set<pt::u32> &to_call_ref_ids,
-	       const ita::depth_matrix::depth_matrix &dm,
-	       meza::pool::split::matrix_pool<qt::u8> &ov_pool,
+	       const ita::depth_matrix::depth_matrix &dm, pool_t &p,
 	       rov_job_batch &batch);
 } // namespace ita::at_matrix
 #endif // ITA_AT_MATRIX_HPP

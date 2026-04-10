@@ -1,6 +1,6 @@
 #include "ita/traversals/at_matrix.hpp"
 
-#include <meza/pool/split.hpp> // for matrix_pool
+#include <meza/pool/pool.hpp> // for matrix_pool
 
 #include <liteseq/refs.h> // for ref_walk, ref
 
@@ -14,11 +14,11 @@
 
 namespace ita::at_matrix
 {
+using pool_t = meza::pool::pool<qt::u8, qt::u32>;
 
 void init_pool(const bd::VG &g, const ir::RoV *rov,
 	       const std::set<pt::u32> &to_call_ref_ids,
-	       const ita::depth_matrix::depth_matrix &dm,
-	       meza::pool::split::matrix_pool<qt::u8> &ov_pool,
+	       const ita::depth_matrix::depth_matrix &dm, pool_t &p,
 	       rov_job_batch &batch)
 {
 	if (dm.is_tangled()) {
@@ -26,11 +26,11 @@ void init_pool(const bd::VG &g, const ir::RoV *rov,
 			ita::traversals::untangle::untangle(g, to_call_ref_ids,
 							    *rov);
 		ita::at_matrix::tangled::from_tangled(g, rov, to_call_ref_ids,
-						      ov_pool, c, batch);
+						      p, c, batch);
 	}
 	else {
 		ita::at_matrix::no_tangle::from_no_tangle(rov, to_call_ref_ids,
-							  dm, ov_pool, batch);
+							  dm, p, batch);
 	}
 }
 
