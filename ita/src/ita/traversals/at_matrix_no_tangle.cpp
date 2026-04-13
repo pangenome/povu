@@ -1,16 +1,15 @@
 #include <utility>
 
-#include <liteseq/refs.h>	     // for ref_walk, ref
-#include <meza/pool/matrix_pool.hpp> // for matrix_pool
+#include <liteseq/refs.h> // for ref_walk, ref
+
 #include <quilt/types.hpp>
 
-#include "ita/traversals/at_matrix.hpp"	   //
+#include <meza/pool/pool.hpp> // for pool
+
+#include "ita/traversals/at_matrix.hpp" // for rov_job_batch, mat3, mat3_item, hap2loop
 #include "ita/traversals/depth_matrix.hpp" // for depth_matrix, comp_depth_matrix
 #include "ita/variation/rov.hpp"	   // for RoV
-#include "meza/pool/split_pool_types.hpp"
-#include "povu/common/core.hpp" // for pt
-
-#include <meza/pool/pool.hpp> // for pool
+#include "povu/common/core.hpp"		   // for pt
 
 namespace ita::at_matrix::no_tangle
 {

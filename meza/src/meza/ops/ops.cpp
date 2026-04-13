@@ -3,7 +3,7 @@
 #include <quilt/types.hpp>
 
 #include "meza/pool/hap_comp.hpp"	  // for haps_comp_set
-#include "meza/pool/matrix_pool.hpp"	  // for matrix_pool
+#include "meza/pool/split.hpp"		  // for matrix_pool
 #include "meza/pool/split_pool_types.hpp" // for ov_mat_t
 
 namespace meza::cpu_ops

@@ -8,7 +8,7 @@
 #include "quilt/types.hpp"
 
 #include "meza/pool/hap_comp.hpp"
-#include "meza/pool/matrix_pool_cuda.cuh"
+#include "meza/pool/split_cuda.cuh"
 #include "meza/pool/split_pool_types.hpp"
 
 namespace meza::cuda_ops

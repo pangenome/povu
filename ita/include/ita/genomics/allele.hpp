@@ -455,7 +455,7 @@ private:
 	rov_boundaries cxt_ = rov_boundaries::create_null(); // context
 	hap_slice ref_as_ = hap_slice::create_null(); // reference allele slice
 	std::set<pt::u32> haps_matching_ref;
-	std::set<pt::u32> alt_haps;
+	std::set<pt::u32> alt_haps_;
 
 	alt_set alts_; // alternative allele slices
 
@@ -475,7 +475,7 @@ public:
 		    alt_set &&min_rov_alt_set)
 	    : cxt_(cxt), ref_as_(ref_as),
 	      haps_matching_ref(std::move(ref_haps)),
-	      alt_haps(std::move(alt_haps)), alts_(min_rov_alt_set)
+	      alt_haps_(std::move(alt_haps)), alts_(min_rov_alt_set)
 	{}
 
 	// ---------
@@ -511,7 +511,7 @@ public:
 	[[nodiscard]]
 	const std::set<pt::u32> &get_alt_haps() const
 	{
-		return this->alt_haps;
+		return this->alt_haps_;
 	}
 
 	[[nodiscard]]
@@ -546,7 +546,7 @@ public:
 	// rename to add_alt_slice
 	void add_alt(hap_slice &&alt_as)
 	{
-		this->alt_haps.insert(alt_as.ref_idx);
+		this->alt_haps_.insert(alt_as.ref_idx);
 
 		if (alt_as.len == this->get_ref_len()) {
 			this->alts_.add_sub(std::move(alt_as));

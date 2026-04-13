@@ -8,7 +8,7 @@
 #if MEZA_USE_CUDA
 #include "meza/ops/ops.cuh"
 #include "meza/pool/hap_comp.cuh"
-#include "meza/pool/matrix_pool_cuda.cuh"
+#include "meza/pool/split_cuda.cuh"
 #else
 #include "meza/ops/ops.hpp"
 #endif
@@ -79,6 +79,7 @@ void run_in_haps(const meza::pool::matrix_pool_cuda<qt::u8> &p,
 	}
 
 	qt::u32 N = cmp_mat.base().size();
+
 	if (op == comparison_op::bitwise_xor)
 		cmp_mat.copy_haps_xor_to_host(N);
 	else if (op == comparison_op::sum)
@@ -96,21 +97,14 @@ void run_in_haps(const meza::pool::matrix_pool_cuda<qt::u8> &p,
 
 haps_comp_set
 handle_set(meza::pool::matrix_pool_cuda<qt::u8> &p,
-	   // meza::pool::hap_comp::hap_comp_matrix_cuda<qt::u8> &cmp_mat,
-	   const meza::pool::ov_mat_t &filter_mat, qt::u32 pool_offset)
+	   meza::pool::hap_comp::hap_comp_matrix_cuda<qt::u8> &cmp_mat_cuda)
 {
-	std::size_t capacity = 512 * 1024 * 1024;
-	// hap_comp_matrix<qt::u8> cmp_mat{
-	//	filter_mat,  //
-	//	pool_offset, //
-	//	capacity     //
-	// };
-
-	auto cmp_mat =
-		meza::pool::hap_comp::hap_comp_matrix<qt::u8>::create(capacity);
-	cmp_mat.set_filter(&filter_mat, pool_offset);
-	auto cmp_mat_cuda =
-		meza::pool::hap_comp::hap_comp_matrix_cuda<qt::u8>{cmp_mat};
+	// std::size_t capacity = 512 * 1024 * 1024;
+	// auto cmp_mat =
+	//	meza::pool::hap_comp::hap_comp_matrix<qt::u8>::create(capacity);
+	// cmp_mat.set_filter(&filter_mat, pool_offset);
+	// auto cmp_mat_cuda =
+	//	meza::pool::hap_comp::hap_comp_matrix_cuda<qt::u8>{cmp_mat};
 
 	// TODO: parallelise the run_in_haps calls
 	run_in_haps(p, cmp_mat_cuda, comparison_op::bitwise_xor);
@@ -119,7 +113,7 @@ handle_set(meza::pool::matrix_pool_cuda<qt::u8> &p,
 	// std::set<qt::up_t<qt::u32>> reversals = comp_mat.find_reversals();
 	std::set<qt::up_t<qt::u32>> reversals{};
 
-	auto [matches, mismatches] = cmp_mat.explore_pairs();
+	auto [matches, mismatches] = cmp_mat_cuda.base_mut().explore_pairs();
 
 	return {reversals, matches, mismatches};
 }

@@ -13,11 +13,12 @@
 #include <driver_types.h>
 #include <vector_types.h>
 
-#include "meza/pool/matrix_pool.hpp"
+#include <quilt/types.hpp>
+
+#include "meza/pool/split.hpp"
 #include "meza/pool/split_pool_types.hpp"
 #include "meza/shared/shared.hpp" // for layout
 #include "meza/view/view.hpp"
-#include "quilt/types.hpp"
 
 namespace meza::pool
 {

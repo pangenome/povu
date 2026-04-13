@@ -3,14 +3,13 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <functional>
 #include <set>
 #include <string_view>
 #include <vector>
 
 #include <quilt/types.hpp> // for qt::u32, qt::u8, qt::op_t
 
-#include "meza/pool/matrix_pool.hpp"	  // for matrix_pool
+#include "meza/pool/split.hpp"		  // for matrix_pool
 #include "meza/pool/split_pool_types.hpp" // for ov_mat_t
 
 namespace meza::pool::hap_comp
@@ -214,8 +213,6 @@ private:
 	/* ============ private data members ======================== */
 
 	// a reference to the filter matrix
-	// const ov_mat_t &filter_;
-
 	const ov_mat_t *filter_ = nullptr;
 
 	// the offset in the pool where the haplotype comparison matrix

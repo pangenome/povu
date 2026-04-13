@@ -2,11 +2,13 @@
 #define MEZA_MATRIX_POOL_SPLIT_HPP
 
 #include <cstddef>
+#include <random>
 #include <stdexcept>
+
+#include <quilt/types.hpp>
 
 #include "meza/pool/split_pool_types.hpp"
 #include "meza/view/view.hpp"
-#include "quilt/types.hpp"
 
 namespace meza::pool
 {
@@ -64,8 +66,13 @@ public:
 
 	void clear()
 	{
-		// overwrite with zeros for safety/debugging
-		std::fill(host_storage_, host_storage_ + capacity_, T{});
+		auto [ref_used, filter_used, xor_used] = used();
+
+		std::fill(ref_start_ptr(), ref_start_ptr() + ref_used, T{});
+		std::fill(filter_start_ptr(), filter_start_ptr() + filter_used,
+			  T{});
+		std::fill(xor_start_ptr(), xor_start_ptr() + xor_used, T{});
+
 		reset();
 	}
 

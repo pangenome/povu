@@ -9,7 +9,7 @@
 
 #if MEZA_USE_CUDA
 #include "meza/pool/hap_comp.cuh"
-#include "meza/pool/matrix_pool_cuda.cuh"
+#include "meza/pool/split_cuda.cuh"
 #else
 #include "meza/ops/ops.hpp"
 #endif
@@ -40,9 +40,9 @@ void run_in_haps(const meza::pool::matrix_pool_cuda<qt::u8> &p,
 		 meza::pool::hap_comp::hap_comp_matrix_cuda<qt::u8> &cmp_mat,
 		 meza::pool::comparison_op op);
 
-haps_comp_set handle_set(meza::pool::matrix_pool_cuda<qt::u8> &p,
-			 const meza::pool::ov_mat_t &filter_mat,
-			 qt::u32 pool_offset);
+haps_comp_set
+handle_set(meza::pool::matrix_pool_cuda<qt::u8> &p,
+	   meza::pool::hap_comp::hap_comp_matrix_cuda<qt::u8> &cmp_mat_cuda);
 
 } // namespace meza::pool_ops
 

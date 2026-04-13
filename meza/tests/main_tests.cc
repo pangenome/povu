@@ -1,3 +1,3 @@
 #include <gtest/gtest.h>
 
-#include "./matrix_pool_tests.cc"
+#include "./split_tests.cc"

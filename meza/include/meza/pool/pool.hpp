@@ -3,14 +3,17 @@
 
 #include "meza/pool/hap_comp.hpp"
 #include "meza/pool/joint.hpp"
-#include "meza/pool/matrix_pool.hpp"
 #include "meza/pool/pool_ops.hpp"
+#include "meza/pool/split.hpp"
 #include <cstddef>
 
 #if MEZA_USE_CUDA
 #include "meza/pool/hap_comp.cuh"
-#include "meza/pool/matrix_pool_cuda.cuh"
+#include "meza/pool/split_cuda.cuh"
 #endif
+
+#include <chrono>
+#include <iostream>
 
 namespace meza::pool
 {
@@ -29,8 +32,9 @@ public:
 	{
 		meza::pool::hap_comp::haps_comp_set cmp_set;
 #if MEZA_USE_CUDA
-		cmp_set = meza::pool_ops::handle_set(mat_pool_cuda, filter_mat,
-						     pool_offset);
+		cmp_mat_cuda.base_mut().set_filter(&filter_mat, pool_offset);
+		cmp_set =
+			meza::pool_ops::handle_set(mat_pool_cuda, cmp_mat_cuda);
 #endif
 		return cmp_set;
 	}
@@ -112,12 +116,11 @@ public:
 	{}
 
 private:
-	// always present
 	meza::pool::matrix_pool<T> mat_pool_cpu;
 	meza::pool::hap_comp::hap_comp_matrix<T> cmp_mat_cpu;
 	meza::pool::joint::joint_pool<S> joint_pool_cpu;
 
-#if MEZA_USE_CUDA // only present if CUDA is enabled
+#if MEZA_USE_CUDA
 	meza::pool::matrix_pool_cuda<T> mat_pool_cuda;
 	meza::pool::hap_comp::hap_comp_matrix_cuda<T> cmp_mat_cuda;
 #endif

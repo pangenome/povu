@@ -13,7 +13,7 @@
 #include <driver_types.h>
 
 #include "meza/pool/hap_comp.hpp"	  // for hap_comp
-#include "meza/pool/matrix_pool.hpp"	  // for matrix_pool
+#include "meza/pool/split.hpp"		  // for matrix_pool
 #include "meza/pool/split_pool_types.hpp" // for ov_mat_t
 
 namespace meza::pool::hap_comp
@@ -96,7 +96,7 @@ public:
 	hap_comp_matrix_cuda(hap_comp_matrix<T> &host_hap_comp)
 	    : host_hap_comp_(host_hap_comp)
 	{
-		qt::u32 N = this->base().size();
+		qt::u32 N = this->base().capacity();
 		alloc_device(&d_haps_xor_store, N);
 		alloc_device(&d_haps_sum_store, N);
 	}

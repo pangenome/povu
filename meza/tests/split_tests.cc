@@ -2,11 +2,11 @@
 
 #include <quilt/types.hpp>
 
-#include <meza/pool/matrix_pool.hpp>
+#include <meza/pool/split.hpp>
 #include <meza/pool/split_pool_types.hpp>
 
 #if MEZA_USE_CUDA
-#include "meza/pool/matrix_pool_cuda.cuh"
+#include "meza/pool/split_cuda.cuh"
 #endif
 
 using qt::u32;

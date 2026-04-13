@@ -5,18 +5,20 @@
 #include <set>
 #include <vector>
 
-#include <liteseq/refs.h> // for ref_walk, ref
-
+#include <liteseq/refs.h>     // for ref_walk, ref
 #include <meza/pool/pool.hpp> // for pool
+#include <quilt/types.hpp>    // for u8, u32
+
+#include "povu/common/core.hpp"	     // for pt
+#include "povu/graph/bidirected.hpp" // for VG
 
 #include "ita/convolutions/trip.hpp"	   // for gen_trip
 #include "ita/genomics/allele.hpp"	   // for hap_slice, trek
 #include "ita/traversals/at_matrix.hpp"	   // for matrix_pool, rov_matrix_set
 #include "ita/traversals/depth_matrix.hpp" // for comp_depth_matrix
 #include "ita/variation/rov.hpp"	   // for RoV
-#include "povu/common/core.hpp"		   // for pt
-#include "povu/graph/bidirected.hpp"	   // for VG
-#include "quilt/types.hpp"		   // for u8, u32
+
+#include <chrono>
 
 namespace ita::convolutions
 {
@@ -26,15 +28,13 @@ using meza::pool::hap_comp::haps_comp_set;
 using pool_t = meza::pool::pool<qt::u8, qt::u32>;
 
 void process_mat3(
-	const bd::VG &g, const ir::RoV *rov, qt::u32 ref_h_idx,
+	const bd::VG &g, const ir::RoV *rov,
+	const std::vector<pt::u32> &sorted_vertices, qt::u32 ref_h_idx,
 	const std::vector<ita::traversals::traversals::itinerary> &hap_itns,
-	const std::vector<ita::at_matrix::mat3_item> &ji, pool_t &p,
+	const std::vector<ita::at_matrix::mat3_item> &job_item, pool_t &p,
 	std::vector<ia::trek> &treks)
 {
-	const std::vector<pt::u32> &sorted_vertices =
-		rov->get_sorted_vertices();
-
-	for (const ita::at_matrix::mat3_item &item : ji) {
+	for (const ita::at_matrix::mat3_item &item : job_item) {
 		const ita::at_matrix::mat3 &mat_set = item.mats;
 		const meza::pool::ov_mat_t &filter_mat = mat_set.filter;
 
@@ -67,8 +67,13 @@ void process_batches(const bd::VG &g, const std::set<pt::u32> &to_call_ref_ids,
 {
 	p.run_convolutions(batch.get_pool_j_offset());
 
+	auto start = std::chrono::high_resolution_clock::now();
+
 	for (const ita::at_matrix::rov_job &job : batch.get_jobs()) {
 		const ir::RoV *rov = job.get_rov();
+
+		const std::vector<pt::u32> &sorted_vertices =
+			rov->get_sorted_vertices();
 
 		const std::vector<ita::traversals::traversals::itinerary>
 			&hap_itns = job.get_hap_itns();
@@ -77,10 +82,15 @@ void process_batches(const bd::VG &g, const std::set<pt::u32> &to_call_ref_ids,
 			const std::vector<ita::at_matrix::mat3_item> &job_item =
 				job.get_items_for_ref2(ref_h_idx);
 
-			process_mat3(g, rov, ref_h_idx, hap_itns, job_item, p,
-				     treks);
+			process_mat3(g, rov, sorted_vertices, ref_h_idx,
+				     hap_itns, job_item, p, treks);
 		}
 	}
+
+	auto end = std::chrono::high_resolution_clock::now();
+	auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+		end - start);
+	std::cerr << "Elapsed time: " << elapsed.count() << " ms\n";
 
 	p.clear_split_pool();
 	batch.reset();
