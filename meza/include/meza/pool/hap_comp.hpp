@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <optional>
 #include <set>
 #include <string_view>
 #include <vector>
@@ -75,11 +76,17 @@ public:
 		std::fill(xor_data_, xor_data_ + N, T{});
 		std::fill(sum_data_, sum_data_ + N, T{});
 		std::fill(xor_ps_.begin(), xor_ps_.end(), 0);
+		std::fill(sum_ps_.begin(), sum_ps_.end(), 0);
 	}
 
 	void copy_xor_data()
 	{
 		xor_ps_.assign(xor_data_, xor_data_ + data_size_);
+	}
+
+	void copy_sum_data()
+	{
+		sum_ps_.assign(sum_data_, sum_data_ + data_size_);
 	}
 
 	qt::u32 *xor_ps_ptr()
@@ -141,8 +148,58 @@ public:
 		return data_size_;
 	}
 
-	[[nodiscard]] qt::op_t<std::set<qt::up_t<qt::u32>>> explore_pairs()
+	std::set<qt::up_t<qt::u32>> explore_reversals()
 	{
+		this->copy_sum_data();
+
+		auto is_reversal = [&](qt::u32 start, qt::u32 end) -> bool
+		{
+			if (start == 0)
+				return sum_ps_[end] == 0;
+
+			// start > 0
+			return (sum_ps_[end] - sum_ps_[start - 1]) == 0;
+		};
+
+		// compute a special prefix sum
+		//
+		// only sum if 3
+		qt::u32 running{};
+		for (qt::u32 i{}; i < data_size_; ++i) {
+			if (sum_ps_[i] > 2)
+				running += sum_ps_[i];
+
+			sum_ps_[i] = running;
+		}
+
+		// explore the pairs and check for reversals based on the
+		// special prefix sum
+		std::set<qt::up_t<qt::u32>> reversals;
+		qt::u32 J = this->cols();
+		qt::u32 K = this->rows();
+		for (qt::u32 k{1}; k < K; k++) {
+			qt::u32 k_len = this->k_len(k);
+			for (qt::u32 k_off{}; k_off < k_len; k_off++) {
+				auto [h1, h2] = comp_hap_pair(k, k_off);
+
+				const auto &b = filter_->base();
+				if (b.is_row_blank(h1) || b.is_row_blank(h2))
+					continue;
+
+				qt::u32 start = (k_offset(k) + k_off) * J;
+				qt::u32 end = (start + J) - 1;
+
+				if (is_reversal(start, end))
+					reversals.emplace(h1, h2);
+			}
+		}
+
+		return reversals;
+	}
+
+	[[nodiscard]] haps_comp_set explore_pairs()
+	{
+		std::set<qt::up_t<u32>> reversals = this->explore_reversals();
 		std::set<qt::up_t<qt::u32>> matches;
 		std::set<qt::up_t<qt::u32>> mismatches;
 
@@ -152,8 +209,7 @@ public:
 				return xor_ps_[end] == 0;
 
 			// start > 0
-			start--;
-			return (xor_ps_[end] - xor_ps_[start]) == 0;
+			return (xor_ps_[end] - xor_ps_[start - 1]) == 0;
 		};
 
 		qt::u32 J = this->cols();
@@ -163,22 +219,21 @@ public:
 			for (qt::u32 k_off{}; k_off < k_len; k_off++) {
 				auto [h1, h2] = comp_hap_pair(k, k_off);
 
-				if (filter_->base().is_row_blank(h1) ||
-				    filter_->base().is_row_blank(h2)) {
+				const auto &b = filter_->base();
+				if (b.is_row_blank(h1) || b.is_row_blank(h2))
 					continue;
-				}
 
 				qt::u32 start = (k_offset(k) + k_off) * J;
 				qt::u32 end = (start + J) - 1;
 
 				if (no_inc(start, end))
-					matches.insert({h1, h2});
+					matches.emplace(h1, h2);
 				else
-					mismatches.insert({h1, h2});
+					mismatches.emplace(h1, h2);
 			}
 		}
 
-		return {matches, mismatches};
+		return {reversals, matches, mismatches};
 	}
 
 	void set_filter(const ov_mat_t *f, qt::u32 pool_offset)
@@ -189,9 +244,12 @@ public:
 		pool_offset_ = pool_offset;
 
 		if (data_size_ > capacity_) {
-			throw std::runtime_error(
+			std::string err = quilt::shim::format(
 				"Data size exceeds capacity of haplotype "
-				"comparison matrix");
+				"comparison matrix. Expected {} Actual {}",
+				data_size_, capacity_);
+
+			throw std::runtime_error(err);
 		}
 	}
 
@@ -246,7 +304,8 @@ private:
 	T *xor_data_;
 	T *sum_data_;
 
-	std::vector<qt::u32> xor_ps_; // prefix
+	std::vector<qt::u32> xor_ps_; // prefix sum
+	std::vector<qt::u32> sum_ps_; // prefix sum
 
 	/* ================= private helper functions ================== */
 

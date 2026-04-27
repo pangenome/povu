@@ -3,7 +3,6 @@
 
 #include <cstddef>
 #include <vector>
-#include <vector_types.h>
 
 #include "quilt/types.hpp"
 

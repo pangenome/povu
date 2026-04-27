@@ -3,37 +3,40 @@
 
 #include <cassert>
 #include <cstdlib>
+#include <set>
 
 #include <quilt/types.hpp>
-
-#include "meza/pool/hap_comp.hpp"	  // for haps_comp_set
-#include "meza/pool/matrix_pool.hpp"	  // for matrix_pool
-#include "meza/pool/split_pool_types.hpp" // for ov_mat_t
 
 namespace meza::cpu_ops
 {
 using qt::u32;
 using qt::u8;
+using qt::up_t;
 
-// void run_filter(meza::pool::matrix_pool<u8> &ov_pool, u32 N);
+void cpu_mat_xor(const u8 *a, const u8 *b, u8 *c, u32 N);
 
-// meza::pool::hap_comp::haps_comp_set
-// handle_set(meza::pool::matrix_pool<qt::u8> &ov_pool_cuda,
-//	   const meza::pool::ov_mat_t &filter_mat, qt::u32 pool_offset);
+void cpu_haps_sum(const u8 *d_f, u8 *d_out, u32 mat_off, u32 col_shift,
+		  u32 res_shift, u32 len);
 
-// void cpu_mat_xor(const qt::u8 *a, const qt::u8 *b, qt::u8 *c, qt::u32 N);
+void cpu_haps_xor(const u8 *d_f, u8 *d_out, u32 mat_off, u32 col_shift,
+		  u32 res_shift, u32 len);
 
 /**
- * in-place prefix sum (inclusive scan)
+ * prefix sum in-place on the CPU
+ *
+ * v: input vector of length len, will be modified in-place to contain the
+ * prefix sums
+ * v[i] = v[0] + v[1] + ... + v[i]
+ * len: length of the input vector
  */
 template <typename T>
-void cpu_prefix_sum(T *v, size_t len)
+void prefix_sum_cpu(T *v, std::size_t len)
 {
-	for (size_t i = 1; i < len; ++i)
+	for (std::size_t i{1}; i < len; ++i)
 		v[i] = v[i] + v[i - 1];
 }
 
-std::set<qt::up_t<qt::u32>> find_reversals();
+std::set<up_t<u32>> find_reversals();
 
 } // namespace meza::cpu_ops
 #endif // MZ_OPS_HPP

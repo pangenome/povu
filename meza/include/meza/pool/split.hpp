@@ -128,6 +128,11 @@ public:
 		return host_storage_ + filter_start_;
 	}
 
+	[[nodiscard]] const T *filter_start_ptr_const() const noexcept
+	{
+		return host_storage_ + filter_start_;
+	}
+
 	[[nodiscard]] T *xor_start_ptr() noexcept
 	{
 		return host_storage_ + xor_start_;
