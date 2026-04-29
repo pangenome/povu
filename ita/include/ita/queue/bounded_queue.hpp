@@ -1,5 +1,5 @@
-#ifndef POVU_BOUNDED_Q_HPP
-#define POVU_BOUNDED_Q_HPP
+#ifndef IT_BOUNDED_Q_HPP
+#define IT_BOUNDED_Q_HPP
 
 #include <condition_variable>
 #include <deque>
@@ -7,11 +7,12 @@
 #include <optional>
 #include <utility>
 
-namespace povu::bounded_queue
+namespace ita::bounded_queue
 {
 
 // Multi-producer, multi-consumer bounded blocking queue (move-friendly).
-template <class T> class bounded_queue
+template <class T>
+class bounded_queue
 {
 public:
 	explicit bounded_queue(std::size_t capacity)
@@ -88,9 +89,9 @@ private:
 	bool closed_{false};
 };
 
-} // namespace povu::bounded_queue
+} // namespace ita::bounded_queue
 
 // NOLINTNEXTLINE(misc-unused-alias-decls)
-namespace pbq = povu::bounded_queue;
+namespace bq = ita::bounded_queue;
 
 #endif // POVU_BOUNDED_Q_HPP

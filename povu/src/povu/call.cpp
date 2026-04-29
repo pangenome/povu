@@ -9,19 +9,19 @@
 #include <utility>    // for move
 #include <vector>     // for vector
 
-#include "ita/genomics/genomics.hpp" // for gen_vcf_rec_map
-#include "ita/genomics/vcf.hpp"	     // for VcfRecIdx
+#include "ita/genomics/genomics.hpp"   // for gen_vcf_rec_map
+#include "ita/genomics/vcf.hpp"	       // for VcfRecIdx
+#include "ita/queue/bounded_queue.hpp" // for bounded_queue
 
 #include "mto/common.hpp"    // for get_files, read_lines_to_...
 #include "mto/from_gfa.hpp"  // for to_bd
 #include "mto/from_pvst.hpp" // for read_pvst
 #include "mto/to_vcf.hpp"    // for VcfOutput, init_vcfs, wri...
 
-#include "povu/common/bounded_queue.hpp" // for pbq, bounded_queue
-#include "povu/common/core.hpp"		 // for pt, id_t
-#include "povu/common/log.hpp"		 // for ERR
-#include "povu/graph/bidirected.hpp"	 // for VG, bd
-#include "povu/graph/pvst.hpp"		 // for Tree
+#include "povu/common/core.hpp"	     // for pt, id_t
+#include "povu/common/log.hpp"	     // for ERR
+#include "povu/graph/bidirected.hpp" // for VG, bd
+#include "povu/graph/pvst.hpp"	     // for Tree
 
 namespace povu::subcommands::call
 {
@@ -122,7 +122,7 @@ void do_call(core::config &app_config)
 
 	// if running out of memory, reduce the capacity and/or the chunk size
 	const std::size_t QUEUE_CAPACITY = app_config.get_queue_len();
-	pbq::bounded_queue<iv::VcfRecIdx> q(QUEUE_CAPACITY);
+	bq::bounded_queue<iv::VcfRecIdx> q(QUEUE_CAPACITY);
 
 	// start producer in its own thread
 	std::thread producer(

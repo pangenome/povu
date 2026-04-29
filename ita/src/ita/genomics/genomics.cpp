@@ -115,7 +115,7 @@ void comp_expeditions(const bd::VG &g, std::vector<ir::RoV> &all_rovs,
 
 void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 		     const std::set<pt::id_t> &to_call_ref_ids,
-		     pbq::bounded_queue<iv::VcfRecIdx> &q,
+		     bq::bounded_queue<iv::VcfRecIdx> &q,
 		     const core::config &app_config)
 {
 	if (app_config.verbosity() > 0)
