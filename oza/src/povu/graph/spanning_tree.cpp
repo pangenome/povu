@@ -15,7 +15,7 @@
 #include "povu/graph/bracket_list.hpp" // for WBracketList, Bracket, Bracke...
 #include "povu/graph/types.hpp"	       // for v_type_e, v_end_e, color_e
 
-namespace povu::spanning_tree
+namespace oza::spanning_tree
 {
 using namespace povu::constants;
 
@@ -1003,4 +1003,4 @@ void Tree::print_dot(std::ostream &os)
 	os << "}" << std::endl;
 }
 
-} // namespace povu::spanning_tree
+} // namespace oza::spanning_tree

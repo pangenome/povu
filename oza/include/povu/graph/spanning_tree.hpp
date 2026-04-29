@@ -13,7 +13,7 @@
 #include "povu/common/core.hpp" // for pt, idx_t, id_t
 #include "types.hpp"		// for color_e, v_type_e
 
-namespace povu::spanning_tree
+namespace oza::spanning_tree
 {
 using namespace oza::bracket_list;
 using namespace povu::types::graph;
@@ -401,8 +401,8 @@ public:
 	void print_dot(std::ostream &os);
 };
 
-} // namespace povu::spanning_tree
+} // namespace oza::spanning_tree
 
 // NOLINTNEXTLINE(misc-unused-alias-decls)
-namespace pst = povu::spanning_tree;
+namespace pst = oza::spanning_tree;
 #endif

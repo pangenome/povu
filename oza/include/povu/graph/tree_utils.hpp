@@ -20,7 +20,7 @@ namespace povu::tree_utils
 inline constexpr std::string_view MODULE = "povu::tree_utils";
 using namespace povu::types::graph;
 namespace pgt = povu::types::graph;
-namespace pst = povu::spanning_tree;
+namespace pst = oza::spanning_tree;
 
 // key is edge idx of an edge and value is the v idx of the next braching vtx or
 // of a leaf

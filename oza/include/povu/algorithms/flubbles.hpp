@@ -21,7 +21,7 @@ namespace pc = povu::constants;
 namespace ptu = povu::tree_utils;
 namespace pvst = povu::pvst;
 namespace pgt = povu::types::graph;
-namespace pst = povu::spanning_tree;
+namespace pst = oza::spanning_tree;
 
 // a hairpin boundary
 struct boundary {
