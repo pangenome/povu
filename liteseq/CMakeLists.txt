@@ -126,12 +126,12 @@ else()
 endif()
 
 # Include sanitizers only if USE_SANITIZER is ON
-if (USE_SANITIZER)
-  include(cmake/sanitizers.cmake)
-endif()
+#if (USE_SANITIZER)
+#  include(cmake/sanitizers.cmake)
+#endif()
 
 # ============== Dependencies ===================
-include(cmake/deps.cmake)
+#include(cmake/deps.cmake)
 
 # # --- Silence compiler warnings for dependencies ---
 # function(silence_warnings target)

@@ -147,10 +147,10 @@ endif()
 # This file typically enables AddressSanitizer, UndefinedBehaviorSanitizer, etc.
 # It's included unconditionally, but should internally check for Debug mode and compiler support.
 # sanitizers.cmake checks if build mode is Debug and if not it returns early.
-include(cmake/sanitizers.cmake)
+#include(cmake/sanitizers.cmake)
 
 # --- Depds from CPM.cmake --
-include(cmake/deps.cmake)
+#include(cmake/deps.cmake)
 
 # ============================ config =============================
 
