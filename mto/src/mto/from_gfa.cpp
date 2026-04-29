@@ -4,11 +4,11 @@
 #include <thread>  // for thread, sleep_for
 #include <vector>  // for vector
 
-#include <liteseq/gfa.h>  // for gfa_config, gfa...
-#include <liteseq/refs.h> // for get_step_count
+#include <liteseq/gfa.h>   // for gfa_config, gfa...
+#include <liteseq/refs.h>  // for get_step_count
+#include <quilt/types.hpp> // for qt
 
 #include "mto/from_gfa.hpp"
-#include "povu/common/core.hpp" // for pt, idx_t, id_t
 #include "povu/common/log.hpp"	// for WARN
 #include "povu/graph/types.hpp" // for v_end_e
 
@@ -53,9 +53,9 @@ bd::VG *to_bd(const core::config &app_config)
 
 	get_gfa_async.join();
 
-	pt::idx_t vtx_count = gfa->vtx_arr_size;
-	pt::idx_t edge_count = gfa->l_line_count;
-	pt::idx_t ref_count = gfa->ref_count;
+	qt::idx_t vtx_count = gfa->vtx_arr_size;
+	qt::idx_t edge_count = gfa->l_line_count;
+	qt::idx_t ref_count = gfa->ref_count;
 
 	/* initialize a povu bidirected graph */
 	auto vg = new bd::VG(gfa); // vg is bd::VG *
@@ -64,7 +64,7 @@ bd::VG *to_bd(const core::config &app_config)
 	if (app_config.verbosity() > 0)
 		INFO("Adding Vertices");
 
-	for (pt::idx_t i{}; i < vtx_count; ++i) {
+	for (qt::idx_t i{}; i < vtx_count; ++i) {
 		lq::vtx *v = lq::get_vtx(gfa, i);
 		if (v == nullptr) // skip uninitialized vertices
 			continue;
@@ -101,11 +101,11 @@ bd::VG *to_bd(const core::config &app_config)
 
 		vg->set_refs_meta(gfa->refs, ref_count);
 
-		for (pt::idx_t ref_idx{}; ref_idx < ref_count; ref_idx++) {
+		for (qt::idx_t ref_idx{}; ref_idx < ref_count; ref_idx++) {
 			lq::ref *ref = lq::get_ref(gfa, ref_idx);
-			pt::idx_t N = lq::get_step_count(ref);
-			for (pt::idx_t step_idx{}; step_idx < N; step_idx++) {
-				pt::id_t v_id = ref->walk->v_ids[step_idx];
+			qt::idx_t N = lq::get_step_count(ref);
+			for (qt::idx_t step_idx{}; step_idx < N; step_idx++) {
+				qt::id_t v_id = ref->walk->v_ids[step_idx];
 				vg->set_vtx_ref_idx(v_id, ref_idx, step_idx);
 			}
 		}

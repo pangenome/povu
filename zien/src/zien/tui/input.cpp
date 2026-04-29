@@ -3,9 +3,9 @@
 
 #include <ncurses.h>
 
-#include <liteseq/refs.h> // for ref_walk, ref
+#include <liteseq/refs.h>  // for ref_walk, ref
+#include <quilt/types.hpp> // for qt
 
-#include "povu/common/core.hpp"		  // for pt
 #include "zien/components/components.hpp" // for status_bar
 #include "zien/tui/state.hpp"		  // for Mode
 #include "zien/tui/tui.hpp"
@@ -22,7 +22,7 @@ void perform_search_variants(Pane *pane, ui_state &state)
 	if (query.empty())
 		return;
 
-	for (pt::u32 i = 0; i < pane->pd.lines.size(); ++i)
+	for (qt::u32 i = 0; i < pane->pd.lines.size(); ++i)
 		if (pane->pd.lines[i].find(query) != std::string::npos)
 			state.search_results.push_back(i);
 
@@ -57,7 +57,7 @@ void perform_search_paths(Pane *pane, ui_state &state)
 	}
 
 	// loop over query and extract numbers
-	pt::u32 v{};
+	qt::u32 v{};
 	for (auto &ch : query)
 		if (isdigit(ch))
 			v = v * 10 + (ch - '0');
@@ -315,7 +315,7 @@ void handle_normal_state(int ch, tui_context &tc, ui_state &state)
 	// one moving
 	if (state.active_pane_id == PaneID::A) {
 		Pane *a = tc.get_pane(PaneID::A);
-		state.vcf_selected_rec = (pt::u32)a->selected_line - 1;
+		state.vcf_selected_rec = (qt::u32)a->selected_line - 1;
 	}
 }
 

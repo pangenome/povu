@@ -7,12 +7,12 @@
 #include <unordered_set> // for unordered_set, operator!=
 #include <vector>
 
-#include <liteseq/gfa.h>  // for gfa_props
-#include <quilt/shim.hpp> // for format, contains
+#include <liteseq/gfa.h>   // for gfa_props
+#include <quilt/shim.hpp>  // for format, contains
+#include <quilt/types.hpp> // for qt
 
 #include "povu/common/constants.hpp" // for UNDEFINED_ID
-#include "povu/common/core.hpp"
-#include "povu/graph/types.hpp" // for v_end_e, side_n_id_t, complement
+#include "povu/graph/types.hpp"	     // for v_end_e, side_n_id_t, complement
 
 namespace oza::bidirected
 {
@@ -21,17 +21,17 @@ namespace oza::bidirected
 //      Edge
 // ============================================================
 
-Edge::Edge(pt::idx_t v1_idx, pgt::v_end_e v1_end, pt::idx_t v2_idx,
+Edge::Edge(qt::idx_t v1_idx, pgt::v_end_e v1_end, qt::idx_t v2_idx,
 	   pgt::v_end_e v2_end)
     : v1_idx_{v1_idx}, v1_end_{v1_end}, v2_idx_{v2_idx}, v2_end_{v2_end}
 {}
 
-pt::idx_t Edge::get_v1_idx() const
+qt::idx_t Edge::get_v1_idx() const
 {
 	return this->v1_idx_;
 }
 
-pt::idx_t &Edge::get_v1_idx_mut()
+qt::idx_t &Edge::get_v1_idx_mut()
 {
 	return this->v1_idx_;
 }
@@ -41,12 +41,12 @@ pgt::v_end_e Edge::get_v1_end() const
 	return this->v1_end_;
 }
 
-pt::idx_t Edge::get_v2_idx() const
+qt::idx_t Edge::get_v2_idx() const
 {
 	return this->v2_idx_;
 }
 
-pt::idx_t &Edge::get_v2_idx_mut()
+qt::idx_t &Edge::get_v2_idx_mut()
 {
 	return this->v2_idx_;
 }
@@ -56,16 +56,16 @@ pgt::v_end_e Edge::get_v2_end() const
 	return this->v2_end_;
 }
 
-pgt::side_n_idx_t Edge::get_other_vtx(pt::idx_t v_idx) const
+pgt::side_n_idx_t Edge::get_other_vtx(qt::idx_t v_idx) const
 {
 	return (get_v1_idx() == v_idx) ? pgt::side_n_id_t{v2_end_, v2_idx_}
 				       : pgt::side_n_id_t{v1_end_, v1_idx_};
 }
 
-pgt::side_n_idx_t Edge::get_other_vtx(pt::idx_t v_idx, pgt::v_end_e ve) const
+pgt::side_n_idx_t Edge::get_other_vtx(qt::idx_t v_idx, pgt::v_end_e ve) const
 {
-	const pt::idx_t v1 = get_v1_idx();
-	const pt::idx_t v2 = get_v2_idx();
+	const qt::idx_t v1 = get_v1_idx();
+	const qt::idx_t v2 = get_v2_idx();
 
 	if (v1 == v2) // Handle self-loop case
 		return {pgt::complement(ve), v1};
@@ -84,7 +84,7 @@ pgt::side_n_idx_t Edge::get_other_vtx(pt::idx_t v_idx, pgt::v_end_e ve) const
 // constructor(s)
 // --------------
 
-Vertex::Vertex(pt::id_t v_id, const std::string &label)
+Vertex::Vertex(qt::id_t v_id, const std::string &label)
     : v_id_{v_id}, label_(label)
 {}
 
@@ -92,7 +92,7 @@ Vertex::Vertex(pt::id_t v_id, const std::string &label)
 // getter(s)
 // ---------
 
-pt::id_t Vertex::id() const
+qt::id_t Vertex::id() const
 {
 	return v_id_;
 }
@@ -102,7 +102,7 @@ const std::string &Vertex::get_label() const
 	return this->label_;
 }
 
-pt::u32 Vertex::get_length() const
+qt::u32 Vertex::get_length() const
 {
 	return this->label_.length();
 }
@@ -112,12 +112,12 @@ std::string Vertex::get_rc_label() const
 	return pu::reverse_complement(this->label_);
 }
 
-const std::set<pt::idx_t> &Vertex::get_edges_l() const
+const std::set<qt::idx_t> &Vertex::get_edges_l() const
 {
 	return e_l;
 }
 
-const std::set<pt::idx_t> &Vertex::get_edges_r() const
+const std::set<qt::idx_t> &Vertex::get_edges_r() const
 {
 	return e_r;
 }
@@ -126,12 +126,12 @@ const std::set<pt::idx_t> &Vertex::get_edges_r() const
 // setter(s)
 // ---------
 
-void Vertex::add_edge_l(pt::idx_t e_idx)
+void Vertex::add_edge_l(qt::idx_t e_idx)
 {
 	e_l.insert(e_idx);
 }
 
-void Vertex::add_edge_r(pt::idx_t e_idx)
+void Vertex::add_edge_r(qt::idx_t e_idx)
 {
 	e_r.insert(e_idx);
 }
@@ -144,8 +144,8 @@ void Vertex::add_edge_r(pt::idx_t e_idx)
 // constructor(s)
 // --------------
 
-VariationGraph::VariationGraph(pt::idx_t vtx_count, pt::idx_t edge_count,
-			       pt::idx_t ref_count)
+VariationGraph::VariationGraph(qt::idx_t vtx_count, qt::idx_t edge_count,
+			       qt::idx_t ref_count)
     : vtx2sm(vtx_count, ref_count)
 {
 	this->gfa = nullptr;
@@ -156,8 +156,8 @@ VariationGraph::VariationGraph(pt::idx_t vtx_count, pt::idx_t edge_count,
 VariationGraph::VariationGraph(lq::gfa_props *gfa_props)
     : vtx2sm(gfa_props->vtx_arr_size, gfa_props->ref_count)
 {
-	pt::idx_t vtx_count = gfa_props->vtx_arr_size;
-	pt::idx_t edge_count = gfa_props->l_line_count;
+	qt::idx_t vtx_count = gfa_props->vtx_arr_size;
+	qt::idx_t edge_count = gfa_props->l_line_count;
 
 	this->gfa = gfa_props;
 	this->vertices.reserve(vtx_count);
@@ -168,22 +168,22 @@ VariationGraph::VariationGraph(lq::gfa_props *gfa_props)
 // getter(s)
 // ---------
 
-pt::id_t VG::v_idx_to_id(pt::idx_t v_idx) const
+qt::id_t VG::v_idx_to_id(qt::idx_t v_idx) const
 {
 	return this->v_id_to_idx_.get_key(v_idx);
 }
 
-pt::idx_t VG::v_id_to_idx(pt::id_t v_id) const
+qt::idx_t VG::v_id_to_idx(qt::id_t v_id) const
 {
 	return this->v_id_to_idx_.get_value(v_id);
 }
 
-pt::idx_t VG::vtx_count() const
+qt::idx_t VG::vtx_count() const
 {
 	return this->vertices.size();
 }
 
-pt::idx_t VG::edge_count() const
+qt::idx_t VG::edge_count() const
 {
 	return this->edges.size();
 }
@@ -193,84 +193,84 @@ const std::set<pgt::side_n_id_t> &VG::tips() const
 	return this->tips_;
 }
 
-const Edge &VG::get_edge(pt::idx_t e_idx) const
+const Edge &VG::get_edge(qt::idx_t e_idx) const
 {
 	return edges[e_idx];
 }
 
-Edge &VG::get_edge_mut(pt::idx_t e_idx)
+Edge &VG::get_edge_mut(qt::idx_t e_idx)
 {
 	return edges[e_idx];
 }
 
-const Vertex &VG::get_vertex_by_idx(pt::idx_t v_idx) const
+const Vertex &VG::get_vertex_by_idx(qt::idx_t v_idx) const
 {
 	return vertices[v_idx];
 }
 
-const Vertex &VG::get_vertex_by_id(pt::id_t v_id) const
+const Vertex &VG::get_vertex_by_id(qt::id_t v_id) const
 {
 	return vertices[this->v_id_to_idx_.get_value(v_id)];
 }
 
-Vertex &VG::get_vertex_mut_by_id(pt::id_t v_id)
+Vertex &VG::get_vertex_mut_by_id(qt::id_t v_id)
 {
 	return vertices[this->v_id_to_idx_.get_value(v_id)];
 }
 
-std::string VG::get_sample_name(pt::id_t ref_id) const
+std::string VG::get_sample_name(qt::id_t ref_id) const
 {
 	return this->refs_.get_sample_name(ref_id);
 }
 
-std::string VG::get_tag(pt::id_t ref_id) const
+std::string VG::get_tag(qt::id_t ref_id) const
 {
 	return this->refs_.get_tag(ref_id);
 }
 
-const pr::Ref &VG::get_ref_by_id(pt::id_t ref_id) const
+const pr::Ref &VG::get_ref_by_id(qt::id_t ref_id) const
 {
 	return this->refs_.get_lq_ref(ref_id);
 }
 
-std::optional<pt::id_t> VG::get_ref_id(std::string_view tag) const
+std::optional<qt::id_t> VG::get_ref_id(std::string_view tag) const
 {
 	return this->refs_.get_ref_id(tag);
 }
 
-std::set<pt::id_t> VG::get_shared_samples(pt::id_t ref_id) const
+std::set<qt::id_t> VG::get_shared_samples(qt::id_t ref_id) const
 {
 	return this->refs_.get_shared_samples(ref_id);
 }
 
-std::set<pt::id_t> VG::get_refs_in_sample(std::string_view sample_name) const
+std::set<qt::id_t> VG::get_refs_in_sample(std::string_view sample_name) const
 {
 	return this->refs_.get_refs_in_sample(sample_name);
 }
 
-pt::idx_t VG::get_hap_count() const
+qt::idx_t VG::get_hap_count() const
 {
 	return this->refs_.ref_count();
 }
 
-const lq::ref *VG::get_ref_vec(pt::id_t ref_id) const
+const lq::ref *VG::get_ref_vec(qt::id_t ref_id) const
 {
 	return this->refs_.get_lq_ref_ptr(ref_id);
 }
 
-const std::vector<pt::idx_t> &VG::get_vertex_ref_idxs(pt::idx_t v_idx,
-						      pt::id_t ref_id) const
+const std::vector<qt::idx_t> &VG::get_vertex_ref_idxs(qt::idx_t v_idx,
+						      qt::id_t ref_id) const
 {
 	return this->vtx2sm.at(v_idx, ref_id);
 }
 
-pt::u32 VG::get_ploidy(const std::string &sample_name) const
+qt::u32 VG::get_ploidy(const std::string &sample_name) const
 {
 	return this->refs_.get_ploidy(sample_name);
 }
 
-pt::u32 VG::get_ploidy_id(const std::string &sample_name,
-			  pt::u32 ploidy_idx) const
+qt::u32 VG::get_ploidy_id(const std::string &sample_name,
+			  qt::u32 ploidy_idx) const
 {
 	return this->refs_.get_ploidy_id(sample_name, ploidy_idx);
 }
@@ -285,7 +285,7 @@ std::vector<std::vector<std::string>> VG::get_blank_genotype_cols() const
 	return this->refs_.get_blank_genotype_cols();
 }
 
-const pr::gt_col_meta &VG::get_gt_col_meta(pt::id_t ref_id) const
+const pr::gt_col_meta &VG::get_gt_col_meta(qt::id_t ref_id) const
 {
 	return this->refs_.get_gt_col_idx(ref_id);
 }
@@ -293,25 +293,25 @@ const pr::gt_col_meta &VG::get_gt_col_meta(pt::id_t ref_id) const
 // ---------
 // setter(s)
 // ---------
-void VG::add_tip(pt::id_t v_id, pgt::v_end_e end)
+void VG::add_tip(qt::id_t v_id, pgt::v_end_e end)
 {
 	this->tips_.insert(pgt::side_n_id_t{end, v_id});
 }
 
-pt::idx_t VG::add_vertex(pt::id_t v_id, const std::string &label)
+qt::idx_t VG::add_vertex(qt::id_t v_id, const std::string &label)
 {
 	vertices.emplace_back(v_id, label);
 	this->v_id_to_idx_.insert(v_id, vertices.size() - 1);
 	return vertices.size() - 1;
 }
 
-pt::idx_t VG::add_edge(pt::id_t v1_id, pgt::v_end_e v1_end, pt::id_t v2_id,
+qt::idx_t VG::add_edge(qt::id_t v1_id, pgt::v_end_e v1_end, qt::id_t v2_id,
 		       pgt::v_end_e v2_end)
 {
-	pt::idx_t v1_idx = this->v_id_to_idx_.get_value(v1_id);
-	pt::idx_t v2_idx = this->v_id_to_idx_.get_value(v2_id);
+	qt::idx_t v1_idx = this->v_id_to_idx_.get_value(v1_id);
+	qt::idx_t v2_idx = this->v_id_to_idx_.get_value(v2_id);
 	edges.push_back(Edge{v1_idx, v1_end, v2_idx, v2_end});
-	pt::idx_t e_idx = edges.size() - 1;
+	qt::idx_t e_idx = edges.size() - 1;
 
 	if (v1_end == pgt::v_end_e::l)
 		this->vertices[v1_idx].add_edge_l(e_idx);
@@ -326,12 +326,12 @@ pt::idx_t VG::add_edge(pt::id_t v1_id, pgt::v_end_e v1_end, pt::id_t v2_id,
 	return e_idx;
 }
 
-void VG::set_refs_meta(lq::ref **refs, pt::idx_t ref_count)
+void VG::set_refs_meta(lq::ref **refs, qt::idx_t ref_count)
 {
 	this->refs_.set_refs_meta(refs, ref_count);
 }
 
-void VG::set_vtx_ref_idx(pt::id_t v_id, pt::id_t ref_id, pt::idx_t step_idx)
+void VG::set_vtx_ref_idx(qt::id_t v_id, qt::id_t ref_id, qt::idx_t step_idx)
 {
 
 	auto update_fn = [&](auto &s)
@@ -341,11 +341,11 @@ void VG::set_vtx_ref_idx(pt::id_t v_id, pt::id_t ref_id, pt::idx_t step_idx)
 			s.insert(it, step_idx);
 	};
 
-	pt::idx_t v_idx = this->v_id_to_idx_.get_value(v_id);
+	qt::idx_t v_idx = this->v_id_to_idx_.get_value(v_id);
 	this->vtx2sm.update(v_idx, ref_id, update_fn);
 
-	// pt::idx_t v_idx = this->v_id_to_idx_.get_value(v_id);
-	// std::vector<pt::idx_t> &s = this->vtx2sm.at(v_idx, ref_id);
+	// qt::idx_t v_idx = this->v_id_to_idx_.get_value(v_id);
+	// std::vector<qt::idx_t> &s = this->vtx2sm.at(v_idx, ref_id);
 
 	// // insert in sorted order of step idx
 	// auto it = std::lower_bound(s.begin(), s.end(), step_idx);
@@ -408,9 +408,9 @@ graph G {
 
 	/* edges */
 	for (const Edge &e : this->edges) {
-		pt::idx_t v1_idx = e.get_v1_idx();
+		qt::idx_t v1_idx = e.get_v1_idx();
 		std::string v1_e = v_end_to_dot(e.get_v1_end());
-		pt::idx_t v2_idx = e.get_v2_idx();
+		qt::idx_t v2_idx = e.get_v2_idx();
 		std::string v2_e = v_end_to_dot(e.get_v2_end());
 
 		os << qs::format("\t{}:{}--{}:{}[color=gray];\n", v1_idx, v1_e,
@@ -451,9 +451,9 @@ void VG::print_gfa(std::ostream &os) const
 
 	/* edges */
 	for (const Edge &e : this->edges) {
-		pt::idx_t v1_idx = e.get_v1_idx();
+		qt::idx_t v1_idx = e.get_v1_idx();
 		std::string v1_e = v_end_to_gfa(e.get_v1_end());
-		pt::idx_t v2_idx = e.get_v2_idx();
+		qt::idx_t v2_idx = e.get_v2_idx();
 		std::string v2_e = v_end_to_gfa2(e.get_v2_end());
 
 		os << "L" << "\t" << this->v_idx_to_id(v1_idx) << "\t" << v1_e
@@ -473,27 +473,27 @@ void VG::print_gfa(std::ostream &os) const
 std::vector<VG *> VG::componetize(const bd::VG &g)
 {
 
-	std::unordered_set<pt::idx_t> visited;
+	std::unordered_set<qt::idx_t> visited;
 	visited.reserve(g.vtx_count());
 
 	// avoids creating multiple edges between the same vertices
-	std::unordered_set<pt::idx_t> added_edges;
+	std::unordered_set<qt::idx_t> added_edges;
 	added_edges.reserve(g.edge_count());
 
-	std::stack<pt::idx_t> s;
-	pt::idx_t start_vtx{0};
+	std::stack<qt::idx_t> s;
+	qt::idx_t start_vtx{0};
 	s.push(start_vtx);
 	visited.insert(start_vtx);
 
 	std::vector<VG *> components;
 	VG *curr_vg{nullptr};
 
-	std::set<pt::idx_t> comp_vtxs; // current component vertices
+	std::set<qt::idx_t> comp_vtxs; // current component vertices
 	comp_vtxs.insert(start_vtx);
 
 	/* ---------- Helper Functions ---------- */
 
-	auto process_edge = [&](pt::idx_t v_idx, pt::idx_t e_idx) -> void
+	auto process_edge = [&](qt::idx_t v_idx, qt::idx_t e_idx) -> void
 	{
 		const Edge &e = g.get_edge(e_idx);
 		auto [_, adj_v_idx] = e.get_other_vtx(v_idx);
@@ -508,8 +508,8 @@ std::vector<VG *> VG::componetize(const bd::VG &g)
 		return;
 	};
 
-	auto add_edges = [&](const Vertex &v, pgt::v_end_e ve, pt::idx_t v_idx,
-			     pt::idx_t e_idx) -> void
+	auto add_edges = [&](const Vertex &v, pgt::v_end_e ve, qt::idx_t v_idx,
+			     qt::idx_t e_idx) -> void
 	{
 		// don't duplicate edges
 		if (qs::contains(added_edges, e_idx))
@@ -527,7 +527,7 @@ std::vector<VG *> VG::componetize(const bd::VG &g)
 	/* ---------- Main Component Search Loop ---------- */
 
 	while (!s.empty()) {
-		pt::idx_t v_idx = s.top();
+		qt::idx_t v_idx = s.top();
 		s.pop();
 		const Vertex &v = g.get_vertex_by_idx(v_idx);
 

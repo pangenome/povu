@@ -3,12 +3,13 @@
 #include <sstream> // for basic_ostringstream
 #include <sys/types.h>
 
-#include <quilt/shim.hpp> // for format
+#include <quilt/shim.hpp>  // for format
+#include <quilt/types.hpp> // for qt
 
 #include "ita/variation/rov.hpp" // for var_type_e
 				 //
-#include "povu/common/core.hpp"	 // for pt
-#include "povu/refs/refs.hpp"	 // for Ref, pr
+// #include "povu/common/core.hpp"	 // for pt
+#include "povu/refs/refs.hpp" // for Ref, pr
 
 namespace mto::to_vcf
 {
@@ -64,8 +65,8 @@ void init_vcfs(bd::VG &g, const std::vector<std::string> &ref_name_prefixes,
 	// add contig lines
 	for (const auto &rn_pref : ref_name_prefixes) {
 		std::ostream &os = vout.stream_for_ref_label(rn_pref);
-		std::set<pt::id_t> ref_ids = g.get_refs_in_sample(rn_pref);
-		for (pt::id_t ref_id : ref_ids) {
+		std::set<qt::id_t> ref_ids = g.get_refs_in_sample(rn_pref);
+		for (qt::id_t ref_id : ref_ids) {
 			const pr::Ref &ref = g.get_ref_by_id(ref_id);
 			write_header_contig_line(ref, os);
 		}

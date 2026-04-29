@@ -2,11 +2,9 @@
 
 #include <optional> // for optional, operator==
 
-#include <quilt/shim.hpp> // for contains
+#include <quilt/shim.hpp>  // for contains
+#include <quilt/types.hpp> // for qt
 
-#include "povu/common/constants.hpp"
-#include "povu/common/core.hpp" // for pt
-#include "povu/common/log.hpp"
 #include "povu/graph/bidirected.hpp" // for VG, bd
 #include "povu/graph/pvst.hpp"	     // for Tree, VertexBase
 #include "povu/graph/types.hpp"
@@ -15,14 +13,14 @@ namespace ita::color
 {
 namespace pvst = oza::pvst;
 
-bool has_any_refs(const bd::VG &g, const std::set<pt::id_t> &to_call_ref_ids,
-		  pt::u32 s_v_idx, pt::u32 t_v_idx)
+bool has_any_refs(const bd::VG &g, const std::set<qt::id_t> &to_call_ref_ids,
+		  qt::u32 s_v_idx, qt::u32 t_v_idx)
 {
-	for (pt::u32 r_idx : to_call_ref_ids) {
-		const std::vector<pt::idx_t> &s_idxs =
+	for (qt::u32 r_idx : to_call_ref_ids) {
+		const std::vector<qt::idx_t> &s_idxs =
 			g.get_vertex_ref_idxs(s_v_idx, r_idx);
 
-		const std::vector<pt::idx_t> &t_idxs =
+		const std::vector<qt::idx_t> &t_idxs =
 			g.get_vertex_ref_idxs(t_v_idx, r_idx);
 
 		if (!s_idxs.empty() || !t_idxs.empty())
@@ -35,16 +33,16 @@ bool has_any_refs(const bd::VG &g, const std::set<pt::id_t> &to_call_ref_ids,
 /**
  * compute a DFS from the root to find vertices to color
  */
-std::set<pt::u32> color_pvst(const bd::VG &g, const pvst::Tree &pvst,
-			     const std::set<pt::id_t> &to_call_ref_ids)
+std::set<qt::u32> color_pvst(const bd::VG &g, const pvst::Tree &pvst,
+			     const std::set<qt::id_t> &to_call_ref_ids)
 {
-	std::stack<pt::u32> s;
+	std::stack<qt::u32> s;
 	s.push(pvst.root_idx());
 
-	std::set<pt::u32> to_call;
+	std::set<qt::u32> to_call;
 
 	while (!s.empty()) {
-		pt::u32 curr_pvst_v_idx = s.top();
+		qt::u32 curr_pvst_v_idx = s.top();
 		s.pop();
 
 		const pvst::VertexBase *curr_v_ptr =
@@ -60,15 +58,15 @@ std::set<pt::u32> color_pvst(const bd::VG &g, const pvst::Tree &pvst,
 			auto [start_id, __] = l;
 			auto [stop_id, ___] = r;
 
-			pt::u32 s_v_idx = g.v_id_to_idx(start_id);
-			pt::u32 t_v_idx = g.v_id_to_idx(stop_id);
+			qt::u32 s_v_idx = g.v_id_to_idx(start_id);
+			qt::u32 t_v_idx = g.v_id_to_idx(stop_id);
 
 			// color this vertex if either the start or stop vertex
 			// has any of the refs we want to call
 			if (has_any_refs(g, to_call_ref_ids, s_v_idx, t_v_idx))
 				to_call.insert(curr_pvst_v_idx);
 
-			pt::u32 p_pvst_v_idx =
+			qt::u32 p_pvst_v_idx =
 				pvst.get_parent_idx(curr_pvst_v_idx);
 
 			// remove parent from to_call if both parent and current
@@ -79,16 +77,16 @@ std::set<pt::u32> color_pvst(const bd::VG &g, const pvst::Tree &pvst,
 		}
 
 		// push children to stack
-		const std::vector<pt::idx_t> &children_idxs =
+		const std::vector<qt::idx_t> &children_idxs =
 			pvst.get_children(curr_pvst_v_idx);
 
-		for (pt::idx_t c_idx : children_idxs)
+		for (qt::idx_t c_idx : children_idxs)
 			s.push(c_idx);
 	}
 
 	return to_call;
 
-	// std::set<pt::u32> colored_vtxs;
+	// std::set<qt::u32> colored_vtxs;
 	// return colored_vtxs;
 }
 

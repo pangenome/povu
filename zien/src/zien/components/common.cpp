@@ -7,17 +7,19 @@
 
 #include <povu/refs/refs.hpp> // for ref_format_e, Ref, lq_strand_to_char
 
+#include <quilt/types.hpp> // for qt
+
 namespace zien::components::common
 {
 namespace lq = liteseq;
 constexpr oza::refs::ref_format_e PN = oza::refs::ref_format_e::PANSN;
 using namespace zien::components;
 
-pt::id_t extract_anchor_v_id(const std::string &at)
+qt::id_t extract_anchor_v_id(const std::string &at)
 {
 	std::string v_id_str = "";
 	// zero is a > or <
-	for (pt::u32 i{1}; i < at.size(); i++) {
+	for (qt::u32 i{1}; i < at.size(); i++) {
 		char c = at[i];
 		if (c == '>' || c == '<')
 			break;
@@ -26,13 +28,13 @@ pt::id_t extract_anchor_v_id(const std::string &at)
 			v_id_str += c;
 	}
 
-	return static_cast<pt::id_t>(std::stoll(v_id_str));
+	return static_cast<qt::id_t>(std::stoll(v_id_str));
 }
 
-pt::u32 at_str_step_count(const std::string &at_str)
+qt::u32 at_str_step_count(const std::string &at_str)
 {
-	pt::u32 count{};
-	for (pt::u32 i{}; i < at_str.size(); i++) {
+	qt::u32 count{};
+	for (qt::u32 i{}; i < at_str.size(); i++) {
 		char c = at_str[i];
 		if (c == '>' || c == '<')
 			count++;
@@ -41,12 +43,12 @@ pt::u32 at_str_step_count(const std::string &at_str)
 	return count;
 }
 
-std::set<pt::id_t> get_ref_ids(const bd::VG &g, const std::string &sn,
-			       pt::u32 phase_idx)
+std::set<qt::id_t> get_ref_ids(const bd::VG &g, const std::string &sn,
+			       qt::u32 phase_idx)
 {
-	std::set<pt::id_t> filtered_ref_ids;
+	std::set<qt::id_t> filtered_ref_ids;
 
-	for (pt::id_t r_id : g.get_refs_in_sample(sn)) {
+	for (qt::id_t r_id : g.get_refs_in_sample(sn)) {
 		const oza::refs::Ref &r = g.get_ref_by_id(r_id);
 
 		// TODO: find a better way to handle non PANSN
@@ -60,11 +62,11 @@ std::set<pt::id_t> get_ref_ids(const bd::VG &g, const std::string &sn,
 }
 
 void comp_update_refs(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
-		      pt::u32 selected_rec_idx, pt::u32 at_idx,
+		      qt::u32 selected_rec_idx, qt::u32 at_idx,
 		      display_lines &pd)
 {
-	pt::u32 line_count = pd.lines.size();
-	pt::u32 ctr{line_count}; // counter for line metadata
+	qt::u32 line_count = pd.lines.size();
+	qt::u32 ctr{line_count}; // counter for line metadata
 
 	// what we compute and return
 	// lm &meta = pd.meta;
@@ -88,28 +90,28 @@ void comp_update_refs(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 		d.get_data().at(at_idx);
 
 	const std::string &s = rec.get_at(at_idx);
-	pt::u32 at_str_len = s.length();
-	pt::u32 at_str_sc = at_str_step_count(s);
-	pt::id_t anchor_v_id = extract_anchor_v_id(s);
+	qt::u32 at_str_len = s.length();
+	qt::u32 at_str_sc = at_str_step_count(s);
+	qt::id_t anchor_v_id = extract_anchor_v_id(s);
 
 	for (const auto &[sample_idx, phase_idx] : at_meta) {
 		std::string sn = vcf_file.get_sample_name(sample_idx);
 		std::string curr_l = "";
 
-		std::set<pt::id_t> ref_ids = zien::common::get_ref_ids(
+		std::set<qt::id_t> ref_ids = zien::common::get_ref_ids(
 			g, vcf_file, sample_idx, phase_idx);
 
-		for (pt::u32 h_idx : ref_ids) {
+		for (qt::u32 h_idx : ref_ids) {
 
 			const lq::ref_walk *rw = g.get_ref_vec(h_idx)->walk;
-			pt::u32 N = rw->step_count;
+			qt::u32 N = rw->step_count;
 
 			curr_l.clear();
 
 			// curr_l += "[" + std::to_string(N) + "] ";
 			curr_l += g.get_tag(h_idx);
 
-			pt::u32 header_len = curr_l.length();
+			qt::u32 header_len = curr_l.length();
 
 			if (header_len > pd.lh)
 				pd.lh = header_len;
@@ -118,8 +120,8 @@ void comp_update_refs(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 			// << "\t"
 			//	  << sn << "\n";
 
-			pt::u32 anchor_v_idx = g.v_id_to_idx(anchor_v_id);
-			const std::vector<pt::idx_t> &starts =
+			qt::u32 anchor_v_idx = g.v_id_to_idx(anchor_v_id);
+			const std::vector<qt::idx_t> &starts =
 				g.get_vertex_ref_idxs(anchor_v_idx, h_idx);
 
 			if (starts.empty())
@@ -129,23 +131,23 @@ void comp_update_refs(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 							  // not exists
 			lm.ref_name_pos = header_len;
 
-			for (pt::u32 s{}; s < starts.size(); s++) {
-				pt::u32 ref_pos = starts[s];
-				pt::u32 i = ref_pos > 10 ? ref_pos - 10 : 0;
-				pt::u32 end =
+			for (qt::u32 s{}; s < starts.size(); s++) {
+				qt::u32 ref_pos = starts[s];
+				qt::u32 i = ref_pos > 10 ? ref_pos - 10 : 0;
+				qt::u32 end =
 					std::min(ref_pos + at_str_sc + 10, N);
 
 				for (; i < end; i++) {
 					if (i == ref_pos) {
-						pt::slice w{
-							(pt::u32)curr_l.size(),
+						qt::slice w{
+							(qt::u32)curr_l.size(),
 							at_str_len};
 
 						lm.at_str_slices.emplace_back(
 							w);
 					}
 
-					pt::id_t v_id = rw->v_ids[i];
+					qt::id_t v_id = rw->v_ids[i];
 					char o = oza::refs::lq_strand_to_char(
 						rw->strands[i]);
 					// char o = lq_strand_to_or_e(

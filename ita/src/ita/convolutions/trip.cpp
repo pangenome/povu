@@ -8,9 +8,11 @@
 #include <liteseq/refs.h>		  // for ref_walk, ref
 #include <meza/pool/hap_comp.hpp>	  // for haps_comp_set
 #include <meza/pool/split_pool_types.hpp> // for ov_mat_t
+#include <quilt/types.hpp>		  // for qt
 
 #include "ita/traversals/at_matrix.hpp" // for matrix_pool, rov_matrix_set
-#include "quilt/types.hpp"
+
+// #include "quilt/types.hpp"
 
 namespace ita::trip
 {
@@ -21,15 +23,15 @@ using graph_context_t = qt::op_t<qt::u32>;
 using meza::pool::hap_comp::haps_comp_set;
 
 // map of context to the set of hap indexes with that context as a variant
-using cxt_idx_t = std::map<mat_context_t, std::set<pt::u32>>;
+using cxt_idx_t = std::map<mat_context_t, std::set<qt::u32>>;
 
 graph_context_t
-matrix_context_to_graph_context(const std::vector<pt::u32> &sorted_vertices,
-				const pt::op_t<pt::u32> &matrix_context)
+matrix_context_to_graph_context(const std::vector<qt::u32> &sorted_vertices,
+				const qt::op_t<qt::u32> &matrix_context)
 {
 	auto [u, v] = matrix_context;
-	pt::u32 u_v_id = sorted_vertices[u];
-	pt::u32 v_v_id = sorted_vertices[v];
+	qt::u32 u_v_id = sorted_vertices[u];
+	qt::u32 v_v_id = sorted_vertices[v];
 
 	return {u_v_id, v_v_id};
 }
@@ -44,10 +46,10 @@ find_hap_slice_no_tangle(const bd::VG &g, qt::u32 h_idx,
 	qt::u32 u_step_idx{pc::INVALID_IDX};
 	qt::u32 v_step_idx{pc::INVALID_IDX};
 
-	const std::vector<pt::u32> &u_positions =
+	const std::vector<qt::u32> &u_positions =
 		g.get_vertex_ref_idxs(g.v_id_to_idx(u_v_id), h_idx);
 
-	const std::vector<pt::u32> &v_positions =
+	const std::vector<qt::u32> &v_positions =
 		g.get_vertex_ref_idxs(g.v_id_to_idx(v_v_id), h_idx);
 
 	if (u_positions.empty() || v_positions.empty())
@@ -161,14 +163,14 @@ std::vector<mat_context_t> find_row_context(const ov_mat_t &ref_matrix,
 
 // TODO: combine with find_row_context
 cxt_idx_t find_variant_mat_contexts(const ita::at_matrix::mat3 &mat_set,
-				    const std::set<pt::u32> &variant_refs)
+				    const std::set<qt::u32> &variant_refs)
 {
 	const ov_mat_t &ref_mat = mat_set.ref;
 	const ov_mat_t &xor_mat = mat_set.xor_result;
 
 	cxt_idx_t index;
 	// variant_context_map_t hap_contexts;
-	for (pt::u32 h_idx : variant_refs) {
+	for (qt::u32 h_idx : variant_refs) {
 		std::vector<mat_context_t> contexts =
 			find_row_context(ref_mat, xor_mat, h_idx);
 		for (mat_context_t &c : contexts)
@@ -180,10 +182,10 @@ cxt_idx_t find_variant_mat_contexts(const ita::at_matrix::mat3 &mat_set,
 }
 
 ia::rov_boundaries indexes_to_rov_boundaries(
-	const bd::VG &g, const pt::op_t<pt::u32> &matrix_context,
-	const std::vector<pt::u32> &sorted_vertices,
+	const bd::VG &g, const qt::op_t<qt::u32> &matrix_context,
+	const std::vector<qt::u32> &sorted_vertices,
 	const std::vector<ita::traversals::traversals::itinerary> &hap_itns,
-	pt::u32 h_idx, const ita::at_matrix::hap2loop &h2l)
+	qt::u32 h_idx, const ita::at_matrix::hap2loop &h2l)
 {
 	const lq::ref_walk *hw = g.get_ref_vec(h_idx)->walk; // the hap walk
 
@@ -208,26 +210,26 @@ ia::rov_boundaries indexes_to_rov_boundaries(
 }
 
 ia::hap_slice context_to_hap_slice(
-	const bd::VG &g, pt::u32 h_idx, qt::u32 loop_no,
-	const pt::op_t<pt::u32> &graph_context,
+	const bd::VG &g, qt::u32 h_idx, qt::u32 loop_no,
+	const qt::op_t<qt::u32> &graph_context,
 	const std::vector<ita::traversals::traversals::itinerary> &hap_itns)
 {
 	auto [slice_start, slice_end] =
 		find_hap_slice(g, h_idx, loop_no, hap_itns, graph_context);
 
-	pt::u32 len = (slice_end - slice_start) + 1;
+	qt::u32 len = (slice_end - slice_start) + 1;
 
 	return {g.get_ref_vec(h_idx)->walk, h_idx, slice_start, len};
 }
 
-std::tuple<ia::hap_slice, ia::alt_set, std::set<pt::u32>> gen_hap_slices(
-	const bd::VG &g, const std::vector<pt::u32> &sorted_vertices,
-	const pt::op_t<pt::u32> &matrix_context, pt::u32 ref_h_idx,
+std::tuple<ia::hap_slice, ia::alt_set, std::set<qt::u32>> gen_hap_slices(
+	const bd::VG &g, const std::vector<qt::u32> &sorted_vertices,
+	const qt::op_t<qt::u32> &matrix_context, qt::u32 ref_h_idx,
 	const ita::at_matrix::hap2loop &h2l,
 	const std::vector<ita::traversals::traversals::itinerary> &hap_itns,
-	const std::set<pt::u32> &h_idxs)
+	const std::set<qt::u32> &h_idxs)
 {
-	pt::op_t<pt::u32> graph_context = matrix_context_to_graph_context(
+	qt::op_t<qt::u32> graph_context = matrix_context_to_graph_context(
 		sorted_vertices, matrix_context);
 
 	ia::hap_slice ref_slice =
@@ -236,9 +238,9 @@ std::tuple<ia::hap_slice, ia::alt_set, std::set<pt::u32>> gen_hap_slices(
 
 	ia::alt_set as; // alt set
 
-	std::set<pt::u32> alt_haps;
+	std::set<qt::u32> alt_haps;
 
-	for (pt::u32 h_idx : h_idxs) {
+	for (qt::u32 h_idx : h_idxs) {
 		qt::u32 loop_no = h2l.get_loop_no(h_idx);
 		ia::hap_slice alt_slice = context_to_hap_slice(
 			g, h_idx, loop_no, graph_context, hap_itns);
@@ -260,7 +262,7 @@ void gen_trip(
 	const bd::VG &g, const cxt_idx_t &context_idx, qt::u32 ref_h_idx,
 	const ita::at_matrix::hap2loop &h2l,
 	const std::vector<ita::traversals::traversals::itinerary> &hap_itns,
-	const std::vector<pt::u32> &sorted_vertices,
+	const std::vector<qt::u32> &sorted_vertices,
 	const std::set<qt::u32> &matches_ref, const ov_mat_t &filter_mat,
 	ia::trek &tk)
 {
@@ -292,7 +294,7 @@ void gen_trip(
 		for (auto h_idx : matches_ref)
 			tk.add_match_ref(ref_h_idx, h_idx);
 
-		for (pt::u32 h_idx{}; h_idx < I; h_idx++)
+		for (qt::u32 h_idx{}; h_idx < I; h_idx++)
 			if (filter_mat.base().is_row_blank(h_idx) &&
 			    h_idx != ref_h_idx)
 				tk.add_no_cov(ref_h_idx, h_idx);
@@ -304,7 +306,7 @@ gen_trip(const bd::VG &g, const ir::RoV *rov, bool is_tangled,
 	 qt::u32 ref_h_idx, const ita::at_matrix::hap2loop &h2l,
 	 const std::vector<ita::traversals::traversals::itinerary> &hap_itns,
 	 const ita::at_matrix::mat3 &mat_set,
-	 const std::vector<pt::u32> &sorted_vertices,
+	 const std::vector<qt::u32> &sorted_vertices,
 	 const haps_comp_set &hap_cmp)
 {
 	auto tk = ia::trek::create_new(rov, g.get_hap_count(), is_tangled);

@@ -10,11 +10,10 @@
 #include <string_view>
 #include <vector>
 
-#include <quilt/shim.hpp> // for format, erase_if
+#include <quilt/shim.hpp>  // for format, erase_if
+#include <quilt/types.hpp> // for qt
 
-// #include "povu/common/compat.hpp"
 #include "povu/common/constants.hpp"
-// #include "povu/common/log.hpp"
 #include "povu/graph/types.hpp"
 
 /* === PVST pangenome variation structure tree === */
@@ -197,8 +196,8 @@ typedef concealed_fl_boundary_e cb_e;
 
 // bounds in the spanning tree
 struct bounds_t {
-	pt::idx_t upper;
-	pt::idx_t lower; // when invalid all leaves are the lower boundaries
+	qt::idx_t upper;
+	qt::idx_t lower; // when invalid all leaves are the lower boundaries
 };
 
 const bounds_t INVALID_BOUNDS{pc::INVALID_IDX, pc::INVALID_IDX};
@@ -206,21 +205,21 @@ const bounds_t INVALID_BOUNDS{pc::INVALID_IDX, pc::INVALID_IDX};
 /* an abstract class for vertices  */
 class VertexBase
 {
-	pt::id_t idx_;			    // idx of the vertex in the pvst
-	pt::idx_t height_{pc::INVALID_IDX}; // height of the vertex in the pvst
+	qt::id_t idx_;			    // idx of the vertex in the pvst
+	qt::idx_t height_{pc::INVALID_IDX}; // height of the vertex in the pvst
 	vf_e fam_;
 
 public:
 	// --------------
 	// constructor(s)
 	// --------------
-	VertexBase(pt::id_t idx, vf_e fam) : idx_(idx), fam_(fam)
+	VertexBase(qt::id_t idx, vf_e fam) : idx_(idx), fam_(fam)
 	{}
 
 	// -------
 	// getters
 	// -------
-	pt::id_t get_idx() const
+	qt::id_t get_idx() const
 	{
 		return this->idx_;
 	}
@@ -230,7 +229,7 @@ public:
 		return this->fam_;
 	}
 
-	pt::idx_t get_height() const
+	qt::idx_t get_height() const
 	{
 		return this->height_;
 	}
@@ -246,7 +245,7 @@ public:
 	// -------
 	// setters
 	// -------
-	void set_idx(pt::id_t idx)
+	void set_idx(qt::id_t idx)
 	{
 		this->idx_ = idx;
 	}
@@ -256,7 +255,7 @@ public:
 		this->fam_ = type;
 	}
 
-	void set_height(pt::idx_t height)
+	void set_height(qt::idx_t height)
 	{
 		this->height_ = height;
 	}
@@ -314,11 +313,11 @@ class Flubble : public VertexBase
 	pgt::id_or_t a_; // start
 	pgt::id_or_t z_; // end
 
-	pt::idx_t ai_;
-	pt::idx_t zi_;
+	qt::idx_t ai_;
+	qt::idx_t zi_;
 
-	pt::idx_t m_;
-	pt::idx_t n_;
+	qt::idx_t m_;
+	qt::idx_t n_;
 
 	// a flubble route is always L to R
 	const route_e route_{route_e::s2e};
@@ -326,8 +325,8 @@ class Flubble : public VertexBase
 	// --------------
 	// constructor(s)
 	// --------------
-	Flubble(vf_e vf, pgt::id_or_t a, pgt::id_or_t z, pt::idx_t ai,
-		pt::idx_t zi)
+	Flubble(vf_e vf, pgt::id_or_t a, pgt::id_or_t z, qt::idx_t ai,
+		qt::idx_t zi)
 	    : VertexBase(pc::INVALID_IDX, vf), a_(a), z_(z), ai_(ai), zi_(zi),
 	      m_(pc::INVALID_IDX), n_(pc::INVALID_IDX)
 	{}
@@ -337,8 +336,8 @@ public:
 	// factory fns
 	// --------------
 
-	static Flubble create(pgt::id_or_t a, pgt::id_or_t z, pt::idx_t ai,
-			      pt::idx_t zi)
+	static Flubble create(pgt::id_or_t a, pgt::id_or_t z, qt::idx_t ai,
+			      qt::idx_t zi)
 	{
 		return Flubble(vf_e::flubble, a, z, ai, zi);
 	}
@@ -346,8 +345,8 @@ public:
 	static Flubble parse(vf_e f, const route_params_t &rp)
 	{
 		auto [a, z, _] = rp;
-		pt::idx_t ai{pc::INVALID_IDX};
-		pt::idx_t zi{pc::INVALID_IDX};
+		qt::idx_t ai{pc::INVALID_IDX};
+		qt::idx_t zi{pc::INVALID_IDX};
 		return Flubble(f, a, z, ai, zi);
 	}
 
@@ -364,22 +363,22 @@ public:
 		return this->z_;
 	}
 
-	pt::idx_t get_ai() const
+	qt::idx_t get_ai() const
 	{
 		return this->ai_;
 	}
 
-	pt::idx_t get_zi() const
+	qt::idx_t get_zi() const
 	{
 		return this->zi_;
 	}
 
-	pt::idx_t get_m() const
+	qt::idx_t get_m() const
 	{
 		return this->m_;
 	}
 
-	pt::idx_t get_n() const
+	qt::idx_t get_n() const
 	{
 		return this->n_;
 	}
@@ -398,12 +397,12 @@ public:
 	// -------
 	// setters
 	// -------
-	void set_m(pt::idx_t m)
+	void set_m(qt::idx_t m)
 	{
 		this->m_ = m;
 	}
 
-	void set_n(pt::idx_t n)
+	void set_n(qt::idx_t n)
 	{
 		this->n_ = n;
 	}
@@ -420,9 +419,9 @@ public:
 class Concealed : public VertexBase
 {
 	// TODO: rename to parent idx
-	pt::idx_t fl_idx_;  // v idx of the parent flubble in the PVST
+	qt::idx_t fl_idx_;  // v idx of the parent flubble in the PVST
 	cl_e location_;	    // type of the slubble (trunk or branch)
-	pt::idx_t loc_idx_; // idx in the spanning tree for slubble
+	qt::idx_t loc_idx_; // idx in the spanning tree for slubble
 
 	// b for boundary
 	pgt::id_or_t fl_b_; // a or z
@@ -449,7 +448,7 @@ private:
 	// constructor(s)
 	// --------------
 	Concealed(pgt::id_or_t fl_b, pgt::id_or_t cn_b, bounds_t bounds,
-		  pt::idx_t fl_idx, cl_e loc, pt::idx_t loc_idx, route_e rt)
+		  qt::idx_t fl_idx, cl_e loc, qt::idx_t loc_idx, route_e rt)
 	    : VertexBase(pc::INVALID_IDX, vf_e::concealed), fl_idx_(fl_idx),
 	      location_(loc), loc_idx_(loc_idx), fl_b_(fl_b), cn_b_(cn_b),
 	      bounds_(bounds), route_(rt)
@@ -460,17 +459,17 @@ public:
 	// factory fns
 	// --------------
 	static Concealed create(pgt::id_or_t fl_b, pgt::id_or_t cn_b,
-				bounds_t bounds, pt::idx_t fl_idx, cl_e loc,
-				pt::idx_t loc_idx, route_e rt)
+				bounds_t bounds, qt::idx_t fl_idx, cl_e loc,
+				qt::idx_t loc_idx, route_e rt)
 	{
 		return Concealed(fl_b, cn_b, bounds, fl_idx, loc, loc_idx, rt);
 	}
 
 	static Concealed parse(const route_params_t &rp)
 	{
-		pt::idx_t fl_idx{pc::INVALID_IDX};
+		qt::idx_t fl_idx{pc::INVALID_IDX};
 		pvst::cl_e loc{cl_e::undefined};
-		pt::idx_t loc_idx{pc::INVALID_IDX};
+		qt::idx_t loc_idx{pc::INVALID_IDX};
 		bounds_t bounds{INVALID_BOUNDS};
 
 		auto [fl_b, cn_b, r] = rp;
@@ -480,7 +479,7 @@ public:
 	// -------
 	// getters
 	// -------
-	pt::idx_t get_fl_idx() const
+	qt::idx_t get_fl_idx() const
 	{
 		return this->fl_idx_;
 	}
@@ -490,7 +489,7 @@ public:
 		return this->location_;
 	}
 
-	pt::idx_t get_sl_st_idx() const
+	qt::idx_t get_sl_st_idx() const
 	{
 		return this->loc_idx_;
 	}
@@ -534,8 +533,8 @@ public:
 
 class Smothered : public VertexBase
 {
-	pt::idx_t cn_idx_;    // idx of the concealed vertex
-	pt::idx_t sm_st_idx_; // idx in the spanning tree for smothered vertex
+	qt::idx_t cn_idx_;    // idx of the concealed vertex
+	qt::idx_t sm_st_idx_; // idx in the spanning tree for smothered vertex
 
 	// b for boundary
 	pgt::id_or_t cn_b_; // g or s
@@ -552,8 +551,8 @@ class Smothered : public VertexBase
 	// --------------
 	// constructor(s)
 	// --------------
-	Smothered(pgt::id_or_t cn_b, pgt::id_or_t sm_b, pt::idx_t cn_idx,
-		  bool cn_b_is_ans, pt::idx_t sm_st_idx, cb_e sm_type,
+	Smothered(pgt::id_or_t cn_b, pgt::id_or_t sm_b, qt::idx_t cn_idx,
+		  bool cn_b_is_ans, qt::idx_t sm_st_idx, cb_e sm_type,
 		  bounds_t bounds, route_e route)
 	    : VertexBase(pc::INVALID_IDX, vf_e::smothered), cn_idx_(cn_idx),
 	      sm_st_idx_(sm_st_idx), cn_b_(cn_b), sm_b_(sm_b),
@@ -566,8 +565,8 @@ public:
 	// factory fns
 	// -----------
 	static Smothered create(pgt::id_or_t cn_b, pgt::id_or_t sm_b,
-				pt::idx_t cn_idx, bool cn_b_is_ans,
-				pt::idx_t sm_st_idx, cb_e sm_type,
+				qt::idx_t cn_idx, bool cn_b_is_ans,
+				qt::idx_t sm_st_idx, cb_e sm_type,
 				bounds_t bounds, route_e route)
 	{
 		return Smothered(cn_b, sm_b, cn_idx, cn_b_is_ans, sm_st_idx,
@@ -576,8 +575,8 @@ public:
 
 	static Smothered parse(const route_params_t &rp)
 	{
-		pt::idx_t cn_idx{pc::INVALID_IDX};
-		pt::idx_t sm_st_idx{pc::INVALID_IDX};
+		qt::idx_t cn_idx{pc::INVALID_IDX};
+		qt::idx_t sm_st_idx{pc::INVALID_IDX};
 		bool cn_b_is_ans{false};
 		cb_e cn_type{cb_e::g};
 		bounds_t bounds{INVALID_BOUNDS};
@@ -590,12 +589,12 @@ public:
 	// -------
 	// getters
 	// -------
-	pt::idx_t get_cn_idx() const
+	qt::idx_t get_cn_idx() const
 	{
 		return this->cn_idx_;
 	}
 
-	pt::idx_t get_sm_st_idx() const
+	qt::idx_t get_sm_st_idx() const
 	{
 		return this->sm_st_idx_;
 	}
@@ -641,8 +640,8 @@ public:
 
 class MidiBubble : public VertexBase
 {
-	pt::idx_t g_cn_idx_;
-	pt::idx_t s_cn_idx_;
+	qt::idx_t g_cn_idx_;
+	qt::idx_t s_cn_idx_;
 	pgt::id_or_t g_;
 	pgt::id_or_t s_;
 	route_e route_;
@@ -650,7 +649,7 @@ class MidiBubble : public VertexBase
 	// --------------
 	// constructor(s)
 	// --------------
-	MidiBubble(pt::idx_t g_cn_idx, pgt::id_or_t g, pt::idx_t s_cn_idx,
+	MidiBubble(qt::idx_t g_cn_idx, pgt::id_or_t g, qt::idx_t s_cn_idx,
 		   pgt::id_or_t s, route_e route)
 	    : VertexBase(pc::INVALID_IDX, vf_e::midi), g_cn_idx_(g_cn_idx),
 	      s_cn_idx_(s_cn_idx), g_(g), s_(s), route_(route)
@@ -660,8 +659,8 @@ public:
 	// -----------
 	// factory fns
 	// -----------
-	static MidiBubble create(pt::idx_t g_cn_idx, pgt::id_or_t g,
-				 pt::idx_t s_cn_idx, pgt::id_or_t s,
+	static MidiBubble create(qt::idx_t g_cn_idx, pgt::id_or_t g,
+				 qt::idx_t s_cn_idx, pgt::id_or_t s,
 				 route_e route)
 	{
 		// Validate indices at creation time
@@ -675,8 +674,8 @@ public:
 
 	static MidiBubble parse(const route_params_t &rp)
 	{
-		pt::idx_t g_cn_idx{pc::INVALID_IDX};
-		pt::idx_t s_cn_idx{pc::INVALID_IDX};
+		qt::idx_t g_cn_idx{pc::INVALID_IDX};
+		qt::idx_t s_cn_idx{pc::INVALID_IDX};
 		auto [g, s, r] = rp;
 		return MidiBubble(g_cn_idx, g, s_cn_idx, s, r);
 	}
@@ -721,10 +720,10 @@ public:
 class Tree
 {
 	std::vector<std::unique_ptr<pvst::VertexBase>> vertices;
-	std::vector<pt::idx_t> parent_v; // parent of each vertex
-	std::vector<std::vector<pt::idx_t>>
+	std::vector<qt::idx_t> parent_v; // parent of each vertex
+	std::vector<std::vector<qt::idx_t>>
 		children_v;  // children of each vertex
-	pt::idx_t root_idx_; // index of the root vertex in the vertices vector
+	qt::idx_t root_idx_; // index of the root vertex in the vertices vector
 
 public:
 	// --------------
@@ -734,25 +733,25 @@ public:
 	Tree() : root_idx_(pc::INVALID_IDX)
 	{}
 
-	Tree(pt::idx_t expected_size) : Tree()
+	Tree(qt::idx_t expected_size) : Tree()
 	{
 		vertices.reserve(expected_size);
-		this->parent_v = std::vector<pt::idx_t>(expected_size + 1,
+		this->parent_v = std::vector<qt::idx_t>(expected_size + 1,
 							pc::INVALID_ID);
 		this->children_v =
-			std::vector<std::vector<pt::idx_t>>(1 + expected_size);
+			std::vector<std::vector<qt::idx_t>>(1 + expected_size);
 	}
 
 	// ---------
 	// getter(s)
 	// ---------
 
-	pt::idx_t vtx_count() const
+	qt::idx_t vtx_count() const
 	{
 		return this->vertices.size();
 	}
 
-	pt::idx_t root_idx() const
+	qt::idx_t root_idx() const
 	{
 		return this->root_idx_;
 	}
@@ -762,38 +761,38 @@ public:
 		return this->get_vertex(this->root_idx());
 	}
 
-	const pvst::VertexBase &get_vertex(pt::idx_t v_idx) const
+	const pvst::VertexBase &get_vertex(qt::idx_t v_idx) const
 	{
 		return *this->vertices[v_idx];
 	}
 
-	const pvst::VertexBase *get_vertex_const_ptr(pt::idx_t v_idx) const
+	const pvst::VertexBase *get_vertex_const_ptr(qt::idx_t v_idx) const
 	{
 		return this->vertices[v_idx].get();
 	}
 
-	pvst::VertexBase &get_vertex_mut(pt::idx_t v_idx)
+	pvst::VertexBase &get_vertex_mut(qt::idx_t v_idx)
 	{
 		return *this->vertices[v_idx];
 	}
 
-	const pvst::VertexBase &get_parent(pt::idx_t v_idx) const
+	const pvst::VertexBase &get_parent(qt::idx_t v_idx) const
 	{
 		return *this->vertices[parent_v[v_idx]];
 	}
 
-	pt::idx_t get_parent_idx(pt::idx_t v_idx) const
+	qt::idx_t get_parent_idx(qt::idx_t v_idx) const
 	{
 		return this->parent_v[v_idx];
 	}
 
 	// TODO: rename to get_children_idxs()
-	const std::vector<pt::idx_t> &get_children(pt::idx_t v_idx) const
+	const std::vector<qt::idx_t> &get_children(qt::idx_t v_idx) const
 	{
 		return this->children_v[v_idx];
 	}
 
-	bool is_leaf(pt::idx_t v_idx) const
+	bool is_leaf(qt::idx_t v_idx) const
 	{
 		return v_idx >= this->children_v.size() ||
 		       this->children_v[v_idx].empty();
@@ -818,14 +817,14 @@ public:
 		}
 
 		// compute heights using DFS
-		std::stack<pt::idx_t> s;
+		std::stack<qt::idx_t> s;
 		s.push(this->root_idx_);
 
 		while (!s.empty()) {
-			pt::idx_t v_idx = s.top();
+			qt::idx_t v_idx = s.top();
 			s.pop();
 
-			for (pt::idx_t child_v_idx :
+			for (qt::idx_t child_v_idx :
 			     this->get_children(v_idx)) {
 				auto &child_v =
 					this->get_vertex_mut(child_v_idx);
@@ -837,7 +836,7 @@ public:
 		}
 	}
 
-	void set_root_idx(pt::idx_t v_idx)
+	void set_root_idx(qt::idx_t v_idx)
 	{
 		if (this->root_idx_ != pc::INVALID_IDX) {
 			throw std::logic_error("Root index is already set");
@@ -856,9 +855,9 @@ public:
 	 * @return Index of the added vertex
 	 */
 	template <typename T>
-	pt::idx_t add_vertex(T v)
+	qt::idx_t add_vertex(T v)
 	{
-		pt::idx_t v_idx = this->vertices.size();
+		qt::idx_t v_idx = this->vertices.size();
 		v.set_idx(v_idx); // set the index of the vertex
 
 		while (v_idx >= this->parent_v.size()) {
@@ -869,7 +868,7 @@ public:
 
 		while (v_idx >= this->children_v.size()) {
 			this->children_v.push_back(
-				std::vector<pt::idx_t>()); // ensure children_v
+				std::vector<qt::idx_t>()); // ensure children_v
 							   // has enough space
 		}
 
@@ -881,23 +880,23 @@ public:
 		return v_idx;
 	}
 
-	void add_edge(pt::idx_t parent, pt::idx_t child)
+	void add_edge(qt::idx_t parent, qt::idx_t child)
 	{
 		while (child >= this->parent_v.size()) {
 			this->parent_v.push_back(pc::INVALID_ID);
 		}
 		this->parent_v[child] = parent;
 		while (parent >= this->children_v.size()) {
-			this->children_v.push_back(std::vector<pt::idx_t>());
+			this->children_v.push_back(std::vector<qt::idx_t>());
 		}
 		this->children_v[parent].push_back(child);
 	}
 
-	void del_edge(pt::idx_t parent, pt::idx_t child)
+	void del_edge(qt::idx_t parent, qt::idx_t child)
 	{
 		this->parent_v[child] = pc::INVALID_IDX;
 
-		std::vector<pt::idx_t> &children = this->children_v[parent];
+		std::vector<qt::idx_t> &children = this->children_v[parent];
 		auto it = std::find(children.begin(), children.end(), child);
 		if (it != children.end()) {
 			children.erase(it);
@@ -915,14 +914,14 @@ public:
 					"\tedge [arrowhead=vee];\n");
 
 		// print vertices
-		for (pt::idx_t i{}; i < this->vtx_count(); i++) {
+		for (qt::idx_t i{}; i < this->vtx_count(); i++) {
 			std::cout << qs::format("\t{} [label=\"{}\"];\n", i,
 						this->get_vertex(i).as_str());
 		}
 
 		// print edges
-		for (pt::idx_t i{}; i < this->vtx_count(); i++) {
-			for (pt::idx_t c : this->get_children(i)) {
+		for (qt::idx_t i{}; i < this->vtx_count(); i++) {
+			for (qt::idx_t c : this->get_children(i)) {
 				std::cout << qs::format("\t{} -- {};\n", i, c);
 			}
 		}

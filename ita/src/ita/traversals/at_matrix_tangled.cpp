@@ -3,16 +3,13 @@
 
 #include <meza/pool/pool.hpp> // for pool
 
-#include <quilt/shim.hpp> // for contains
-
-// #include <meza/pool/split.hpp> // for matrix_pool
+#include <quilt/shim.hpp>  // for contains
+#include <quilt/types.hpp> // for qt
 
 #include "ita/traversals/at_matrix.hpp" // for matrix_pool
 #include "ita/traversals/untangle.hpp"	// for aln_chain, chain_link
 #include "ita/variation/rov.hpp"	// for RoV
-#include "povu/common/core.hpp"		// for pt
 #include "povu/graph/bidirected.hpp"	// for VG
-#include "quilt/types.hpp"
 
 namespace ita::at_matrix::tangled
 {
@@ -35,8 +32,8 @@ constexpr meza::pool::pool_region region_filter =
 
 constexpr meza::pool::pool_region region_xor = meza::pool::pool_region::Xor;
 
-void populate_ref(const bd::VG &g, const ir::RoV *rov, pt::u32 h_idx,
-		  const allele_traversal &at, const pt::u32 I, const pt::u32 J,
+void populate_ref(const bd::VG &g, const ir::RoV *rov, qt::u32 h_idx,
+		  const allele_traversal &at, const qt::u32 I, const qt::u32 J,
 		  ov_mat_t &ref_mat)
 {
 	if (at.empty())
@@ -48,8 +45,8 @@ void populate_ref(const bd::VG &g, const ir::RoV *rov, pt::u32 h_idx,
 		const lq::ref_walk *h_w =
 			g.get_ref_vec(h_idx)->walk; // the hap walk
 		lq::strand lq_s = h_w->strands[step_idx];
-		pt::u32 v_id = h_w->v_ids[step_idx];
-		pt::u32 sorted_pos = rov->get_sorted_pos(v_id);
+		qt::u32 v_id = h_w->v_ids[step_idx];
+		qt::u32 sorted_pos = rov->get_sorted_pos(v_id);
 
 		qt::u8 val = (lq_s == lq::strand::STRAND_FWD) ? 1 : 2;
 
@@ -57,12 +54,12 @@ void populate_ref(const bd::VG &g, const ir::RoV *rov, pt::u32 h_idx,
 	}
 
 	// copy contents of ref row to all other rows
-	for (pt::u32 i{}; i < I; i++)
-		for (pt::u32 j{}; j < J; j++)
+	for (qt::u32 i{}; i < I; i++)
+		for (qt::u32 j{}; j < J; j++)
 			ref_mat.set_value(i, j, ref_row[j]);
 }
 
-void populate_filter(const bd::VG &g, const ir::RoV *rov, pt::u32 h_idx,
+void populate_filter(const bd::VG &g, const ir::RoV *rov, qt::u32 h_idx,
 		     const allele_traversal &at, ov_mat_t &filter_mat)
 {
 	if (at.empty())
@@ -76,8 +73,8 @@ void populate_filter(const bd::VG &g, const ir::RoV *rov, pt::u32 h_idx,
 		const lq::ref_walk *h_w =
 			g.get_ref_vec(h_idx)->walk; // the hap walk
 		lq::strand lq_s = h_w->strands[step_idx];
-		pt::u32 v_id = h_w->v_ids[step_idx];
-		pt::u32 sorted_pos = rov->get_sorted_pos(v_id);
+		qt::u32 v_id = h_w->v_ids[step_idx];
+		qt::u32 sorted_pos = rov->get_sorted_pos(v_id);
 
 		qt::u8 val = (lq_s == lq::strand::STRAND_FWD) ? 1 : 2;
 
@@ -86,17 +83,17 @@ void populate_filter(const bd::VG &g, const ir::RoV *rov, pt::u32 h_idx,
 }
 
 void from_tangled(const bd::VG &g, const ir::RoV *rov,
-		  const std::set<pt::u32> &to_call_ref_ids, pool_t &p,
+		  const std::set<qt::u32> &to_call_ref_ids, pool_t &p,
 		  const aln_chain &ac, rov_job_batch &batch)
 {
 	const std::vector<itinerary> &hap_itns = ac.hap_itns;
 
-	pt::u32 I = g.get_hap_count();
-	pt::u32 J = rov->get_vertex_count();
+	qt::u32 I = g.get_hap_count();
+	qt::u32 J = rov->get_vertex_count();
 
 	rov_job j{rov, I, hap_itns};
 
-	for (pt::u32 ref_h_idx : to_call_ref_ids) {
+	for (qt::u32 ref_h_idx : to_call_ref_ids) {
 		if (!qs::contains(ac.all_chains, ref_h_idx))
 			continue;
 

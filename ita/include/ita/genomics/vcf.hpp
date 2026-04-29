@@ -12,14 +12,16 @@
 #include <utility>     // for get, move, pair
 #include <vector>      // for vector
 
-#include "fmt/core.h" // for format
+#include <quilt/types.hpp> // for qt
+
+// #include "fmt/core.h" // for format
 
 #include "ita/genomics/allele.hpp"  // for allele_slice_t, Exp
 #include "ita/graph/slice_tree.hpp" // for poi
 #include "ita/variation/rov.hpp"    // for var_type_e
 
 #include "povu/common/constants.hpp"
-#include "povu/common/core.hpp"	     // for pt, idx_t, id_t, op_t
+// #include "povu/common/core.hpp"	     // for pt, idx_t, id_t, op_t
 #include "povu/common/log.hpp"	     // for ERR
 #include "povu/common/utils.hpp"     // for concat_with, pu
 #include "povu/graph/bidirected.hpp" // for VG
@@ -29,7 +31,7 @@ namespace ita::vcf
 inline constexpr std::string_view MODULE = "povu::genomics::vcf";
 namespace pgt = povu::types::graph;
 
-enum class var_class_e : pt::u8 { // variation class
+enum class var_class_e : qt::u8 { // variation class
 	simple,
 	structural
 };
@@ -38,13 +40,13 @@ std::ostream &operator<<(std::ostream &os, var_class_e vc);
 
 class VcfRec
 {
-	pt::id_t ref_id_;	 // chrom TODO: does this still apply with tags?
-	pt::idx_t pos_;		 // 1-based step idx
+	qt::id_t ref_id_;	 // chrom TODO: does this still apply with tags?
+	qt::idx_t pos_;		 // 1-based step idx
 	std::string id_;	 // start and end of a RoV e.g >1>4
 	std::string enc_flubble; // enclosing flubble string
 
 	ia::hap_slice ref_slice_;	// the ref allele slice
-	std::set<pt::u32> ref_at_haps_; // haps that contain the ref allele
+	std::set<qt::u32> ref_at_haps_; // haps that contain the ref allele
 
 	// the set of alt allele slices
 	std::vector<ia::hap_slice> ats_;
@@ -52,13 +54,13 @@ class VcfRec
 	// alt alleles grouped by alt allele idx
 	std::vector<std::vector<ia::hap_slice>> alt_slices_;
 
-	pt::u32 ns_{pc::INVALID_IDX};
+	qt::u32 ns_{pc::INVALID_IDX};
 
 	inline static const std::string qual = "60";	 // fixed at 60
 	inline static const std::string filter = "PASS"; // fixed as pass
 	inline static const std::string format = "GT";	 // fixed as pass
 
-	pt::idx_t height_; // height of the pvst node in the tree
+	qt::idx_t height_; // height of the pvst node in the tree
 
 	var_class_e var_class_;
 	// type of the variant, e.g. del, ins, sub, und
@@ -70,24 +72,24 @@ class VcfRec
 
 	/* info */
 	// number of refs in a given walk
-	std::vector<pt::idx_t> ref_count;
-	std::vector<pt::idx_t> allele_counts_; // count for each allele (ref at
+	std::vector<qt::idx_t> ref_count;
+	std::vector<qt::idx_t> allele_counts_; // count for each allele (ref at
 					       // idx 0, alts at idx 1+)
 	std::vector<double> af_; // allele frequency for each alt allele
-	// pt::idx_t an_ = 0;	 // total number of alleles in called genotypes
-	//  pt::idx_t ns_ = 0;       // number of samples with data
+	// qt::idx_t an_ = 0;	 // total number of alleles in called genotypes
+	//  qt::idx_t ns_ = 0;       // number of samples with data
 
 	// genotype column idx to allele count
-	std::map<pt::idx_t, pt::idx_t> col_to_allele_count_;
+	std::map<qt::idx_t, qt::idx_t> col_to_allele_count_;
 
 	// genotype
 	std::vector<std::vector<std::string>> genotype_cols_;
 
 	// lookups
 	// each value represents a unique alt allele idx
-	std::vector<pt::idx_t> unique_alts_;
+	std::vector<qt::idx_t> unique_alts_;
 	// maps alt allele idx (0-based) to unique alt allele idx (1-based)
-	std::vector<pt::idx_t> alt_at_to_unique_alt_idx_;
+	std::vector<qt::idx_t> alt_at_to_unique_alt_idx_;
 
 public:
 	// --------------
@@ -95,9 +97,9 @@ public:
 	// --------------
 	VcfRec() = delete;
 
-	VcfRec(pt::u32 ref_h_idx, pt::u32 pos, std::string id,
-	       std::string en_flub, ia::hap_slice ref_sl, pt::u32 height,
-	       std::set<pt::u32> &&ref_at_haps, ir::var_type_e var_typ,
+	VcfRec(qt::u32 ref_h_idx, qt::u32 pos, std::string id,
+	       std::string en_flub, ia::hap_slice ref_sl, qt::u32 height,
+	       std::set<qt::u32> &&ref_at_haps, ir::var_type_e var_typ,
 	       bool is_tangled)
 	    : ref_id_(ref_h_idx), pos_(pos), id_(std::move(id)),
 	      enc_flubble(std::move(en_flub)), ref_slice_(ref_sl),
@@ -134,13 +136,13 @@ public:
 	// getter(s)
 	// ---------
 	[[nodiscard]]
-	pt::id_t get_ref_id() const
+	qt::id_t get_ref_id() const
 	{
 		return this->ref_id_;
 	}
 
 	[[nodiscard]]
-	pt::idx_t get_pos() const
+	qt::idx_t get_pos() const
 	{
 		return this->pos_;
 	}
@@ -185,7 +187,7 @@ public:
 	std::string get_alts_as_str() const
 	{
 		std::string alt_str = "";
-		for (pt::u32 i{}; i < this->alt_slices_.size(); i++) {
+		for (qt::u32 i{}; i < this->alt_slices_.size(); i++) {
 			ia::hap_slice alt = this->alt_slices_.at(i).front();
 			alt_str += alt.as_str(this->var_type_);
 			if (i != this->alt_slices_.size() - 1)
@@ -199,7 +201,7 @@ public:
 	std::string get_alts_as_dna_str(const bd::VG &g) const
 	{
 		std::string dna_str = "";
-		for (pt::u32 i{}; i < this->alt_slices_.size(); ++i) {
+		for (qt::u32 i{}; i < this->alt_slices_.size(); ++i) {
 			ia::hap_slice alt = this->alt_slices_.at(i).front();
 			dna_str += alt.as_dna_str(g, this->var_type_);
 			if (i != this->alt_slices_.size() - 1)
@@ -220,25 +222,25 @@ public:
 	}
 
 	[[nodiscard]]
-	const ia::hap_slice &get_slice(pt::idx_t idx) const
+	const ia::hap_slice &get_slice(qt::idx_t idx) const
 	{
 		return this->ats_.at(idx);
 	}
 
 	// TODO: if C++ 20 use span
 	[[nodiscard]]
-	std::vector<pt::idx_t> get_unique_alt_idxs() const
+	std::vector<qt::idx_t> get_unique_alt_idxs() const
 	{
-		std::vector<pt::idx_t> alts_;
+		std::vector<qt::idx_t> alts_;
 		alts_.reserve(this->unique_alts_.size() - 1);
-		for (pt::idx_t i = 1; i < this->unique_alts_.size(); ++i)
+		for (qt::idx_t i = 1; i < this->unique_alts_.size(); ++i)
 			alts_.emplace_back(this->unique_alts_[i]);
 
 		return alts_;
 	}
 
 	[[nodiscard]]
-	pt::idx_t get_height() const
+	qt::idx_t get_height() const
 	{
 		return this->height_;
 	}
@@ -275,7 +277,7 @@ public:
 		std::string sep = "";
 
 		// AC field shows counts for alternate alleles only
-		for (pt::u32 i{}; i < this->alt_slices_.size(); i++) {
+		for (qt::u32 i{}; i < this->alt_slices_.size(); i++) {
 			ac_str += sep;
 			ac_str += std::to_string(this->alt_slices_[i].size());
 			sep = ",";
@@ -289,14 +291,14 @@ public:
 		std::string af_str;
 		std::string sep = "";
 
-		const pt::idx_t AN = this->get_an();
+		const qt::idx_t AN = this->get_an();
 
 		if (AN == 0) {
 			PL_ERR("AN should never be 0");
 			std::exit(EXIT_FAILURE);
 		}
 
-		for (pt::u32 i{}; i < this->alt_slices_.size(); i++) {
+		for (qt::u32 i{}; i < this->alt_slices_.size(); i++) {
 			af_str += sep;
 			double v = static_cast<double>(
 					   this->alt_slices_[i].size()) /
@@ -309,14 +311,14 @@ public:
 	}
 
 	[[nodiscard]]
-	pt::idx_t get_an() const
+	qt::idx_t get_an() const
 	{
-		pt::u32 an{};
+		qt::u32 an{};
 		// sum the refs
 		an += this->ref_at_haps_.size(); // ref allele count
 
 		// sum the alts
-		for (pt::u32 i{}; i < this->alt_slices_.size(); i++)
+		for (qt::u32 i{}; i < this->alt_slices_.size(); i++)
 			an += this->alt_slices_[i].size();
 
 		// Total number of alleles = sum of all allele counts
@@ -325,12 +327,12 @@ public:
 
 	/* Number of samples with data */
 	[[nodiscard]]
-	pt::idx_t get_ns() const
+	qt::idx_t get_ns() const
 	{
 		return this->ns_;
 	}
 
-	void set_ns(pt::u32 ns)
+	void set_ns(qt::u32 ns)
 	{
 		this->ns_ = ns;
 	}
@@ -340,7 +342,7 @@ public:
 	{
 		// concatenate each column with tab
 		std::ostringstream os;
-		for (pt::idx_t i{}; i < this->genotype_cols_.size(); ++i) {
+		for (qt::idx_t i{}; i < this->genotype_cols_.size(); ++i) {
 			if (i > 0)
 				os << "\t";
 
@@ -372,7 +374,7 @@ public:
 // TODO: [c] find a better name
 class VcfRecIdx
 {
-	std::map<pt::idx_t, std::vector<VcfRec>> vcf_recs_;
+	std::map<qt::idx_t, std::vector<VcfRec>> vcf_recs_;
 
 public:
 	// --------------
@@ -385,13 +387,13 @@ public:
 	// ---------
 	// getter(s)
 	// ---------
-	std::map<pt::idx_t, std::vector<VcfRec>> &get_recs_mut()
+	std::map<qt::idx_t, std::vector<VcfRec>> &get_recs_mut()
 	{
 		return this->vcf_recs_;
 	}
 
 	// create *on purpose* if missing
-	std::vector<VcfRec> &ensure_recs_mut(pt::idx_t ref_id)
+	std::vector<VcfRec> &ensure_recs_mut(qt::idx_t ref_id)
 	{
 		// inserts empty vector if missing
 		auto [it, inserted] = vcf_recs_.try_emplace(ref_id);
@@ -403,7 +405,7 @@ public:
 	// ---------
 
 	void
-	ensure_append_recs(std::map<pt::idx_t, std::vector<VcfRec>> &&new_recs)
+	ensure_append_recs(std::map<qt::idx_t, std::vector<VcfRec>> &&new_recs)
 	{
 		for (auto &&[ref_id, recs] : new_recs) {
 			auto &d = this->vcf_recs_[ref_id];
@@ -418,7 +420,7 @@ public:
 VcfRecIdx
 gen_vcf_records(const bd::VG &g, const std::vector<ia::trek> &treks,
 		const std::vector<ist::st> &its,
-		const std::map<pt::u32, std::vector<ia::inv_slice>> &invs);
+		const std::map<qt::u32, std::vector<ia::inv_slice>> &invs);
 
 } // namespace ita::vcf
 

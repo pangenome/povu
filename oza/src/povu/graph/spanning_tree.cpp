@@ -8,7 +8,8 @@
 #include <sys/types.h>	 // for u_int8_t
 #include <unordered_set> // for unordered_set, operator!=
 
-#include <quilt/shim.hpp> // for format, contains
+#include <quilt/shim.hpp>  // for format, contains
+#include <quilt/types.hpp> // for qt
 
 #include "povu/common/constants.hpp"   // for INVALID_CLS, COL_SEP, INVALI...
 #include "povu/graph/bidirected.hpp"   // for Vertex, VG, pgt, Edge
@@ -24,19 +25,19 @@ using namespace povu::constants;
  * ----
  */
 /*  constructor(s) */
-Edge::Edge(pt::id_t id, pt::idx_t parent_idx, pt::idx_t child_idx,
+Edge::Edge(qt::id_t id, qt::idx_t parent_idx, qt::idx_t child_idx,
 	   pgt::color_e c)
     : id_(id), parent_idx_(parent_idx), child_idx_(child_idx),
       class_(INVALID_CLS), color_(c)
 {}
 
 /* getters */
-pt::id_t Edge::id() const
+qt::id_t Edge::id() const
 {
 	return this->id_;
 }
 
-pt::idx_t Edge::get_class() const
+qt::idx_t Edge::get_class() const
 {
 	return this->class_;
 }
@@ -46,18 +47,18 @@ pgt::color_e Edge::get_color() const
 	return this->color_;
 }
 
-pt::idx_t Edge::get_parent_v_idx() const
+qt::idx_t Edge::get_parent_v_idx() const
 {
 	return this->parent_idx_;
 }
 
-pt::idx_t Edge::get_child_v_idx() const
+qt::idx_t Edge::get_child_v_idx() const
 {
 	return this->child_idx_;
 }
 
 /* setters */
-void Edge::set_class(pt::idx_t c)
+void Edge::set_class(qt::idx_t c)
 {
 	this->class_ = c;
 }
@@ -66,27 +67,27 @@ void Edge::set_class(pt::idx_t c)
  * BackEdge
  * --------
  */
-BackEdge::BackEdge(pt::id_t id, pt::idx_t src, pt::idx_t tgt, be_type_e t)
+BackEdge::BackEdge(qt::id_t id, qt::idx_t src, qt::idx_t tgt, be_type_e t)
     : id_(id), src_(src), tgt_(tgt), class_(INVALID_CLS), type_(t)
 {}
 
 /* getters */
-pt::id_t BackEdge::id() const
+qt::id_t BackEdge::id() const
 {
 	return this->id_;
 }
 
-pt::idx_t BackEdge::get_src() const
+qt::idx_t BackEdge::get_src() const
 {
 	return this->src_;
 }
 
-pt::idx_t BackEdge::get_tgt() const
+qt::idx_t BackEdge::get_tgt() const
 {
 	return this->tgt_;
 }
 
-pt::idx_t BackEdge::get_class() const
+qt::idx_t BackEdge::get_class() const
 {
 	return this->class_;
 }
@@ -102,7 +103,7 @@ be_type_e BackEdge::type() const
 }
 
 /* setters */
-void BackEdge::set_class(pt::idx_t c)
+void BackEdge::set_class(qt::idx_t c)
 {
 	this->class_ = c;
 }
@@ -112,14 +113,14 @@ void BackEdge::set_class(pt::idx_t c)
 // ======
 
 /* constructor(s) */
-Vertex::Vertex(pt::idx_t dfs_num, pt::idx_t g_v_id, v_type_e type)
+Vertex::Vertex(qt::idx_t dfs_num, qt::idx_t g_v_id, v_type_e type)
     : dfs_num_(dfs_num), parent_e_idx_(pc::INVALID_IDX), hi_(pc::INVALID_IDX),
       g_v_id_(g_v_id), pre_order_(pc::INVALID_IDX),
       post_order_(pc::INVALID_IDX), type_(type)
 {}
 
 // getters
-pt::idx_t Vertex::g_v_id() const
+qt::idx_t Vertex::g_v_id() const
 {
 	return this->g_v_id_;
 }
@@ -129,7 +130,7 @@ v_type_e Vertex::type() const
 	return this->type_;
 }
 
-pt::idx_t Vertex::hi() const
+qt::idx_t Vertex::hi() const
 {
 	return this->hi_;
 }
@@ -144,68 +145,68 @@ bool Vertex::is_leaf() const
 	return this->child_e_idxs_.empty();
 }
 
-pt::idx_t Vertex::dfs_num() const
+qt::idx_t Vertex::dfs_num() const
 {
 	return this->dfs_num_;
 }
 
-pt::idx_t Vertex::pre_order() const
+qt::idx_t Vertex::pre_order() const
 {
 	return this->pre_order_;
 }
 
-pt::idx_t Vertex::post_order() const
+qt::idx_t Vertex::post_order() const
 {
 	return this->post_order_;
 }
 
-pt::idx_t Vertex::get_parent_e_idx() const
+qt::idx_t Vertex::get_parent_e_idx() const
 {
 	return this->parent_e_idx_;
 }
 
-std::set<pt::idx_t> const &Vertex::get_ibe() const
+std::set<qt::idx_t> const &Vertex::get_ibe() const
 {
 	return this->ibe;
 }
 
-std::set<pt::idx_t> const &Vertex::get_obe() const
+std::set<qt::idx_t> const &Vertex::get_obe() const
 {
 	return this->obe;
 }
 
-std::set<pt::idx_t> const &Vertex::get_child_edge_idxs() const
+std::set<qt::idx_t> const &Vertex::get_child_edge_idxs() const
 {
 	return this->child_e_idxs_;
 }
 
-pt::idx_t Vertex::child_count() const
+qt::idx_t Vertex::child_count() const
 {
-	return static_cast<pt::idx_t>(this->child_e_idxs_.size());
+	return static_cast<qt::idx_t>(this->child_e_idxs_.size());
 }
 
 // setters
-void Vertex::add_obe(pt::idx_t obe_id)
+void Vertex::add_obe(qt::idx_t obe_id)
 {
 	this->obe.insert(obe_id);
 }
 
-void Vertex::add_ibe(pt::idx_t ibe_id)
+void Vertex::add_ibe(qt::idx_t ibe_id)
 {
 	this->ibe.insert(ibe_id);
 }
 
-void Vertex::add_child_e_idx(pt::idx_t e_id)
+void Vertex::add_child_e_idx(qt::idx_t e_id)
 {
 	this->child_e_idxs_.insert(e_id);
 }
 
-void Vertex::set_parent_e_idx(pt::idx_t e_idx)
+void Vertex::set_parent_e_idx(qt::idx_t e_idx)
 {
 	this->parent_e_idx_ = e_idx;
 }
 
-void Vertex::set_g_v_id(pt::idx_t g_v_id)
+void Vertex::set_g_v_id(qt::idx_t g_v_id)
 {
 	this->g_v_id_ = g_v_id;
 }
@@ -215,22 +216,22 @@ void Vertex::set_type(v_type_e t)
 	this->type_ = t;
 }
 
-void Vertex::set_hi(pt::idx_t val)
+void Vertex::set_hi(qt::idx_t val)
 {
 	this->hi_ = val;
 }
 
-void Vertex::set_dfs_num(pt::idx_t idx)
+void Vertex::set_dfs_num(qt::idx_t idx)
 {
 	this->dfs_num_ = idx;
 }
 
-void Vertex::set_pre_order(pt::idx_t idx)
+void Vertex::set_pre_order(qt::idx_t idx)
 {
 	this->pre_order_ = idx;
 }
 
-void Vertex::set_post_order(pt::idx_t idx)
+void Vertex::set_post_order(qt::idx_t idx)
 {
 	this->post_order_ = idx;
 }
@@ -262,57 +263,57 @@ Tree Tree::from_bd(const bd::VG &g)
 {
 
 	const bool has_tips{!g.tips().empty()};
-	const pt::idx_t root_idx{0};
+	const qt::idx_t root_idx{0};
 
-	std::stack<pt::idx_t> s;
+	std::stack<qt::idx_t> s;
 	std::vector<u_int8_t> visited(g.vtx_count(), 0);
 
-	std::set<std::pair<pt::idx_t, pt::idx_t>> added_edges;
-	std::unordered_set<pt::idx_t> self_loops;
+	std::set<std::pair<qt::idx_t, qt::idx_t>> added_edges;
+	std::unordered_set<qt::idx_t> self_loops;
 
-	pt::idx_t order{};
-	// pt::idx_t post_order {};
+	qt::idx_t order{};
+	// qt::idx_t post_order {};
 
-	pt::idx_t counter{0};		 // dfs num
+	qt::idx_t counter{0};		 // dfs num
 	bool found_new_neighbour{false}; // neighbours exhausted
 
-	pt::idx_t p_idx{pc::INVALID_IDX}; // parent_idx
+	qt::idx_t p_idx{pc::INVALID_IDX}; // parent_idx
 
-	pt::idx_t t_vtx_count =
+	qt::idx_t t_vtx_count =
 		has_tips ? (2 * g.vtx_count()) + 1 : 2 * g.vtx_count();
 	Tree t{t_vtx_count};
 
 	// biedged idx to tree idx (or counter)
-	std::vector<pt::id_t> be_idx_to_ctr(t_vtx_count, 0);
+	std::vector<qt::id_t> be_idx_to_ctr(t_vtx_count, 0);
 
-	auto unordered_pair = [](pt::idx_t a,
-				 pt::idx_t b) -> std::pair<pt::idx_t, pt::idx_t>
+	auto unordered_pair = [](qt::idx_t a,
+				 qt::idx_t b) -> std::pair<qt::idx_t, qt::idx_t>
 	{
 		return {std::min(a, b), std::max(a, b)};
 	};
 
-	auto connect = [&](pt::idx_t a, pt::idx_t b) -> void
+	auto connect = [&](qt::idx_t a, qt::idx_t b) -> void
 	{
 		added_edges.insert(unordered_pair(a, b));
 	};
 
-	auto are_connected = [&](pt::idx_t a, pt::idx_t b) -> bool
+	auto are_connected = [&](qt::idx_t a, qt::idx_t b) -> bool
 	{
 		return qs::contains(added_edges, unordered_pair(a, b));
 	};
 
-	auto to_be = [&g](pgt::side_n_id_t i) -> pt::idx_t
+	auto to_be = [&g](pgt::side_n_id_t i) -> qt::idx_t
 	{
 		auto [ve, v_id] = i;
-		pt::idx_t v_idx = g.v_id_to_idx(v_id);
+		qt::idx_t v_idx = g.v_id_to_idx(v_id);
 		return (ve == pgt::v_end_e::l) ? v_idx * 2 : (v_idx * 2) + 1;
 	};
 
-	auto to_bd = [&g](pt::idx_t be_v_idx) -> pgt::side_n_idx_t
+	auto to_bd = [&g](qt::idx_t be_v_idx) -> pgt::side_n_idx_t
 	{
 		pgt::v_end_e ve =
 			(be_v_idx % 2 == 0) ? pgt::v_end_e::l : pgt::v_end_e::r;
-		pt::id_t v_id = g.v_idx_to_id(be_v_idx / 2);
+		qt::id_t v_id = g.v_idx_to_id(be_v_idx / 2);
 		return {ve, v_id};
 	};
 
@@ -323,7 +324,7 @@ Tree Tree::from_bd(const bd::VG &g)
 	};
 
 	auto add_vertex_to_tree = [&](pgt::v_end_e e,
-				      pt::idx_t bd_v_idx) -> void
+				      qt::idx_t bd_v_idx) -> void
 	{
 		const bd::Vertex &v = g.get_vertex_by_idx(bd_v_idx);
 
@@ -352,14 +353,14 @@ Tree Tree::from_bd(const bd::VG &g)
 
 	// returns true if it discovers a new vertex (neighbour), false
 	// otherwise
-	auto process_edge = [&](pt::idx_t bd_v_idx, pgt::v_end_e ve,
-				pt::idx_t e_idx) -> bool
+	auto process_edge = [&](qt::idx_t bd_v_idx, pgt::v_end_e ve,
+				qt::idx_t e_idx) -> bool
 	{
 		const bd::Edge &e = g.get_edge(e_idx);
 
 		auto [os, ov_idx] =
 			e.get_other_vtx(bd_v_idx, ve); // o for other
-		pt::idx_t o_be_idx = to_be({os, g.v_idx_to_id(ov_idx)});
+		qt::idx_t o_be_idx = to_be({os, g.v_idx_to_id(ov_idx)});
 
 		if (!visited[ov_idx]) { // has not been visited
 			add_vertex_to_tree(os, ov_idx);
@@ -402,7 +403,7 @@ Tree Tree::from_bd(const bd::VG &g)
 		has_tips ? *g.tips().begin()
 			 : pgt::side_n_id_t{pgt::v_end_e::l, g.v_idx_to_id(0)};
 	auto [s_v_end, s_v_id] = start;
-	pt::idx_t s_v_idx = g.v_id_to_idx(s_v_id);
+	qt::idx_t s_v_idx = g.v_id_to_idx(s_v_id);
 	s.push(to_be({s_v_end, s_v_id}));
 	s.push(to_be({pgt::complement(s_v_end), s_v_id}));
 	visited[s_v_idx] = 1;
@@ -412,14 +413,14 @@ Tree Tree::from_bd(const bd::VG &g)
 
 	while (!s.empty()) {
 		found_new_neighbour = false;
-		pt::idx_t be_v_idx = s.top();
+		qt::idx_t be_v_idx = s.top();
 
 		p_idx = be_idx_to_ctr[be_v_idx];
 		auto [syd, v_id] = to_bd(be_v_idx);
-		pt::idx_t bd_v_idx = g.v_id_to_idx(v_id);
+		qt::idx_t bd_v_idx = g.v_id_to_idx(v_id);
 
 		const bd::Vertex &v = g.get_vertex_by_id(v_id);
-		const std::set<pt::idx_t> &neighbours =
+		const std::set<qt::idx_t> &neighbours =
 			syd == pgt::v_end_e::l ? v.get_edges_l()
 					       : v.get_edges_r();
 
@@ -506,18 +507,18 @@ std::size_t Tree::get_root_idx() const
 	return this->root_node_index;
 }
 
-pt::idx_t Tree::vtx_count() const
+qt::idx_t Tree::vtx_count() const
 {
-	return static_cast<pt::idx_t>(this->nodes.size());
+	return static_cast<qt::idx_t>(this->nodes.size());
 };
 
-// pt::idx_t Tree::size() const { return this->nodes.size(); }
-pt::idx_t Tree::tree_edge_count() const
+// qt::idx_t Tree::size() const { return this->nodes.size(); }
+qt::idx_t Tree::tree_edge_count() const
 {
 	return this->tree_edges.size();
 }
 
-pt::idx_t Tree::back_edge_count() const
+qt::idx_t Tree::back_edge_count() const
 {
 	return this->back_edges.size();
 }
@@ -548,7 +549,7 @@ std::size_t Tree::get_hi(std::size_t vertex)
 	return this->nodes.at(vertex).hi();
 }
 
-bool Tree::is_desc(pt::idx_t a, pt::idx_t d) const
+bool Tree::is_desc(qt::idx_t a, qt::idx_t d) const
 {
 	return this->get_vertex(a).pre_order() <
 		       this->get_vertex(d).pre_order() &&
@@ -568,12 +569,12 @@ Tree::get_children_w_id(std::size_t vertex)
 	return res;
 }
 
-std::vector<Edge> Tree::get_child_edges(pt::idx_t v_idx)
+std::vector<Edge> Tree::get_child_edges(qt::idx_t v_idx)
 {
 	return this->get_child_edges_mut(v_idx);
 }
 
-std::vector<Edge> Tree::get_child_edges_mut(pt::idx_t v_idx)
+std::vector<Edge> Tree::get_child_edges_mut(qt::idx_t v_idx)
 {
 	std::vector<Edge> v{};
 
@@ -584,9 +585,9 @@ std::vector<Edge> Tree::get_child_edges_mut(pt::idx_t v_idx)
 	return v;
 }
 
-std::vector<pt::idx_t> Tree::get_child_edge_idxs(pt::idx_t v_idx) const
+std::vector<qt::idx_t> Tree::get_child_edge_idxs(qt::idx_t v_idx) const
 {
-	std::vector<pt::idx_t> v{};
+	std::vector<qt::idx_t> v{};
 	for (auto e_idx : this->nodes.at(v_idx).get_child_edge_idxs()) {
 		v.push_back(e_idx);
 	}
@@ -594,7 +595,7 @@ std::vector<pt::idx_t> Tree::get_child_edge_idxs(pt::idx_t v_idx) const
 	return v;
 }
 
-pt::idx_t Tree::get_child_count(pt::idx_t v_idx) const
+qt::idx_t Tree::get_child_count(qt::idx_t v_idx) const
 {
 	return this->nodes.at(v_idx).child_count();
 }
@@ -650,7 +651,7 @@ Tree::get_ibe_w_id(std::size_t vertex)
 	return res;
 }
 
-std::set<std::size_t> Tree::get_children(pt::idx_t v_idx) const
+std::set<std::size_t> Tree::get_children(qt::idx_t v_idx) const
 {
 	std::set<std::size_t> res{};
 	for (auto e_idx : this->nodes.at(v_idx).get_child_edge_idxs()) {
@@ -669,9 +670,9 @@ std::set<std::size_t> Tree::get_ibe(std::size_t vertex)
 	return res;
 }
 
-std::set<pt::idx_t> Tree::get_ibe_src_v_idxs(std::size_t v_idx) const
+std::set<qt::idx_t> Tree::get_ibe_src_v_idxs(std::size_t v_idx) const
 {
-	std::set<pt::idx_t> res{};
+	std::set<qt::idx_t> res{};
 	for (auto e_idx : this->nodes.at(v_idx).get_ibe()) {
 		res.insert(this->back_edges.at(e_idx).get_src());
 	}
@@ -688,9 +689,9 @@ std::set<std::size_t> Tree::get_obe(std::size_t vertex)
 	return res;
 }
 
-std::set<pt::idx_t> Tree::get_obe_tgt_v_idxs(std::size_t v_idx) const
+std::set<qt::idx_t> Tree::get_obe_tgt_v_idxs(std::size_t v_idx) const
 {
-	std::set<pt::idx_t> res{};
+	std::set<qt::idx_t> res{};
 	for (auto e_idx : this->nodes.at(v_idx).get_obe()) {
 		res.insert(this->back_edges.at(e_idx).get_tgt());
 	}
@@ -772,7 +773,7 @@ BackEdge Tree::get_backedge_given_id(std::size_t backedge_id)
 	return this->back_edges[be_idx];
 }
 
-void Tree::add_tree_edge(pt::idx_t frm, pt::idx_t to, pgt::color_e c)
+void Tree::add_tree_edge(qt::idx_t frm, qt::idx_t to, pgt::color_e c)
 {
 	std::size_t edge_idx = this->tree_edges.size();
 	std::size_t edge_count = edge_idx + this->back_edges.size();
@@ -782,10 +783,10 @@ void Tree::add_tree_edge(pt::idx_t frm, pt::idx_t to, pgt::color_e c)
 	this->nodes[to].set_parent_e_idx(edge_idx);
 }
 
-pt::idx_t Tree::add_be(pt::idx_t frm, pt::idx_t to, be_type_e t)
+qt::idx_t Tree::add_be(qt::idx_t frm, qt::idx_t to, be_type_e t)
 {
-	pt::idx_t back_edge_idx = this->back_edges.size();
-	pt::idx_t edge_count = back_edge_idx + this->tree_edges.size();
+	qt::idx_t back_edge_idx = this->back_edges.size();
+	qt::idx_t edge_count = back_edge_idx + this->tree_edges.size();
 	this->back_edges.push_back(BackEdge(edge_count, frm, to, t));
 	this->nodes[frm].add_obe(back_edge_idx);
 	this->nodes[to].add_ibe(back_edge_idx);
@@ -933,7 +934,7 @@ void Tree::print_dot(std::ostream &os)
 		os << str;
 	};
 
-	auto tree_edge_to_dot = [&](pt::idx_t p_v_idx, Edge &e)
+	auto tree_edge_to_dot = [&](qt::idx_t p_v_idx, Edge &e)
 	{
 		std::string cls = e.get_class() == INVALID_CLS
 					  ? ""
@@ -947,7 +948,7 @@ void Tree::print_dot(std::ostream &os)
 	};
 
 	auto be_to_dot =
-		[&](pt::idx_t i, const std::pair<std::size_t, std::size_t> &o)
+		[&](qt::idx_t i, const std::pair<std::size_t, std::size_t> &o)
 	{
 		auto [f, s] = o;
 		std::string cl = f > 10000 ? "\u2205" : std::to_string(f);

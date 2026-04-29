@@ -9,6 +9,8 @@
 #include <utility>    // for move
 #include <vector>     // for vector
 
+#include <quilt/types.hpp> // for qt
+
 #include "ita/genomics/genomics.hpp"   // for gen_vcf_rec_map
 #include "ita/genomics/vcf.hpp"	       // for VcfRecIdx
 #include "ita/queue/bounded_queue.hpp" // for bounded_queue
@@ -18,7 +20,6 @@
 #include "mto/from_pvst.hpp" // for read_pvst
 #include "mto/to_vcf.hpp"    // for VcfOutput, init_vcfs, wri...
 
-#include "povu/common/core.hpp"	     // for pt, id_t
 #include "povu/common/log.hpp"	     // for ERR
 #include "povu/graph/bidirected.hpp" // for VG, bd
 #include "povu/graph/pvst.hpp"	     // for Tree
@@ -93,10 +94,10 @@ void do_call(core::config &app_config)
 #endif
 
 	// ref IDs for which we need to output VCFs
-	std::map<std::string, std::set<pt::id_t>> sample_to_ref_ids;
-	std::set<pt::id_t> vcf_ref_ids;
+	std::map<std::string, std::set<qt::id_t>> sample_to_ref_ids;
+	std::set<qt::id_t> vcf_ref_ids;
 	for (std::string_view prefix : ref_name_prefixes) {
-		std::set<pt::id_t> ref_ids = g->get_refs_in_sample(prefix);
+		std::set<qt::id_t> ref_ids = g->get_refs_in_sample(prefix);
 		sample_to_ref_ids[std::string(prefix)] = ref_ids;
 		vcf_ref_ids.insert(ref_ids.begin(), ref_ids.end());
 	}

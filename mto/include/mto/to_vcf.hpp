@@ -15,14 +15,14 @@
 #include <utility>     // for get, move
 #include <vector>      // for vector
 
-#include <quilt/shim.hpp> // for format, contains
+#include <quilt/shim.hpp>  // for format, contains
+#include <quilt/types.hpp> // for qt
 
 #include "ita/genomics/vcf.hpp" // for VcfRecIdx
 
 #include "mto/common.hpp" // for create_dir_if_not_exists
 
 #include "povu/common/app.hpp"	     // for config
-#include "povu/common/core.hpp"	     // for id_t, pt
 #include "povu/common/log.hpp"	     // for ERR
 #include "povu/common/utils.hpp"     // for is_prefix
 #include "povu/graph/bidirected.hpp" // for VG
@@ -39,8 +39,8 @@ class VcfOutput
 
 	// applies to split output
 	std::vector<std::ofstream> all_ofs_;
-	std::map<std::string, pt::idx_t> label_to_ofs_idx_;
-	std::map<pt::idx_t, pt::idx_t> ref_id_to_ofs_idx_;
+	std::map<std::string, qt::idx_t> label_to_ofs_idx_;
+	std::map<qt::idx_t, qt::idx_t> ref_id_to_ofs_idx_;
 
 	// keep default constructor private
 	VcfOutput() = default;
@@ -80,7 +80,7 @@ public:
 	 */
 	static VcfOutput
 	to_split_files(const fs::path &out_dir,
-		       const std::map<std::string, std::set<pt::id_t>> &s_to_r)
+		       const std::map<std::string, std::set<qt::id_t>> &s_to_r)
 	{
 		VcfOutput v;
 		mto::common::create_dir_if_not_exists(out_dir);
@@ -90,7 +90,7 @@ public:
 			fs::path vcf_fp = out_dir / (bn + ".vcf");
 			std::size_t ofs_idx = v.create_ofs(vcf_fp);
 			v.label_to_ofs_idx_[bn] = ofs_idx;
-			for (pt::id_t ref_id : ref_ids)
+			for (qt::id_t ref_id : ref_ids)
 				v.ref_id_to_ofs_idx_[ref_id] = ofs_idx;
 		}
 
@@ -134,7 +134,7 @@ public:
 			"[VcfOutput::stream_for] Unknown label: " + ref_label);
 	}
 
-	std::ostream &stream_for_ref_id(pt::idx_t ref_id)
+	std::ostream &stream_for_ref_id(qt::idx_t ref_id)
 	{
 		if (combined_)
 			return *combined_;

@@ -4,24 +4,24 @@
 #include <map>
 #include <vector>
 
+#include <quilt/types.hpp> // for qt
+
 #include "ita/traversals/traversals.hpp" // for itinerary
 #include "ita/variation/rov.hpp"	 // for RoV
-#include "povu/common/core.hpp"		 // for pt
-#include "quilt/types.hpp"
 
 namespace ita::traversals::untangle
 {
 struct chain_link {
 	char edit; // 'M', 'I', 'D'
-	pt::u32 ref_h_idx;
-	pt::u32 ref_loop_no;
-	pt::u32 alt_h_idx;
-	pt::u32 alt_loop_no;
+	qt::u32 ref_h_idx;
+	qt::u32 ref_loop_no;
+	qt::u32 alt_h_idx;
+	qt::u32 alt_loop_no;
 };
 
 struct chain {
 	// loop no to aligned_ats
-	std::map<pt::u32, std::vector<chain_link>> loop2ats;
+	std::map<qt::u32, std::vector<chain_link>> loop2ats;
 
 	// ---------
 	// getter(s)
@@ -35,9 +35,9 @@ struct chain {
 
 struct aln_chain {
 	// ref_h_idx to chain
-	std::map<pt::u32, chain> all_chains;
+	std::map<qt::u32, chain> all_chains;
 	std::vector<ita::traversals::traversals::itinerary> hap_itns;
-	std::map<pt::u32, pt::u32> ref2max_loop_no;
+	std::map<qt::u32, qt::u32> ref2max_loop_no;
 
 	// --------------
 	// constructor(s)
@@ -53,14 +53,14 @@ struct aln_chain {
 	// ---------
 
 	[[nodiscard]]
-	pt::u32 get_max_loop_no(pt::u32 ref_h_idx) const
+	qt::u32 get_max_loop_no(qt::u32 ref_h_idx) const
 	{
 		return this->ref2max_loop_no.at(ref_h_idx);
 	}
 
 	[[nodiscard]]
-	std::optional<chain_link> get_by(pt::u32 ref_h_idx, pt::u32 alt_h_idx,
-					 pt::u32 loop_no) const
+	std::optional<chain_link> get_by(qt::u32 ref_h_idx, qt::u32 alt_h_idx,
+					 qt::u32 loop_no) const
 	{
 		const std::vector<chain_link> &cl =
 			this->all_chains.at(ref_h_idx).loop2ats.at(loop_no);
@@ -73,9 +73,9 @@ struct aln_chain {
 	}
 
 	[[nodiscard]]
-	std::optional<qt::u32> get_alt_loop_no(pt::u32 ref_h_idx,
-					       pt::u32 alt_h_idx,
-					       pt::u32 ref_loop_no) const
+	std::optional<qt::u32> get_alt_loop_no(qt::u32 ref_h_idx,
+					       qt::u32 alt_h_idx,
+					       qt::u32 ref_loop_no) const
 	{
 		const std::vector<chain_link> &cl =
 			this->all_chains.at(ref_h_idx).loop2ats.at(ref_loop_no);
@@ -93,8 +93,8 @@ struct aln_chain {
 
 	void add(const chain_link &link)
 	{
-		pt::u32 ref_h_idx = link.ref_h_idx;
-		pt::u32 loop_no = link.ref_loop_no;
+		qt::u32 ref_h_idx = link.ref_h_idx;
+		qt::u32 loop_no = link.ref_loop_no;
 
 		// initialises to 0 if ref_h_idx not present
 		ref2max_loop_no[ref_h_idx] =
@@ -105,7 +105,7 @@ struct aln_chain {
 	}
 };
 
-aln_chain untangle(const bd::VG &g, const std::set<pt::u32> &to_call_ref_ids,
+aln_chain untangle(const bd::VG &g, const std::set<qt::u32> &to_call_ref_ids,
 		   const ir::RoV &rov);
 
 } // namespace ita::traversals::untangle

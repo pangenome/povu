@@ -4,6 +4,8 @@
 #include <thread> // for thread
 #include <vector> // for vector
 
+#include <quilt/types.hpp> // for qt
+
 #include "mto/from_gfa.hpp" // for to_bd
 #include "mto/from_vcf.hpp" // for read_vcf
 #include "mto/to_gfa.hpp"   // for write_gfa
@@ -24,7 +26,7 @@ data_loader(const core::config &app_config)
 	mto::from_vcf::VCFile vcf_file;
 	bd::VG *g = mto::from_gfa::to_bd(app_config);
 
-	pt::u32 ll = app_config.verbosity(); // ll for log level
+	qt::u32 ll = app_config.verbosity(); // ll for log level
 	const core::vcf_subcommand &vcf_opts = app_config.get_vcf_subcommand();
 
 	// Load VCF
@@ -79,7 +81,7 @@ void handle_tui(const core::config &app_config)
 	// We need these to persist after the thread finishes
 	bd::VG *g = nullptr;
 	mto::from_vcf::VCFile vcf_file;
-	std::vector<pt::u32> invalid_recs;
+	std::vector<qt::u32> invalid_recs;
 
 	// 1. Launch the loading thread
 	std::thread loader(

@@ -8,10 +8,12 @@
 #include <utility> // for pair
 #include <vector>  // for vector
 
-#include "bidirected.hpp"	// for VG, bd
-#include "bracket_list.hpp"	// for WBracketList, Bracket, BracketList
-#include "povu/common/core.hpp" // for pt, idx_t, id_t
-#include "types.hpp"		// for color_e, v_type_e
+#include "bidirected.hpp"   // for VG, bd
+#include "bracket_list.hpp" // for WBracketList, Bracket, BracketList
+// #include "povu/common/core.hpp" // for pt, idx_t, id_t
+#include "types.hpp" // for color_e, v_type_e
+
+#include <quilt/types.hpp> // for qt
 
 namespace oza::spanning_tree
 {
@@ -29,57 +31,57 @@ enum class be_type_e {
 /* A tree edge */
 class Edge
 {
-	pt::id_t id_;	       // id of the edge
-	pt::idx_t parent_idx_; // target vertex
-	pt::idx_t child_idx_;  // source vertex
-	pt::idx_t class_;      // equivalnce class id
+	qt::id_t id_;	       // id of the edge
+	qt::idx_t parent_idx_; // target vertex
+	qt::idx_t child_idx_;  // source vertex
+	qt::idx_t class_;      // equivalnce class id
 	pgt::color_e color_;
 
 public:
 	/* constructor(s) */
-	Edge(pt::id_t id, pt::idx_t parent_idx, pt::idx_t child_idx,
+	Edge(qt::id_t id, qt::idx_t parent_idx, qt::idx_t child_idx,
 	     pgt::color_e c);
 
 	/* getters */
-	pt::id_t id() const;
-	pt::idx_t get_class() const;
+	qt::id_t id() const;
+	qt::idx_t get_class() const;
 	pgt::color_e get_color() const;
-	pt::idx_t get_child_v_idx() const; // get the index of the child vertex
-	pt::idx_t
+	qt::idx_t get_child_v_idx() const; // get the index of the child vertex
+	qt::idx_t
 	get_parent_v_idx() const; // get the index of the parent vertex
 
 	/* setters */
-	void set_class(pt::idx_t c);
+	void set_class(qt::idx_t c);
 };
 
 /* backedge: an edge from a vertex to an ancestor (not parent) in the spanning
  * tree */
 class BackEdge
 {
-	pt::id_t id_;	  // a unique indeifier of the backedge
-	pt::idx_t src_;	  // target vertex
-	pt::idx_t tgt_;	  // source vertex
-	pt::idx_t class_; // equivalnce class id
+	qt::id_t id_;	  // a unique indeifier of the backedge
+	qt::idx_t src_;	  // target vertex
+	qt::idx_t tgt_;	  // source vertex
+	qt::idx_t class_; // equivalnce class id
 	be_type_e type_;
 	// TODO: remove, color does not matter for a backedge
 	// pgt::color_e color_;
 
 public:
 	// TODO: remove the default color
-	BackEdge(pt::id_t id, pt::idx_t src, pt::idx_t tgt, be_type_e t);
+	BackEdge(qt::id_t id, qt::idx_t src, qt::idx_t tgt, be_type_e t);
 
 	/* getters */
-	pt::id_t id() const;
-	pt::idx_t get_src() const;
-	pt::idx_t get_tgt() const;
+	qt::id_t id() const;
+	qt::idx_t get_src() const;
+	qt::idx_t get_tgt() const;
 	be_type_e type() const;
-	pt::idx_t get_class() const;
+	qt::idx_t get_class() const;
 	bool is_class_defined() const;
 	// pgt::color_e get_color() const; // TODO: remove, color does not
 	// matter for a backedge
 
 	/* setters */
-	void set_class(pt::idx_t c);
+	void set_class(qt::idx_t c);
 };
 
 /*
@@ -91,22 +93,22 @@ public:
 class Vertex
 {
 	// indexes of the children edges in the tree_edges vector
-	std::set<pt::idx_t>
+	std::set<qt::idx_t>
 		child_e_idxs_;	 // children // index to the tree_edges vector
-	std::set<pt::idx_t> obe; // out back edges
-	std::set<pt::idx_t> ibe; // in back edges
+	std::set<qt::idx_t> obe; // out back edges
+	std::set<qt::idx_t> ibe; // in back edges
 
-	pt::idx_t dfs_num_;	 // Preorder DFS traversal number
-	pt::idx_t parent_e_idx_; // id to idx // index to the tree edge vector ?
+	qt::idx_t dfs_num_;	 // Preorder DFS traversal number
+	qt::idx_t parent_e_idx_; // id to idx // index to the tree edge vector ?
 	/*
 	 dfs_num of the highest node originating from an outgoing backedge from
 	 this vertex or from a child of this vertex
 	 */
-	pt::idx_t hi_;
-	pt::idx_t g_v_id_{}; // id/name of the vertex in the input GFA
+	qt::idx_t hi_;
+	qt::idx_t g_v_id_{}; // id/name of the vertex in the input GFA
 
-	pt::idx_t pre_order_;
-	pt::idx_t post_order_;
+	qt::idx_t pre_order_;
+	qt::idx_t post_order_;
 
 	pgt::v_type_e type_;
 
@@ -114,46 +116,46 @@ public:
 	// --------------
 	// constructor(s)
 	// --------------
-	Vertex(pt::idx_t dfs_num, pt::idx_t g_v_id, v_type_e type);
+	Vertex(qt::idx_t dfs_num, qt::idx_t g_v_id, v_type_e type);
 
 	// ---------
 	// getter(s)
 	// ---------
 	bool is_root() const;
 	bool is_leaf() const;
-	pt::idx_t dfs_num() const;
-	pt::idx_t pre_order() const;
-	pt::idx_t post_order() const;
-	// pt::idx_t parent() const; // TODO: remove
-	pt::idx_t hi() const; // TODO: remove
-	pt::idx_t g_v_id() const;
+	qt::idx_t dfs_num() const;
+	qt::idx_t pre_order() const;
+	qt::idx_t post_order() const;
+	// qt::idx_t parent() const; // TODO: remove
+	qt::idx_t hi() const; // TODO: remove
+	qt::idx_t g_v_id() const;
 	v_type_e type() const;
 
-	std::set<pt::idx_t> const &get_obe() const;
-	std::set<pt::idx_t> const &get_ibe() const;
+	std::set<qt::idx_t> const &get_obe() const;
+	std::set<qt::idx_t> const &get_ibe() const;
 
 	// get the index of the edge that points to the parent in the tree
-	pt::idx_t get_parent_e_idx() const;
+	qt::idx_t get_parent_e_idx() const;
 
-	std::set<pt::idx_t> const &get_child_edge_idxs() const;
-	pt::idx_t child_count() const;
+	std::set<qt::idx_t> const &get_child_edge_idxs() const;
+	qt::idx_t child_count() const;
 
 	// ---------
 	// setter(s)
 	// ---------
-	void add_obe(pt::idx_t obe_id);
-	void add_ibe(pt::idx_t ibe_id);
-	void add_child_e_idx(pt::idx_t e_id);
+	void add_obe(qt::idx_t obe_id);
+	void add_ibe(qt::idx_t ibe_id);
+	void add_child_e_idx(qt::idx_t e_id);
 
 	// the index of the parent node in the tree vertex
-	void set_parent_e_idx(pt::idx_t e_idx);
-	void set_g_v_id(pt::idx_t g_v_id);
+	void set_parent_e_idx(qt::idx_t e_idx);
+	void set_g_v_id(qt::idx_t g_v_id);
 	void set_type(v_type_e t);
-	void set_hi(pt::idx_t val);
+	void set_hi(qt::idx_t val);
 	// the dfs num of the node
-	void set_dfs_num(pt::idx_t idx);
-	void set_pre_order(pt::idx_t idx);
-	void set_post_order(pt::idx_t idx);
+	void set_dfs_num(qt::idx_t idx);
+	void set_pre_order(qt::idx_t idx);
+	void set_post_order(qt::idx_t idx);
 };
 
 class Tree
@@ -230,9 +232,9 @@ public:
 	// number of vertices in the tree
 	//[[deprecated("Use vtx_count")]]
 	// std::size_t size() const;
-	pt::idx_t vtx_count() const;
-	pt::idx_t tree_edge_count() const;
-	pt::idx_t back_edge_count() const;
+	qt::idx_t vtx_count() const;
+	qt::idx_t tree_edge_count() const;
+	qt::idx_t back_edge_count() const;
 
 	Vertex const &get_vertex(std::size_t vertex) const;
 	Vertex &get_vertex_mut(std::size_t vertex);
@@ -258,12 +260,12 @@ public:
 
 	// return edges that point to children of the vertex
 	[[deprecated("use get_child_edges_mut()")]]
-	std::vector<Edge> get_child_edges(pt::idx_t v_idx);
-	std::vector<Edge> get_child_edges_mut(pt::idx_t v_idx);
-	std::vector<pt::idx_t> get_child_edge_idxs(pt::idx_t v_idx) const;
+	std::vector<Edge> get_child_edges(qt::idx_t v_idx);
+	std::vector<Edge> get_child_edges_mut(qt::idx_t v_idx);
+	std::vector<qt::idx_t> get_child_edge_idxs(qt::idx_t v_idx) const;
 	// returns v_idxs of the children of the vertex
-	std::set<std::size_t> get_children(pt::idx_t v_idx) const;
-	pt::idx_t get_child_count(pt::idx_t v_idx) const;
+	std::set<std::size_t> get_children(qt::idx_t v_idx) const;
+	qt::idx_t get_child_count(qt::idx_t v_idx) const;
 
 	// get index of the  be in back_edges vector
 	std::set<std::size_t> get_obe_idxs(std::size_t vertex) const;
@@ -272,7 +274,7 @@ public:
 	size_t list_size(std::size_t vertex);
 	size_t get_hi(std::size_t vertex);
 
-	bool is_desc(pt::idx_t a, pt::idx_t d) const;
+	bool is_desc(qt::idx_t a, qt::idx_t d) const;
 
 	/**
 	 * @brief get indexes of the vertices the obes from this vertex points
@@ -281,7 +283,7 @@ public:
 	[[deprecated("use get_obe_tgt_v_idxs()")]]
 	std::set<size_t>
 	get_obe(std::size_t vertex); // get backedge target indexes
-	std::set<pt::idx_t> get_obe_tgt_v_idxs(std::size_t v_idx) const;
+	std::set<qt::idx_t> get_obe_tgt_v_idxs(std::size_t v_idx) const;
 
 	/**
 	 * @brief get sources of the vertices the ibes from this vertex points
@@ -289,7 +291,7 @@ public:
 	 */
 	[[deprecated("use get_ibe_src_v_idxs()")]]
 	std::set<size_t> get_ibe(std::size_t vertex);
-	std::set<pt::idx_t> get_ibe_src_v_idxs(std::size_t v_idx) const;
+	std::set<qt::idx_t> get_ibe_src_v_idxs(std::size_t v_idx) const;
 
 	/**
 	 * @brief a reference to the tree edge given the index in the tree_edges
@@ -375,8 +377,8 @@ public:
 	void set_vertex_type(std::size_t vertex, pgt::v_type_e type);
 
 	// takes the frm and to are the dfs_nums of the vertices
-	pt::idx_t add_be(pt::idx_t frm, pt::idx_t to, be_type_e t);
-	void add_tree_edge(pt::idx_t frm, pt::idx_t to, pgt::color_e clr);
+	qt::idx_t add_be(qt::idx_t frm, qt::idx_t to, be_type_e t);
+	void add_tree_edge(qt::idx_t frm, qt::idx_t to, pgt::color_e clr);
 
 	void set_hi(std::size_t vertex, std::size_t val);
 

@@ -6,9 +6,9 @@
 
 #include "mto/common.hpp" // for fp_to_vector
 
-#include <quilt/shim.hpp> // for contains
+#include <quilt/shim.hpp>  // for contains
+#include <quilt/types.hpp> // for qt
 
-#include "povu/common/core.hpp"	 // for pt
 #include "povu/common/log.hpp"	 // for INFO
 #include "povu/common/utils.hpp" // for concat_with
 
@@ -26,7 +26,7 @@ std::string get_version(const std::vector<std::string> &header_lines)
 	for (const auto &line : header_lines) {
 		if (line.rfind("##fileformat=", 0) == 0) {
 			// length of "##fileformat=VCFv" is 17
-			pt::u32 len_prefix = 17;
+			qt::u32 len_prefix = 17;
 			std::string version = line.substr(
 				len_prefix, line.size() - len_prefix);
 			vcf_version = version;
@@ -77,21 +77,21 @@ std::string check_version(const std::vector<std::string> &headers)
 	return vcf_version;
 }
 
-pu::TwoWayMap<std::string, pt::u32> extract_sample_names(const std::string &s)
+pu::TwoWayMap<std::string, qt::u32> extract_sample_names(const std::string &s)
 {
 	// split string by tabs
 	std::vector<std::string> tokens;
 	pu::split(s, '\t', &tokens);
 
-	pt::u32 i{};
+	qt::u32 i{};
 	for (; i < tokens.size(); i++)
 		if (tokens[i] == "FORMAT")
 			break;
 
-	pu::TwoWayMap<std::string, pt::u32> sn_to_idx;
+	pu::TwoWayMap<std::string, qt::u32> sn_to_idx;
 
 	std::vector<std::string> sample_names;
-	for (pt::u32 j = i + 1; j < tokens.size(); j++) {
+	for (qt::u32 j = i + 1; j < tokens.size(); j++) {
 		sample_names.push_back(tokens[j]);
 		sn_to_idx.insert(tokens[j], j - (i + 1));
 	}
@@ -99,7 +99,7 @@ pu::TwoWayMap<std::string, pt::u32> extract_sample_names(const std::string &s)
 	return sn_to_idx;
 }
 
-void read_vcf(const fs::path &fp, pt::u32 ll, mto::from_vcf::VCFile &vcf_file)
+void read_vcf(const fs::path &fp, qt::u32 ll, mto::from_vcf::VCFile &vcf_file)
 {
 	if (ll > 1)
 		INFO("Reading VCF from: {}", fp.string());
@@ -115,7 +115,7 @@ void read_vcf(const fs::path &fp, pt::u32 ll, mto::from_vcf::VCFile &vcf_file)
 
 	vcf_file.add_sample_names(headers.back());
 
-	pt::u32 i{static_cast<pt::u32>(headers.size())};
+	qt::u32 i{static_cast<qt::u32>(headers.size())};
 	for (; i < lines.size(); i++) {
 		const std::string &line = lines[i];
 		auto rec = mto::from_vcf::VCFRecord::from_row(line);
@@ -134,14 +134,14 @@ std::vector<ptg::id_or_t> extract_v_id_ors(const std::string &at)
 	auto update = [&v_id_str, &o, &v_ids]()
 	{
 		if (v_id_str != "") {
-			auto v_id = static_cast<pt::id_t>(std::stoll(v_id_str));
+			auto v_id = static_cast<qt::id_t>(std::stoll(v_id_str));
 			v_ids.emplace_back(ptg::id_or_t{v_id, o});
 			v_id_str.clear();
 		}
 	};
 
 	// zero is a > or <
-	for (pt::u32 i{1}; i < at.size(); i++) {
+	for (qt::u32 i{1}; i < at.size(); i++) {
 		char c = at[i];
 
 		if ((c == '>' || c == '<') && v_id_str != "")

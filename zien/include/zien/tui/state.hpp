@@ -8,7 +8,7 @@
 
 #include <ncurses.h>
 
-#include "povu/common/core.hpp" // for pt
+#include <quilt/types.hpp> // for qt
 
 // Forward declaration: Tell the compiler Pane exists elsewhere
 
@@ -21,14 +21,14 @@ static constexpr short PAIR_DIM = 2;
 static constexpr short PAIR_SEP = 3;
 static constexpr short PAIR_ERROR = 4;
 
-enum class Mode : pt::u8 {
+enum class Mode : qt::u8 {
 	NAVIGATION,
 	SEARCH,
 	JUMP,
 	COMMAND,
 };
 
-enum class View : pt::u8 {
+enum class View : qt::u8 {
 	VARIATION,
 	PATHS,
 };
@@ -76,30 +76,30 @@ struct ui_state {
 	// ........................
 	//       shared
 	// ........................
-	pt::u32 hap_count = 0; // number of haplotypes in the graph
+	qt::u32 hap_count = 0; // number of haplotypes in the graph
 
 	// ........................
 	//      paths view
 	// ........................
 	//
 	//
-	pt::u32 paths_view_mid = 250;
-	// pt::u32 paths_view_mid = 1720;
-	// pt::u32 paths_view_mid = 93050;
+	qt::u32 paths_view_mid = 250;
+	// qt::u32 paths_view_mid = 1720;
+	// qt::u32 paths_view_mid = 93050;
 
-	pt::u32 half_window_size = 250; // halfway point vertex idx
-	pt::op_t<pt::u32> paths_view_range{1, 500};
+	qt::u32 half_window_size = 250; // halfway point vertex idx
+	qt::op_t<qt::u32> paths_view_range{1, 500};
 	bool update_paths_view = false;
-	pt::u32 selected_line = 1;
+	qt::u32 selected_line = 1;
 
 	// ........................
 	//     variation view
 	// ........................
 	PaneID active_pane_id = PaneID::A;
-	pt::u8 pane_count = 4; // number of panes currently displayed
+	qt::u8 pane_count = 4; // number of panes currently displayed
 
 	// currently selected VCF record index
-	pt::u32 vcf_selected_rec = 0; // zero-based index
+	qt::u32 vcf_selected_rec = 0; // zero-based index
 
 	// TODO: add is tangled to UI state
 

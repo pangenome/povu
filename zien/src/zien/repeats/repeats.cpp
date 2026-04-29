@@ -2,12 +2,12 @@
 
 #include <liteseq/refs.h> // for ref_walk, ref
 
-#include <quilt/shim.hpp> // for contains
+#include <quilt/shim.hpp>  // for contains
+#include <quilt/types.hpp> // for qt
 
 #include "ita/align/align.hpp"	   // for align, aln_level_e
 #include "ita/genomics/allele.hpp" // for ia::at_itn
 
-#include "povu/common/core.hpp"	     // for pt
 #include "povu/graph/bidirected.hpp" // for VG
 #include "povu/graph/types.hpp"
 
@@ -15,30 +15,30 @@ namespace zien::tui::repeats
 {
 namespace lq = liteseq;
 
-std::map<pt::id_t, std::vector<pt::slice>>
-unroll_tangle(const bd::VG &g, const pt::op_t<ptg::id_or_t> &ef)
+std::map<qt::id_t, std::vector<qt::slice>>
+unroll_tangle(const bd::VG &g, const qt::op_t<ptg::id_or_t> &ef)
 {
-	std::map<pt::id_t, std::vector<pt::slice>> unrolled_steps;
+	std::map<qt::id_t, std::vector<qt::slice>> unrolled_steps;
 
 	auto [u, _] = ef.first;
 	auto [v, __] = ef.second;
 
-	for (pt::u32 h_idx{}; h_idx < g.get_hap_count(); h_idx++) {
-		const std::vector<pt::u32> &positions_u =
+	for (qt::u32 h_idx{}; h_idx < g.get_hap_count(); h_idx++) {
+		const std::vector<qt::u32> &positions_u =
 			g.get_vertex_ref_idxs(g.v_id_to_idx(u), h_idx);
 
-		const std::vector<pt::u32> &positions_v =
+		const std::vector<qt::u32> &positions_v =
 			g.get_vertex_ref_idxs(g.v_id_to_idx(v), h_idx);
 
-		pt::u32 N = std::min(positions_u.size(), positions_v.size());
-		for (pt::u32 i{}; i < N; i++) {
-			pt::u32 pos_u = positions_u[i];
-			pt::u32 pos_v = positions_v[i];
+		qt::u32 N = std::min(positions_u.size(), positions_v.size());
+		for (qt::u32 i{}; i < N; i++) {
+			qt::u32 pos_u = positions_u[i];
+			qt::u32 pos_v = positions_v[i];
 
 			if (pos_v < pos_u) // swap
 				std::swap(pos_u, pos_v);
 
-			pt::slice s{pos_u, pos_v - pos_u + 1};
+			qt::slice s{pos_u, pos_v - pos_u + 1};
 			unrolled_steps[h_idx].emplace_back(s);
 		}
 	}
@@ -52,13 +52,13 @@ ptg::or_e lq_strand_to_or(lq::strand s)
 					     : ptg::or_e::reverse;
 }
 
-ptg::walk_t slice_to_walk(const bd::VG &g, pt::u32 h_idx, const pt::slice &s)
+ptg::walk_t slice_to_walk(const bd::VG &g, qt::u32 h_idx, const qt::slice &s)
 {
 	ptg::walk_t w;
 
 	const lq::ref_walk *rw = g.get_ref_vec(h_idx)->walk;
-	for (pt::u32 i = s.start(); i < s.start() + s.len(); i++) {
-		pt::id_t v_id = rw->v_ids[i];
+	for (qt::u32 i = s.start(); i < s.start() + s.len(); i++) {
+		qt::id_t v_id = rw->v_ids[i];
 		ptg::or_e o = lq_strand_to_or(rw->strands[i]);
 		w.push_back({v_id, o});
 	}
@@ -67,17 +67,17 @@ ptg::walk_t slice_to_walk(const bd::VG &g, pt::u32 h_idx, const pt::slice &s)
 }
 
 struct bar {
-	pt::u32 h_idx;
-	std::vector<pt::slice> itn;
+	qt::u32 h_idx;
+	std::vector<qt::slice> itn;
 
 	// when h_idx == ref hap then aln is empty or all matches
 	std::string aln; // alignment string or edit transcript
 
 	// methods
 	[[nodiscard]]
-	std::string baz(const bd::VG &g, pt::u32 h_idx,
-			const std::vector<pt::slice> &curr_itn,
-			pt::u32 slice_idx) const
+	std::string baz(const bd::VG &g, qt::u32 h_idx,
+			const std::vector<qt::slice> &curr_itn,
+			qt::u32 slice_idx) const
 	{
 		if (slice_idx >= curr_itn.size())
 			return "";
@@ -86,16 +86,16 @@ struct bar {
 		return ptg::to_string(w);
 	}
 
-	void to_tui_aln(const bd::VG &g, pt::u32 ref_h_idx,
-			const std::vector<pt::slice> &ref_itn, pt::u32 pos,
+	void to_tui_aln(const bd::VG &g, qt::u32 ref_h_idx,
+			const std::vector<qt::slice> &ref_itn, qt::u32 pos,
 			std::string &ref_at_str, std::string &alt_at_str,
-			pt::slice &ref_sl, pt::slice &alt_sl) const
+			qt::slice &ref_sl, qt::slice &alt_sl) const
 	{
-		pt::u32 i{}; // aln index
-		pt::u32 j{}; // ref itn index
-		pt::u32 k{}; // alt itn index
+		qt::u32 i{}; // aln index
+		qt::u32 j{}; // ref itn index
+		qt::u32 k{}; // alt itn index
 
-		pt::u32 N = std::max(this->itn.size(), ref_itn.size());
+		qt::u32 N = std::max(this->itn.size(), ref_itn.size());
 
 		// rs ref string, as alt string
 		auto get_rs = [&]() -> std::string
@@ -115,7 +115,7 @@ struct bar {
 			s[middle] = '-';
 		};
 
-		auto pos_covered = [&](pt::u32 j) -> bool
+		auto pos_covered = [&](qt::u32 j) -> bool
 		{
 			// std::cerr << "Checking pos_covered at j=" << j
 			//	  << " ref itn size " << ref_itn.size() << "\n";
@@ -123,17 +123,17 @@ struct bar {
 			if (j >= ref_itn.size())
 				return false;
 
-			pt::slice ref_sl = ref_itn.at(j);
-			pt::u32 ref_start = ref_sl.start();
+			qt::slice ref_sl = ref_itn.at(j);
+			qt::u32 ref_start = ref_sl.start();
 			// std::cerr << "Ref SL: " << ref_sl.start() << " "
 			//	  << ref_sl.len() << "\n";
-			pt::u32 ref_end = ref_start + (ref_sl.len() - 1);
+			qt::u32 ref_end = ref_start + (ref_sl.len() - 1);
 			// std::cerr << "ref end " << ref_end;
 			const lq::ref_walk *rw = g.get_ref_vec(ref_h_idx)->walk;
 
-			pt::u32 s = rw->loci[ref_start];
-			pt::u32 e = rw->loci[ref_end];
-			pt::id_t v_id = rw->v_ids[ref_end];
+			qt::u32 s = rw->loci[ref_start];
+			qt::u32 e = rw->loci[ref_end];
+			qt::id_t v_id = rw->v_ids[ref_end];
 			e += g.get_vertex_by_id(v_id).get_length();
 
 			return (pos >= s && pos < e);
@@ -172,21 +172,21 @@ struct bar {
 			}
 			else if (ref_at_step.length() < alt_at_step.length()) {
 				// pad ref
-				pt::u32 diff = alt_at_step.length() -
+				qt::u32 diff = alt_at_step.length() -
 					       ref_at_step.length();
 				ref_at_step += std::string(diff, ' ');
 			}
 			else if (alt_at_step.length() < ref_at_step.length()) {
 				// pad alt
-				pt::u32 diff = ref_at_step.length() -
+				qt::u32 diff = ref_at_step.length() -
 					       alt_at_step.length();
 				alt_at_step += std::string(diff, ' ');
 			}
 
 			if (pos_covered(j - 1)) { // highlight the position
-				ref_sl = pt::slice(ref_at_str.length(),
+				ref_sl = qt::slice(ref_at_str.length(),
 						   ref_at_step.length());
-				alt_sl = pt::slice(alt_at_str.length(),
+				alt_sl = qt::slice(alt_at_str.length(),
 						   alt_at_step.length());
 			}
 
@@ -201,18 +201,18 @@ struct bar {
 	}
 };
 
-std::tuple<std::vector<pt::u32>, std::vector<pt::slice>,
+std::tuple<std::vector<qt::u32>, std::vector<qt::slice>,
 	   std::vector<std::string>>
-foo(const bd::VG &g, pt::u32 ref_h_idx, const pt::op_t<ptg::id_or_t> &ef,
-    pt::u32 pos)
+foo(const bd::VG &g, qt::u32 ref_h_idx, const qt::op_t<ptg::id_or_t> &ef,
+    qt::u32 pos)
 {
 	std::vector<std::string> lines;
 	std::vector<bar> bars;
 
-	std::map<pt::id_t, std::vector<pt::slice>> unrolled =
+	std::map<qt::id_t, std::vector<qt::slice>> unrolled =
 		unroll_tangle(g, ef);
 
-	pt::u32 longest_loop{};
+	qt::u32 longest_loop{};
 	for (auto &[_, slices] : unrolled)
 		if (slices.size() > longest_loop)
 			longest_loop = slices.size();
@@ -223,9 +223,9 @@ foo(const bd::VG &g, pt::u32 ref_h_idx, const pt::op_t<ptg::id_or_t> &ef,
 
 	auto lvl = ita::align::aln_level_e::at;
 
-	std::map<pt::u32, ia::at_itn> itns;
+	std::map<qt::u32, ia::at_itn> itns;
 
-	std::map<pt::u32, std::string> hap_walk_to_alns;
+	std::map<qt::u32, std::string> hap_walk_to_alns;
 
 	for (const auto &[h_idx, slices] : unrolled) {
 		std::vector<ptg::walk_t> walks;
@@ -238,7 +238,7 @@ foo(const bd::VG &g, pt::u32 ref_h_idx, const pt::op_t<ptg::id_or_t> &ef,
 
 	// std::cerr << "B" << "\n";
 
-	for (pt::u32 i{}; i < g.get_hap_count(); i++) {
+	for (qt::u32 i{}; i < g.get_hap_count(); i++) {
 		if (i == ref_h_idx || !qs::contains(itns, i))
 			continue;
 
@@ -254,17 +254,17 @@ foo(const bd::VG &g, pt::u32 ref_h_idx, const pt::op_t<ptg::id_or_t> &ef,
 
 	// std::cerr << "C" << "\n";
 
-	std::vector<pt::u32> header_lens;
-	std::vector<pt::slice> highlight_slices; // highlight slices
+	std::vector<qt::u32> header_lens;
+	std::vector<qt::slice> highlight_slices; // highlight slices
 
 	lines.reserve(bars.size());
 	std::string ref_at_str;
 	std::string alt_at_str;
 
-	pt::slice ref_sl(0, 0);
-	pt::slice alt_sl(0, 0);
+	qt::slice ref_sl(0, 0);
+	qt::slice alt_sl(0, 0);
 
-	for (pt::u32 i{}; i < bars.size(); i++) {
+	for (qt::u32 i{}; i < bars.size(); i++) {
 		const bar &b = bars.at(i);
 		if (b.h_idx == ref_h_idx)
 			continue;
@@ -294,7 +294,7 @@ foo(const bd::VG &g, pt::u32 ref_h_idx, const pt::op_t<ptg::id_or_t> &ef,
 	// std::cerr << "D" << "\n";
 
 	// std::cerr << "lines\n";
-	// pt::u32 k{};
+	// qt::u32 k{};
 	// for (auto &l : lines)
 	//	std::cerr << k++ << " " << l << "\n";
 

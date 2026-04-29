@@ -5,14 +5,12 @@
 #include <utility> // for move
 #include <vector>  // for vector
 
-#include <quilt/shim.hpp> // for contains
+#include <quilt/shim.hpp>  // for contains
+#include <quilt/types.hpp> // for qt
 
-#include "ita/align/align.hpp"		// for align, aln_level_e
-#include "ita/genomics/allele.hpp"	// for Exp, itn_t
-#include "ita/traversals/at_matrix.hpp" // for matrix_pool
+#include "ita/align/align.hpp"	   // for align, aln_level_e
+#include "ita/genomics/allele.hpp" // for Exp, itn_t
 #include "ita/traversals/traversals.hpp" // for unroll_haps, itinerary, allele_traversal
-#include "povu/common/core.hpp"		 // for pt, id_t, up_t, operator<
-// #include "povu/common/utils.hpp"
 #include "povu/graph/bidirected.hpp" // for VG, bd
 #include "povu/graph/types.hpp"	     // for or_e, id_or_t
 #include "povu/refs/refs.hpp"	     // for lq_strand_to_pv_or
@@ -23,17 +21,17 @@ namespace lq = liteseq;
 using namespace ita::traversals::traversals;
 
 ia::at_itn gen_at_itn(const bd::VG &g, const itinerary &steps_itn,
-		      pt::u32 h_idx)
+		      qt::u32 h_idx)
 {
 	std::vector<ptg::walk_t> allele_traversals;
 	const lq::ref_walk *hw = g.get_ref_vec(h_idx)->walk; // the hap walk
 
 	for (const allele_traversal &at : steps_itn) {
 		ptg::walk_t w;
-		for (pt::u32 step_idx : at) {
+		for (qt::u32 step_idx : at) {
 			ptg::or_e o =
 				pr::lq_strand_to_pv_or(hw->strands[step_idx]);
-			pt::u32 v_id = hw->v_ids[step_idx];
+			qt::u32 v_id = hw->v_ids[step_idx];
 			w.emplace_back(ptg::id_or_t{v_id, o});
 		}
 		allele_traversals.emplace_back(std::move(w));
@@ -45,17 +43,17 @@ ia::at_itn gen_at_itn(const bd::VG &g, const itinerary &steps_itn,
 /**
  *
  */
-void lineup(const std::string &edit_transcript, pt::u32 ref_h_idx,
-	    pt::u32 ref_loop_count, pt::u32 alt_h_idx, pt::u32 alt_loop_count,
+void lineup(const std::string &edit_transcript, qt::u32 ref_h_idx,
+	    qt::u32 ref_loop_count, qt::u32 alt_h_idx, qt::u32 alt_loop_count,
 	    aln_chain &chain)
 {
-	pt::u32 i{}; // aln index
-	pt::u32 j{}; // ref itn index
-	pt::u32 k{}; // alt itn index
+	qt::u32 i{}; // aln index
+	qt::u32 j{}; // ref itn index
+	qt::u32 k{}; // alt itn index
 
-	const pt::u32 N = edit_transcript.size();
-	const pt::u32 O = ref_loop_count;
-	const pt::u32 P = alt_loop_count;
+	const qt::u32 N = edit_transcript.size();
+	const qt::u32 O = ref_loop_count;
+	const qt::u32 P = alt_loop_count;
 
 	for (; i < N && j < O && k < P; i++) {
 		char c = edit_transcript[i];
@@ -71,10 +69,10 @@ void lineup(const std::string &edit_transcript, pt::u32 ref_h_idx,
 	}
 }
 
-void do_align(const bd::VG &g, const std::set<pt::u32> &to_call_ref_ids,
+void do_align(const bd::VG &g, const std::set<qt::u32> &to_call_ref_ids,
 	      aln_chain &chain)
 {
-	const pt::u32 I = g.get_hap_count();
+	const qt::u32 I = g.get_hap_count();
 	const std::vector<itinerary> &hap_itns = chain.hap_itns;
 
 	// -----------
@@ -82,8 +80,8 @@ void do_align(const bd::VG &g, const std::set<pt::u32> &to_call_ref_ids,
 	//
 	//
 	// -----------
-	std::map<pt::u32, ia::at_itn> hap2at_itn;
-	auto get_at_itn = [&](pt::u32 h_idx) -> const ia::at_itn &
+	std::map<qt::u32, ia::at_itn> hap2at_itn;
+	auto get_at_itn = [&](qt::u32 h_idx) -> const ia::at_itn &
 	{
 		if (qs::contains(hap2at_itn, h_idx))
 			return hap2at_itn[h_idx];
@@ -99,8 +97,8 @@ void do_align(const bd::VG &g, const std::set<pt::u32> &to_call_ref_ids,
 	// ------------------
 	const auto ALN_LEVEL = ita::align::aln_level_e::at;
 	std::string et; // edit transcript
-	for (pt::u32 ref_h_idx : to_call_ref_ids) {
-		for (pt::u32 alt_h_idx{}; alt_h_idx < I; alt_h_idx++) {
+	for (qt::u32 ref_h_idx : to_call_ref_ids) {
+		for (qt::u32 alt_h_idx{}; alt_h_idx < I; alt_h_idx++) {
 			if (ref_h_idx == alt_h_idx)
 				continue;
 
@@ -109,8 +107,8 @@ void do_align(const bd::VG &g, const std::set<pt::u32> &to_call_ref_ids,
 
 			et = ita::align::align(ref_itn, alt_itn, ALN_LEVEL);
 
-			pt::u32 ref_loop_no = hap_itns[ref_h_idx].size();
-			pt::u32 alt_loop_no = hap_itns[alt_h_idx].size();
+			qt::u32 ref_loop_no = hap_itns[ref_h_idx].size();
+			qt::u32 alt_loop_no = hap_itns[alt_h_idx].size();
 
 			lineup(et, ref_h_idx, ref_loop_no, alt_h_idx,
 			       alt_loop_no, chain);
@@ -124,11 +122,11 @@ void do_align(const bd::VG &g, const std::set<pt::u32> &to_call_ref_ids,
 			continue;
 		}
 
-		const std::map<pt::u32, std::vector<chain_link>> &loop2ats =
+		const std::map<qt::u32, std::vector<chain_link>> &loop2ats =
 			chain.all_chains.at(ref_h_idx).loop2ats;
 
 		// loop nos to remove from the chain
-		std::set<pt::u32> to_remove;
+		std::set<qt::u32> to_remove;
 
 		for (const auto &[loop_no, links] : loop2ats) {
 			bool keep{false};
@@ -142,15 +140,15 @@ void do_align(const bd::VG &g, const std::set<pt::u32> &to_call_ref_ids,
 				to_remove.insert(loop_no);
 		}
 
-		for (pt::u32 loop_no : to_remove)
+		for (qt::u32 loop_no : to_remove)
 			chain.all_chains.at(ref_h_idx).loop2ats.erase(loop_no);
 	}
 }
 
-aln_chain untangle(const bd::VG &g, const std::set<pt::u32> &to_call_ref_ids,
+aln_chain untangle(const bd::VG &g, const std::set<qt::u32> &to_call_ref_ids,
 		   const ir::RoV &rov)
 {
-	const std::vector<pt::u32> &sorted_w = rov.get_sorted_vertices();
+	const std::vector<qt::u32> &sorted_w = rov.get_sorted_vertices();
 	std::vector<itinerary> hap_itns = unroll_haps(g, sorted_w);
 	aln_chain aln_chain{std::move(hap_itns)};
 	do_align(g, to_call_ref_ids, aln_chain);

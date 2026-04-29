@@ -7,7 +7,6 @@
 
 #include <liteseq/refs.h>	     // for ref_walk, ref
 #include <meza/pool/pool.hpp>	     // for pool
-#include <povu/common/core.hpp>	     // for pt
 #include <povu/graph/bidirected.hpp> // for VG
 #include <quilt/types.hpp>	     // for u8, u32
 
@@ -26,7 +25,7 @@ using pool_t = meza::pool::pool<qt::u8, qt::u32>;
 
 void process_mat3(
 	const bd::VG &g, const ir::RoV *rov,
-	const std::vector<pt::u32> &sorted_vertices, qt::u32 ref_h_idx,
+	const std::vector<qt::u32> &sorted_vertices, qt::u32 ref_h_idx,
 	const std::vector<ita::traversals::traversals::itinerary> &hap_itns,
 	const std::vector<ita::at_matrix::mat3_item> &job_item, pool_t &p,
 	std::vector<ia::trek> &treks)
@@ -57,7 +56,7 @@ void process_mat3(
 	}
 }
 
-void process_batches(const bd::VG &g, const std::set<pt::u32> &to_call_ref_ids,
+void process_batches(const bd::VG &g, const std::set<qt::u32> &to_call_ref_ids,
 		     pool_t &p, ita::at_matrix::rov_job_batch &batch,
 		     std::vector<ia::trek> &treks)
 {
@@ -66,7 +65,7 @@ void process_batches(const bd::VG &g, const std::set<pt::u32> &to_call_ref_ids,
 	for (const ita::at_matrix::rov_job &job : batch.get_jobs()) {
 		const ir::RoV *rov = job.get_rov();
 
-		const std::vector<pt::u32> &sorted_vertices =
+		const std::vector<qt::u32> &sorted_vertices =
 			rov->get_sorted_vertices();
 
 		const std::vector<ita::traversals::traversals::itinerary>
@@ -86,7 +85,7 @@ void process_batches(const bd::VG &g, const std::set<pt::u32> &to_call_ref_ids,
 }
 
 void populate_trips(const bd::VG &g, const ir::RoV *rov,
-		    const std::set<pt::u32> &to_call_ref_ids, pool_t &p,
+		    const std::set<qt::u32> &to_call_ref_ids, pool_t &p,
 		    ita::at_matrix::rov_job_batch &batch,
 		    std::vector<ia::trek> &treks, bool drain)
 {

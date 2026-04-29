@@ -6,8 +6,6 @@
 
 #include <quilt/shim.hpp> // for format
 
-// #include "povu/common/compat.hpp" // pv_cmp
-
 #define FN() qs::format("[{}::{}]", MODULE, __func__)
 
 #define DEBUG_PRINT(format, ...)                                               \

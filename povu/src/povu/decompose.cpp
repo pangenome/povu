@@ -9,7 +9,8 @@
 #include <utility>    // for get, make_pair, pair
 #include <vector>     // for vector
 
-#include <quilt/shim.hpp> // for format
+#include <quilt/shim.hpp>  // for format
+#include <quilt/types.hpp> // for qt
 
 #include "mto/from_gfa.hpp" // for to_bd
 #include "mto/to_gfa.hpp"
@@ -79,7 +80,7 @@ std::pair<uint32_t, uint32_t> thread_count(const core::config &app_config,
 	/* Divide the number of components into chunks for each thread */
 	unsigned int total_threads = std::thread::hardware_concurrency();
 
-	pt::u32 conf_num_threads =
+	qt::u32 conf_num_threads =
 		static_cast<std::size_t>(app_config.thread_count());
 	uint32_t num_threads = (conf_num_threads > total_threads)
 				       ? total_threads
@@ -104,16 +105,16 @@ void do_decompose(const core::config &app_config)
 	if (ll > 1)
 		INFO("Found {} components", components.size());
 
-	std::pair<pt::u32, pt::u32> thread_config =
+	std::pair<qt::u32, qt::u32> thread_config =
 		thread_count(app_config, components.size());
 
-	pt::u32 num_threads = thread_config.first;
-	pt::u32 chunk_size = thread_config.second;
+	qt::u32 num_threads = thread_config.first;
+	qt::u32 chunk_size = thread_config.second;
 
 	/* Create and launch threads */
 	std::vector<std::thread> threads(num_threads);
-	pt::u32 start, end;
-	for (pt::u32 thread_idx{}; thread_idx < num_threads; ++thread_idx) {
+	qt::u32 start, end;
+	for (qt::u32 thread_idx{}; thread_idx < num_threads; ++thread_idx) {
 		start = thread_idx * chunk_size;
 		end = (thread_idx == num_threads - 1)
 			      ? components.size()
@@ -122,15 +123,15 @@ void do_decompose(const core::config &app_config)
 		threads[thread_idx] = std::thread(
 			[start, end, num_threads, app_config, ll, &components]
 			{
-				for (pt::u32 i{start}; i < end; i++) {
+				for (qt::u32 i{start}; i < end; i++) {
 
-					pt::u32 component_id{i + 1};
+					qt::u32 component_id{i + 1};
 
 					if (app_config.verbosity())
 						INFO("Handling component: {}",
 						     component_id);
 
-					pt::u32 N = components[i]->vtx_count();
+					qt::u32 N = components[i]->vtx_count();
 					if (N < 3) {
 						// clang-format off
 						if (ll > 2)

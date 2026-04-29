@@ -11,14 +11,15 @@
 #include <utility> // for get, pair
 #include <vector>  // for vector
 
-#include "fmt/core.h" // for format
+// #include "fmt/core.h" // for format
+
+#include <quilt/types.hpp> // for qt
 
 #include "mto/common.hpp" // for FILE_ERROR
 #include "mto/from_pvst.hpp"
 
-#include "povu/common/compat.hpp"    // for format, pv_cmp
+// #include "povu/common/compat.hpp"    // for format, pv_cmp
 #include "povu/common/constants.hpp" // for INVALID_IDX, COL_SEP, EXPECTED_...
-#include "povu/common/core.hpp"	     // for pt, idx_t
 #include "povu/common/log.hpp"	     // for ERR
 #include "povu/common/utils.hpp"     // for split, concat_with
 #include "povu/graph/types.hpp"	     // for id_or_t, or_e
@@ -79,9 +80,9 @@ void check_pvst_version_support(const std::string &fp,
 
 // Split on commas, trim whitespace, parse each token as an integer.
 // Ignores empty tokens (e.g. a trailing comma).
-std::vector<pt::idx_t> split_numbers(std::string_view s)
+std::vector<qt::idx_t> split_numbers(std::string_view s)
 {
-	std::vector<pt::idx_t> result;
+	std::vector<qt::idx_t> result;
 	size_t pos = 0;
 
 	while (pos < s.size()) {
@@ -174,14 +175,14 @@ pvst::Tree read_pvst(const std::string &fp)
 	std::vector<std::string> tokens;
 
 	// a map from line in the .pvst file to the vertex index in the PVST
-	std::map<pt::idx_t, pt::idx_t> line_idx_to_pvst_idx;
+	std::map<qt::idx_t, qt::idx_t> line_idx_to_pvst_idx;
 
 	// map file vertex index to pvst vertex index
-	std::map<pt::idx_t, pt::idx_t> file_v_idx_to_pvst_idx;
+	std::map<qt::idx_t, qt::idx_t> file_v_idx_to_pvst_idx;
 
-	// pt::u32 x;
+	// qt::u32 x;
 
-	for (pt::idx_t line_idx{}; line_idx < lines.size(); line_idx++) {
+	for (qt::idx_t line_idx{}; line_idx < lines.size(); line_idx++) {
 		const std::string &line = lines[line_idx];
 
 		pu::split(line, pc::COL_SEP, &tokens);
@@ -199,9 +200,9 @@ pvst::Tree read_pvst(const std::string &fp)
 		char typ = tokens[0][0];
 		// id of the vertex in the file
 		// assume that the value here will always be numeric
-		pt::idx_t id = std::stoul(tokens[1]);
+		qt::idx_t id = std::stoul(tokens[1]);
 
-		pt::idx_t v_idx{pc::INVALID_IDX};
+		qt::idx_t v_idx{pc::INVALID_IDX};
 		// const std::string &pvst_label = tokens[2];
 
 		switch (typ) {
@@ -276,7 +277,7 @@ pvst::Tree read_pvst(const std::string &fp)
 		tokens.clear();
 	}
 
-	for (pt::idx_t line_idx{}; line_idx < lines.size(); line_idx++) {
+	for (qt::idx_t line_idx{}; line_idx < lines.size(); line_idx++) {
 		tokens.clear();
 		// TODO: [B] PERFORMANCE use stringview instead of creating a
 		// new string
@@ -289,10 +290,10 @@ pvst::Tree read_pvst(const std::string &fp)
 		if (ch == ".") // no children
 			continue;
 
-		pt::idx_t p_pvst_idx = line_idx_to_pvst_idx[line_idx];
-		for (const pt::idx_t &c_idx : split_numbers(ch)) {
-			// pt::idx_t ch_pvst_idx = line_idx_to_pvst_idx[c_idx];
-			pt::idx_t ch_pvst_idx = file_v_idx_to_pvst_idx[c_idx];
+		qt::idx_t p_pvst_idx = line_idx_to_pvst_idx[line_idx];
+		for (const qt::idx_t &c_idx : split_numbers(ch)) {
+			// qt::idx_t ch_pvst_idx = line_idx_to_pvst_idx[c_idx];
+			qt::idx_t ch_pvst_idx = file_v_idx_to_pvst_idx[c_idx];
 
 			pvst.add_edge(p_pvst_idx, ch_pvst_idx);
 		}

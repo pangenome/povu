@@ -2,6 +2,7 @@
 #define ZIEN_COMPONENTS_VCF_HPP
 
 #include <ncurses.h>
+#include <quilt/types.hpp> // for qt
 
 #include "mto/from_vcf.hpp"		  // for VCFile
 #include "povu/graph/bidirected.hpp"	  // for VG
@@ -11,7 +12,7 @@ namespace zien::components::vcf
 {
 /* top left pane */
 void comp_vcfs(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
-	       const std::vector<pt::u32> &invalid_recs, display_lines &pd);
+	       const std::vector<qt::u32> &invalid_recs, display_lines &pd);
 
 } // namespace zien::components::vcf
 

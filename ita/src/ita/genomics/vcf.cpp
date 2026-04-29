@@ -3,13 +3,13 @@
 #include <string>
 #include <vector>
 
-#include <liteseq/refs.h> // for ref_walk, ref
-#include <quilt/shim.hpp> // for format
+#include <liteseq/refs.h>  // for ref_walk, ref
+#include <quilt/shim.hpp>  // for format
+#include <quilt/types.hpp> // for qt
 
 #include "ita/genomics/allele.hpp"  // for Exp, allele_slice_t, itn_t
 #include "ita/graph/slice_tree.hpp" // for poi
 #include "ita/variation/rov.hpp"    // for rov_boundaries, var_type_e
-#include "povu/common/core.hpp"	    // for pt, idx_t, id_t, op_t
 #include "povu/graph/pvst.hpp"	    // for VertexBase
 #include "povu/refs/refs.hpp"
 
@@ -33,9 +33,9 @@ std::ostream &operator<<(std::ostream &os, var_class_e vc)
 	}
 }
 
-std::pair<pt::u32, std::vector<std::vector<std::string>>>
-gen_gt_data(const bd::VG &g, const std::set<pt::u32> &ref_haps,
-	    const std::set<pt::u32> &alt_h_idxs)
+std::pair<qt::u32, std::vector<std::vector<std::string>>>
+gen_gt_data(const bd::VG &g, const std::set<qt::u32> &ref_haps,
+	    const std::set<qt::u32> &alt_h_idxs)
 {
 	std::vector<std::vector<std::string>> gt_cols =
 		g.get_blank_genotype_cols();
@@ -45,16 +45,16 @@ gen_gt_data(const bd::VG &g, const std::set<pt::u32> &ref_haps,
 			gt = ".";
 
 	// number of samples with data. cols that that are non-zero
-	std::set<pt::u32> ns_cols;
+	std::set<qt::u32> ns_cols;
 
-	for (pt::u32 h_idx : ref_haps) {
+	for (qt::u32 h_idx : ref_haps) {
 		auto [hap_col, phase_col] = g.get_gt_col_meta(h_idx);
 		ns_cols.insert(hap_col);
 		gt_cols[hap_col][phase_col] = "0";
 	}
 
 	// 1 because 0 is reserved for reference allele
-	// pt::u32 i{1};
+	// qt::u32 i{1};
 	for (auto alt_h_idx : alt_h_idxs) {
 		auto [hap_col, phase_col] = g.get_gt_col_meta(alt_h_idx);
 		gt_cols[hap_col][phase_col] = std::to_string(1);
@@ -64,7 +64,7 @@ gen_gt_data(const bd::VG &g, const std::set<pt::u32> &ref_haps,
 	return {ns_cols.size(), gt_cols};
 }
 
-std::pair<pt::u32, std::vector<std::vector<std::string>>>
+std::pair<qt::u32, std::vector<std::vector<std::string>>>
 gen_gt_data(const bd::VG &g, const ia::minimal_rov &min_rov,
 	    const ia::walk_to_alts_map &wta)
 {
@@ -76,16 +76,16 @@ gen_gt_data(const bd::VG &g, const ia::minimal_rov &min_rov,
 			gt = ".";
 
 	// number of samples with data. cols that that are non-zero
-	std::set<pt::u32> ns_cols;
+	std::set<qt::u32> ns_cols;
 
-	for (pt::u32 h_idx : min_rov.get_haps_matching_ref()) {
+	for (qt::u32 h_idx : min_rov.get_haps_matching_ref()) {
 		auto [hap_col, phase_col] = g.get_gt_col_meta(h_idx);
 		ns_cols.insert(hap_col);
 		gt_cols[hap_col][phase_col] = "0";
 	}
 
 	// 1 because 0 is reserved for reference allele
-	pt::u32 i{1};
+	qt::u32 i{1};
 	for (const auto &[_, slices] : wta) {
 		for (const ia::hap_slice &alt_as : slices) {
 			auto [hap_col, phase_col] =
@@ -99,7 +99,7 @@ gen_gt_data(const bd::VG &g, const ia::minimal_rov &min_rov,
 	return {ns_cols.size(), gt_cols};
 }
 
-void append_record(const bd::VG &g, pt::u32 ref_h_idx,
+void append_record(const bd::VG &g, qt::u32 ref_h_idx,
 		   const ia::rov_boundaries &cxt,
 		   const pvst::VertexBase *pvst_vtx_ptr, bool is_tangled,
 		   const ia::minimal_rov &min_rov,
@@ -109,9 +109,9 @@ void append_record(const bd::VG &g, pt::u32 ref_h_idx,
 	if (wta.empty())
 		return;
 
-	pt::u32 pos = min_rov.get_ref_as().comp_pos(vt);
+	qt::u32 pos = min_rov.get_ref_as().comp_pos(vt);
 
-	std::set<pt::u32> ref_at_haps = min_rov.get_haps_matching_ref();
+	std::set<qt::u32> ref_at_haps = min_rov.get_haps_matching_ref();
 
 	VcfRec vcf_rec{ref_h_idx,
 		       pos,
@@ -140,14 +140,14 @@ void gen_inv_recs(const bd::VG &g, const ist::st &it_,
 {
 	auto comp_alt_hap_slices =
 		[&](const ist::vertex &v,
-		    pt::u32 len) -> std::vector<ia::hap_slice>
+		    qt::u32 len) -> std::vector<ia::hap_slice>
 	{
-		const std::set<pt::u32> *alt_haps = v.get_len_alts(len);
+		const std::set<qt::u32> *alt_haps = v.get_len_alts(len);
 		if (alt_haps == nullptr)
 			return {};
 
 		std::vector<ia::hap_slice> alt_set;
-		for (pt::u32 alt_h_idx : *alt_haps)
+		for (qt::u32 alt_h_idx : *alt_haps)
 			for (const ist::alt &a : v.get_alts(alt_h_idx))
 				if (a.len == len)
 					alt_set.emplace_back(
@@ -157,18 +157,18 @@ void gen_inv_recs(const bd::VG &g, const ist::st &it_,
 		return alt_set;
 	};
 
-	pt::u32 ref_h_idx = it_.get_ref_hap_idx();
+	qt::u32 ref_h_idx = it_.get_ref_hap_idx();
 
 	for (const auto &[_, v] : it_.get_vertices()) {
-		pt::u32 ref_h_start = v.get_r_start();
+		qt::u32 ref_h_start = v.get_r_start();
 
 		for (auto &[len, alts] : v.get_same_len_alts()) {
 
 			const lq::ref_walk *ref_h_w =
 				g.get_ref_vec(ref_h_idx)->walk;
 
-			pt::u32 s = ref_h_start;
-			pt::u32 t = ref_h_start + len - 1;
+			qt::u32 s = ref_h_start;
+			qt::u32 t = ref_h_start + len - 1;
 
 			char sc = oza::refs::lq_strand_to_char(
 				ref_h_w->strands[s]);
@@ -187,11 +187,11 @@ void gen_inv_recs(const bd::VG &g, const ist::st &it_,
 
 			ia::hap_slice ref_sl = {g.get_ref_vec(ref_h_idx)->walk,
 						ref_h_idx, ref_h_start, len};
-			pt::u32 pos = ref_sl.comp_pos(ir::var_type_e::subr);
+			qt::u32 pos = ref_sl.comp_pos(ir::var_type_e::subr);
 
-			pt::u32 h = 0; // height
+			qt::u32 h = 0; // height
 
-			std::set<pt::u32> ref_haps = {ref_h_idx};
+			std::set<qt::u32> ref_haps = {ref_h_idx};
 
 			VcfRec vcf_rec{ref_h_idx,
 				       pos,
@@ -253,15 +253,15 @@ void gen_inv_recs(const bd::VG &g, const ist::st &it_,
 	}
 }
 
-std::map<pt::idx_t, std::vector<VcfRec>> gen_exp_vcf_recs(const bd::VG &g,
+std::map<qt::idx_t, std::vector<VcfRec>> gen_exp_vcf_recs(const bd::VG &g,
 							  const ia::trek &tk)
 {
 
-	std::map<pt::idx_t, std::vector<VcfRec>> tk_vcf_recs;
+	std::map<qt::idx_t, std::vector<VcfRec>> tk_vcf_recs;
 
 	const pvst::VertexBase *pvst_vtx_ptr = tk.get_pvst_vtx_const_ptr();
 
-	for (pt::u32 ref_h_idx : tk.get_ref_haps()) {
+	for (qt::u32 ref_h_idx : tk.get_ref_haps()) {
 		std::vector<VcfRec> recs;
 		const ia::cxt_to_min_rov_map &d = tk.get_ref_recs(ref_h_idx);
 		for (const auto &[cxt, min_rov] : d) {
@@ -290,9 +290,9 @@ std::map<pt::idx_t, std::vector<VcfRec>> gen_exp_vcf_recs(const bd::VG &g,
 void context_bound(const bd::VG &g, const std::vector<ia::trek> &treks,
 		   VcfRecIdx &vcf_recs)
 {
-	for (pt::idx_t i{}; i < treks.size(); ++i) {
+	for (qt::idx_t i{}; i < treks.size(); ++i) {
 		const ia::trek &tk = treks[i];
-		std::map<pt::idx_t, std::vector<VcfRec>> exp_vcf_recs =
+		std::map<qt::idx_t, std::vector<VcfRec>> exp_vcf_recs =
 			gen_exp_vcf_recs(g, tk);
 		vcf_recs.ensure_append_recs(std::move(exp_vcf_recs));
 	}
@@ -302,34 +302,34 @@ void sub_invs(const bd::VG &g, const std::vector<ist::st> &its,
 	      VcfRecIdx &vcf_recs)
 {
 	for (const auto &i_tree : its) {
-		pt::u32 ref_h_idx = i_tree.get_ref_hap_idx();
+		qt::u32 ref_h_idx = i_tree.get_ref_hap_idx();
 		auto &recs = vcf_recs.ensure_recs_mut(ref_h_idx);
 		gen_inv_recs(g, i_tree, recs);
 	}
 }
 
 void context_free(const bd::VG &g,
-		  const std::map<pt::u32, std::vector<ia::inv_slice>> &invs,
+		  const std::map<qt::u32, std::vector<ia::inv_slice>> &invs,
 		  VcfRecIdx &vcf_recs)
 {
 	for (const auto &[hap_idx, inv_slices] : invs) {
 		const liteseq::ref_walk *rw = g.get_ref_vec(hap_idx)->walk;
 		for (const ia::inv_slice inv_sl : inv_slices) {
 
-			pt::u32 fwd_s = inv_sl.fwd_idx;
-			pt::u32 rev_s = inv_sl.rev_idx;
-			pt::u32 len = inv_sl.len;
+			qt::u32 fwd_s = inv_sl.fwd_idx;
+			qt::u32 rev_s = inv_sl.rev_idx;
+			qt::u32 len = inv_sl.len;
 
-			pt::u32 pos = rw->loci[fwd_s];
+			qt::u32 pos = rw->loci[fwd_s];
 
-			pt::u32 u_v_id = rw->v_ids[fwd_s];
-			pt::u32 v_v_id = rw->v_ids[fwd_s + len - 1];
+			qt::u32 u_v_id = rw->v_ids[fwd_s];
+			qt::u32 v_v_id = rw->v_ids[fwd_s + len - 1];
 
 			std::string id = qs::format("|{}|{}|", u_v_id, v_v_id);
 
 			ia::hap_slice ref_sl{rw, hap_idx, fwd_s, len};
 
-			std::set<pt::u32> ref_haps{hap_idx};
+			std::set<qt::u32> ref_haps{hap_idx};
 			VcfRec vcf_rec{hap_idx,
 				       pos,
 				       id,
@@ -349,7 +349,7 @@ void context_free(const bd::VG &g,
 			std::vector<std::vector<std::string>> gt_cols =
 				g.get_blank_genotype_cols();
 
-			std::set<pt::u32> ns_cols;
+			std::set<qt::u32> ns_cols;
 			auto [hap_col, phase_col] = g.get_gt_col_meta(hap_idx);
 			ns_cols.insert(hap_col);
 			gt_cols[hap_col][phase_col] = "0";
@@ -365,7 +365,7 @@ void context_free(const bd::VG &g,
 VcfRecIdx
 gen_vcf_records(const bd::VG &g, const std::vector<ia::trek> &treks,
 		const std::vector<ist::st> &its,
-		const std::map<pt::u32, std::vector<ia::inv_slice>> &invs)
+		const std::map<qt::u32, std::vector<ia::inv_slice>> &invs)
 {
 	VcfRecIdx vcf_recs;
 

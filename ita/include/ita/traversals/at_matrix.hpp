@@ -2,7 +2,6 @@
 #define ITA_AT_MATRIX_HPP
 
 #include <optional>
-#include <set>	  // for set
 #include <vector> // for vector
 
 #include <liteseq/refs.h>		  // for ref_walk, ref
@@ -14,10 +13,11 @@
 #include "ita/traversals/traversals.hpp"   // for itinerary
 #include "ita/variation/rov.hpp"	   // for RoV
 
-#include "povu/common/core.hpp"	     // for pt
 #include "povu/graph/bidirected.hpp" // for VG
 
 #include "quilt/types.hpp"
+
+#include <quilt/types.hpp> // for qt
 
 namespace ita::at_matrix
 {
@@ -260,7 +260,7 @@ public:
 };
 
 void init_pool(const bd::VG &g, const ir::RoV *rov,
-	       const std::set<pt::u32> &to_call_ref_ids,
+	       const std::set<qt::u32> &to_call_ref_ids,
 	       const ita::depth_matrix::depth_matrix &dm, pool_t &p,
 	       rov_job_batch &batch);
 } // namespace ita::at_matrix

@@ -1,13 +1,11 @@
 #include "povu/algorithms/tiny.hpp"
 
 #include <assert.h> // for assert
-#include <set>	    // for set
 #include <string>   // for basic_string, string
 #include <vector>   // for vector
 
-#include <quilt/shim.hpp> // for format
-
-#include "povu/common/core.hpp" // for pt, idx_t
+#include <quilt/shim.hpp>  // for format
+#include <quilt/types.hpp> // for qt
 
 namespace oza::tiny
 {
@@ -15,9 +13,9 @@ namespace oza::tiny
 /**
  * Y = { C(zi) \ zx }
  */
-std::vector<pt::idx_t> find_Y(const pst::Tree &st, pt::idx_t zi)
+std::vector<qt::idx_t> find_Y(const pst::Tree &st, qt::idx_t zi)
 {
-	std::vector<pt::idx_t> Y;
+	std::vector<qt::idx_t> Y;
 	for (auto c_e : st.get_child_edge_idxs(zi)) {
 		const pst::Edge &c_e_ref = st.get_tree_edge(c_e);
 		if (c_e_ref.get_color() == pgt::color_e::black) {
@@ -30,21 +28,21 @@ std::vector<pt::idx_t> find_Y(const pst::Tree &st, pt::idx_t zi)
 	return Y;
 }
 
-bool branches(const pst::Tree &st, const ptu::tree_meta &tm, pt::idx_t ai,
-	      pt::idx_t zi)
+bool branches(const pst::Tree &st, const ptu::tree_meta &tm, qt::idx_t ai,
+	      qt::idx_t zi)
 {
 	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	// all brackets are to ai
-	auto has_be_to_ai = [&](pt::idx_t c) -> bool
+	auto has_be_to_ai = [&](qt::idx_t c) -> bool
 	{
-		for (pt::idx_t be_idx : tm.get_brackets(c)) {
+		for (qt::idx_t be_idx : tm.get_brackets(c)) {
 			if (ai == st.get_be(be_idx).get_tgt()) {
 				return true;
 			}
 		}
 
-		for (pt::idx_t tgt_v_idx : st.get_obe_idxs(c)) {
+		for (qt::idx_t tgt_v_idx : st.get_obe_idxs(c)) {
 			if (ai == tgt_v_idx) {
 				return true;
 			}
@@ -54,15 +52,15 @@ bool branches(const pst::Tree &st, const ptu::tree_meta &tm, pt::idx_t ai,
 	};
 
 	// the vertex c has exactly one descendant
-	auto has_one_descendants = [&](pt::idx_t v_idx) -> bool
+	auto has_one_descendants = [&](qt::idx_t v_idx) -> bool
 	{
-		pt::idx_t x = st.get_vertex(v_idx).post_order() -
+		qt::idx_t x = st.get_vertex(v_idx).post_order() -
 			      st.get_vertex(v_idx).pre_order();
 		return x == 3;
 	};
 
-	std::vector<pt::idx_t> Y = find_Y(st, zi);
-	for (pt::idx_t c_v_idx : Y) {
+	std::vector<qt::idx_t> Y = find_Y(st, zi);
+	for (qt::idx_t c_v_idx : Y) {
 		if (!has_one_descendants(c_v_idx) || !has_be_to_ai(c_v_idx)) {
 			return false;
 		}
@@ -71,7 +69,7 @@ bool branches(const pst::Tree &st, const ptu::tree_meta &tm, pt::idx_t ai,
 	return true;
 }
 
-bool trunk(const pst::Tree &st, pt::idx_t ai, pt::idx_t zi)
+bool trunk(const pst::Tree &st, qt::idx_t ai, qt::idx_t zi)
 {
 	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
@@ -101,7 +99,7 @@ void find_tiny(const pst::Tree &st, pvst::Tree &ft, const ptu::tree_meta &tm)
 {
 	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
-	for (pt::idx_t ft_v_idx{}; ft_v_idx < ft.vtx_count(); ft_v_idx++) {
+	for (qt::idx_t ft_v_idx{}; ft_v_idx < ft.vtx_count(); ft_v_idx++) {
 
 		if (!ft.is_leaf(ft_v_idx)) {
 			continue;
@@ -115,8 +113,8 @@ void find_tiny(const pst::Tree &st, pvst::Tree &ft, const ptu::tree_meta &tm)
 
 		pvst::Flubble &ft_v = static_cast<pvst::Flubble &>(pvst_v);
 
-		pt::idx_t ai = ft_v.get_ai();
-		pt::idx_t zi = ft_v.get_zi();
+		qt::idx_t ai = ft_v.get_ai();
+		qt::idx_t zi = ft_v.get_zi();
 
 		if (!(zi - ai == 1 || zi - ai == 3)) {
 			continue;

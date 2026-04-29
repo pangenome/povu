@@ -1,5 +1,7 @@
 #include <ncurses.h>
 
+#include <quilt/types.hpp> // for qt
+
 #include "mto/from_vcf.hpp"		  // for VCFile
 #include "povu/graph/bidirected.hpp"	  // for VG
 #include "zien/components/components.hpp" // for Mode
@@ -31,7 +33,7 @@ std::vector<std::string> comp_vcf_lines(const mto::from_vcf::VCFile &vcf_file)
 }
 
 void comp_vcfs(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
-	       const std::vector<pt::u32> &invalid_recs, display_lines &pd)
+	       const std::vector<qt::u32> &invalid_recs, display_lines &pd)
 {
 	/* top left pane */
 

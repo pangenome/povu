@@ -11,7 +11,7 @@
 #include <utility>	 // for pair
 #include <vector>	 // for vector
 
-#include "core.hpp" // for idx_t, pt
+#include <quilt/types.hpp> // for qt
 
 namespace povu::utils
 {
@@ -165,7 +165,7 @@ void split(const std::string &line, char sep, std::vector<std::string> *tokens);
 
 inline thread_local bool tp_in_worker = false;
 
-std::size_t comp_prog(pt::idx_t pos, pt::idx_t total);
+std::size_t comp_prog(qt::idx_t pos, qt::idx_t total);
 
 } // namespace povu::utils
 

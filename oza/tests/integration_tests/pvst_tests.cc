@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 #include <vector>
 
+#include <quilt/types.hpp> // for qt
+
 #include "povu/algorithms/flubbles.hpp"
 #include "povu/common/app.hpp"
 #include "povu/graph/bidirected.hpp"
@@ -70,7 +72,7 @@ TEST(PVSTTest, VertexCount)
 {
 	pvst::Tree pvst = decompose_and_cleanup();
 
-	const pt::idx_t EXPECTED_PVST_VTX_COUNT = 3;
+	const qt::idx_t EXPECTED_PVST_VTX_COUNT = 3;
 	EXPECT_EQ(pvst.vtx_count(), EXPECTED_PVST_VTX_COUNT);
 }
 
@@ -80,7 +82,7 @@ TEST(PVSTTest, HasVertices)
 
 	std::set<std::string> expected_labels = {".", ">1>7", ">4>6"};
 
-	for (pt::idx_t i = 0; i < pvst.vtx_count(); ++i) {
+	for (qt::idx_t i = 0; i < pvst.vtx_count(); ++i) {
 		const pvst::VertexBase &v = pvst.get_vertex(i);
 		EXPECT_TRUE(expected_labels.find(v.as_str()) !=
 			    expected_labels.end());
@@ -93,10 +95,10 @@ TEST(PVSTTest, VertexHierarchy)
 
 	std::set<std::string> expected_labels = {".", ">1>7", ">4>6"};
 
-	for (pt::idx_t i = 0; i < pvst.vtx_count(); ++i) {
+	for (qt::idx_t i = 0; i < pvst.vtx_count(); ++i) {
 		const pvst::VertexBase &v = pvst.get_vertex(i);
 
-		const std::vector<pt::idx_t> &children = pvst.get_children(i);
+		const std::vector<qt::idx_t> &children = pvst.get_children(i);
 
 		if (v.as_str() == ".") {
 			EXPECT_EQ(pvst.root_idx(), i);

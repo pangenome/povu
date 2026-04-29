@@ -5,9 +5,9 @@
 #include <string>   // for string
 #include <vector>   // for vector
 
-#include <quilt/shim.hpp> // for format
+#include <quilt/shim.hpp>  // for format
+#include <quilt/types.hpp> // for qt
 
-#include "povu/common/core.hpp"	     // for pt
 #include "povu/graph/bidirected.hpp" // for VG, bd
 #include "povu/graph/pvst.hpp"	     // for Tree, VertexBase
 #include "povu/graph/types.hpp"	     // for or_e, id_or_t, walk_t
@@ -18,7 +18,7 @@ inline constexpr std::string_view MODULE = "povu::genomics::rov";
 namespace pvst = oza::pvst;
 namespace pgt = povu::types::graph;
 
-enum class var_type_e : pt::u8 {
+enum class var_type_e : qt::u8 {
 	del,  // deletion
 	ins,  // insertion
 	sub,  // substitution
@@ -56,13 +56,13 @@ var_type_e covariant(var_type_e a) noexcept;
  */
 struct genomic_region {
 	std::string ref_name; // reference path name
-	pt::idx_t start;      // start position (0-based)
-	pt::idx_t end;	      // end position (exclusive)
+	qt::idx_t start;      // start position (0-based)
+	qt::idx_t end;	      // end position (exclusive)
 
 	genomic_region() : ref_name(""), start(0), end(0)
 	{}
 
-	genomic_region(const std::string &name, pt::idx_t s, pt::idx_t e)
+	genomic_region(const std::string &name, qt::idx_t s, qt::idx_t e)
 	    : ref_name(name), start(s), end(e)
 	{}
 
@@ -83,7 +83,7 @@ parse_genomic_region(const std::string &region_str);
 
 struct enhanced_walk {
 	pgt::walk_t steps;
-	std::vector<pt::op_t<pt::u32>> cycles;
+	std::vector<qt::op_t<qt::u32>> cycles;
 };
 
 /**
@@ -99,9 +99,9 @@ class RoV
 	// (b) a BFS tree
 	// povu::graph::bfs::BfsTree bfs_tree;
 
-	std::vector<pt::id_t> vertices;
+	std::vector<qt::id_t> vertices;
 	// v_id to idx in vertices (sort order)
-	std::map<pt::u32, pt::u32> sort_order;
+	std::map<qt::u32, qt::u32> sort_order;
 
 	const pvst::VertexBase *pvst_vtx;
 
@@ -136,15 +136,15 @@ public:
 	// }
 
 	[[nodiscard]]
-	pt::u32 size() const noexcept
+	qt::u32 size() const noexcept
 	{
-		return static_cast<pt::u32>(this->vertices.size());
+		return static_cast<qt::u32>(this->vertices.size());
 	}
 
 	[[nodiscard]]
-	pt::u32 get_vertex_count() const noexcept
+	qt::u32 get_vertex_count() const noexcept
 	{
-		return static_cast<pt::u32>(this->vertices.size());
+		return static_cast<qt::u32>(this->vertices.size());
 	}
 
 	[[nodiscard]]
@@ -164,19 +164,19 @@ public:
 	}
 
 	[[nodiscard]]
-	pt::u32 get_sorted_vertex(pt::u32 i) const
+	qt::u32 get_sorted_vertex(qt::u32 i) const
 	{
 		return this->vertices.at(i);
 	}
 
 	[[nodiscard]]
-	const std::vector<pt::id_t> &get_sorted_vertices() const
+	const std::vector<qt::id_t> &get_sorted_vertices() const
 	{
 		return this->vertices;
 	}
 
 	[[nodiscard]]
-	pt::u32 get_sorted_pos(pt::id_t v_id) const
+	qt::u32 get_sorted_pos(qt::id_t v_id) const
 	{
 		// std::cerr << "Getting sorted pos for v_id: " << v_id << "\n";
 		if (!qs::contains(this->sort_order, v_id))
@@ -193,7 +193,7 @@ public:
 	void add_sort_data(InputIt first, InputIt last)
 	{
 		for (InputIt it = first; it != last; ++it) {
-			pt::id_t v_id = *it;
+			qt::id_t v_id = *it;
 			this->sort_order[v_id] = this->vertices.size();
 			this->vertices.push_back(v_id);
 		}
@@ -217,7 +217,7 @@ public:
  */
 std::vector<RoV>
 gen_rov(const std::vector<pvst::Tree> &pvsts, const bd::VG &g,
-	const std::set<pt::id_t> &to_call_ref_ids,
+	const std::set<qt::id_t> &to_call_ref_ids,
 	const std::optional<genomic_region> &region = std::nullopt);
 
 } // namespace ita::rov

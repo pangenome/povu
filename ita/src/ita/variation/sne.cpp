@@ -7,12 +7,13 @@
 // deps
 #include <liteseq/refs.h> // for ref_walk, ref
 
+#include <quilt/types.hpp> // for qt
+
 // ita includes
 #include "ita/graph/slice_tree.hpp" // for ist
 
 // povu includes
 #include "povu/common/constants.hpp"
-#include "povu/common/core.hpp"
 #include "povu/graph/pvst.hpp"
 #include "povu/graph/types.hpp" // pgt
 
@@ -29,18 +30,18 @@ namespace pgt = povu::types::graph;
  * j index in ref walk 2
  * dist accumulative length of matched region
  */
-pt::status_t do_match(const lq::ref_walk *ref_w1, const lq::ref_walk *ref_w2,
-		      pt::u32 &i, pt::u32 &j, pt::u32 &dist)
+qt::status_t do_match(const lq::ref_walk *ref_w1, const lq::ref_walk *ref_w2,
+		      qt::u32 &i, qt::u32 &j, qt::u32 &dist)
 {
 	if (i == pc::INVALID_IDX || j == pc::INVALID_IDX)
 		return -1;
 
-	pt::idx_t v_id1 = ref_w1->v_ids[i];
+	qt::idx_t v_id1 = ref_w1->v_ids[i];
 	pgt::or_e o1 = ref_w1->strands[i] == lq::strand::STRAND_FWD
 			       ? pgt::or_e::forward
 			       : pgt::or_e::reverse;
 
-	pt::idx_t v_id2 = ref_w2->v_ids[j];
+	qt::idx_t v_id2 = ref_w2->v_ids[j];
 	pgt::or_e o2 = ref_w2->strands[j] == lq::strand::STRAND_FWD
 			       ? pgt::or_e::forward
 			       : pgt::or_e::reverse;
@@ -57,18 +58,18 @@ pt::status_t do_match(const lq::ref_walk *ref_w1, const lq::ref_walk *ref_w2,
 /**
  * Adds 1 before division for ceiling behavior
  */
-pt::u32 half_diff_ceil(pt::u32 a, pt::u32 b)
+qt::u32 half_diff_ceil(qt::u32 a, qt::u32 b)
 {
-	pt::u32 diff = std::max(a, b) - std::min(a, b);
+	qt::u32 diff = std::max(a, b) - std::min(a, b);
 	return (diff + 1) / 2;
 }
 
-std::optional<chain_t> gen_colinear_chain(pt::u32 ref_h_idx, pt::u32 alt_h_idx,
+std::optional<chain_t> gen_colinear_chain(qt::u32 ref_h_idx, qt::u32 alt_h_idx,
 					  const pin_cushion &pc)
 {
 	chain_t chain;
 
-	pt::up_t<pt::u32> k{ref_h_idx, alt_h_idx};
+	qt::up_t<qt::u32> k{ref_h_idx, alt_h_idx};
 	std::vector<std::pair<pin, pin>> y = pc.get_pin_pairs(k);
 
 	if (y.empty())
@@ -91,9 +92,9 @@ std::optional<chain_t> gen_colinear_chain(pt::u32 ref_h_idx, pt::u32 alt_h_idx,
 
 void set_chain_link_limits(chain_t &c)
 {
-	for (pt::u32 i{}; i < c.len(); ++i) {
-		pt::u32 limit_left = pc::INVALID_IDX;
-		pt::u32 limit_right = pc::INVALID_IDX;
+	for (qt::u32 i{}; i < c.len(); ++i) {
+		qt::u32 limit_left = pc::INVALID_IDX;
+		qt::u32 limit_right = pc::INVALID_IDX;
 
 		if (i == 0 && i + 1 < c.links.size()) {
 			auto idx_next = c.links[i + 1].ref_link.idx;
@@ -122,7 +123,7 @@ void set_chain_link_limits(chain_t &c)
 }
 
 std::optional<extension> extend_link(const bd::VG &g, const link_pair &lp,
-				     pt::u32 ref_r_id, pt::u32 alt_r_id)
+				     qt::u32 ref_r_id, qt::u32 alt_r_id)
 {
 	auto [ref_link, alt_link] = lp;
 
@@ -148,30 +149,30 @@ std::optional<extension> extend_link(const bd::VG &g, const link_pair &lp,
 	// auto [_, f_limit_left, f_limit_right, _] = fwd_link;
 	// auto [_, r_limit_left, r_limit_right, __] = rev_link;
 
-	pt::u32 f_limit_left = ref_link.limit_left;
-	pt::u32 f_limit_right = ref_link.limit_right;
+	qt::u32 f_limit_left = ref_link.limit_left;
+	qt::u32 f_limit_right = ref_link.limit_right;
 
-	pt::u32 r_limit_left = alt_link.limit_left;
-	pt::u32 r_limit_right = alt_link.limit_right;
+	qt::u32 r_limit_left = alt_link.limit_left;
+	qt::u32 r_limit_right = alt_link.limit_right;
 
-	pt::u32 f_ref_start = ref_link.idx;
-	pt::u32 r_ref_start = alt_link.idx;
+	qt::u32 f_ref_start = ref_link.idx;
+	qt::u32 r_ref_start = alt_link.idx;
 
-	pt::u32 i{ref_link.idx};
-	pt::u32 j{alt_link.idx};
-	pt::u32 dist_a{}; // distance extended
+	qt::u32 i{ref_link.idx};
+	qt::u32 j{alt_link.idx};
+	qt::u32 dist_a{}; // distance extended
 
 	// i is ref; j is alt
-	pt::u32 S_i = (f_limit_left == pc::INVALID_IDX)
+	qt::u32 S_i = (f_limit_left == pc::INVALID_IDX)
 			      ? f_ref_start
 			      : f_ref_start - f_limit_left - 1;
-	pt::u32 S_j = (f_limit_right == pc::INVALID_IDX)
+	qt::u32 S_j = (f_limit_right == pc::INVALID_IDX)
 			      ? r_ref_start
 			      : r_ref_start - r_limit_left - 1;
-	pt::u32 E_j = r_limit_right == pc::INVALID_IDX
+	qt::u32 E_j = r_limit_right == pc::INVALID_IDX
 			      ? r_limit_right
 			      : r_ref_start + r_limit_right + 1;
-	pt::u32 E_i = (f_limit_right == pc::INVALID_IDX)
+	qt::u32 E_i = (f_limit_right == pc::INVALID_IDX)
 			      ? f_limit_right
 			      : f_ref_start + f_limit_right + 1;
 
@@ -190,14 +191,14 @@ std::optional<extension> extend_link(const bd::VG &g, const link_pair &lp,
 
 	i = f_ref_start;
 	j = r_ref_start;
-	pt::u32 dist_b{}; // distance extended
+	qt::u32 dist_b{}; // distance extended
 	for (; i > S_i || j < E_j; --i, ++j)
 		if (do_match(ref_h_w, alt_h_w, i, j, dist_b) != 0)
 			break;
 
-	pt::u32 x = dist_b == 0 ? f_ref_start : (f_ref_start - dist_b) + 1;
-	pt::u32 y = dist_b == 0 ? r_ref_start : r_ref_start + (dist_b - 1);
-	pt::u32 z = dist_a + dist_b;
+	qt::u32 x = dist_b == 0 ? f_ref_start : (f_ref_start - dist_b) + 1;
+	qt::u32 y = dist_b == 0 ? r_ref_start : r_ref_start + (dist_b - 1);
+	qt::u32 z = dist_a + dist_b;
 
 	if (dist_b > 0 && dist_a > 0)
 		z--;
@@ -212,14 +213,14 @@ std::optional<extension> extend_link(const bd::VG &g, const link_pair &lp,
 	return extension{ref_r_id, alt_r_id, x, y, z};
 }
 
-void extend_links(const bd::VG &g, const chain_t &c, pt::u32 ref_r_id,
-		  pt::u32 alt_r_id, ist::st &it_)
+void extend_links(const bd::VG &g, const chain_t &c, qt::u32 ref_r_id,
+		  qt::u32 alt_r_id, ist::st &it_)
 {
 	// bool dbg = (alt_r_id == 83) ? true : false;
 	// dbg = false;
 
 	std::vector<extension> extensions;
-	for (pt::u32 i{}; i < c.len(); ++i) {
+	for (qt::u32 i{}; i < c.len(); ++i) {
 		const auto &lp = c.links[i];
 		auto opt_ext = extend_link(g, lp, ref_r_id, alt_r_id);
 		if (opt_ext) {
@@ -227,7 +228,7 @@ void extend_links(const bd::VG &g, const chain_t &c, pt::u32 ref_r_id,
 			auto [_, r_r_idx, ref_h_start, r_ref_start, len] =
 				opt_ext.value();
 
-			pt::u32 alt_h_start = r_ref_start - len + 1;
+			qt::u32 alt_h_start = r_ref_start - len + 1;
 
 			// if (true) {
 			//	std::cerr << "\n";
@@ -297,13 +298,13 @@ void extend_links(const bd::VG &g, const chain_t &c, pt::u32 ref_r_id,
 	// return;
 }
 
-std::vector<pt::slice> find_hap_slices(const bd::VG &g, pt::u32 h_idx,
-				       pt::u32 u_v_id, pt::u32 v_v_id)
+std::vector<qt::slice> find_hap_slices(const bd::VG &g, qt::u32 h_idx,
+				       qt::u32 u_v_id, qt::u32 v_v_id)
 {
-	std::vector<pt::u32> u_positions =
+	std::vector<qt::u32> u_positions =
 		g.get_vertex_ref_idxs(g.v_id_to_idx(u_v_id), h_idx);
 
-	std::vector<pt::u32> v_positions =
+	std::vector<qt::u32> v_positions =
 		g.get_vertex_ref_idxs(g.v_id_to_idx(v_v_id), h_idx);
 
 	if (u_positions.empty() || v_positions.empty())
@@ -312,12 +313,12 @@ std::vector<pt::slice> find_hap_slices(const bd::VG &g, pt::u32 h_idx,
 	std::sort(u_positions.begin(), u_positions.end());
 	std::sort(v_positions.begin(), v_positions.end());
 
-	std::vector<pt::slice> slices;
-	pt::u32 N = std::min(u_positions.size(), v_positions.size());
+	std::vector<qt::slice> slices;
+	qt::u32 N = std::min(u_positions.size(), v_positions.size());
 
-	for (pt::u32 i{}; i < N; ++i) {
-		pt::u32 x = std::min(u_positions[i], v_positions[i]);
-		pt::u32 y = std::max(u_positions[i], v_positions[i]);
+	for (qt::u32 i{}; i < N; ++i) {
+		qt::u32 x = std::min(u_positions[i], v_positions[i]);
+		qt::u32 y = std::max(u_positions[i], v_positions[i]);
 
 		if (x == y)
 			continue;
@@ -328,27 +329,27 @@ std::vector<pt::slice> find_hap_slices(const bd::VG &g, pt::u32 h_idx,
 	return slices;
 }
 
-bool is_slice_in_hap(const bd::VG &g, pt::u32 ref_h_idx, pt::u32 ref_h_start,
-		     pt::u32 len, pt::u32 h_idx)
+bool is_slice_in_hap(const bd::VG &g, qt::u32 ref_h_idx, qt::u32 ref_h_start,
+		     qt::u32 len, qt::u32 h_idx)
 {
 	const lq::ref_walk *h_w1 = g.get_ref_vec(ref_h_idx)->walk;
 	const lq::ref_walk *h_w2 = g.get_ref_vec(h_idx)->walk;
 
-	pt::u32 s = ref_h_start;
-	pt::u32 N = ref_h_start + len;
+	qt::u32 s = ref_h_start;
+	qt::u32 N = ref_h_start + len;
 
-	pt::u32 u_v_id = h_w1->v_ids[s];
-	pt::u32 v_v_id = h_w1->v_ids[s];
+	qt::u32 u_v_id = h_w1->v_ids[s];
+	qt::u32 v_v_id = h_w1->v_ids[s];
 
-	std::vector<pt::slice> h2_slices =
+	std::vector<qt::slice> h2_slices =
 		find_hap_slices(g, h_idx, u_v_id, v_v_id);
 
 	if (h2_slices.empty())
 		return false;
 
-	auto get_at = [](const lq::ref_walk *h_w, pt::u32 i) -> bd::id_or_t
+	auto get_at = [](const lq::ref_walk *h_w, qt::u32 i) -> bd::id_or_t
 	{
-		pt::idx_t ref_v_id = h_w->v_ids[i];
+		qt::idx_t ref_v_id = h_w->v_ids[i];
 		pgt::or_e ref_o = h_w->strands[i] == lq::strand::STRAND_FWD
 					  ? pgt::or_e::forward
 					  : pgt::or_e::reverse;
@@ -360,9 +361,9 @@ bool is_slice_in_hap(const bd::VG &g, pt::u32 ref_h_idx, pt::u32 ref_h_start,
 		if (sl.len() != len)
 			continue;
 
-		pt::u32 j = sl.start();
+		qt::u32 j = sl.start();
 
-		for (pt::u32 i{s}; i < N; i++, j++)
+		for (qt::u32 i{s}; i < N; i++, j++)
 			if (get_at(h_w1, i) != get_at(h_w2, j))
 				break;
 
@@ -374,14 +375,14 @@ bool is_slice_in_hap(const bd::VG &g, pt::u32 ref_h_idx, pt::u32 ref_h_start,
 }
 
 std::vector<ist::st> sne(const bd::VG &g, const pin_cushion &pcushions,
-			 const std::set<pt::u32> &to_call_ref_ids)
+			 const std::set<qt::u32> &to_call_ref_ids)
 {
-	const pt::u32 I = g.get_hap_count(); // rows
+	const qt::u32 I = g.get_hap_count(); // rows
 	std::vector<ist::st> i_trees;
 
-	for (pt::u32 ref_h_idx : to_call_ref_ids) {
+	for (qt::u32 ref_h_idx : to_call_ref_ids) {
 		ist::st i_tree(ref_h_idx);
-		for (pt::u32 alt_h_idx{}; alt_h_idx < I; ++alt_h_idx) {
+		for (qt::u32 alt_h_idx{}; alt_h_idx < I; ++alt_h_idx) {
 			if (ref_h_idx == alt_h_idx)
 				continue;
 

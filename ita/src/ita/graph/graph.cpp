@@ -5,9 +5,9 @@
 
 #include "ita/graph/bfs_tree.hpp"
 
-#include <quilt/shim.hpp> // for format, contains
+#include <quilt/shim.hpp>  // for format, contains
+#include <quilt/types.hpp> // for qt
 
-#include "povu/common/core.hpp"
 #include "povu/common/log.hpp" // for WARN, ERR
 #include "povu/common/utils.hpp"
 #include "povu/graph/types.hpp"
@@ -22,7 +22,7 @@ namespace povu::genomics::graph
  *@param ve the vertex end
  *@return a set of edge indices
  */
-inline const std::set<pt::idx_t> edges_at_end(const bd::Vertex &v,
+inline const std::set<qt::idx_t> edges_at_end(const bd::Vertex &v,
 					      pgt::v_end_e ve) noexcept
 {
 	return ve == pgt::v_end_e::l ? v.get_edges_l() : v.get_edges_r();
@@ -92,14 +92,14 @@ ita::bfs::BfsTree comp_bfs_tree(const bd::VG &g, pvst::route_e route,
 	std::queue<idx_or_t> q;
 	q.push(start);
 
-	std::set<pt::u32> seen;
+	std::set<qt::u32> seen;
 	seen.insert(start.v_id);
 
 	ita::bfs::BfsTree t;
-	pt::u32 t_v_idx =
+	qt::u32 t_v_idx =
 		t.add_vertex({g.v_idx_to_id(start.v_id), start.orientation});
 
-	std::map<idx_or_t, pt::u32> parent_map;
+	std::map<idx_or_t, qt::u32> parent_map;
 	parent_map[start] = t_v_idx;
 
 	t.set_start(t_v_idx);
@@ -121,16 +121,16 @@ ita::bfs::BfsTree comp_bfs_tree(const bd::VG &g, pvst::route_e route,
 
 		pgt::v_end_e ve = get_v_end(o, ve_dir);
 		const bd::Vertex &v = g.get_vertex_by_idx(v_idx);
-		const std::set<pt::idx_t> &nbr_edges = edges_at_end(v, ve);
+		const std::set<qt::idx_t> &nbr_edges = edges_at_end(v, ve);
 
-		for (pt::u32 e_idx : nbr_edges) {
+		for (qt::u32 e_idx : nbr_edges) {
 			const bd::Edge &e = g.get_edge(e_idx);
 			auto [side, alt_idx] = e.get_other_vtx(v_idx, ve);
 			idx_or_t nbr{alt_idx, get_or(side, nbr_dir)};
 
 			if (qs::contains(seen, nbr.v_id)) { // cross edge
-				pt::u32 from = parent_map[curr];
-				pt::u32 to = parent_map[nbr];
+				qt::u32 from = parent_map[curr];
+				qt::u32 to = parent_map[nbr];
 
 				t.add_cross_edge(from, to);
 				continue;
@@ -138,8 +138,8 @@ ita::bfs::BfsTree comp_bfs_tree(const bd::VG &g, pvst::route_e route,
 
 			// if (seen.find(nbr.v_id) != seen.end()) {
 			//	// cross edge
-			//	pt::u32 from = parent_map[curr];
-			//	pt::u32 to = parent_map[nbr];
+			//	qt::u32 from = parent_map[curr];
+			//	qt::u32 to = parent_map[nbr];
 
 			//	t.add_cross_edge(from, to);
 			//	continue;
@@ -148,7 +148,7 @@ ita::bfs::BfsTree comp_bfs_tree(const bd::VG &g, pvst::route_e route,
 			if (curr == end)
 				continue;
 
-			pt::u32 t_c_v_idx = t.add_vertex(
+			qt::u32 t_c_v_idx = t.add_vertex(
 				{g.v_idx_to_id(nbr.v_id), nbr.orientation});
 
 			parent_map[nbr] = t_c_v_idx;
@@ -163,13 +163,13 @@ ita::bfs::BfsTree comp_bfs_tree(const bd::VG &g, pvst::route_e route,
 	return t;
 }
 
-void find_laps(const bd::VG &g, pt::u32 h_idx, pt::id_t u, pt::id_t v,
-	       std::vector<pt::slice> &laps)
+void find_laps(const bd::VG &g, qt::u32 h_idx, qt::id_t u, qt::id_t v,
+	       std::vector<qt::slice> &laps)
 {
-	std::vector<pt::u32> u_hap_idxs =
+	std::vector<qt::u32> u_hap_idxs =
 		g.get_vertex_ref_idxs(g.v_id_to_idx(u), h_idx);
 
-	std::vector<pt::u32> v_hap_idxs =
+	std::vector<qt::u32> v_hap_idxs =
 		g.get_vertex_ref_idxs(g.v_id_to_idx(v), h_idx);
 
 	if (u_hap_idxs.empty() || v_hap_idxs.empty())
@@ -179,11 +179,11 @@ void find_laps(const bd::VG &g, pt::u32 h_idx, pt::id_t u, pt::id_t v,
 	std::sort(u_hap_idxs.begin(), u_hap_idxs.end());
 	std::sort(v_hap_idxs.begin(), v_hap_idxs.end());
 
-	pt::u32 N = std::min((u_hap_idxs.size()), v_hap_idxs.size());
+	qt::u32 N = std::min((u_hap_idxs.size()), v_hap_idxs.size());
 
-	for (pt::u32 i{}; i < N; i++) {
-		pt::u32 start = u_hap_idxs[i];
-		pt::u32 end = v_hap_idxs[i];
+	for (qt::u32 i{}; i < N; i++) {
+		qt::u32 start = u_hap_idxs[i];
+		qt::u32 end = v_hap_idxs[i];
 
 		if (start > end)
 			std::swap(start, end);
@@ -192,8 +192,8 @@ void find_laps(const bd::VG &g, pt::u32 h_idx, pt::id_t u, pt::id_t v,
 	}
 }
 
-std::list<pt::u32> gen_sort(const bd::VG &g, ir::RoV &rov,
-			    const pt::u32 HAP_COUNT, bool dbg)
+std::list<qt::u32> gen_sort(const bd::VG &g, ir::RoV &rov,
+			    const qt::u32 HAP_COUNT, bool dbg)
 {
 	INFO("Generating sort for RoV: {}", rov.as_str());
 	dbg = rov.as_str() == ">96686>96691" ? true : false;
@@ -203,15 +203,15 @@ std::list<pt::u32> gen_sort(const bd::VG &g, ir::RoV &rov,
 	auto [start_id, _] = l;
 	auto [stop_id, __] = r;
 
-	std::list<pt::u32> sw;
-	std::map<pt::u32, std::list<pt::u32>::iterator> w_to_it;
+	std::list<qt::u32> sw;
+	std::map<qt::u32, std::list<qt::u32>::iterator> w_to_it;
 
-	std::vector<pt::slice> laps;
+	std::vector<qt::slice> laps;
 	laps.reserve(1024);
 
 	// print each lap for each haplotype
 	if (dbg) {
-		for (pt::u32 h_idx{}; h_idx < HAP_COUNT; h_idx++) {
+		for (qt::u32 h_idx{}; h_idx < HAP_COUNT; h_idx++) {
 			laps.clear();
 			find_laps(g, h_idx, start_id, stop_id, laps);
 
@@ -224,8 +224,8 @@ std::list<pt::u32> gen_sort(const bd::VG &g, ir::RoV &rov,
 			for (const auto &lap : laps) {
 				auto [start, len] = lap.data();
 
-				for (pt::u32 j{start}; j < (start + len); j++) {
-					pt::u32 v_id = rw->v_ids[j];
+				for (qt::u32 j{start}; j < (start + len); j++) {
+					qt::u32 v_id = rw->v_ids[j];
 
 					if (dbg)
 						std::cerr << v_id << ",";
@@ -237,18 +237,18 @@ std::list<pt::u32> gen_sort(const bd::VG &g, ir::RoV &rov,
 	}
 
 	auto comp_steps_cxt =
-		[&](const pt::slice &lap, const liteseq::ref_walk *rw,
-		    pt::op_t<std::map<pt::u32, std::list<pt::u32>::iterator>>
+		[&](const qt::slice &lap, const liteseq::ref_walk *rw,
+		    qt::op_t<std::map<qt::u32, std::list<qt::u32>::iterator>>
 			    &sw_cxt) -> void
 	{
 		auto &[left_cxt, right_cxt] = sw_cxt;
 
-		std::optional<std::list<pt::u32>::iterator> x;
-		std::optional<std::list<pt::u32>::iterator> y;
+		std::optional<std::list<qt::u32>::iterator> x;
+		std::optional<std::list<qt::u32>::iterator> y;
 
 		auto [start, len] = lap.data();
-		for (pt::u32 j{start}; j < (start + len); j++) {
-			pt::u32 v_id = rw->v_ids[j];
+		for (qt::u32 j{start}; j < (start + len); j++) {
+			qt::u32 v_id = rw->v_ids[j];
 
 			if (qs::contains(left_cxt, v_id))
 				continue;
@@ -266,8 +266,8 @@ std::list<pt::u32> gen_sort(const bd::VG &g, ir::RoV &rov,
 				PL_ERR("v_id {} has no left context", v_id);
 		}
 
-		for (pt::u32 j{start + len - 1}; j >= (start); j--) {
-			pt::u32 v_id = rw->v_ids[j];
+		for (qt::u32 j{start + len - 1}; j >= (start); j--) {
+			qt::u32 v_id = rw->v_ids[j];
 
 			if (qs::contains(right_cxt, v_id))
 				continue;
@@ -287,11 +287,11 @@ std::list<pt::u32> gen_sort(const bd::VG &g, ir::RoV &rov,
 	};
 
 	// fill sw with the first lap
-	auto init = [&](const pt::slice &lap, const liteseq::ref_walk *rw)
+	auto init = [&](const qt::slice &lap, const liteseq::ref_walk *rw)
 	{
 		auto [start, len] = lap.data();
-		for (pt::u32 j{start}; j < (start + len); j++) {
-			pt::u32 v_id = rw->v_ids[j];
+		for (qt::u32 j{start}; j < (start + len); j++) {
+			qt::u32 v_id = rw->v_ids[j];
 
 			if (qs::contains(w_to_it, v_id))
 				continue;
@@ -301,7 +301,7 @@ std::list<pt::u32> gen_sort(const bd::VG &g, ir::RoV &rov,
 		}
 	};
 
-	for (pt::u32 h_idx{}; h_idx < HAP_COUNT; h_idx++) {
+	for (qt::u32 h_idx{}; h_idx < HAP_COUNT; h_idx++) {
 		laps.clear();
 		find_laps(g, h_idx, start_id, stop_id, laps);
 
@@ -315,15 +315,15 @@ std::list<pt::u32> gen_sort(const bd::VG &g, ir::RoV &rov,
 
 			if (dbg) {
 				std::cerr << "Lap: " << h_idx << " ";
-				for (pt::u32 j{start}; j < (start + len); j++) {
-					pt::u32 v_id = rw->v_ids[j];
+				for (qt::u32 j{start}; j < (start + len); j++) {
+					qt::u32 v_id = rw->v_ids[j];
 					std::cerr << v_id << ",";
 				}
 				std::cerr << "\n";
 			}
 
-			pt::op_t<
-				std::map<pt::u32, std::list<pt::u32>::iterator>>
+			qt::op_t<
+				std::map<qt::u32, std::list<qt::u32>::iterator>>
 				sw_cxt;
 
 			if (sw.empty()) {
@@ -341,8 +341,8 @@ std::list<pt::u32> gen_sort(const bd::VG &g, ir::RoV &rov,
 
 			const auto &[left_cxt, right_cxt] = sw_cxt;
 
-			for (pt::u32 j{start}; j < (start + len); j++) {
-				pt::u32 v_id = rw->v_ids[j];
+			for (qt::u32 j{start}; j < (start + len); j++) {
+				qt::u32 v_id = rw->v_ids[j];
 
 				// if (dbg)
 				//	std::cerr << v_id << ",";
@@ -393,20 +393,20 @@ std::list<pt::u32> gen_sort(const bd::VG &g, ir::RoV &rov,
 	return sw;
 }
 
-std::list<pt::u32> gen_sort_old(const bd::VG &g, ir::RoV &rov,
-				const pt::u32 HAP_COUNT, bool dbg)
+std::list<qt::u32> gen_sort_old(const bd::VG &g, ir::RoV &rov,
+				const qt::u32 HAP_COUNT, bool dbg)
 {
 	auto [l, r, route] = *rov.get_pvst_vtx()->get_route_params();
 	auto [start_id, _] = l;
 	auto [stop_id, __] = r;
 
-	std::list<pt::u32> sw;
-	std::map<pt::u32, std::list<pt::u32>::iterator> w_to_it;
+	std::list<qt::u32> sw;
+	std::map<qt::u32, std::list<qt::u32>::iterator> w_to_it;
 
-	std::vector<pt::slice> laps;
+	std::vector<qt::slice> laps;
 	laps.reserve(1024);
 
-	for (pt::u32 h_idx{}; h_idx < HAP_COUNT; h_idx++) {
+	for (qt::u32 h_idx{}; h_idx < HAP_COUNT; h_idx++) {
 		laps.clear();
 		find_laps(g, h_idx, start_id, stop_id, laps);
 
@@ -418,8 +418,8 @@ std::list<pt::u32> gen_sort_old(const bd::VG &g, ir::RoV &rov,
 		for (const auto &lap : laps) {
 			auto [start, len] = lap.data();
 
-			for (pt::u32 j{start}; j < (start + len); j++) {
-				pt::u32 v_id = rw->v_ids[j];
+			for (qt::u32 j{start}; j < (start + len); j++) {
+				qt::u32 v_id = rw->v_ids[j];
 
 				if (dbg)
 					std::cerr << v_id << ",";
@@ -448,7 +448,7 @@ std::list<pt::u32> gen_sort_old(const bd::VG &g, ir::RoV &rov,
 	return sw;
 }
 
-pt::status_t enum_walks(const bd::VG &g, pvst::route_e route, idx_or_t src,
+qt::status_t enum_walks(const bd::VG &g, pvst::route_e route, idx_or_t src,
 			idx_or_t snk, std::vector<ir::enhanced_walk> &walks,
 			const std::string_view &rov_label)
 {
@@ -465,12 +465,12 @@ pt::status_t enum_walks(const bd::VG &g, pvst::route_e route, idx_or_t src,
 		end = src;
 	}
 
-	std::queue<std::pair<pgt::walk_t, std::vector<pt::op_t<pt::u32>>>> q;
+	std::queue<std::pair<pgt::walk_t, std::vector<qt::op_t<qt::u32>>>> q;
 	q.push({{start}, {}});
 
 	auto in_walk = [&](const pgt::walk_t &w, idx_or_t v) -> int
 	{
-		for (pt::u32 i = 0; i < w.size(); i++)
+		for (qt::u32 i = 0; i < w.size(); i++)
 			if (w[i].v_id == v.v_id)
 				return i;
 
@@ -493,7 +493,7 @@ pt::status_t enum_walks(const bd::VG &g, pvst::route_e route, idx_or_t src,
 		auto [curr_w, cycles] = q.front();
 		q.pop();
 
-		auto w_len = static_cast<pt::u32>(curr_w.size());
+		auto w_len = static_cast<qt::u32>(curr_w.size());
 
 		if (w_len > MAX_FLUBBLE_STEPS) {
 			WARN("max steps reached for {}", rov_label);
@@ -524,9 +524,9 @@ pt::status_t enum_walks(const bd::VG &g, pvst::route_e route, idx_or_t src,
 
 		pgt::v_end_e ve = get_v_end(o, ve_dir);
 		const bd::Vertex &v = g.get_vertex_by_idx(v_idx);
-		const std::set<pt::idx_t> &nbr_edges = edges_at_end(v, ve);
+		const std::set<qt::idx_t> &nbr_edges = edges_at_end(v, ve);
 
-		for (pt::u32 e_idx : nbr_edges) {
+		for (qt::u32 e_idx : nbr_edges) {
 			const bd::Edge &e = g.get_edge(e_idx);
 			auto [side, alt_idx] = e.get_other_vtx(v_idx, ve);
 			idx_or_t nbr{alt_idx, get_or(side, nbr_dir)};
@@ -553,7 +553,7 @@ pt::status_t enum_walks(const bd::VG &g, pvst::route_e route, idx_or_t src,
 	return 0;
 }
 
-std::vector<pt::id_t> bfs_sort(const bd::VG &g, ir::RoV &rov)
+std::vector<qt::id_t> bfs_sort(const bd::VG &g, ir::RoV &rov)
 {
 	// Assume route parameters are already set.
 	// Use structured bindings to unpack the pvst::route_params_t
@@ -568,14 +568,14 @@ std::vector<pt::id_t> bfs_sort(const bd::VG &g, ir::RoV &rov)
 	ita::bfs::BfsTree t = comp_bfs_tree(g, route, src, snk);
 
 	t.comp_depth();
-	pt::status_t bfs_sort_res = t.sort();
+	qt::status_t bfs_sort_res = t.sort();
 	if (bfs_sort_res != 0)
 		return {};
 
 	return t.get_sorted();
 }
 
-pt::status_t find_walks(const bd::VG &g, ir::RoV &rov)
+qt::status_t find_walks(const bd::VG &g, ir::RoV &rov)
 {
 	bool dbg = rov.as_str() == ">1>4" ? true : false;
 
@@ -585,10 +585,10 @@ pt::status_t find_walks(const bd::VG &g, ir::RoV &rov)
 		auto [start_id, _] = l;
 		auto [stop_id, __] = r;
 
-		std::vector<pt::slice> laps;
+		std::vector<qt::slice> laps;
 		laps.reserve(1024);
 
-		for (pt::u32 h_idx{}; h_idx < g.get_hap_count(); h_idx++) {
+		for (qt::u32 h_idx{}; h_idx < g.get_hap_count(); h_idx++) {
 			laps.clear();
 			find_laps(g, h_idx, start_id, stop_id, laps);
 
@@ -601,8 +601,8 @@ pt::status_t find_walks(const bd::VG &g, ir::RoV &rov)
 			for (const auto &lap : laps) {
 				auto [start, len] = lap.data();
 
-				for (pt::u32 j{start}; j < (start + len); j++) {
-					pt::u32 v_id = rw->v_ids[j];
+				for (qt::u32 j{start}; j < (start + len); j++) {
+					qt::u32 v_id = rw->v_ids[j];
 
 					if (dbg)
 						std::cerr << v_id << ",";
@@ -623,7 +623,7 @@ pt::status_t find_walks(const bd::VG &g, ir::RoV &rov)
 	}
 
 	// Fallback: Generate sort data
-	std::list<pt::u32> sw = gen_sort(g, rov, g.get_hap_count(), dbg);
+	std::list<qt::u32> sw = gen_sort(g, rov, g.get_hap_count(), dbg);
 	if (!sw.empty()) {
 		if (dbg)
 			INFO("called 2");

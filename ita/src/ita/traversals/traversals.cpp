@@ -4,7 +4,8 @@
 #include <utility> // for move
 #include <vector>  // for vector
 
-#include "povu/common/core.hpp"	     // for pt, id_t, up_t, operator<
+#include <quilt/types.hpp> // for qt
+
 #include "povu/graph/bidirected.hpp" // for VG, bd
 
 namespace ita::traversals::traversals
@@ -12,13 +13,13 @@ namespace ita::traversals::traversals
 /**
  * assumption: no duplicate steps can occur
  */
-std::vector<pt::u32> lineup(const bd::VG &g,
-			    const std::vector<pt::u32> &sorted_w, pt::u32 h_idx)
+std::vector<qt::u32> lineup(const bd::VG &g,
+			    const std::vector<qt::u32> &sorted_w, qt::u32 h_idx)
 {
-	std::vector<pt::u32> unrolled;
-	for (pt::u32 j{}; j < sorted_w.size(); j++) {
-		pt::u32 v_idx = g.v_id_to_idx(sorted_w[j]);
-		for (pt::u32 step_idx : g.get_vertex_ref_idxs(v_idx, h_idx))
+	std::vector<qt::u32> unrolled;
+	for (qt::u32 j{}; j < sorted_w.size(); j++) {
+		qt::u32 v_idx = g.v_id_to_idx(sorted_w[j]);
+		for (qt::u32 step_idx : g.get_vertex_ref_idxs(v_idx, h_idx))
 			unrolled.push_back(step_idx);
 	}
 
@@ -27,7 +28,7 @@ std::vector<pt::u32> lineup(const bd::VG &g,
 	return unrolled;
 }
 
-itinerary cluster(const std::vector<pt::u32> &unrolled)
+itinerary cluster(const std::vector<qt::u32> &unrolled)
 {
 	itinerary itn;
 	if (unrolled.empty())
@@ -52,13 +53,13 @@ itinerary cluster(const std::vector<pt::u32> &unrolled)
 }
 
 std::vector<itinerary> unroll_haps(const bd::VG &g,
-				   const std::vector<pt::u32> &sorted_w)
+				   const std::vector<qt::u32> &sorted_w)
 {
 	std::vector<itinerary> hap_itns;
 
-	pt::u32 I = g.get_hap_count();
-	for (pt::u32 h_idx{}; h_idx < I; h_idx++) {
-		std::vector<pt::u32> unrolled = lineup(g, sorted_w, h_idx);
+	qt::u32 I = g.get_hap_count();
+	for (qt::u32 h_idx{}; h_idx < I; h_idx++) {
+		std::vector<qt::u32> unrolled = lineup(g, sorted_w, h_idx);
 		itinerary itn = cluster(unrolled);
 		hap_itns.emplace_back(std::move(itn));
 	}

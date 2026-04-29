@@ -1,15 +1,12 @@
 #pragma once
 
-#include <liteseq/refs.h> // for ref_walk, ref
-// #include <meza/owned/matrix.hpp> // for dense_matrix2d
+#include <liteseq/refs.h>      // for ref_walk, ref
 #include <meza/pool/joint.hpp> // for joint_pool
-// #include <meza/pool/split.hpp>	 // for matrix_pool
-
-#include <meza/pool/pool.hpp> // for pool
+#include <meza/pool/pool.hpp>  // for pool
+#include <quilt/types.hpp>     // for qt
 
 #include "ita/variation/rov.hpp"     // for RoV
 #include "povu/graph/bidirected.hpp" // for VG
-#include "quilt/types.hpp"
 
 namespace ita::depth_matrix
 {

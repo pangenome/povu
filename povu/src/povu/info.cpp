@@ -4,11 +4,11 @@
 #include <string>   // for basic_string, operator<<, string
 #include <vector>   // for vector
 
-#include <quilt/shim.hpp> // for format
+#include <quilt/shim.hpp>  // for format
+#include <quilt/types.hpp> // for qt
 
 #include "mto/from_gfa.hpp" // for to_bd
 
-#include "povu/common/core.hpp"	     // for idx_t, pt
 #include "povu/graph/bidirected.hpp" // for VG
 
 namespace povu::subcommands::info
@@ -31,7 +31,7 @@ void do_info(const core::config &app_config)
 	std::cerr << qs::format("{} Component count {}\n", fn_name,
 				components.size());
 
-	for (pt::idx_t i{}; i < components.size(); ++i) {
+	for (qt::idx_t i{}; i < components.size(); ++i) {
 		bd::VG *c = components[i];
 		c->summary(app_config.print_tips());
 		delete c;

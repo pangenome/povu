@@ -6,7 +6,8 @@
 #include <string_view>
 #include <sys/types.h>
 
-#include "povu/common/core.hpp"
+#include <quilt/types.hpp> // for
+
 #include "povu/graph/types.hpp"
 
 namespace povu::constants
@@ -19,20 +20,19 @@ inline constexpr std::string_view BLUE{"blue"};
 
 // numeric
 // inline constexpr std::size_t SIZE_T_MIN = std::numeric_limits<size_t>::min();
-// inline constexpr std::size_t SIZE_T_MAX = std::numeric_limits<size_t>::max();
+inline constexpr std::size_t SIZE_T_MAX = std::numeric_limits<size_t>::max();
 // inline constexpr int UNDEFINED_INT = std::numeric_limits<int>::min();
-inline constexpr std::size_t UNDEFINED_SIZE_T =
-	std::numeric_limits<size_t>::max();
-inline constexpr pt::idx_t MAX_ID = std::numeric_limits<pt::idx_t>::max();
-inline constexpr pt::idx_t MAX_IDX = std::numeric_limits<pt::idx_t>::max();
+inline constexpr std::size_t UNDEFINED_SIZE_T = SIZE_T_MAX;
+inline constexpr qt::idx_t MAX_ID = std::numeric_limits<qt::idx_t>::max();
+inline constexpr qt::idx_t MAX_IDX = std::numeric_limits<qt::idx_t>::max();
 
 // TODO: replace UNDEFINED with INVALID ? or at least be consistent
-inline constexpr pt::idx_t UNDEFINED_IDX = MAX_IDX;
-inline constexpr pt::id_t UNDEFINED_ID = MAX_ID;
-inline constexpr pt::id_t DUMMY_VTX_ID = UNDEFINED_ID;
-inline constexpr pt::id_t INVALID_ID = MAX_ID;
-inline constexpr pt::idx_t INVALID_IDX = MAX_IDX;
-inline constexpr pt::idx_t INVALID_CLS = MAX_IDX; // equivalence class
+inline constexpr qt::idx_t UNDEFINED_IDX = MAX_IDX;
+inline constexpr qt::id_t UNDEFINED_ID = MAX_ID;
+inline constexpr qt::id_t DUMMY_VTX_ID = UNDEFINED_ID;
+inline constexpr qt::id_t INVALID_ID = MAX_ID;
+inline constexpr qt::idx_t INVALID_IDX = MAX_IDX;
+inline constexpr qt::idx_t INVALID_CLS = MAX_IDX; // equivalence class
 
 //
 inline constexpr ptg::id_or_t INVALID_ID_OR{INVALID_ID, ptg::or_e::forward};

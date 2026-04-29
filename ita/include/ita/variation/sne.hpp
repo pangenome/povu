@@ -8,10 +8,10 @@
 
 #include "ita/graph/slice_tree.hpp" // for it
 
-#include <quilt/shim.hpp> // for contains
+#include <quilt/shim.hpp>  // for contains
+#include <quilt/types.hpp> // for qt
 
 #include "povu/common/constants.hpp"
-#include "povu/common/core.hpp" // for pt, idx_t, id_t, op_t
 #include "povu/graph/bidirected.hpp"
 #include "povu/graph/types.hpp" // for or_e, id_or_t
 
@@ -23,25 +23,25 @@ namespace lq = liteseq;
 namespace pgt = povu::types::graph;
 
 struct pin {
-	pt::u32 r_idx; // hap index
-	pt::u32 idx;   // index in the hap walk
+	qt::u32 r_idx; // hap index
+	qt::u32 idx;   // index in the hap walk
 };
 
 // or matching overlap
 struct extension {
-	pt::u32 f_r_idx;
-	pt::u32 r_r_idx;
-	pt::u32 f_ref_start;
-	pt::u32 r_ref_start;
-	pt::u32 len;
+	qt::u32 f_r_idx;
+	qt::u32 r_r_idx;
+	qt::u32 f_ref_start;
+	qt::u32 r_ref_start;
+	qt::u32 len;
 
 	void dbg_print(const bd::VG &g) const
 	{
-		auto print = [](const lq::ref_walk *ref_w, pt::u32 ref_start,
-				pt::u32 N)
+		auto print = [](const lq::ref_walk *ref_w, qt::u32 ref_start,
+				qt::u32 N)
 		{
-			for (pt::u32 i = 0; i < N; i++) {
-				pt::idx_t ref_v_id =
+			for (qt::u32 i = 0; i < N; i++) {
+				qt::idx_t ref_v_id =
 					ref_w->v_ids[ref_start + i];
 				pgt::or_e ref_o =
 					ref_w->strands[ref_start + i] ==
@@ -73,9 +73,9 @@ struct extension {
 };
 
 struct chain_link {
-	pt::u32 idx;
-	pt::u32 limit_left;
-	pt::u32 limit_right;
+	qt::u32 idx;
+	qt::u32 limit_left;
+	qt::u32 limit_right;
 
 	// hap_traversal dir; // direction of traversal
 
@@ -95,10 +95,10 @@ struct link_pair {
 
 struct chain_t {
 	std::vector<link_pair> links;
-	pt::u32 len_{};
+	qt::u32 len_{};
 
 	[[nodiscard]]
-	pt::u32 len() const
+	qt::u32 len() const
 	{
 		return this->len_;
 	}
@@ -114,7 +114,7 @@ struct pin_cushion {
 private:
 	// const pvr::RoV *rov_;
 	std::vector<std::pair<pin, pin>> pin_pairs;
-	std::map<pt::up_t<pt::u32>, std::set<pt::u32>> ref_to_pin_pairs;
+	std::map<qt::up_t<qt::u32>, std::set<qt::u32>> ref_to_pin_pairs;
 
 public:
 	// ---------------------
@@ -142,14 +142,14 @@ public:
 
 	[[nodiscard]]
 	std::vector<std::pair<pin, pin>>
-	get_pin_pairs(pt::up_t<pt::u32> pp) const
+	get_pin_pairs(qt::up_t<qt::u32> pp) const
 	{
 		if (!qs::contains(this->ref_to_pin_pairs, pp)) {
 			return {};
 		}
 
 		std::vector<std::pair<pin, pin>> x;
-		for (pt::u32 pos : this->ref_to_pin_pairs.at(pp)) {
+		for (qt::u32 pos : this->ref_to_pin_pairs.at(pp)) {
 			x.emplace_back(this->pin_pairs.at(pos));
 		}
 
@@ -162,11 +162,11 @@ public:
 
 	void add_pin_pair(std::pair<pin, pin> &&pp)
 	{
-		pt::u32 pp_pos = this->pin_pairs.size();
+		qt::u32 pp_pos = this->pin_pairs.size();
 
-		pt::u32 ref_h_idx = pp.first.r_idx;
-		pt::u32 alt_h_idx = pp.second.r_idx;
-		pt::up_t<pt::u32> pp_key{ref_h_idx, alt_h_idx};
+		qt::u32 ref_h_idx = pp.first.r_idx;
+		qt::u32 alt_h_idx = pp.second.r_idx;
+		qt::up_t<qt::u32> pp_key{ref_h_idx, alt_h_idx};
 		this->ref_to_pin_pairs[pp_key].insert(pp_pos);
 		// this->ref_to_pin_pairs[alt_h_idx].insert(pp_pos);
 
@@ -175,7 +175,7 @@ public:
 };
 
 std::vector<ist::st> sne(const bd::VG &g, const pin_cushion &pcushions,
-			 const std::set<pt::u32> &to_call_ref_ids);
+			 const std::set<qt::u32> &to_call_ref_ids);
 
 }; // namespace ita::sne
 

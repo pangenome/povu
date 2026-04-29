@@ -7,14 +7,14 @@
 #include <string>   // for basic_string, string
 #include <vector>   // for vector
 
-#include <liteseq/refs.h> // for ref_walk
+#include <liteseq/refs.h>  // for ref_walk
+#include <quilt/types.hpp> // for qt
 
 #include "ita/graph/graph.hpp" // for RoV, find_walks, pgt
 #include "ita/variation/color.hpp"
 
-#include "povu/common/core.hpp" // for pt
-#include "povu/common/log.hpp"	// for INFO, WARN, ERR
-#include "povu/graph/pvst.hpp"	// for Tree, VertexBase
+#include "povu/common/log.hpp" // for INFO, WARN, ERR
+#include "povu/graph/pvst.hpp" // for Tree, VertexBase
 
 namespace ita::rov
 {
@@ -100,8 +100,8 @@ parse_genomic_region(const std::string &region_str)
 	}
 
 	try {
-		pt::idx_t start = std::stoull(start_str);
-		pt::idx_t end = std::stoull(end_str);
+		qt::idx_t start = std::stoull(start_str);
+		qt::idx_t end = std::stoull(end_str);
 
 		if (start >= end) {
 			PL_ERR("Invalid region '{}': start position ({}) "
@@ -125,7 +125,7 @@ parse_genomic_region(const std::string &region_str)
  */
 bool pvst_vertex_overlaps_region(const bd::VG &g,
 				 const pvst::VertexBase *pvst_v,
-				 const genomic_region &region, pt::id_t ref_id)
+				 const genomic_region &region, qt::id_t ref_id)
 {
 	// Get the route parameters which contain source and sink vertex
 	// IDs
@@ -136,17 +136,17 @@ bool pvst_vertex_overlaps_region(const bd::VG &g,
 	}
 
 	const pvst::route_params_t &route = opt_route.value();
-	pt::id_t start_v_id = route.start.v_id;
-	pt::id_t end_v_id = route.end.v_id;
+	qt::id_t start_v_id = route.start.v_id;
+	qt::id_t end_v_id = route.end.v_id;
 
 	// Convert vertex IDs to indices
-	pt::idx_t start_v_idx = g.v_id_to_idx(start_v_id);
-	pt::idx_t end_v_idx = g.v_id_to_idx(end_v_id);
+	qt::idx_t start_v_idx = g.v_id_to_idx(start_v_id);
+	qt::idx_t end_v_idx = g.v_id_to_idx(end_v_id);
 
 	// Get step indices for these vertices on the reference
-	const std::vector<pt::idx_t> &start_steps =
+	const std::vector<qt::idx_t> &start_steps =
 		g.get_vertex_ref_idxs(start_v_idx, ref_id);
-	const std::vector<pt::idx_t> &end_steps =
+	const std::vector<qt::idx_t> &end_steps =
 		g.get_vertex_ref_idxs(end_v_idx, ref_id);
 
 	// If either vertex is not on this reference, skip
@@ -156,13 +156,13 @@ bool pvst_vertex_overlaps_region(const bd::VG &g,
 	// Get the reference walk to access genomic positions (loci)
 	const lq::ref *ref_ptr = g.get_ref_vec(ref_id);
 	const lq::ref_walk *ref_w = ref_ptr->walk;
-	pt::idx_t ref_step_count = lq::get_step_count(ref_ptr);
+	qt::idx_t ref_step_count = lq::get_step_count(ref_ptr);
 
 	// Check if any genomic position falls within the region
 	// Use actual genomic coordinates (loci) instead of step indices
-	for (pt::idx_t step : start_steps) {
+	for (qt::idx_t step : start_steps) {
 		if (step < ref_step_count) {
-			pt::idx_t genomic_pos = ref_w->loci[step];
+			qt::idx_t genomic_pos = ref_w->loci[step];
 			if (genomic_pos >= region.start &&
 			    genomic_pos < region.end) {
 				return true;
@@ -170,9 +170,9 @@ bool pvst_vertex_overlaps_region(const bd::VG &g,
 		}
 	}
 
-	for (pt::idx_t step : end_steps) {
+	for (qt::idx_t step : end_steps) {
 		if (step < ref_step_count) {
-			pt::idx_t genomic_pos = ref_w->loci[step];
+			qt::idx_t genomic_pos = ref_w->loci[step];
 			if (genomic_pos >= region.start &&
 			    genomic_pos < region.end) {
 				return true;
@@ -184,12 +184,12 @@ bool pvst_vertex_overlaps_region(const bd::VG &g,
 }
 
 void find_pvst_rovs(const bd::VG &g, const pvst::Tree &pvst,
-		    const std::set<pt::u32> &colored_vtxs, std::vector<RoV> &rs,
+		    const std::set<qt::u32> &colored_vtxs, std::vector<RoV> &rs,
 		    const std::optional<genomic_region> &region = std::nullopt,
-		    const std::optional<pt::id_t> &region_ref_id = std::nullopt)
+		    const std::optional<qt::id_t> &region_ref_id = std::nullopt)
 {
 
-	for (pt::u32 i : colored_vtxs) { // i is pvst_v_idx
+	for (qt::u32 i : colored_vtxs) { // i is pvst_v_idx
 		const pvst::VertexBase *v = pvst.get_vertex_const_ptr(i);
 
 		// Apply region filtering if specified
@@ -204,7 +204,7 @@ void find_pvst_rovs(const bd::VG &g, const pvst::Tree &pvst,
 
 		RoV r{v};
 
-		pt::status_t s = povu::genomics::graph::find_walks(g, r);
+		qt::status_t s = povu::genomics::graph::find_walks(g, r);
 
 		if (r.size() < 3) {
 			WARN("RoV too small (size={}): {}. Skipping.", r.size(),
@@ -227,7 +227,7 @@ void find_pvst_rovs(const bd::VG &g, const pvst::Tree &pvst,
  * @param region Optional genomic region to filter RoVs
  */
 std::vector<RoV> gen_rov(const std::vector<pvst::Tree> &pvsts, const bd::VG &g,
-			 const std::set<pt::id_t> &to_call_ref_ids,
+			 const std::set<qt::id_t> &to_call_ref_ids,
 			 const std::optional<genomic_region> &region)
 {
 	// the set of RoVs to return
@@ -235,7 +235,7 @@ std::vector<RoV> gen_rov(const std::vector<pvst::Tree> &pvsts, const bd::VG &g,
 	rs.reserve(pvsts.size());
 
 	// Resolve region reference ID if region is specified
-	std::optional<pt::id_t> region_ref_id = std::nullopt;
+	std::optional<qt::id_t> region_ref_id = std::nullopt;
 	if (region.has_value()) {
 		region_ref_id = g.get_ref_id(region.value().ref_name);
 		if (!region_ref_id.has_value()) {
@@ -250,9 +250,9 @@ std::vector<RoV> gen_rov(const std::vector<pvst::Tree> &pvsts, const bd::VG &g,
 		     region.value().end);
 	}
 
-	for (pt::idx_t i{}; i < pvsts.size(); i++) { // for each pvst
+	for (qt::idx_t i{}; i < pvsts.size(); i++) { // for each pvst
 		const pvst::Tree &pvst = pvsts.at(i);
-		std::set<pt::u32> colored_vtxs =
+		std::set<qt::u32> colored_vtxs =
 			ic::color_pvst(g, pvst, to_call_ref_ids);
 
 		find_pvst_rovs(g, pvst, colored_vtxs, rs, region,

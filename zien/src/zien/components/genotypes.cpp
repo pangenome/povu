@@ -1,9 +1,9 @@
 #include <ncurses.h>
 
-#include <quilt/shim.hpp> // for contains
+#include <quilt/shim.hpp>  // for contains
+#include <quilt/types.hpp> // for qt
 
-#include "mto/from_vcf.hpp" // for VCFile
-#include "povu/common/core.hpp"
+#include "mto/from_vcf.hpp"		  // for VCFile
 #include "povu/graph/bidirected.hpp"	  // for VG
 #include "zien/components/components.hpp" // for Mode
 
@@ -12,18 +12,18 @@ namespace zien::components::genotypes
 
 std::vector<std::string> comp_gt_data(const bd::VG &g,
 				      const mto::from_vcf::VCFile &vcf_file,
-				      pt::u32 selected_rec_idx)
+				      qt::u32 selected_rec_idx)
 {
 	const mto::from_vcf::VCFRecord &rec =
 		vcf_file.get_records().at(selected_rec_idx);
 	const mto::from_vcf::gt_data &d = rec.get_genotypes();
 
-	pt::u32 at_count = rec.get_at_count();
+	qt::u32 at_count = rec.get_at_count();
 
 	std::vector<std::string> hap_lines;
 	std::string hl;
 
-	for (pt::u32 at_idx{}; at_idx < at_count; at_idx++) {
+	for (qt::u32 at_idx{}; at_idx < at_count; at_idx++) {
 		const std::string &at = rec.get_at(at_idx);
 		hl += at;
 		hl += "\t";
@@ -33,8 +33,8 @@ std::vector<std::string> comp_gt_data(const bd::VG &g,
 	hl.clear();
 
 	// count rows
-	pt::u32 row_count{};
-	for (pt::u32 at_idx{}; at_idx < at_count; at_idx++) {
+	qt::u32 row_count{};
+	for (qt::u32 at_idx{}; at_idx < at_count; at_idx++) {
 		if (!qs::contains(d.get_data(), at_idx)) {
 			continue;
 		}
@@ -48,13 +48,13 @@ std::vector<std::string> comp_gt_data(const bd::VG &g,
 
 		const std::vector<mto::from_vcf::at_meta> &at_meta =
 			d.get_data().at(at_idx);
-		pt::u32 N = at_meta.size();
+		qt::u32 N = at_meta.size();
 		if (N > row_count)
 			row_count = N;
 	}
 
-	for (pt::u32 row_idx{}; row_idx < row_count; row_idx++) {
-		for (pt::u32 at_idx{}; at_idx < at_count; at_idx++) {
+	for (qt::u32 row_idx{}; row_idx < row_count; row_idx++) {
+		for (qt::u32 at_idx{}; at_idx < at_count; at_idx++) {
 
 			if (!qs::contains(d.get_data(), at_idx)) {
 				// AT is not supported by any haps
@@ -87,13 +87,13 @@ std::vector<std::string> comp_gt_data(const bd::VG &g,
 						  // row string
 
 				if (g.get_ploidy(sn) == 0) {
-					pt::u32 hap_id =
+					qt::u32 hap_id =
 						*g.get_refs_in_sample(sn)
 							 .begin();
 					name = g.get_tag(hap_id);
 				}
 				else {
-					pt::u32 ploidy_id =
+					qt::u32 ploidy_id =
 						g.get_ploidy_id(sn, phase_idx);
 
 					name = sn + '#' +
@@ -116,7 +116,7 @@ std::vector<std::string> comp_gt_data(const bd::VG &g,
 
 /* top-right (haplotype) pane */
 void update_haps(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
-		 pt::u32 selected_rec_idx, display_lines &pd)
+		 qt::u32 selected_rec_idx, display_lines &pd)
 {
 	std::vector<std::string> hap_lines =
 		comp_gt_data(g, vcf_file, selected_rec_idx);

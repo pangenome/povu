@@ -5,12 +5,12 @@
 #include <string>
 #include <vector>
 
-#include <liteseq/refs.h> // for ref_walk, ref
-#include <quilt/shim.hpp> // for format
+#include <liteseq/refs.h>  // for ref_walk, ref
+#include <quilt/shim.hpp>  // for format
+#include <quilt/types.hpp> // for qt
 
 #include "mto/from_vcf.hpp" // for read_vcf
 
-#include "povu/common/core.hpp"
 #include "povu/graph/bidirected.hpp" // for bidirected
 #include "povu/graph/types.hpp"	     // for or_e
 #include "zien/common/common.hpp"    // for get_ref_ids
@@ -68,15 +68,15 @@ ptg::or_e lq_strand_to_or_e(lq::strand s)
 					     : ptg::or_e::reverse;
 }
 
-bool check_at(const bd::VG &g, const std::string &at, pt::idx_t ref_id)
+bool check_at(const bd::VG &g, const std::string &at, qt::idx_t ref_id)
 {
 	if (at.empty())
 		return false;
 
 	ptg::walk_t w = at_to_walk(at);
-	pt::u32 at_len = w.size();
-	pt::u32 s = g.v_id_to_idx(w.front().v_id);
-	const std::vector<pt::idx_t> &positions =
+	qt::u32 at_len = w.size();
+	qt::u32 s = g.v_id_to_idx(w.front().v_id);
+	const std::vector<qt::idx_t> &positions =
 		g.get_vertex_ref_idxs(s, ref_id);
 
 	if (positions.empty())
@@ -86,11 +86,11 @@ bool check_at(const bd::VG &g, const std::string &at, pt::idx_t ref_id)
 
 	bool any_of = false;
 
-	auto check_at_loop = [at_len, rw, w](pt::u32 start_idx) -> bool
+	auto check_at_loop = [at_len, rw, w](qt::u32 start_idx) -> bool
 	{
-		for (pt::u32 i{}; i < at_len; i++) {
-			pt::u32 si = start_idx + i;
-			pt::id_t ref_v_id = rw->v_ids[si];
+		for (qt::u32 i{}; i < at_len; i++) {
+			qt::u32 si = start_idx + i;
+			qt::id_t ref_v_id = rw->v_ids[si];
 			ptg::or_e ref_o = lq_strand_to_or_e(rw->strands[si]);
 
 			ptg::id_or_t ref_step{ref_v_id, ref_o};
@@ -102,21 +102,21 @@ bool check_at(const bd::VG &g, const std::string &at, pt::idx_t ref_id)
 		return true;
 	};
 
-	for (pt::u32 start_idx : positions)
+	for (qt::u32 start_idx : positions)
 		any_of = any_of || check_at_loop(start_idx);
 
 	// we should not reach here
 	return any_of;
 }
 
-std::set<pt::id_t> get_ref_ids_phased(const bd::VG &g, const std::string &sn,
-				      pt::u32 phase_idx)
+std::set<qt::id_t> get_ref_ids_phased(const bd::VG &g, const std::string &sn,
+				      qt::u32 phase_idx)
 {
 	// std::string sn = vcf_file.get_sample_name(sample_idx);
-	std::set<pt::id_t> ref_ids = g.get_refs_in_sample(sn);
+	std::set<qt::id_t> ref_ids = g.get_refs_in_sample(sn);
 
-	std::set<pt::id_t> filtered_ref_ids;
-	for (pt::id_t r_id : ref_ids) {
+	std::set<qt::id_t> filtered_ref_ids;
+	for (qt::id_t r_id : ref_ids) {
 		const oza::refs::Ref &r = g.get_ref_by_id(r_id);
 
 		// TODO: find a better way to handle non PANSN
@@ -130,9 +130,9 @@ std::set<pt::id_t> get_ref_ids_phased(const bd::VG &g, const std::string &sn,
 }
 
 bool any_contig(const bd::VG &g, const std::string &at,
-		const std::set<pt::id_t> &ref_ids)
+		const std::set<qt::id_t> &ref_ids)
 {
-	for (pt::id_t ref_id : ref_ids)
+	for (qt::id_t ref_id : ref_ids)
 		if (check_at(g, at, ref_id))
 			return true;
 
@@ -140,7 +140,7 @@ bool any_contig(const bd::VG &g, const std::string &at,
 }
 
 bool validate_rec(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
-		  pt::u32 rec_idx, std::ofstream *report_f, pt::u32 &err_recs)
+		  qt::u32 rec_idx, std::ofstream *report_f, qt::u32 &err_recs)
 {
 	const mto::from_vcf::VCFRecord &rec = vcf_file.get_records()[rec_idx];
 
@@ -159,7 +159,7 @@ bool validate_rec(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 
 			// INFO("B");
 
-			std::set<pt::id_t> ref_ids = zien::common::get_ref_ids(
+			std::set<qt::id_t> ref_ids = zien::common::get_ref_ids(
 				g, vcf_file, sample_idx, phase_idx);
 
 			// INFO("A");
@@ -170,14 +170,14 @@ bool validate_rec(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 			// //	  << " Sample idx: " << sample_idx
 			// //	  << " Phase idx: " << phase_idx << "\n";
 
-			pt::u32 ploidy_id = g.get_ploidy_id(sn, phase_idx);
+			qt::u32 ploidy_id = g.get_ploidy_id(sn, phase_idx);
 			ploidy_id =
 				(ploidy_id == pc::INVALID_ID) ? 1 : ploidy_id;
 
 			// INFO("C");
 
 			// // ploidy is never 0, the else is always >1
-			// std::set<pt::id_t> ref_ids =
+			// std::set<qt::id_t> ref_ids =
 			//	(g.get_ploidy(sn) == 0)
 			//		? g.get_refs_in_sample(sn)
 			//		: get_ref_ids_phased(g, sn, ploidy_id);
@@ -219,7 +219,7 @@ bool validate_rec(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 	return true;
 }
 
-void write_summary(const core::config &app_config, pt::u32 err_recs, pt::u32 N)
+void write_summary(const core::config &app_config, qt::u32 err_recs, qt::u32 N)
 {
 	std::string summary_fp = qs::format(
 		"{}/summary.txt",
@@ -245,7 +245,7 @@ void write_summary(const core::config &app_config, pt::u32 err_recs, pt::u32 N)
 	   << "%\n";
 }
 
-std::vector<pt::u32> validate_vcf_records(const bd::VG &g,
+std::vector<qt::u32> validate_vcf_records(const bd::VG &g,
 					  const mto::from_vcf::VCFile &vcf_file,
 					  const core::config &app_config,
 					  bool output_to_file)
@@ -269,11 +269,11 @@ std::vector<pt::u32> validate_vcf_records(const bd::VG &g,
 		*report_os << "rec_idx\tID\tPOS\tAT\tHap ID\tsample\n";
 	}
 
-	std::vector<pt::u32> invalid_rec_indices;
+	std::vector<qt::u32> invalid_rec_indices;
 
-	pt::u32 err_recs{};
-	const pt::u32 N = vcf_file.get_records().size();
-	for (pt::u32 rec_idx{}; rec_idx < N; rec_idx++)
+	qt::u32 err_recs{};
+	const qt::u32 N = vcf_file.get_records().size();
+	for (qt::u32 rec_idx{}; rec_idx < N; rec_idx++)
 		if (!validate_rec(g, vcf_file, rec_idx, report_os, err_recs))
 			invalid_rec_indices.emplace_back(rec_idx);
 

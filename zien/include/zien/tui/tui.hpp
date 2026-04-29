@@ -4,6 +4,8 @@
 #include <atomic> // for atomic
 #include <ncurses.h>
 
+#include <quilt/types.hpp> // for qt
+
 #include "mto/from_vcf.hpp"	     // for VCFile
 #include "povu/graph/bidirected.hpp" // for VG
 #include "zien/components/components.hpp"
@@ -99,7 +101,7 @@ void show_loading_spinner(std::atomic<bool> &is_loading);
 void view_gfa(const bd::VG &g);
 
 void view(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
-	  const std::vector<pt::u32> &invalid_recs);
+	  const std::vector<qt::u32> &invalid_recs);
 } // namespace zien::tui
 #endif // ZIEN_HPP
 

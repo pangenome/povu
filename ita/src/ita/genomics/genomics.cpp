@@ -8,6 +8,7 @@
 
 #include <dynamo/dynamo.hpp>  // for dynamic_interval_tree
 #include <meza/pool/pool.hpp> // for matrix_pool
+#include <quilt/types.hpp>    // for qt
 
 #include "ita/convolutions/convolutions.hpp" // for run_convs
 #include "ita/genomics/allele.hpp"	     // for Exp, comp_itineraries
@@ -16,21 +17,22 @@
 #include "ita/variation/rov.hpp"	     // for RoV, gen_rov
 #include "ita/variation/sne.hpp"	     // for sne
 #include "povu/common/app.hpp"		     // for config
-#include "povu/common/core.hpp"		     // for pt, idx_t, id_t
-#include "povu/common/log.hpp"		     // for ERR
-#include "quilt/types.hpp"
+// #include "povu/common/core.hpp"		     // for pt, idx_t, id_t
+#include "povu/common/log.hpp" // for ERR
+
+// #include "quilt/types.hpp"
 
 namespace ita::genomics
 {
 using pool_t = meza::pool::pool<qt::u8, qt::u32>;
 
 void find_inversions_new(const bd::VG &g,
-			 const std::set<pt::id_t> &to_call_ref_ids,
-			 std::map<pt::u32, std::vector<ia::inv_slice>> &res)
+			 const std::set<qt::id_t> &to_call_ref_ids,
+			 std::map<qt::u32, std::vector<ia::inv_slice>> &res)
 {
 	auto foo = [](const liteseq::ref_walk *rw,
-		      const std::vector<pt::u32> &positions, pt::u32 u,
-		      pt::u32 v) -> pt::op_t<pt::u32>
+		      const std::vector<qt::u32> &positions, qt::u32 u,
+		      qt::u32 v) -> qt::op_t<qt::u32>
 	{
 		if (rw->strands[positions[u]] == liteseq::strand::STRAND_FWD)
 			return {positions[u], positions[v]};
@@ -38,28 +40,28 @@ void find_inversions_new(const bd::VG &g,
 			return {positions[v], positions[u]};
 	};
 	using inv_it =
-		dynamo::dynamic_interval_tree<pt::u32, pt::op_t<pt::u32>>;
+		dynamo::dynamic_interval_tree<qt::u32, qt::op_t<qt::u32>>;
 
-	std::map<pt::u32, inv_it> hap_idx_to_it;
-	for (pt::u32 hap_idx : to_call_ref_ids) {
+	std::map<qt::u32, inv_it> hap_idx_to_it;
+	for (qt::u32 hap_idx : to_call_ref_ids) {
 		std::vector<ia::inv_slice> &inv_slices = res[hap_idx];
-		dynamo::dynamic_interval_tree<pt::u32, pt::op_t<pt::u32>> t;
+		dynamo::dynamic_interval_tree<qt::u32, qt::op_t<qt::u32>> t;
 		const liteseq::ref_walk *rw = g.get_ref_vec(hap_idx)->walk;
 
-		for (pt::u32 v_idx{}; v_idx < g.vtx_count(); v_idx++) {
-			const std::vector<pt::u32> &positions =
+		for (qt::u32 v_idx{}; v_idx < g.vtx_count(); v_idx++) {
+			const std::vector<qt::u32> &positions =
 				g.get_vertex_ref_idxs(v_idx, hap_idx);
 
-			pt::u32 N = positions.size();
+			qt::u32 N = positions.size();
 
 			if (N < 2)
 				continue;
 
-			std::optional<pt::op_t<pt::u32>> d{std::nullopt};
-			for (pt::u32 i{}; i < N - 1; i++) {
+			std::optional<qt::op_t<qt::u32>> d{std::nullopt};
+			for (qt::u32 i{}; i < N - 1; i++) {
 				if (rw->strands[positions[i]] !=
 				    rw->strands[positions[i + 1]]) {
-					d = pt::op_t<pt::u32>{i, i + 1};
+					d = qt::op_t<qt::u32>{i, i + 1};
 					break;
 				}
 			}
@@ -75,15 +77,15 @@ void find_inversions_new(const bd::VG &g,
 		t.commit();
 
 		// get covered regions
-		std::vector<std::pair<pt::u32, pt::u32>> r =
+		std::vector<std::pair<qt::u32, qt::u32>> r =
 			t.covered_regions();
 
 		for (auto [s, e] : r) {
-			pt::u32 len = e - s + 1;
-			pt::slice fwd_slice{s, len};
+			qt::u32 len = e - s + 1;
+			qt::slice fwd_slice{s, len};
 			auto [_, s_rev] = t.values_at(s).front();
-			pt::u32 rev_start = s_rev - len + 1;
-			pt::slice_t rev_slice{rev_start, len};
+			qt::u32 rev_start = s_rev - len + 1;
+			qt::slice_t rev_slice{rev_start, len};
 
 			inv_slices.emplace_back(
 				ia::inv_slice{rw, hap_idx, fwd_slice.start(),
@@ -93,13 +95,13 @@ void find_inversions_new(const bd::VG &g,
 }
 
 void comp_expeditions(const bd::VG &g, std::vector<ir::RoV> &all_rovs,
-		      pt::idx_t start, pt::idx_t count,
-		      const std::set<pt::id_t> &to_call_ref_ids, pool_t &p,
+		      qt::idx_t start, qt::idx_t count,
+		      const std::set<qt::id_t> &to_call_ref_ids, pool_t &p,
 		      ita::at_matrix::rov_job_batch &batch,
 		      std::vector<ia::trek> &treks)
 {
 	const std::size_t N = all_rovs.size();
-	for (pt::idx_t i{start}; i < start + count && i < N; i++) {
+	for (qt::idx_t i{start}; i < start + count && i < N; i++) {
 		bool last = i == ((start + count) - 1) || i == (N - 1);
 		bool drain = last;
 
@@ -114,7 +116,7 @@ void comp_expeditions(const bd::VG &g, std::vector<ir::RoV> &all_rovs,
 }
 
 void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
-		     const std::set<pt::id_t> &to_call_ref_ids,
+		     const std::set<qt::id_t> &to_call_ref_ids,
 		     bq::bounded_queue<iv::VcfRecIdx> &q,
 		     const core::config &app_config)
 {
@@ -137,7 +139,7 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 
 	const std::size_t CHUNK_SIZE = app_config.get_chunk_size();
 	const std::size_t N = all_rovs.size();
-	pt::u32 total_chunks = (N + CHUNK_SIZE - 1) / CHUNK_SIZE;
+	qt::u32 total_chunks = (N + CHUNK_SIZE - 1) / CHUNK_SIZE;
 
 	if (app_config.verbosity() > 0)
 		INFO("Processing chunks. Chunk count: {}", total_chunks);
@@ -145,7 +147,7 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 	ise::pin_cushion pc;
 	std::vector<ia::trek> treks;
 	std::vector<ist::st> i_trees;
-	std::map<pt::u32, std::vector<ia::inv_slice>> inv_slices;
+	std::map<qt::u32, std::vector<ia::inv_slice>> inv_slices;
 
 	// meza::pool::split::matrix_pool<qt::u8> &ov_pool =
 	//	meza::pool::split::matrix_pool<qt::u8>::init();
@@ -174,10 +176,10 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 	ita::at_matrix::rov_job_batch batch;
 
 	try {
-		for (pt::idx_t base{}; base < N; base += CHUNK_SIZE) {
-			pt::u32 end = std::min(base + CHUNK_SIZE, N);
-			pt::u32 count = end - base;
-			pt::u32 chunk_num = (base / CHUNK_SIZE) + 1;
+		for (qt::idx_t base{}; base < N; base += CHUNK_SIZE) {
+			qt::u32 end = std::min(base + CHUNK_SIZE, N);
+			qt::u32 count = end - base;
+			qt::u32 chunk_num = (base / CHUNK_SIZE) + 1;
 
 			if (app_config.verbosity() > 0)
 				INFO("\t{}/{}", chunk_num, total_chunks);

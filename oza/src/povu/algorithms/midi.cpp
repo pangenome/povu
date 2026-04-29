@@ -8,27 +8,25 @@
 #include <utility>   // for get, pair
 #include <vector>    // for vector
 
-#include <quilt/shim.hpp> // for format
+#include <quilt/shim.hpp>  // for format
+#include <quilt/types.hpp> // for qt
 
-#include "fmt/core.h" // for format
-// #include "povu/common/compat.hpp" // for format, pv_cmp
-#include "povu/common/core.hpp" // for pt, idx_t
-#include "povu/common/log.hpp"	// for WARN, ERR
+#include "povu/common/log.hpp" // for WARN, ERR
 
 namespace oza::midi
 {
 
 // add midi bubbles to the PVST
 void add_midi(const ptu::tree_meta &tm,
-	      std::map<pt::idx_t, std::vector<pvst::MidiBubble>> &midis,
+	      std::map<qt::idx_t, std::vector<pvst::MidiBubble>> &midis,
 	      pvst::Tree &pvst)
 {
 	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
-	const std::vector<pt::idx_t> &depth = tm.depth;
+	const std::vector<qt::idx_t> &depth = tm.depth;
 
 	for (auto &[ft_v_idx, bubs] : midis) {
-		std::vector<pt::idx_t> ch = pvst.get_children(ft_v_idx);
+		std::vector<qt::idx_t> ch = pvst.get_children(ft_v_idx);
 
 		for (const pvst::MidiBubble &b : bubs) {
 			auto [md_upper, md_lower] =
@@ -40,11 +38,11 @@ void add_midi(const ptu::tree_meta &tm,
 				continue;
 			}
 
-			pt::idx_t m_v_idx = pvst.add_vertex(b);
+			qt::idx_t m_v_idx = pvst.add_vertex(b);
 			pvst.add_edge(ft_v_idx, m_v_idx);
 
 			// nest
-			for (pt::idx_t c_v_idx : ch) {
+			for (qt::idx_t c_v_idx : ch) {
 				const pvst::VertexBase &c_v =
 					pvst.get_vertex(c_v_idx);
 
@@ -67,14 +65,14 @@ void add_midi(const ptu::tree_meta &tm,
 }
 
 pvst::MidiBubble gen_midi_bub(const pvst::Tree &pvst,
-			      const std::vector<pt::idx_t> &c_bubs)
+			      const std::vector<qt::idx_t> &c_bubs)
 {
 	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
-	pt::idx_t fst = c_bubs[0]; // first
-	pt::idx_t snd = c_bubs[1]; // second
+	qt::idx_t fst = c_bubs[0]; // first
+	qt::idx_t snd = c_bubs[1]; // second
 
-	auto get_cn = [&](pt::idx_t cn_v_idx_pvst) -> pvst::Concealed
+	auto get_cn = [&](qt::idx_t cn_v_idx_pvst) -> pvst::Concealed
 	{
 		const pvst::VertexBase &pvst_v = pvst.get_vertex(cn_v_idx_pvst);
 		const pvst::Concealed &cn_v =
@@ -83,9 +81,9 @@ pvst::MidiBubble gen_midi_bub(const pvst::Tree &pvst,
 	};
 
 	pgt::id_or_t g;
-	pt::idx_t g_pvst_idx{pc::INVALID_IDX};
+	qt::idx_t g_pvst_idx{pc::INVALID_IDX};
 	pgt::id_or_t s;
-	pt::idx_t s_pvst_idx{pc::INVALID_IDX};
+	qt::idx_t s_pvst_idx{pc::INVALID_IDX};
 
 	pvst::Concealed f_cn_v = get_cn(fst);
 	if ((f_cn_v.get_sl_type() == pvst::cl_e::ai_branch) ||
@@ -121,7 +119,7 @@ pvst::MidiBubble gen_midi_bub(const pvst::Tree &pvst,
 	}
 
 	// Ensure indices are within reasonable bounds
-	pt::idx_t max_valid_idx = pvst.vtx_count();
+	qt::idx_t max_valid_idx = pvst.vtx_count();
 	if (g_pvst_idx >= max_valid_idx || s_pvst_idx >= max_valid_idx) {
 		PL_ERR("{} MidiBubble indices out of bounds: g_pvst_idx={}, "
 		       "s_pvst_idx={}, max_valid={}",
@@ -138,15 +136,15 @@ pvst::MidiBubble gen_midi_bub(const pvst::Tree &pvst,
 std::vector<pvst::MidiBubble> handle_fl(const pst::Tree &st,
 					const pvst::Tree &pvst,
 					const pvst::Flubble &fl_v,
-					const std::vector<pt::idx_t> &c_bubs)
+					const std::vector<qt::idx_t> &c_bubs)
 {
 
 	std::vector<pvst::MidiBubble> res;
 
-	pt::idx_t zi = fl_v.get_zi();
+	qt::idx_t zi = fl_v.get_zi();
 
 	// is a descendant
-	auto is_desc = [&](pt::idx_t p_v_idx, pt::idx_t c_v_idx) -> bool
+	auto is_desc = [&](qt::idx_t p_v_idx, qt::idx_t c_v_idx) -> bool
 	{
 		return ((st.get_vertex(p_v_idx).pre_order() <
 			 st.get_vertex(c_v_idx).pre_order()) &&
@@ -156,18 +154,18 @@ std::vector<pvst::MidiBubble> handle_fl(const pst::Tree &st,
 
 	// is v_idx in the trunk? true if v_idx is an ancestor of zi, then it is
 	// in the trunk
-	auto in_trunk = [&](pt::idx_t v_idx) -> bool
+	auto in_trunk = [&](qt::idx_t v_idx) -> bool
 	{
 		return v_idx < zi;
 	};
 
-	std::vector<pt::idx_t> trunk_c_bubs;
+	std::vector<qt::idx_t> trunk_c_bubs;
 
 	// key is child and value the set of concealed bubbles in the branch
-	std::map<pt::idx_t, std::vector<pt::idx_t>> branch_c_bubs;
+	std::map<qt::idx_t, std::vector<qt::idx_t>> branch_c_bubs;
 
-	std::vector<pt::idx_t> c; // children of z_i \ z_x
-	for (pt::idx_t e_idx : st.get_child_edge_idxs(zi)) {
+	std::vector<qt::idx_t> c; // children of z_i \ z_x
+	for (qt::idx_t e_idx : st.get_child_edge_idxs(zi)) {
 		const pst::Edge &e = st.get_tree_edge(e_idx);
 		if (e.get_color() == pgt::color_e::black) {
 			continue;
@@ -175,11 +173,11 @@ std::vector<pvst::MidiBubble> handle_fl(const pst::Tree &st,
 		c.push_back(e.get_child_v_idx());
 	}
 
-	for (pt::idx_t cn_v_idx_pvst : c_bubs) {
+	for (qt::idx_t cn_v_idx_pvst : c_bubs) {
 		const pvst::VertexBase &pvst_v = pvst.get_vertex(cn_v_idx_pvst);
 		const pvst::Concealed &cn_v =
 			static_cast<const pvst::Concealed &>(pvst_v);
-		pt::idx_t g_or_s_st_idx = cn_v.get_sl_st_idx();
+		qt::idx_t g_or_s_st_idx = cn_v.get_sl_st_idx();
 
 		if (in_trunk(g_or_s_st_idx)) {
 			trunk_c_bubs.push_back(cn_v_idx_pvst);
@@ -228,15 +226,15 @@ void find_midi(const pst::Tree &st, pvst::Tree &pvst, const ptu::tree_meta &tm)
 {
 	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
-	std::map<pt::idx_t, std::vector<pvst::MidiBubble>> x;
-	for (pt::idx_t ft_v_idx{}; ft_v_idx < pvst.vtx_count(); ft_v_idx++) {
+	std::map<qt::idx_t, std::vector<pvst::MidiBubble>> x;
+	for (qt::idx_t ft_v_idx{}; ft_v_idx < pvst.vtx_count(); ft_v_idx++) {
 		const pvst::VertexBase &pvst_v = pvst.get_vertex(ft_v_idx);
 
 		if (pvst_v.get_fam() != pvst::vt_e::flubble) {
 			continue;
 		}
 
-		std::vector<pt::idx_t> c_bubs; // the concealed bubbles
+		std::vector<qt::idx_t> c_bubs; // the concealed bubbles
 		for (auto c_v_idx_pvst : pvst.get_children(ft_v_idx)) {
 			const pvst::VertexBase &c_v =
 				pvst.get_vertex(c_v_idx_pvst);

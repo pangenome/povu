@@ -14,17 +14,16 @@
 #include <unordered_set> // for unordered_set
 #include <utility>	 // for pair, get, move, make_pair
 
-#include <quilt/shim.hpp> // for format, contains
+#include <quilt/shim.hpp>  // for format, contains
+#include <quilt/types.hpp> // for qt
 
-// #include "fmt/core.h"		       // for format
-// #include "povu/common/compat.hpp"      // for pv_cmp, format, contains
 #include "povu/graph/bracket_list.hpp" // for Bracket
 
 namespace oza::flubbles
 {
 
 [[nodiscard]] constexpr pvst::endpoints
-normalize_endpoints(pt::id_t s_id, pgt::or_e s_or, pt::id_t e_id,
+normalize_endpoints(qt::id_t s_id, pgt::or_e s_or, qt::id_t e_id,
 		    pgt::or_e e_or) noexcept
 {
 	if (s_or == pgt::or_e::reverse && e_or == pgt::or_e::reverse) {
@@ -35,9 +34,9 @@ normalize_endpoints(pt::id_t s_id, pgt::or_e s_or, pt::id_t e_id,
 	}
 }
 
-[[nodiscard]] inline pvst::Flubble gen_fl(pt::id_t s_id, pgt::or_e s_or,
-					  pt::id_t e_id, pgt::or_e e_or,
-					  pt::idx_t ai, pt::idx_t zi) noexcept
+[[nodiscard]] inline pvst::Flubble gen_fl(qt::id_t s_id, pgt::or_e s_or,
+					  qt::id_t e_id, pgt::or_e e_or,
+					  qt::idx_t ai, qt::idx_t zi) noexcept
 {
 
 	const auto [a, z] = normalize_endpoints(s_id, s_or, e_id, e_or);
@@ -54,14 +53,14 @@ normalize_endpoints(pt::id_t s_id, pgt::or_e s_or, pt::id_t e_id,
  * @return A pair of indices (ai, zi) where ai is the index of the ancestor
  *         and zi is the index of the descendant in the spanning tree
  */
-std::pair<pt::idx_t, pt::idx_t>
-compute_ai_zi(const pst::Tree &st, pt::idx_t a_e_idx, pt::idx_t z_e_idx)
+std::pair<qt::idx_t, qt::idx_t>
+compute_ai_zi(const pst::Tree &st, qt::idx_t a_e_idx, qt::idx_t z_e_idx)
 {
 	std::string fn_name =
 		qs::format("[povu::algorithms::flubble_tree::{}]", __func__);
 
-	std::vector<pt::idx_t> vtxs{};
-	auto get_vtx_pair = [&](pt::idx_t e_idx) -> void
+	std::vector<qt::idx_t> vtxs{};
+	auto get_vtx_pair = [&](qt::idx_t e_idx) -> void
 	{
 		const pst::Edge &e = st.get_tree_edge(e_idx);
 		vtxs.push_back(e.get_child_v_idx());
@@ -73,7 +72,7 @@ compute_ai_zi(const pst::Tree &st, pt::idx_t a_e_idx, pt::idx_t z_e_idx)
 
 	// sort the vertices by their index in the spanning tree
 	std::sort(vtxs.begin(), vtxs.end(),
-		  [&](pt::idx_t a, pt::idx_t b) { return a < b; });
+		  [&](qt::idx_t a, qt::idx_t b) { return a < b; });
 
 #ifdef DEBUG // vtx should contain exactly 4 elements
 	assert(vtxs.size() == 4);
@@ -94,18 +93,18 @@ void add_flubbles(const pst::Tree &st, const eq_class_stack_t &ecs,
 	const auto &[stack_, next_seen] = ecs;
 
 	struct ci {
-		pt::idx_t cl;  // class
-		pt::idx_t idx; // index in stack_
+		qt::idx_t cl;  // class
+		qt::idx_t idx; // index in stack_
 	};
 
 	std::stack<ci> s;
-	std::unordered_set<pt::idx_t> in_s; // classes in s
+	std::unordered_set<qt::idx_t> in_s; // classes in s
 
-	pt::idx_t prt_v{vst.root_idx()}; // parent vertex
+	qt::idx_t prt_v{vst.root_idx()}; // parent vertex
 
-	// pt::idx_t ctr = vst.vtx_count();
+	// qt::idx_t ctr = vst.vtx_count();
 
-	for (pt::idx_t i{}; i < stack_.size(); ++i) {
+	for (qt::idx_t i{}; i < stack_.size(); ++i) {
 
 		auto [or_curr, id_curr, st_idx_curr, cl_curr] = stack_[i];
 
@@ -146,7 +145,7 @@ void add_flubbles(const pst::Tree &st, const eq_class_stack_t &ecs,
 
 			pvst::Flubble vtx = gen_fl(id_curr, or_curr, id_nxt,
 						   or_nxt, ai, zi);
-			pt::idx_t pvst_v_idx = vst.add_vertex(vtx);
+			qt::idx_t pvst_v_idx = vst.add_vertex(vtx);
 			vst.add_edge(prt_v, pvst_v_idx);
 			prt_v = pvst_v_idx;
 		}
@@ -168,20 +167,20 @@ void compute_eq_class_metadata(eq_class_stack_t &ecs)
 		qs::format("[povu::algorithms::flubble_tree::{}]", __func__);
 
 	const std::vector<oic_t> &stack_ = ecs.s;
-	std::vector<pt::idx_t> &next_seen = ecs.next_seen;
+	std::vector<qt::idx_t> &next_seen = ecs.next_seen;
 
-	for (pt::idx_t i{}; i < stack_.size(); ++i) {
+	for (qt::idx_t i{}; i < stack_.size(); ++i) {
 		next_seen.push_back(pc::INVALID_CLS);
 	}
 
 	// an eq class and the index of the next time it is encountered in
 	// stack_
-	std::unordered_map<pt::idx_t, pt::idx_t> next_seen_map;
+	std::unordered_map<qt::idx_t, qt::idx_t> next_seen_map;
 	next_seen_map.reserve(stack_.size());
 
 	for (std::size_t i{stack_.size()}; i-- > 0;) {
 		auto [or_curr, id_curr, _, cl_curr] = stack_[i];
-		pt::idx_t next_idx = qs::contains(next_seen_map, cl_curr)
+		qt::idx_t next_idx = qs::contains(next_seen_map, cl_curr)
 					     ? next_seen_map[cl_curr]
 					     : i;
 
@@ -197,18 +196,18 @@ void compute_eq_class_stack(const pst::Tree &st, std::vector<oic_t> &stack)
 
 	ptu::BranchDesc desc = ptu::br_desc(st);
 
-	auto is_branching = [&](pt::idx_t v_idx) -> bool
+	auto is_branching = [&](qt::idx_t v_idx) -> bool
 	{
 		return (st.get_children(v_idx).size() > 1);
 	};
 
-	pt::idx_t root_idx = st.get_root_idx();
+	qt::idx_t root_idx = st.get_root_idx();
 
 	// TODO: use desc to get these
 	// edge idx => stackette
-	typedef std::map<pt::idx_t, std::list<oic_t>> edge_stack_t;
+	typedef std::map<qt::idx_t, std::list<oic_t>> edge_stack_t;
 	// v idx to mini stack
-	std::map<pt::idx_t, edge_stack_t> cache; // edge_map
+	std::map<qt::idx_t, edge_stack_t> cache; // edge_map
 
 	std::list<oic_t> mini_stack; // TODO: rename
 
@@ -218,13 +217,13 @@ void compute_eq_class_stack(const pst::Tree &st, std::vector<oic_t> &stack)
 		into.splice(into.begin(), from);
 	};
 
-	for (pt::idx_t v_idx{st.vtx_count()}; v_idx-- > 0;) {
+	for (qt::idx_t v_idx{st.vtx_count()}; v_idx-- > 0;) {
 
 		if (v_idx == root_idx || is_branching(v_idx)) {
 
 			// merge from cache into stack_map
 			edge_stack_t &stackettes = cache[v_idx];
-			const std::vector<pt::idx_t> &c_edges =
+			const std::vector<qt::idx_t> &c_edges =
 				desc[v_idx].sorted_br;
 
 			for (auto e_idx : c_edges) {
@@ -238,7 +237,7 @@ void compute_eq_class_stack(const pst::Tree &st, std::vector<oic_t> &stack)
 		}
 
 		const pst::Edge &e = st.get_parent_edge(v_idx);
-		pt::idx_t pe = st.get_vertex(v_idx).get_parent_e_idx();
+		qt::idx_t pe = st.get_vertex(v_idx).get_parent_e_idx();
 
 		if (e.get_color() == pgt::color_e::black) {
 			pgt::or_e o =
@@ -252,9 +251,9 @@ void compute_eq_class_stack(const pst::Tree &st, std::vector<oic_t> &stack)
 		// if the parent is braching
 		if (is_branching(st.get_parent_v_idx(v_idx))) {
 
-			pt::idx_t e_idx =
+			qt::idx_t e_idx =
 				st.get_vertex(v_idx).get_parent_e_idx();
-			pt::idx_t p_v_idx = st.get_parent_v_idx(v_idx);
+			qt::idx_t p_v_idx = st.get_parent_v_idx(v_idx);
 
 			auto [it, _] = cache.try_emplace(
 				p_v_idx); // default-constructs value if not
@@ -287,8 +286,8 @@ void handle_vertex(pst::Tree &t, std::size_t v, std::vector<boundary> &hairpins,
 	 * ------------
 	 */
 
-	pt::idx_t hi_0{pc::INVALID_IDX};
-	std::set<pt::idx_t> obe = t.get_obe_tgt_v_idxs(v);
+	qt::idx_t hi_0{pc::INVALID_IDX};
+	std::set<qt::idx_t> obe = t.get_obe_tgt_v_idxs(v);
 	for (auto be : obe) {
 		hi_0 = std::min(hi_0, t.get_vertex(be).dfs_num());
 	}
@@ -298,7 +297,7 @@ void handle_vertex(pst::Tree &t, std::size_t v, std::vector<boundary> &hairpins,
 	// its hi value is hi_1 and the dfs num of that vertex is hi_child
 	// children are empty for dummy stop node
 
-	pt::idx_t hi_1{pc::INVALID_IDX};
+	qt::idx_t hi_1{pc::INVALID_IDX};
 	std::set<std::size_t> children = t.get_children(v);
 
 	bool is_leaf = children.empty();
@@ -473,7 +472,7 @@ void simple_cycle_equiv(pst::Tree &t, const core::config &app_config)
 	bool in_hairpin{false};
 	boundary curr_bry{NULL_BOUNDARY}; // current_boundary
 
-	for (pt::idx_t v{t.vtx_count() - 1}; v < pc::MAX_IDX; --v) {
+	for (qt::idx_t v{t.vtx_count() - 1}; v < pc::MAX_IDX; --v) {
 		handle_vertex(t, v, boundaries, curr_bry, in_hairpin,
 			      articulated_vertices);
 	}
@@ -503,7 +502,7 @@ pvst::Tree find_flubbles(pst::Tree &st, const core::config &app_config)
 	pvst::Tree pvst;
 	{
 		pvst::Dummy root_v;
-		pt::idx_t root_v_idx = pvst.add_vertex(root_v);
+		qt::idx_t root_v_idx = pvst.add_vertex(root_v);
 		pvst.set_root_idx(root_v_idx);
 	}
 	add_flubbles(st, ecs, pvst);

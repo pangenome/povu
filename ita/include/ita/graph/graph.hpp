@@ -5,9 +5,10 @@
 
 #include <string_view> // for string_view
 
+#include <quilt/types.hpp> // for qt
+
 #include "ita/variation/rov.hpp" // for RoV
 
-#include "povu/common/core.hpp"	     // for idx_t, pt
 #include "povu/graph/bidirected.hpp" // for VG, bd
 #include "povu/graph/pvst.hpp"	     // for VertexBase
 #include "povu/graph/types.hpp"	     // for walk_t, id_or_t
@@ -19,11 +20,11 @@ namespace pvst = oza::pvst;
 namespace pgt = povu::types::graph;
 
 // Maximum number of steps to take from flubble start to end
-const pt::u32 MAX_FLUBBLE_STEPS{1000};
-const pt::u32 MAX_UNBLOCK_CTR{10000};
+const qt::u32 MAX_FLUBBLE_STEPS{1000};
+const qt::u32 MAX_UNBLOCK_CTR{10000};
 
 // direction for traversing a vertex in a bidirected graph
-enum class dir_e : pt::u8 {
+enum class dir_e : qt::u8 {
 	in,
 	out
 };
@@ -35,7 +36,7 @@ auto format_as(dir_e d);
 
 typedef pgt::id_or_t idx_or_t; // specifically for idx instead of id
 
-pt::status_t find_walks(const bd::VG &g, ir::RoV &rov);
+qt::status_t find_walks(const bd::VG &g, ir::RoV &rov);
 } // namespace povu::genomics::graph
 
 #endif // POVU_GENOMICS_GRAPH_HPP

@@ -3,31 +3,33 @@
 #include <algorithm> // for min, max, reverse
 #include <cstdlib>   // for exit
 
-#include "povu/common/core.hpp"
+#include <quilt/types.hpp> // for qt
+
+// #include "povu/common/core.hpp"
 #include "povu/common/log.hpp" // for ERR
 
 namespace ita::align
 {
 // match result
 struct match_res_t {
-	pt::idx_t a_inc;
-	pt::idx_t b_inc;
+	qt::idx_t a_inc;
+	qt::idx_t b_inc;
 	bool is_match;
 };
 
-inline pt::idx_t min(pt::idx_t a, pt::idx_t b)
+inline qt::idx_t min(qt::idx_t a, qt::idx_t b)
 {
 	return std::min(a, b);
 }
 
-inline pt::idx_t min(pt::idx_t a, pt::idx_t b, pt::idx_t c)
+inline qt::idx_t min(qt::idx_t a, qt::idx_t b, qt::idx_t c)
 {
 	return std::min(a, std::min(b, c));
 }
 
 /*for RoV inc by the length of the walk*/
-inline match_res_t eq_at(const ia::at_itn &a, pt::idx_t a_idx,
-			 const ia::at_itn &b, pt::idx_t b_idx)
+inline match_res_t eq_at(const ia::at_itn &a, qt::idx_t a_idx,
+			 const ia::at_itn &b, qt::idx_t b_idx)
 {
 
 	// if any of the steps is not a match in the ROV then it is not a match
@@ -38,9 +40,9 @@ inline match_res_t eq_at(const ia::at_itn &a, pt::idx_t a_idx,
 	if (a_at.size() != b_at.size())
 		return match_res_t{1, 1, false};
 
-	pt::u32 N = a_at.size();
+	qt::u32 N = a_at.size();
 
-	for (pt::idx_t i{}; i < N; i++)
+	for (qt::idx_t i{}; i < N; i++)
 		if (a_at[i] != b_at[i])
 			return {1, 1, false};
 
@@ -51,15 +53,15 @@ inline match_res_t eq_at(const ia::at_itn &a, pt::idx_t a_idx,
 
 	// std::cerr << "called -------------\n";
 
-	// pt::idx_t a_jmp = a_at.step_count();
-	// pt::idx_t b_jmp = b_at.step_count();
+	// qt::idx_t a_jmp = a_at.step_count();
+	// qt::idx_t b_jmp = b_at.step_count();
 
 	// if (a_jmp != b_jmp) {
 	//	return {1, 1, false};
 	// }
 
 	// // TODO: also compare loop no?
-	// for (pt::idx_t i{}; i < a_jmp; i++) {
+	// for (qt::idx_t i{}; i < a_jmp; i++) {
 	//	if (a_at.get_walk_step(i) != b_at.get_walk_step(i)) {
 	//		return {1, 1, false};
 	//	}
@@ -68,20 +70,20 @@ inline match_res_t eq_at(const ia::at_itn &a, pt::idx_t a_idx,
 	// return {1, 1, true};
 }
 
-aln_result_t global_align(const ia::at_itn &str1, pt::idx_t str1_len,
-			  const ia::at_itn &str2, pt::idx_t str2_len,
+aln_result_t global_align(const ia::at_itn &str1, qt::idx_t str1_len,
+			  const ia::at_itn &str2, qt::idx_t str2_len,
 			  const aln_scores_t &scores,
-			  match_res_t (*eq)(const ia::at_itn &, pt::idx_t,
-					    const ia::at_itn &, pt::idx_t))
+			  match_res_t (*eq)(const ia::at_itn &, qt::idx_t,
+					    const ia::at_itn &, qt::idx_t))
 {
 	// Define the scoring parameters
-	const pt::idx_t a = scores.match;
-	const pt::idx_t x = scores.mismatch;
-	const pt::idx_t o = scores.gap_open;
-	const pt::idx_t e = scores.gap_extend;
+	const qt::idx_t a = scores.match;
+	const qt::idx_t x = scores.mismatch;
+	const qt::idx_t o = scores.gap_open;
+	const qt::idx_t e = scores.gap_extend;
 
-	pt::idx_t row_count = str1_len + 1;
-	pt::idx_t col_count = str2_len + 1;
+	qt::idx_t row_count = str1_len + 1;
+	qt::idx_t col_count = str2_len + 1;
 
 	// Initialize M, I, D matrices.
 	Matrix M(row_count, col_count);
@@ -89,13 +91,13 @@ aln_result_t global_align(const ia::at_itn &str1, pt::idx_t str1_len,
 	Matrix D(row_count, col_count);
 
 	// Initialize the top row of I.
-	for (pt::idx_t j = 1; j < col_count; ++j) {
+	for (qt::idx_t j = 1; j < col_count; ++j) {
 		D(0, j) = pc::INVALID_IDX;
 		I(0, j) = (j * e) + o;
 	}
 
 	// Initialize the left column of D.
-	for (pt::idx_t i = 1; i < row_count; ++i) {
+	for (qt::idx_t i = 1; i < row_count; ++i) {
 		I(i, 0) = pc::INVALID_IDX;
 		D(i, 0) = (i * e) + o;
 	}
@@ -106,18 +108,18 @@ aln_result_t global_align(const ia::at_itn &str1, pt::idx_t str1_len,
 	I(0, 0) = pc::INVALID_IDX;
 	// Initialize first column: gap penalties for aligning str1 with an
 	// empty string.
-	for (pt::idx_t i = 1; i < row_count; ++i) {
+	for (qt::idx_t i = 1; i < row_count; ++i) {
 		M(i, 0) = pc::INVALID_IDX;
 	}
 	// Initialize first row.
-	for (pt::idx_t j = 1; j < col_count; ++j) {
+	for (qt::idx_t j = 1; j < col_count; ++j) {
 		M(0, j) = pc::INVALID_IDX;
 	}
 
 	// Fill M, I, D matrices.
 	// TODO: is it possible to depend on the i and j inc values?
-	for (pt::idx_t i = 1; i < row_count; i++) {	    // rows
-		for (pt::idx_t j = 1; j < col_count; j++) { // cols
+	for (qt::idx_t i = 1; i < row_count; i++) {	    // rows
+		for (qt::idx_t j = 1; j < col_count; j++) { // cols
 
 			// Fill I (gap in str2, insertion in str1)
 			I(i, j) = min(M(i - 1, j) + o + e, I(i - 1, j) + e);
@@ -137,14 +139,14 @@ aln_result_t global_align(const ia::at_itn &str1, pt::idx_t str1_len,
 		}
 	}
 
-	pt::idx_t aln_score = M(row_count - 1, col_count - 1);
+	qt::idx_t aln_score = M(row_count - 1, col_count - 1);
 
 	// std::cerr << "Score: " << aln_score << "\n";
 
 	// Define an enum to track which matrix we’re in.
 
-	pt::idx_t i = str1_len;
-	pt::idx_t j = str2_len;
+	qt::idx_t i = str1_len;
+	qt::idx_t j = str2_len;
 	std::string et;
 	et.reserve(std::max(str1_len, str2_len));
 
@@ -218,10 +220,10 @@ std::string align(const ia::at_itn &i_itn, const ia::at_itn &j_itn,
 {
 
 	struct aln_args {
-		pt::idx_t i_len;
-		pt::idx_t j_len;
-		match_res_t (*eq)(const ia::at_itn &, pt::idx_t,
-				  const ia::at_itn &, pt::idx_t);
+		qt::idx_t i_len;
+		qt::idx_t j_len;
+		match_res_t (*eq)(const ia::at_itn &, qt::idx_t,
+				  const ia::at_itn &, qt::idx_t);
 		aln_scores_t scores;
 		aln_level_e level;
 	};

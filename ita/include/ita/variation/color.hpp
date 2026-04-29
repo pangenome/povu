@@ -1,15 +1,16 @@
 #ifndef IT_COLOR_HPP
 #define IT_COLOR_HPP
 
-#include "povu/common/core.hpp"	     // for pt constants
+#include <quilt/types.hpp> // for qt
+
 #include "povu/graph/bidirected.hpp" // for VG, bd
 #include "povu/graph/pvst.hpp"	     // for Tree, VertexBase
 
 namespace ita::color
 {
 inline constexpr std::string_view MODULE = "ita::colour";
-std::set<pt::u32> color_pvst(const bd::VG &g, const pvst::Tree &pvst,
-			     const std::set<pt::id_t> &to_call_ref_ids);
+std::set<qt::u32> color_pvst(const bd::VG &g, const pvst::Tree &pvst,
+			     const std::set<qt::id_t> &to_call_ref_ids);
 
 } // namespace ita::color
 

@@ -11,10 +11,10 @@
 #include <liteseq/refs.h>  // for ref_walk
 #include <liteseq/types.h> // for strand
 #include <quilt/shim.hpp>  // for format
+#include <quilt/types.hpp> // for qt
 
 #include "ita/variation/rov.hpp" // for RoV, var_type_e
 #include "povu/common/constants.hpp"
-#include "povu/common/core.hpp" // for pt, idx_t, id_t, op_t
 #include "povu/common/utils.hpp"
 #include "povu/graph/bidirected.hpp" // for bd, VG
 #include "povu/graph/pvst.hpp"	     // for VertexBase
@@ -28,7 +28,7 @@ namespace lq = liteseq;
 namespace pgt = povu::types::graph;
 
 // idx_in_hap, v_id, or_e
-using extended_step = std::tuple<pt::u32, pt::u32, pgt::or_e>;
+using extended_step = std::tuple<qt::u32, qt::u32, pgt::or_e>;
 using extended_walk = std::vector<extended_step>;
 
 using broad_step = extended_step;
@@ -38,15 +38,15 @@ using race = std::vector<broad_walk>;
 
 struct inv_slice {
 	const lq::ref_walk *ref_w;
-	pt::idx_t hap_idx;
-	pt::idx_t fwd_idx;
-	pt::idx_t rev_idx;
-	pt::idx_t len;
+	qt::idx_t hap_idx;
+	qt::idx_t fwd_idx;
+	qt::idx_t rev_idx;
+	qt::idx_t len;
 };
 
 struct inversions {
 	// (vertex idx, hap idx) pair to inv_slice
-	std::map<pt::op_t<pt::u32>, std::vector<inv_slice>> inv_slices;
+	std::map<qt::op_t<qt::u32>, std::vector<inv_slice>> inv_slices;
 
 	// --------------
 	// constructor(s)
@@ -64,7 +64,7 @@ struct inversions {
 	}
 
 	[[nodiscard]]
-	std::vector<inv_slice> get_slices_by_v_idx(pt::u32 v_idx) const
+	std::vector<inv_slice> get_slices_by_v_idx(qt::u32 v_idx) const
 	{
 		std::vector<inv_slice> result;
 		for (const auto &[key, inv_sls] : this->inv_slices) {
@@ -81,11 +81,11 @@ struct inversions {
 	}
 
 	[[nodiscard]]
-	std::map<pt::u32, std::vector<inv_slice>>
-	get_slices_by_hap_idx(pt::u32 hap_idx) const
+	std::map<qt::u32, std::vector<inv_slice>>
+	get_slices_by_hap_idx(qt::u32 hap_idx) const
 	{
 		// v idx to inv_slices
-		std::map<pt::u32, std::vector<inv_slice>> result;
+		std::map<qt::u32, std::vector<inv_slice>> result;
 		for (const auto &[key, inv_sls] : this->inv_slices) {
 			auto [v_idx, h_idx] = key;
 
@@ -103,18 +103,18 @@ struct inversions {
 	// setter(s)
 	// ---------
 
-	void add_inv_slice(pt::u32 v_idx, pt::u32 hap_idx, inv_slice &&inv_sl)
+	void add_inv_slice(qt::u32 v_idx, qt::u32 hap_idx, inv_slice &&inv_sl)
 	{
-		this->inv_slices[pt::op_t<pt::u32>{v_idx, hap_idx}]
+		this->inv_slices[qt::op_t<qt::u32>{v_idx, hap_idx}]
 			.emplace_back(inv_sl);
 	}
 };
 
 struct hap_slice {
 	const lq::ref_walk *ref_w;
-	pt::idx_t ref_idx;
-	pt::idx_t ref_start_idx;
-	pt::idx_t len;
+	qt::idx_t ref_idx;
+	qt::idx_t ref_start_idx;
+	qt::idx_t len;
 
 	// --------------
 	// constructor(s)
@@ -125,8 +125,8 @@ struct hap_slice {
 				 pc::INVALID_IDX};
 	}
 
-	hap_slice(const lq::ref_walk *ref_w_, pt::idx_t ref_idx_,
-		  pt::idx_t ref_start_idx_, pt::idx_t len_)
+	hap_slice(const lq::ref_walk *ref_w_, qt::idx_t ref_idx_,
+		  qt::idx_t ref_start_idx_, qt::idx_t len_)
 	    : ref_w(ref_w_), ref_idx(ref_idx_), ref_start_idx(ref_start_idx_),
 	      len(len_)
 	{}
@@ -147,9 +147,9 @@ struct hap_slice {
 	}
 
 	[[nodiscard]]
-	bd::id_or_t get_step(pt::idx_t idx) const
+	bd::id_or_t get_step(qt::idx_t idx) const
 	{
-		pt::idx_t ref_v_id = ref_w->v_ids[idx];
+		qt::idx_t ref_v_id = ref_w->v_ids[idx];
 		pgt::or_e ref_o = ref_w->strands[idx] == lq::strand::STRAND_FWD
 					  ? pgt::or_e::forward
 					  : pgt::or_e::reverse;
@@ -162,8 +162,8 @@ struct hap_slice {
 	{
 		std::string at_str = "";
 
-		pt::u32 i = ref_start_idx;
-		pt::u32 N = ref_start_idx + len;
+		qt::u32 i = ref_start_idx;
+		qt::u32 N = ref_start_idx + len;
 
 		for (; i < N; i++)
 			at_str += this->get_step(i).as_str();
@@ -175,8 +175,8 @@ struct hap_slice {
 	pgt::walk_t to_walk() const
 	{
 		pgt::walk_t w;
-		pt::u32 i = ref_start_idx;
-		pt::u32 N = ref_start_idx + len;
+		qt::u32 i = ref_start_idx;
+		qt::u32 N = ref_start_idx + len;
 
 		for (; i < N; i++)
 			w.emplace_back(this->get_step(i));
@@ -207,8 +207,8 @@ struct hap_slice {
 	{
 		std::string at_str = "";
 
-		pt::u32 i = ref_start_idx;
-		pt::u32 N = ref_start_idx + len;
+		qt::u32 i = ref_start_idx;
+		qt::u32 N = ref_start_idx + len;
 
 		switch (vt) {
 		case ir::var_type_e::sub:
@@ -231,9 +231,9 @@ struct hap_slice {
 	}
 
 	[[nodiscard]]
-	pt::u32 comp_pos(ir::var_type_e vt) const
+	qt::u32 comp_pos(ir::var_type_e vt) const
 	{
-		pt::idx_t locus = ref_w->loci[ref_start_idx + 1];
+		qt::idx_t locus = ref_w->loci[ref_start_idx + 1];
 
 		switch (vt) {
 		case ir::var_type_e::del:
@@ -257,8 +257,8 @@ struct hap_slice {
 	{
 		std::string dna_str = "";
 
-		pt::u32 i = ref_start_idx;
-		pt::u32 N = ref_start_idx + len;
+		qt::u32 i = ref_start_idx;
+		qt::u32 N = ref_start_idx + len;
 
 		switch (vt) {
 		case ir::var_type_e::subr:
@@ -303,7 +303,7 @@ struct at_itn {
 	// getter(s)
 	// ---------
 	[[nodiscard]]
-	pt::idx_t at_count() const
+	qt::idx_t at_count() const
 	{
 		return this->it_.size();
 	}
@@ -315,7 +315,7 @@ struct at_itn {
 	}
 
 	[[nodiscard]]
-	const pgt::walk_t &get_at(pt::idx_t at_idx) const
+	const pgt::walk_t &get_at(qt::idx_t at_idx) const
 	{
 		return this->it_[at_idx];
 	}
@@ -342,9 +342,9 @@ public:
 	{}
 
 	[[nodiscard]]
-	pt::op_t<pgt::id_or_t> get_bounds() const
+	qt::op_t<pgt::id_or_t> get_bounds() const
 	{
-		return pt::op_t<pgt::id_or_t>{this->l_, this->r_};
+		return qt::op_t<pgt::id_or_t>{this->l_, this->r_};
 	}
 
 	[[nodiscard]]
@@ -453,8 +453,8 @@ struct minimal_rov {
 private:
 	rov_boundaries cxt_ = rov_boundaries::create_null(); // context
 	hap_slice ref_as_ = hap_slice::create_null(); // reference allele slice
-	std::set<pt::u32> haps_matching_ref;
-	std::set<pt::u32> alt_haps_;
+	std::set<qt::u32> haps_matching_ref;
+	std::set<qt::u32> alt_haps_;
 
 	alt_set alts_; // alternative allele slices
 
@@ -470,7 +470,7 @@ public:
 	{}
 
 	minimal_rov(rov_boundaries cxt, hap_slice ref_as,
-		    std::set<pt::u32> ref_haps, std::set<pt::u32> alt_haps,
+		    std::set<qt::u32> ref_haps, std::set<qt::u32> alt_haps,
 		    alt_set &&min_rov_alt_set)
 	    : cxt_(cxt), ref_as_(ref_as),
 	      haps_matching_ref(std::move(ref_haps)),
@@ -496,30 +496,30 @@ public:
 		return this->cxt_;
 	}
 
-	[[nodiscard]] pt::u32 get_ref_len() const
+	[[nodiscard]] qt::u32 get_ref_len() const
 	{
 		return this->get_ref_as().len;
 	}
 
 	[[nodiscard]]
-	const std::set<pt::u32> &get_haps_matching_ref() const
+	const std::set<qt::u32> &get_haps_matching_ref() const
 	{
 		return this->haps_matching_ref;
 	}
 
 	[[nodiscard]]
-	const std::set<pt::u32> &get_alt_haps() const
+	const std::set<qt::u32> &get_alt_haps() const
 	{
 		return this->alt_haps_;
 	}
 
 	[[nodiscard]]
-	pt::u32 get_ref_at_ref_count() const
+	qt::u32 get_ref_at_ref_count() const
 	{
 		return this->haps_matching_ref.size();
 	}
 
-	void add_haps_match_ref(pt::u32 h_idx)
+	void add_haps_match_ref(qt::u32 h_idx)
 	{
 		this->haps_matching_ref.insert(h_idx);
 	}
@@ -579,21 +579,21 @@ private:
 	const ir::RoV *rov_;
 
 	// hap idx to context to minimal Rov map
-	std::map<pt::u32, cxt_to_min_rov_map> data_;
+	std::map<qt::u32, cxt_to_min_rov_map> data_;
 
 	// key is the ref and value is the set of haps that do not cover the RoV
-	std::map<pt::u32, std::set<pt::u32>> no_cov; // do not cover at all
+	std::map<qt::u32, std::set<qt::u32>> no_cov; // do not cover at all
 
 	// key is the ref and value is the set of haps that match the ref
-	std::map<pt::u32, std::set<pt::u32>> matches_ref;
+	std::map<qt::u32, std::set<qt::u32>> matches_ref;
 
 	bool tangled_{false}; // is true when tangling exists
-	const pt::u32 HAP_COUNT{pc::INVALID_IDX};
+	const qt::u32 HAP_COUNT{pc::INVALID_IDX};
 
 	// ----------------------
 	// private constructor(s)
 	// ----------------------
-	trek(const ir::RoV *rov, pt::u32 hap_count, bool tangled = false)
+	trek(const ir::RoV *rov, qt::u32 hap_count, bool tangled = false)
 	    : rov_(rov), tangled_(tangled), HAP_COUNT(hap_count)
 	{}
 
@@ -604,7 +604,7 @@ public:
 	trek() = delete;
 
 	[[nodiscard]]
-	static trek create_new(const ir::RoV *rov, pt::u32 hap_count,
+	static trek create_new(const ir::RoV *rov, qt::u32 hap_count,
 			       bool tangled)
 	{
 		return {rov, hap_count, tangled};
@@ -621,7 +621,7 @@ public:
 	}
 
 	[[nodiscard]]
-	cxt_to_min_rov_map &get_min_rov(pt::u32 h_idx)
+	cxt_to_min_rov_map &get_min_rov(qt::u32 h_idx)
 	{
 		return this->data_[h_idx];
 	}
@@ -639,20 +639,20 @@ public:
 	}
 
 	[[nodiscard]]
-	pt::u32 get_hap_count() const
+	qt::u32 get_hap_count() const
 	{
 		return this->HAP_COUNT;
 	}
 
 	// TODO: replace with a set member of the struct
 	[[nodiscard]]
-	std::set<pt::u32> get_ref_haps() const
+	std::set<qt::u32> get_ref_haps() const
 	{
-		std::set<pt::u32> ref_haps;
+		std::set<qt::u32> ref_haps;
 		for (const auto &[ref_h_idx, _] : this->data_)
 			ref_haps.insert(ref_h_idx);
 
-		// for (pt::u32 ref_h_idx{}; ref_h_idx < HAP_COUNT; ref_h_idx++)
+		// for (qt::u32 ref_h_idx{}; ref_h_idx < HAP_COUNT; ref_h_idx++)
 		//	if (data[ref_h_idx] != nullptr)
 		//		ref_haps.insert(ref_h_idx);
 
@@ -660,31 +660,31 @@ public:
 	}
 
 	[[nodiscard]]
-	const cxt_to_min_rov_map &get_ref_recs(pt::u32 ref_h_idx) const
+	const cxt_to_min_rov_map &get_ref_recs(qt::u32 ref_h_idx) const
 	{
 		return this->data_.at(ref_h_idx);
 	}
 
 	[[nodiscard]]
-	cxt_to_min_rov_map &get_ref_recs_mut(pt::u32 ref_h_idx)
+	cxt_to_min_rov_map &get_ref_recs_mut(qt::u32 ref_h_idx)
 	{
 		return this->data_.at(ref_h_idx);
 	}
 
-	void set_min_rov(pt::u32 ref_h_idx, cxt_to_min_rov_map &&e)
+	void set_min_rov(qt::u32 ref_h_idx, cxt_to_min_rov_map &&e)
 	{
 		this->data_.insert({ref_h_idx, e});
 	}
 
 	[[nodiscard]]
-	const std::set<pt::u32> get_match_ref(pt::u32 ref_h_idx) const
+	const std::set<qt::u32> get_match_ref(qt::u32 ref_h_idx) const
 	{
 		// TODO: handle key not existing
 		return this->matches_ref.at(ref_h_idx);
 	}
 
 	[[nodiscard]]
-	const std::set<pt::u32> get_no_cov(pt::u32 ref_h_idx) const
+	const std::set<qt::u32> get_no_cov(qt::u32 ref_h_idx) const
 	{
 		// TODO: handle key not existing
 		return this->no_cov.at(ref_h_idx);
@@ -694,19 +694,19 @@ public:
 	// setter(s)
 	// ---------
 
-	// void init_ref_idx(pt::u32 ref_h_idx)
+	// void init_ref_idx(qt::u32 ref_h_idx)
 	// {
 	//	// TODO: [A] memory leak
 	//	if (data[ref_h_idx] == nullptr)
 	//		data[ref_h_idx] = new cxt_to_min_rov_map();
 	// }
 
-	void add_no_cov(pt::u32 ref_h_idx, pt::u32 h_idx)
+	void add_no_cov(qt::u32 ref_h_idx, qt::u32 h_idx)
 	{
 		this->no_cov[ref_h_idx].insert(h_idx);
 	}
 
-	void add_match_ref(pt::u32 ref_h_idx, pt::u32 h_idx)
+	void add_match_ref(qt::u32 ref_h_idx, qt::u32 h_idx)
 	{
 		this->matches_ref[ref_h_idx].insert(h_idx);
 	}
@@ -743,7 +743,7 @@ public:
 			}
 		}
 
-		// for (pt::u32 ref_h_idx{}; ref_h_idx < data.size();
+		// for (qt::u32 ref_h_idx{}; ref_h_idx < data.size();
 		//      ref_h_idx++) {
 		//	cxt_to_min_rov_map *d = data[ref_h_idx];
 		//	if (d == nullptr)
@@ -773,16 +773,16 @@ public:
 
 struct depth_matrix {
 private:
-	std::vector<pt::u32> data;
+	std::vector<qt::u32> data;
 
-	pt::u32 I; // haps (rows)
-	pt::u32 J; // vertices in BFS tree (cols)
+	qt::u32 I; // haps (rows)
+	qt::u32 J; // vertices in BFS tree (cols)
 
-	pt::u32 max_depth{0};
+	qt::u32 max_depth{0};
 
-	std::map<pt::u32, pt::u32> hap_idx_to_loop_no;
+	std::map<qt::u32, qt::u32> hap_idx_to_loop_no;
 
-	std::vector<pt::u32> sorted_vertices;
+	std::vector<qt::u32> sorted_vertices;
 
 	bool is_tangled{false};
 
@@ -795,13 +795,13 @@ public:
 	depth_matrix() = delete;
 
 	[[nodiscard]]
-	depth_matrix(pt::u32 i, pt::u32 j)
+	depth_matrix(qt::u32 i, qt::u32 j)
 	    : data(i * j, 0), I(i), J(j)
 	{}
 
 	// use this for debugging especially
 	[[nodiscard]]
-	depth_matrix(pt::u32 i, pt::u32 j, const std::vector<pt::u32> &sv)
+	depth_matrix(qt::u32 i, qt::u32 j, const std::vector<qt::u32> &sv)
 	    : data(i * j, 0), I(i), J(j), sorted_vertices(sv)
 	{}
 
@@ -810,39 +810,39 @@ public:
 	// ---------
 
 	[[nodiscard]]
-	const std::vector<pt::u32> &get_header() const
+	const std::vector<qt::u32> &get_header() const
 	{
 		return this->sorted_vertices;
 	}
 
 	[[nodiscard]]
-	std::vector<pt::u32> get_col_data(pt::u32 j) const
+	std::vector<qt::u32> get_col_data(qt::u32 j) const
 	{
-		std::vector<pt::u32> col_data(I, 0);
-		for (pt::u32 i{}; i < I; i++)
+		std::vector<qt::u32> col_data(I, 0);
+		for (qt::u32 i{}; i < I; i++)
 			col_data[i] = data[i * J + j];
 
 		return col_data;
 	}
 
 	[[nodiscard]]
-	std::vector<pt::u32> get_row_data(pt::u32 i) const
+	std::vector<qt::u32> get_row_data(qt::u32 i) const
 	{
-		std::vector<pt::u32> row_data;
+		std::vector<qt::u32> row_data;
 		row_data.reserve(J);
-		for (pt::u32 j{}; j < J; j++)
+		for (qt::u32 j{}; j < J; j++)
 			row_data.push_back(data[i * J + j]);
 
 		return row_data;
 	}
 
-	void set_loop_no(pt::u32 h_idx, pt::u32 loop_no)
+	void set_loop_no(qt::u32 h_idx, qt::u32 loop_no)
 	{
 		this->hap_idx_to_loop_no[h_idx] = loop_no;
 	}
 
 	[[nodiscard]]
-	pt::u32 get_loop_no(pt::u32 h_idx) const
+	qt::u32 get_loop_no(qt::u32 h_idx) const
 	{
 		if (!this->is_tangled)
 			return 0;
@@ -854,13 +854,13 @@ public:
 	}
 
 	[[nodiscard]]
-	pt::u32 row_count() const
+	qt::u32 row_count() const
 	{
 		return I;
 	}
 
 	[[nodiscard]]
-	pt::u32 col_count() const
+	qt::u32 col_count() const
 	{
 		return J;
 	}
@@ -871,13 +871,13 @@ public:
 	}
 
 	[[nodiscard]]
-	pt::u32 get_depth(pt::u32 i, pt::u32 j) const
+	qt::u32 get_depth(qt::u32 i, qt::u32 j) const
 	{
 		return this->get_data()[i * J + j];
 	}
 
 	[[nodiscard]]
-	pt::u32 get_max_depth() const
+	qt::u32 get_max_depth() const
 	{
 		return this->max_depth;
 	}
@@ -896,14 +896,14 @@ public:
 		// fill column-wise
 		// row wise is more cache friendly, but needs
 		// a method in bd::VG to get haplotypes per haplotype
-		for (pt::u32 h_idx{}; h_idx < I; h_idx++) {
-			for (pt::u32 j{}; j < J; j++) {
-				pt::u32 v_id = rov.get_sorted_vertex(j);
+		for (qt::u32 h_idx{}; h_idx < I; h_idx++) {
+			for (qt::u32 j{}; j < J; j++) {
+				qt::u32 v_id = rov.get_sorted_vertex(j);
 
-				pt::u32 v_idx = g.v_id_to_idx(v_id);
-				const std::vector<pt::idx_t> &ref_idxs =
+				qt::u32 v_idx = g.v_id_to_idx(v_id);
+				const std::vector<qt::idx_t> &ref_idxs =
 					g.get_vertex_ref_idxs(v_idx, h_idx);
-				pt::u32 depth = ref_idxs.size();
+				qt::u32 depth = ref_idxs.size();
 
 				if (depth == 0)
 					continue;
@@ -912,7 +912,7 @@ public:
 					const lq::ref_walk *h_w =
 						g.get_ref_vec(h_idx)
 							->walk;	 // the hap walk
-					pt::u32 k = ref_idxs[0]; // index in the
+					qt::u32 k = ref_idxs[0]; // index in the
 								 // hap walk
 					pgt::or_e orn =
 						h_w->strands[k] ==
@@ -952,18 +952,18 @@ public:
 	}
 
 	[[nodiscard]]
-	const std::vector<pt::u32> get_data() const
+	const std::vector<qt::u32> get_data() const
 	{
 		return this->data;
 	}
 
 	[[nodiscard]]
-	std::vector<pt::u32> &get_data_mut()
+	std::vector<qt::u32> &get_data_mut()
 	{
 		return this->data;
 	}
 
-	void set_data(pt::u32 i, pt::u32 j, pt::u32 d)
+	void set_data(qt::u32 i, qt::u32 j, qt::u32 d)
 	{
 		this->data[i * J + j] = d;
 	}
@@ -986,7 +986,7 @@ public:
 		os << "\n";
 
 		// print rows
-		for (pt::u32 i{}; i < I; i++) {
+		for (qt::u32 i{}; i < I; i++) {
 			os << i << "\t"
 			   << pu::concat_with(get_row_data(i), '\t');
 			os << "\n";

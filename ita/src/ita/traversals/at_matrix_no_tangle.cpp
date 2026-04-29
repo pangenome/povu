@@ -1,15 +1,12 @@
 #include <utility>
 
-#include <liteseq/refs.h> // for ref_walk, ref
-
-#include <quilt/types.hpp>
-
+#include <liteseq/refs.h>     // for ref_walk, ref
 #include <meza/pool/pool.hpp> // for pool
+#include <quilt/types.hpp>    // for qt
 
 #include "ita/traversals/at_matrix.hpp" // for rov_job_batch, mat3, mat3_item, hap2loop
 #include "ita/traversals/depth_matrix.hpp" // for depth_matrix, comp_depth_matrix
 #include "ita/variation/rov.hpp"	   // for RoV
-#include "povu/common/core.hpp"		   // for pt
 
 namespace ita::at_matrix::no_tangle
 {
@@ -44,7 +41,7 @@ void populate_ref2(const qt::u32 I, const qt::u32 J, qt::u32 ref_i,
 }
 
 void from_no_tangle(const ir::RoV *rov,
-		    const std::set<pt::u32> &to_call_ref_ids,
+		    const std::set<qt::u32> &to_call_ref_ids,
 		    const ita::depth_matrix::depth_matrix dm, pool_t &p,
 		    rov_job_batch &batch)
 {
@@ -53,7 +50,7 @@ void from_no_tangle(const ir::RoV *rov,
 
 	rov_job j{rov, I, {}};
 
-	for (const pt::u32 ref_h_idx : to_call_ref_ids) {
+	for (const qt::u32 ref_h_idx : to_call_ref_ids) {
 		auto ref_mat = p.alloc_ov_matrix<std::string, std::string>(
 			I, J, region_ref);
 
