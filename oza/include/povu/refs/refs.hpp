@@ -4,7 +4,6 @@
 #include <iostream>
 #include <map>
 #include <optional>
-#include <ostream>
 #include <set>
 #include <string>
 #include <string_view>
@@ -17,7 +16,7 @@
 #include "povu/common/utils.hpp"
 #include "povu/graph/types.hpp"
 
-namespace povu::refs
+namespace oza::refs
 {
 inline constexpr std::string_view MODULE = "povu::refs";
 namespace lq = liteseq;
@@ -424,9 +423,9 @@ public:
 	}
 };
 
-}; // namespace povu::refs
+}; // namespace oza::refs
 
 // NOLINTNEXTLINE(misc-unused-alias-decls)
-namespace pr = povu::refs;
+namespace pr = oza::refs;
 
 #endif // POVU_REFS_HPP

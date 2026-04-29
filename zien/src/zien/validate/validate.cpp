@@ -12,14 +12,14 @@
 #include "povu/common/core.hpp"
 #include "povu/graph/bidirected.hpp" // for bidirected
 #include "povu/graph/types.hpp"	     // for or_e
-#include "povu/refs/refs.hpp"	     // for Ref
 #include "zien/common/common.hpp"    // for get_ref_ids
+
+#include <povu/refs/refs.hpp> // for ref_format_e, Ref
 
 namespace zien::validate
 {
 namespace lq = liteseq;
-
-constexpr povu::refs::ref_format_e PN = povu::refs::ref_format_e::PANSN;
+constexpr oza::refs::ref_format_e PN = oza::refs::ref_format_e::PANSN;
 
 ptg::walk_t at_to_walk(const std::string &at)
 {
@@ -116,7 +116,7 @@ std::set<pt::id_t> get_ref_ids_phased(const bd::VG &g, const std::string &sn,
 
 	std::set<pt::id_t> filtered_ref_ids;
 	for (pt::id_t r_id : ref_ids) {
-		const povu::refs::Ref &r = g.get_ref_by_id(r_id);
+		const oza::refs::Ref &r = g.get_ref_by_id(r_id);
 
 		// TODO: find a better way to handle non PANSN
 		if (r.get_format() != PN) // just trust it

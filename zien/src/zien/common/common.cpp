@@ -9,6 +9,8 @@
 #include "povu/common/core.hpp"	     // for pt
 #include "povu/graph/bidirected.hpp" // for bidirected
 
+#include <povu/refs/refs.hpp> // for Ref
+
 namespace zien::common
 {
 
@@ -28,7 +30,7 @@ std::set<pt::id_t> get_ref_ids_phased(const bd::VG &g, const std::string &sn,
 
 	std::set<pt::id_t> filtered_ref_ids;
 	for (pt::id_t r_id : ref_ids) {
-		const povu::refs::Ref &r = g.get_ref_by_id(r_id);
+		const oza::refs::Ref &r = g.get_ref_by_id(r_id);
 
 		// TODO: find a better way to handle non PANSN
 		if (r.get_format() != PN) // just trust it

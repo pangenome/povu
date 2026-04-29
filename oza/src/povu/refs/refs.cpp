@@ -1,8 +1,10 @@
 #include "povu/refs/refs.hpp"
-#include "povu/graph/types.hpp"
+
 #include <liteseq/gfa.h>
 
-namespace povu::refs
+#include "povu/graph/types.hpp"
+
+namespace oza::refs
 {
 
 std::string to_string(ref_format_e r)
@@ -24,4 +26,4 @@ ptg::or_e lq_strand_to_pv_or(liteseq::strand s)
 					   : ptg::or_e::reverse;
 }
 
-}; // namespace povu::refs
+}; // namespace oza::refs

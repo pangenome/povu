@@ -169,9 +169,9 @@ void gen_inv_recs(const bd::VG &g, const ist::st &it_,
 			pt::u32 s = ref_h_start;
 			pt::u32 t = ref_h_start + len - 1;
 
-			char sc = povu::refs::lq_strand_to_char(
+			char sc = oza::refs::lq_strand_to_char(
 				ref_h_w->strands[s]);
-			char tc = povu::refs::lq_strand_to_char(
+			char tc = oza::refs::lq_strand_to_char(
 				ref_h_w->strands[t]);
 
 			// forwardise

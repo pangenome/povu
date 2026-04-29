@@ -5,10 +5,12 @@
 #include "zien/common/common.hpp"	  // for comp_update_refs
 #include "zien/components/components.hpp" // for status_bar
 
+#include <povu/refs/refs.hpp> // for ref_format_e, Ref, lq_strand_to_char
+
 namespace zien::components::common
 {
 namespace lq = liteseq;
-constexpr povu::refs::ref_format_e PN = povu::refs::ref_format_e::PANSN;
+constexpr oza::refs::ref_format_e PN = oza::refs::ref_format_e::PANSN;
 using namespace zien::components;
 
 pt::id_t extract_anchor_v_id(const std::string &at)
@@ -45,7 +47,7 @@ std::set<pt::id_t> get_ref_ids(const bd::VG &g, const std::string &sn,
 	std::set<pt::id_t> filtered_ref_ids;
 
 	for (pt::id_t r_id : g.get_refs_in_sample(sn)) {
-		const povu::refs::Ref &r = g.get_ref_by_id(r_id);
+		const oza::refs::Ref &r = g.get_ref_by_id(r_id);
 
 		// TODO: find a better way to handle non PANSN
 		if (r.get_format() != PN) // just trust it
@@ -144,7 +146,7 @@ void comp_update_refs(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 					}
 
 					pt::id_t v_id = rw->v_ids[i];
-					char o = povu::refs::lq_strand_to_char(
+					char o = oza::refs::lq_strand_to_char(
 						rw->strands[i]);
 					// char o = lq_strand_to_or_e(
 					//	rw->strands[i]);
