@@ -31,7 +31,7 @@
 namespace povu::subcommands::decompose
 {
 namespace ptu = oza::tree_utils;
-namespace pfl = povu::flubbles;
+namespace pfl = oza::flubbles;
 
 void decompose_component(bd::VG *g, std::size_t component_id,
 			 const core::config &app_config)
@@ -62,11 +62,11 @@ void decompose_component(bd::VG *g, std::size_t component_id,
 
 	if (app_config.find_subflubbles()) {
 		ptu::tree_meta tm = ptu::gen_tree_meta(st);
-		povu::tiny::find_tiny(st, flubble_tree, tm);
-		povu::parallel::find_parallel(st, flubble_tree, tm);
-		povu::concealed::find_concealed(st, flubble_tree, tm);
-		povu::midi::find_midi(st, flubble_tree, tm);
-		povu::smothered::find_smothered(st, flubble_tree, tm);
+		oza::tiny::find_tiny(st, flubble_tree, tm);
+		oza::parallel::find_parallel(st, flubble_tree, tm);
+		oza::concealed::find_concealed(st, flubble_tree, tm);
+		oza::midi::find_midi(st, flubble_tree, tm);
+		oza::smothered::find_smothered(st, flubble_tree, tm);
 	}
 
 	mto::to_pvst::write_pvst(flubble_tree, std::to_string(component_id),

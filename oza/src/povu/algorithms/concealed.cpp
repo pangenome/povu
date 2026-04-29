@@ -16,7 +16,7 @@
 #include "povu/common/compat.hpp" // for pv_cmp, format, erase_if
 #include "povu/common/core.hpp"	  // for pt, idx_t, id_t
 
-namespace povu::concealed
+namespace oza::concealed
 {
 
 /*
@@ -1241,4 +1241,4 @@ void find_concealed(const pst::Tree &st, pvst::Tree &ft,
 		update_pvst::add_concealed(st, ft, tm, sl);
 	}
 }
-} // namespace povu::concealed
+} // namespace oza::concealed

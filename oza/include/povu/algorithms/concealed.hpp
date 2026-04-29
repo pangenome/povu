@@ -9,7 +9,7 @@
 #include "povu/graph/tree_utils.hpp"	// for tree_meta
 #include "povu/graph/types.hpp"		// for graph
 
-namespace povu::concealed
+namespace oza::concealed
 {
 
 inline constexpr std::string_view MODULE = "povu::concealed";
@@ -23,5 +23,5 @@ namespace ptu = oza::tree_utils;
 
 void find_concealed(const pst::Tree &st, pvst::Tree &ft,
 		    const ptu::tree_meta &tm);
-} // namespace povu::concealed
+} // namespace oza::concealed
 #endif // PV_CONCEALED_HPP

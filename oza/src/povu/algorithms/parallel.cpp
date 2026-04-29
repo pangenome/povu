@@ -8,7 +8,7 @@
 #include "povu/common/compat.hpp" // for format, pv_cmp
 #include "povu/common/core.hpp"	  // for idx_t, pt
 
-namespace povu::parallel
+namespace oza::parallel
 {
 
 bool inspect_trunk(const pst::Tree &st, pt::idx_t ai, pt::idx_t zi)
@@ -286,4 +286,4 @@ void find_parallel(const pst::Tree &st, pvst::Tree &ft,
 	}
 }
 
-} // namespace povu::parallel
+} // namespace oza::parallel

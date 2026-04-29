@@ -7,7 +7,7 @@
 #include "povu/graph/pvst.hpp"
 #include "povu/graph/spanning_tree.hpp"
 
-namespace pfl = povu::flubbles;
+namespace pfl = oza::flubbles;
 
 bd::VG *create_test_vg()
 {

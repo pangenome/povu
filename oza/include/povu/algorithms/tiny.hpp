@@ -9,7 +9,7 @@
 #include "povu/graph/tree_utils.hpp"	// for tree_meta
 #include "povu/graph/types.hpp"		// for graph
 
-namespace povu::tiny
+namespace oza::tiny
 {
 inline constexpr std::string_view MODULE = "povu::tiny";
 
@@ -21,5 +21,5 @@ namespace pgt = povu::types::graph;
 
 void find_tiny(const pst::Tree &st, pvst::Tree &pvst, const ptu::tree_meta &tm);
 
-} // namespace povu::tiny
+} // namespace oza::tiny
 #endif // PV_TINY_HPP

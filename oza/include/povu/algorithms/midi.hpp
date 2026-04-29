@@ -9,7 +9,7 @@
 #include "povu/graph/tree_utils.hpp"	// for tree_meta
 #include "povu/graph/types.hpp"		// for graph
 
-namespace povu::midi
+namespace oza::midi
 {
 inline constexpr std::string_view MODULE = "povu::misc";
 
@@ -21,6 +21,6 @@ namespace pc = povu::constants;
 namespace ptu = oza::tree_utils;
 
 void find_midi(const pst::Tree &st, pvst::Tree &pvst, const ptu::tree_meta &tm);
-} // namespace povu::midi
+} // namespace oza::midi
 
 #endif // PV_MISC_HPP

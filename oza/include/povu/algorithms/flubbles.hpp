@@ -13,7 +13,7 @@
 #include "povu/graph/tree_utils.hpp"	// for tree_utils
 #include "povu/graph/types.hpp"		// for or_e
 
-namespace povu::flubbles
+namespace oza::flubbles
 {
 inline constexpr std::string_view MODULE = "povu::graph::flubble_tree";
 
@@ -59,5 +59,5 @@ struct eq_class_stack_t {
  *
  */
 pvst::Tree find_flubbles(pst::Tree &t, const core::config &app_config);
-} // namespace povu::flubbles
+} // namespace oza::flubbles
 #endif

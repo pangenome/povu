@@ -14,7 +14,7 @@
 #include "povu/common/compat.hpp" // for format, pv_cmp
 #include "povu/common/core.hpp"	  // for pt, idx_t
 
-namespace povu::smothered
+namespace oza::smothered
 {
 
 struct fl_sls {
@@ -430,4 +430,4 @@ void find_smothered(const pst::Tree &st, pvst::Tree &ft,
 	add_smothered(st, ft, all_smo);
 }
 
-} // namespace povu::smothered
+} // namespace oza::smothered

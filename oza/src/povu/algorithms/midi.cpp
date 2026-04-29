@@ -13,7 +13,7 @@
 #include "povu/common/core.hpp"	  // for pt, idx_t
 #include "povu/common/log.hpp"	  // for WARN, ERR
 
-namespace povu::midi
+namespace oza::midi
 {
 
 // add midi bubbles to the PVST
@@ -266,4 +266,4 @@ void find_midi(const pst::Tree &st, pvst::Tree &pvst, const ptu::tree_meta &tm)
 
 	add_midi(tm, x, pvst);
 }
-} // namespace povu::midi
+} // namespace oza::midi

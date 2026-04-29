@@ -9,7 +9,7 @@
 #include "povu/graph/tree_utils.hpp"	// for tree_meta
 #include "povu/graph/types.hpp"		// for graph
 
-namespace povu::smothered
+namespace oza::smothered
 {
 inline constexpr std::string_view MODULE = "povu::smothered";
 
@@ -22,6 +22,6 @@ namespace ptu = oza::tree_utils;
 
 void find_smothered(const pst::Tree &st, pvst::Tree &ft,
 		    const ptu::tree_meta &tm);
-} // namespace povu::smothered
+} // namespace oza::smothered
 
 #endif // PV_SMOTHERED_HPP

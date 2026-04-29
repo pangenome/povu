@@ -9,7 +9,7 @@
 #include "povu/graph/tree_utils.hpp"	// for tree_meta
 #include "povu/graph/types.hpp"		// for graph
 
-namespace povu::parallel
+namespace oza::parallel
 {
 inline constexpr std::string_view MODULE = "povu::parallel";
 
@@ -22,5 +22,5 @@ namespace pst = oza::spanning_tree;
 void find_parallel(const pst::Tree &st, pvst::Tree &ft,
 		   const ptu::tree_meta &tm);
 
-} // namespace povu::parallel
+} // namespace oza::parallel
 #endif // PV_PARALLEL_HPP

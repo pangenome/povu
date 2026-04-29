@@ -9,7 +9,7 @@
 #include "povu/common/compat.hpp" // for format, pv_cmp
 #include "povu/common/core.hpp"	  // for pt, idx_t
 
-namespace povu::tiny
+namespace oza::tiny
 {
 
 /**
@@ -128,4 +128,4 @@ void find_tiny(const pst::Tree &st, pvst::Tree &ft, const ptu::tree_meta &tm)
 	}
 }
 
-} // namespace povu::tiny
+} // namespace oza::tiny

@@ -18,7 +18,7 @@
 #include "povu/common/compat.hpp"      // for pv_cmp, format, contains
 #include "povu/graph/bracket_list.hpp" // for Bracket
 
-namespace povu::flubbles
+namespace oza::flubbles
 {
 
 [[nodiscard]] constexpr pvst::endpoints
@@ -512,4 +512,4 @@ pvst::Tree find_flubbles(pst::Tree &st, const core::config &app_config)
 	return pvst;
 }
 
-} // namespace povu::flubbles
+} // namespace oza::flubbles
