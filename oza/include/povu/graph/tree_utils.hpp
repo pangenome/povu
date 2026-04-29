@@ -15,7 +15,7 @@
 #include "povu/graph/spanning_tree.hpp" // for Tree
 #include "povu/graph/types.hpp"		// for graph
 
-namespace povu::tree_utils
+namespace oza::tree_utils
 {
 inline constexpr std::string_view MODULE = "povu::tree_utils";
 using namespace povu::types::graph;
@@ -134,6 +134,6 @@ struct tree_meta {
 pt::idx_t find_lca(const tree_meta &tm, std::vector<pt::idx_t> &vtxs);
 tree_meta gen_tree_meta(const pst::Tree &st);
 BranchDesc br_desc(const pst::Tree &st);
-} // namespace povu::tree_utils
+} // namespace oza::tree_utils
 
 #endif

@@ -12,7 +12,7 @@
 #include "povu/graph/spanning_tree.hpp" // for Tree, BackEdge, Vertex, be_t...
 #include "povu/graph/tree_utils.hpp"
 
-namespace povu::tree_utils
+namespace oza::tree_utils
 {
 
 // compute the branching descendants of each vertex
@@ -687,4 +687,4 @@ tree_meta gen_tree_meta(const pst::Tree &st)
 
 	return tm;
 }
-} // namespace povu::tree_utils
+} // namespace oza::tree_utils

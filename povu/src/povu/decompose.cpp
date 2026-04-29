@@ -30,7 +30,7 @@
 
 namespace povu::subcommands::decompose
 {
-namespace ptu = povu::tree_utils;
+namespace ptu = oza::tree_utils;
 namespace pfl = povu::flubbles;
 
 void decompose_component(bd::VG *g, std::size_t component_id,

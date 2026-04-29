@@ -18,7 +18,7 @@ namespace povu::flubbles
 inline constexpr std::string_view MODULE = "povu::graph::flubble_tree";
 
 namespace pc = povu::constants;
-namespace ptu = povu::tree_utils;
+namespace ptu = oza::tree_utils;
 namespace pvst = oza::pvst;
 namespace pgt = povu::types::graph;
 namespace pst = oza::spanning_tree;

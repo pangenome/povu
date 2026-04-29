@@ -18,7 +18,7 @@ namespace pc = povu::constants;
 namespace pst = oza::spanning_tree;
 namespace pvst = oza::pvst;
 namespace pc = povu::constants;
-namespace ptu = povu::tree_utils;
+namespace ptu = oza::tree_utils;
 
 void find_smothered(const pst::Tree &st, pvst::Tree &ft,
 		    const ptu::tree_meta &tm);

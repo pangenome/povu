@@ -14,7 +14,7 @@ namespace povu::tiny
 inline constexpr std::string_view MODULE = "povu::tiny";
 
 namespace pc = povu::constants;
-namespace ptu = povu::tree_utils;
+namespace ptu = oza::tree_utils;
 namespace pst = oza::spanning_tree;
 namespace pvst = oza::pvst;
 namespace pgt = povu::types::graph;
