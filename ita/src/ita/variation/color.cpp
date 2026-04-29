@@ -11,7 +11,7 @@
 
 namespace ita::color
 {
-namespace pvst = povu::pvst;
+namespace pvst = oza::pvst;
 
 bool has_any_refs(const bd::VG &g, const std::set<pt::id_t> &to_call_ref_ids,
 		  pt::u32 s_v_idx, pt::u32 t_v_idx)

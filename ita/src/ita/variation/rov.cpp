@@ -19,7 +19,7 @@
 namespace ita::rov
 {
 namespace pgg = povu::genomics::graph;
-namespace pvst = povu::pvst;
+namespace pvst = oza::pvst;
 namespace lq = liteseq;
 
 std::ostream &operator<<(std::ostream &os, var_type_e vt)

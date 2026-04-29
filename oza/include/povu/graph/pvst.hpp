@@ -17,7 +17,7 @@
 
 /* === PVST pangenome variation structure tree === */
 
-namespace povu::pvst
+namespace oza::pvst
 {
 inline constexpr std::string_view MODULE = "povu::pvst";
 
@@ -935,9 +935,9 @@ public:
 	}
 };
 
-} // namespace povu::pvst
+} // namespace oza::pvst
 
 #endif
 
 // NOLINTNEXTLINE(misc-unused-alias-decls)
-namespace pvst = povu::pvst;
+namespace pvst = oza::pvst;

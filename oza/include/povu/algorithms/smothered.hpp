@@ -16,7 +16,7 @@ inline constexpr std::string_view MODULE = "povu::smothered";
 namespace pgt = povu::types::graph;
 namespace pc = povu::constants;
 namespace pst = oza::spanning_tree;
-namespace pvst = povu::pvst;
+namespace pvst = oza::pvst;
 namespace pc = povu::constants;
 namespace ptu = povu::tree_utils;
 

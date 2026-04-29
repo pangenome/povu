@@ -15,7 +15,7 @@
 namespace ita::vcf
 {
 namespace lq = liteseq;
-namespace pvst = povu::pvst;
+namespace pvst = oza::pvst;
 
 std::ostream &operator<<(std::ostream &os, var_class_e vc)
 {

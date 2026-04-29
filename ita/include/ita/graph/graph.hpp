@@ -15,7 +15,7 @@
 namespace povu::genomics::graph
 {
 inline constexpr std::string_view MODULE = "povu::genomics::graph";
-namespace pvst = povu::pvst;
+namespace pvst = oza::pvst;
 namespace pgt = povu::types::graph;
 
 // Maximum number of steps to take from flubble start to end

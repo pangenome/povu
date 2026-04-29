@@ -15,7 +15,7 @@ inline constexpr std::string_view MODULE = "povu::parallel";
 
 namespace pc = povu::constants;
 namespace ptu = povu::tree_utils;
-namespace pvst = povu::pvst;
+namespace pvst = oza::pvst;
 namespace pgt = povu::types::graph;
 namespace pst = oza::spanning_tree;
 

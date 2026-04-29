@@ -27,7 +27,7 @@ namespace mto::from_pvst
 {
 using povu::types::graph::id_or_t;
 namespace pgt = povu::types::graph;
-namespace pvst = povu::pvst;
+namespace pvst = oza::pvst;
 namespace pc = povu::constants;
 namespace pu = povu::utils;
 

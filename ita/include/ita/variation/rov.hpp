@@ -13,7 +13,7 @@
 namespace ita::rov
 {
 inline constexpr std::string_view MODULE = "povu::genomics::rov";
-namespace pvst = povu::pvst;
+namespace pvst = oza::pvst;
 namespace pgt = povu::types::graph;
 
 enum class var_type_e : pt::u8 {
