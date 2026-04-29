@@ -15,7 +15,6 @@
 namespace mto::from_gfa
 {
 namespace lq = liteseq;
-namespace bd = povu::bidirected;
 namespace pgt = povu::types::graph;
 
 inline lq::gfa_config gen_lq_conf(const core::config &app_config,

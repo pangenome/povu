@@ -14,7 +14,6 @@
 
 namespace povu::subcommands::info
 {
-namespace bd = povu::bidirected;
 
 void do_info(const core::config &app_config)
 {

@@ -27,7 +27,6 @@
 namespace ita::vcf
 {
 inline constexpr std::string_view MODULE = "povu::genomics::vcf";
-namespace bd = povu::bidirected;
 namespace pgt = povu::types::graph;
 
 enum class var_class_e : pt::u8 { // variation class

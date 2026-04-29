@@ -30,7 +30,6 @@ namespace mto::to_vcf
 {
 inline constexpr std::string_view MODULE = "povu::io::to_vcf";
 namespace fs = std::filesystem;
-namespace bd = povu::bidirected;
 
 class VcfOutput
 {

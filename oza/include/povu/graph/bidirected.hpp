@@ -18,7 +18,7 @@
 #include "povu/graph/types.hpp"	 // for v_end_e, side_n_id_t, side_n_idx_t
 #include "povu/refs/refs.hpp"	 // for pr, Ref, Refs
 
-namespace povu::bidirected
+namespace oza::bidirected
 {
 inline constexpr std::string_view MODULE = "povu::bidirected";
 
@@ -209,9 +209,9 @@ public:
 };
 
 using VG = VariationGraph;
-} // namespace povu::bidirected
+} // namespace oza::bidirected
 
 // NOLINTNEXTLINE(misc-unused-alias-decls)
-namespace bd = povu::bidirected;
+namespace bd = oza::bidirected;
 
 #endif

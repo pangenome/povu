@@ -15,7 +15,7 @@
 #include "povu/common/core.hpp"
 #include "povu/graph/types.hpp" // for v_end_e, side_n_id_t, complement
 
-namespace povu::bidirected
+namespace oza::bidirected
 {
 
 // ============================================================
@@ -399,7 +399,7 @@ graph G {
 	/* vertices */
 	for (size_t v_idx{}; v_idx < this->vtx_count(); ++v_idx) {
 		const Vertex &v = this->get_vertex_by_idx(v_idx);
-		std::string v_id = v.id() == constants::UNDEFINED_ID
+		std::string v_id = v.id() == povu::constants::UNDEFINED_ID
 					   ? "d"
 					   : std::to_string(v.id());
 
@@ -443,7 +443,7 @@ void VG::print_gfa(std::ostream &os) const
 	/* vertices */
 	for (size_t v_idx{}; v_idx < this->vtx_count(); ++v_idx) {
 		const Vertex &v = this->get_vertex_by_idx(v_idx);
-		std::string v_id = v.id() == constants::UNDEFINED_ID
+		std::string v_id = v.id() == povu::constants::UNDEFINED_ID
 					   ? "d"
 					   : std::to_string(v.id());
 
@@ -471,7 +471,7 @@ void VG::print_gfa(std::ostream &os) const
 }
 
 // does not handle refs, should it?
-std::vector<VG *> VG::componetize(const povu::bidirected::VG &g)
+std::vector<VG *> VG::componetize(const bd::VG &g)
 {
 
 	std::unordered_set<pt::idx_t> visited;
@@ -593,4 +593,4 @@ std::vector<VG *> VG::componetize(const povu::bidirected::VG &g)
 
 	return components;
 }
-} // namespace povu::bidirected
+} // namespace oza::bidirected
