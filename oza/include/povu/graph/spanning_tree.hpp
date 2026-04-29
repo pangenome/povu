@@ -15,8 +15,8 @@
 
 namespace povu::spanning_tree
 {
+using namespace oza::bracket_list;
 using namespace povu::types::graph;
-using namespace povu::bracket_list;
 namespace pgt = povu::types::graph;
 
 enum class be_type_e {

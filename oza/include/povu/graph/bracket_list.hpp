@@ -5,7 +5,7 @@
 #include <list>
 #include <unordered_map>
 
-namespace povu::bracket_list
+namespace oza::bracket_list
 {
 class Bracket;
 typedef std::list<Bracket> BracketList;
@@ -60,6 +60,6 @@ public:
 	void concat(WBracketList *other);
 };
 
-} // namespace povu::bracket_list
+} // namespace oza::bracket_list
 
 #endif

@@ -2,7 +2,7 @@
 
 #include "povu/common/constants.hpp" // for UNDEFINED_SIZE_T
 
-namespace povu::bracket_list
+namespace oza::bracket_list
 {
 using namespace povu::constants;
 
@@ -99,4 +99,4 @@ void WBracketList::concat(WBracketList *child)
 	}
 }
 
-} // namespace povu::bracket_list
+} // namespace oza::bracket_list
