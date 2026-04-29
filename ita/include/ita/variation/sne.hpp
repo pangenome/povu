@@ -8,6 +8,8 @@
 
 #include "ita/graph/slice_tree.hpp" // for it
 
+#include <quilt/shim.hpp> // for contains
+
 #include "povu/common/constants.hpp"
 #include "povu/common/core.hpp" // for pt, idx_t, id_t, op_t
 #include "povu/graph/bidirected.hpp"
@@ -142,7 +144,7 @@ public:
 	std::vector<std::pair<pin, pin>>
 	get_pin_pairs(pt::up_t<pt::u32> pp) const
 	{
-		if (!pv_cmp::contains(this->ref_to_pin_pairs, pp)) {
+		if (!qs::contains(this->ref_to_pin_pairs, pp)) {
 			return {};
 		}
 

@@ -1,7 +1,7 @@
 #ifndef ZIEN_COMPONENTS_HPP
 #define ZIEN_COMPONENTS_HPP
 
-#include <iostream>
+// #include <iostream>
 #include <map>
 #include <set>
 #include <sstream>
@@ -10,8 +10,10 @@
 
 #include <ncurses.h>
 
-#include "povu/common/compat.hpp" // for pv_cmp
-#include "zien/tui/state.hpp"	  // for Mode
+#include <quilt/shim.hpp> // for format
+
+// #include "povu/common/compat.hpp" // for pv_cmp
+#include "zien/tui/state.hpp" // for Mode
 
 namespace zien::components
 {
@@ -235,8 +237,8 @@ struct Pane {
 
 		while (current_data_idx < (int)lines.size()) {
 			int rows_for_this_item =
-				pv_cmp::contains(pd.group_lines,
-						 (pt::u32)current_data_idx)
+				qs::contains(pd.group_lines,
+					     (pt::u32)current_data_idx)
 					? 2
 					: 1;
 
@@ -256,7 +258,7 @@ struct Pane {
 		     i < (int)lines.size() && y_occupied < body_h; ++i) {
 
 			// A. Handle Separator
-			if (pv_cmp::contains(pd.group_lines, (pt::u32)i)) {
+			if (qs::contains(pd.group_lines, (pt::u32)i)) {
 				// If the scroll offset is inside the
 				// separator/line pair, we might skip the
 				// separator
@@ -373,8 +375,8 @@ struct Pane {
 								  safe_w)
 						: "";
 
-				bool is_special = pv_cmp::contains(
-					pd.special_lines, (pt::u32)i);
+				bool is_special = qs::contains(pd.special_lines,
+							       (pt::u32)i);
 
 				if (is_special && !is_selected)
 					wattron(win, COLOR_PAIR(4));
@@ -481,7 +483,7 @@ struct status_bar {
 		mvprintw(this->linum, 0, "%s", final_left.c_str());
 
 		// 5. Draw Middle (only if it fits)
-		std::string final_mid = pv_cmp::format(
+		std::string final_mid = qs::format(
 			"{} [{}]", mid, mode_names[state.current_mode]);
 
 		if (mid_pos > (int)final_left.length() + 1)

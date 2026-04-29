@@ -12,9 +12,11 @@
 #include <utility>   // for pair, get
 #include <vector>    // for vector
 
-#include "fmt/core.h"		  // for format
-#include "povu/common/compat.hpp" // for pv_cmp, format, erase_if
-#include "povu/common/core.hpp"	  // for pt, idx_t, id_t
+#include <quilt/shim.hpp> // for format, erase_if
+
+#include "fmt/core.h" // for format
+// #include "povu/common/compat.hpp" // for pv_cmp, format, erase_if
+#include "povu/common/core.hpp" // for pt, idx_t, id_t
 
 namespace oza::concealed
 {
@@ -71,7 +73,7 @@ bool is_desc(const pst::Tree &st, pt::idx_t a, pt::idx_t d)
 pvst::Concealed gen_ai_slubble(const pst::Tree &st, pt::idx_t ai_st_v_idx,
 			       src_lca_t tb, pvst::cl_e t, pt::idx_t fl_v_idx)
 {
-	const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
+	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	auto [be_src_v_idx, sl_st_idx] = tb;
 
@@ -116,7 +118,7 @@ pvst::Concealed gen_ai_slubble(const pst::Tree &st, pt::idx_t ai_st_v_idx,
 		}
 	}
 	else {
-		std::string err_msg = pv_cmp::format(
+		std::string err_msg = qs::format(
 			"{} called with invalid slubble type", fn_name);
 		perror(err_msg.c_str());
 		exit(1);
@@ -153,7 +155,7 @@ pvst::Concealed gen_zi_slubble(const pst::Tree &st, pt::idx_t zi_st_v_idx,
 			       pt::idx_t sl_st_idx, pvst::cl_e t,
 			       pt::idx_t fl_v_idx)
 {
-	const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
+	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	// find z
 	pst::Vertex zi_st_v = st.get_vertex(zi_st_v_idx);
@@ -209,7 +211,7 @@ bool is_btwn(const pst::Tree &st, pt::idx_t v_idx, pt::idx_t upper,
 pt::idx_t compute_m(const pst::Tree &st, const ptu::tree_meta &tm,
 		    pt::idx_t ii_v_idx, pt::idx_t ji_v_idx)
 {
-	const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
+	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 	if (st.get_ibe_src_v_idxs(ii_v_idx).size() == 0) {
 		return ii_v_idx;
 	}
@@ -319,7 +321,7 @@ bool can_contain(const pst::Tree &st, const ptu::tree_meta &tm,
 		 pt::idx_t ii_v_idx, pt::idx_t ji_v_idx, pt::idx_t m,
 		 pt::idx_t n)
 {
-	const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
+	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	const std::vector<pt::idx_t> &depth = tm.depth;
 	const std::vector<pt::idx_t> &lo = tm.lo;
@@ -368,7 +370,7 @@ namespace ai
 src_lca_t ai_trunk(const pst::Tree &st, const ptu::tree_meta &tm, pt::idx_t m,
 		   pt::idx_t n, pt::idx_t ai, pt::idx_t zi)
 {
-	const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
+	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	const std::vector<pt::idx_t> &depth = tm.depth;
 
@@ -492,7 +494,7 @@ src_lca_t ai_trunk(const pst::Tree &st, const ptu::tree_meta &tm, pt::idx_t m,
 	}
 
 	// remove elements that do not meet condition ii and iii
-	pv_cmp::erase_if(src_lca_vec, not_cond_ii_iii);
+	qs::erase_if(src_lca_vec, not_cond_ii_iii);
 
 	// erase_if is C++20
 	// remove elements that do not meet condition iv and v
@@ -587,7 +589,7 @@ void with_ai(const pst::Tree &st, const ptu::tree_meta &tm,
 	     std::vector<pvst::Concealed> &res, pt::idx_t m, pt::idx_t n,
 	     pt::idx_t ii_v_idx, pt::idx_t ji_v_idx, pt::idx_t fl_v_idx)
 {
-	const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
+	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	src_lca_t tb = ai_trunk(st, tm, m, n, ii_v_idx, ji_v_idx);
 	if (tb.lca != pc::INVALID_IDX) {
@@ -618,7 +620,7 @@ pt::idx_t override_ji_trunk(const pst::Tree &st, const ptu::tree_meta &tm,
 			    pt::idx_t ji_v_idx)
 {
 
-	const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
+	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	// std::cerr << pv_cmp::format("{}\n", fn_name);
 
@@ -703,7 +705,7 @@ pt::idx_t ji_trunk(const pst::Tree &st, const ptu::tree_meta &tm, pt::idx_t m,
 		   pt::idx_t n, pt::idx_t ii_v_idx, pt::idx_t ji_v_idx)
 {
 
-	const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
+	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	// std::cerr << pv_cmp::format("{}\n", fn_name);
 
@@ -912,7 +914,7 @@ void with_ji(const pst::Tree &st, const ptu::tree_meta &tm,
 	     std::vector<pvst::Concealed> &res, pt::idx_t m, pt::idx_t n,
 	     pt::idx_t ii_v_idx, pt::idx_t ji_v_idx, pt::idx_t ft_v_idx)
 {
-	const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
+	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	pt::idx_t tb = ji_trunk(st, tm, m, n, ii_v_idx, ji_v_idx);
 	if (tb != pc::INVALID_IDX) {
@@ -994,7 +996,7 @@ void nest_branch_ai(const pst::Tree &st, pvst::Tree &vst,
 		    pt::idx_t fl_v_idx, pt::idx_t sl_v_idx, pt::idx_t ai,
 		    std::vector<pt::idx_t> &ch)
 {
-	const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
+	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	// TODO: use pvst::bounds_t
 
@@ -1047,7 +1049,7 @@ void add_conc_ai(const pst::Tree &st, pvst::Tree &vst, const ptu::tree_meta &tm,
 		 const std::vector<pvst::Concealed> &ai_adj, bool is_leaf)
 {
 
-	const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
+	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	for (auto &sl : ai_adj) {
 		pt::idx_t sl_v_idx = vst.add_vertex(sl);
@@ -1087,7 +1089,7 @@ void nest_trunk_zi(const pst::Tree &st, pvst::Tree &vst, const fl_sls &slubbles,
 		   pt::idx_t fl_v_idx, pt::idx_t sl_v_idx, pt::idx_t zi,
 		   std::vector<pt::idx_t> &ch)
 {
-	const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
+	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	for (pt::idx_t c_v_idx : ch) {
 
@@ -1117,7 +1119,7 @@ void nest_branch_zi(const pst::Tree &st, pvst::Tree &vst, pt::idx_t sl_st_idx,
 		    pt::idx_t fl_v_idx, pt::idx_t sl_v_idx,
 		    std::vector<pt::idx_t> &ch)
 {
-	const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
+	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	for (pt::idx_t c_v_idx : ch) {
 		if (!is_nestable(vst, c_v_idx)) {
@@ -1140,7 +1142,7 @@ void add_conc_zi(const pst::Tree &st, const fl_sls &slubbles, pvst::Tree &vst,
 		 pt::idx_t fl_v_idx, const pvst::Flubble &v,
 		 const std::vector<pvst::Concealed> &zi_adj, bool is_leaf)
 {
-	const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
+	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	for (auto &sl : zi_adj) {
 		pt::idx_t sl_v_idx = vst.add_vertex(sl);
@@ -1181,7 +1183,7 @@ void add_conc_zi(const pst::Tree &st, const fl_sls &slubbles, pvst::Tree &vst,
 void add_concealed(const pst::Tree &st, pvst::Tree &vst,
 		   const ptu::tree_meta &tm, const fl_sls &slubbles)
 {
-	const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
+	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	const auto &[fl_v_idx, ai_adj, zi_adj, _, __] = slubbles;
 
@@ -1198,7 +1200,7 @@ void add_concealed(const pst::Tree &st, pvst::Tree &vst,
 void find_concealed(const pst::Tree &st, pvst::Tree &ft,
 		    const ptu::tree_meta &tm)
 {
-	const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
+	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	std::vector<fl_sls> all_slubbles;
 	for (pt::idx_t ft_v_idx{}; ft_v_idx < ft.vtx_count(); ft_v_idx++) {

@@ -8,8 +8,8 @@
 #include <sys/types.h>	 // for u_int8_t
 #include <unordered_set> // for unordered_set, operator!=
 
-#include "fmt/core.h"		       // for format
-#include "povu/common/compat.hpp"      // for pv_cmp, format, contains
+#include <quilt/shim.hpp> // for format, contains
+
 #include "povu/common/constants.hpp"   // for INVALID_CLS, COL_SEP, INVALI...
 #include "povu/graph/bidirected.hpp"   // for Vertex, VG, pgt, Edge
 #include "povu/graph/bracket_list.hpp" // for WBracketList, Bracket, Bracke...
@@ -298,7 +298,7 @@ Tree Tree::from_bd(const bd::VG &g)
 
 	auto are_connected = [&](pt::idx_t a, pt::idx_t b) -> bool
 	{
-		return pv_cmp::contains(added_edges, unordered_pair(a, b));
+		return qs::contains(added_edges, unordered_pair(a, b));
 	};
 
 	auto to_be = [&g](pgt::side_n_id_t i) -> pt::idx_t
@@ -379,10 +379,9 @@ Tree Tree::from_bd(const bd::VG &g)
 				 be_type_e::back_edge);
 			connect(p_idx, be_idx_to_ctr[o_be_idx]);
 		}
-		else if (__builtin_expect(
-				 (bd_v_idx == ov_idx &&
-				  !pv_cmp::contains(self_loops, bd_v_idx)),
-				 0)) {
+		else if (__builtin_expect((bd_v_idx == ov_idx &&
+					   !qs::contains(self_loops, bd_v_idx)),
+					  0)) {
 			// add a self loop backedge, a parent-child relationship
 			t.add_be(p_idx, be_idx_to_ctr[o_be_idx],
 				 be_type_e::back_edge);
@@ -814,7 +813,7 @@ void Tree::concat_bracket_lists(std::size_t parent_vertex,
 				std::size_t child_vertex)
 {
 	std::string fn_name =
-		pv_cmp::format("[povu::spanning_tree::Tree::{}]", __func__);
+		qs::format("[povu::spanning_tree::Tree::{}]", __func__);
 
 	WBracketList *bl_p = this->bracket_lists[parent_vertex];
 	WBracketList *bl_c = this->bracket_lists[child_vertex];
@@ -837,7 +836,7 @@ void Tree::concat_bracket_lists(std::size_t parent_vertex,
 void Tree::del_bracket(std::size_t vertex, std::size_t backedge_idx)
 {
 	std::string fn_name =
-		pv_cmp::format("[povu::spanning_tree::Tree::{}]", __func__);
+		qs::format("[povu::spanning_tree::Tree::{}]", __func__);
 
 	std::size_t be_id = this->back_edges.at(backedge_idx).id();
 	this->bracket_lists[vertex]->del(be_id);
@@ -845,8 +844,7 @@ void Tree::del_bracket(std::size_t vertex, std::size_t backedge_idx)
 
 void Tree::push(std::size_t vertex, std::size_t backege_idx)
 {
-	std::string fn_name =
-		pv_cmp::format("[povu::spanning_tree::{}]", __func__);
+	std::string fn_name = qs::format("[povu::spanning_tree::{}]", __func__);
 
 	// TODO: based on the Tree constructor we expect the pointer at v_idx
 	// will never be null why then do we need to check for null else code
@@ -862,11 +860,10 @@ void Tree::push(std::size_t vertex, std::size_t backege_idx)
 
 BracketList &Tree::get_bracket_list(std::size_t vertex)
 {
-	std::string fn_name =
-		pv_cmp::format("[povu::spanning_tree::{}]", __func__);
+	std::string fn_name = qs::format("[povu::spanning_tree::{}]", __func__);
 	if (this->bracket_lists[vertex] == nullptr) {
 		throw std::runtime_error(
-			pv_cmp::format("{} Bracket list is null", fn_name));
+			qs::format("{} Bracket list is null", fn_name));
 	}
 
 	return this->bracket_lists[vertex]->get_bracket_list();
@@ -874,8 +871,7 @@ BracketList &Tree::get_bracket_list(std::size_t vertex)
 
 Bracket &Tree::top(std::size_t vertex)
 {
-	std::string fn_name =
-		pv_cmp::format("[povu::spanning_tree::{}]", __func__);
+	std::string fn_name = qs::format("[povu::spanning_tree::{}]", __func__);
 
 	return this->bracket_lists[vertex]->top();
 }
@@ -919,14 +915,14 @@ void Tree::print_dot(std::ostream &os)
 
 		switch (vertex.type()) {
 		case v_type_e::dummy:
-			str = pv_cmp::format(
+			str = qs::format(
 				"\t{} [style=filled, fillcolor=pink];\n", i);
 			break;
 		case v_type_e::l:
 		case v_type_e::r:
 			std::string sign =
 				(vertex.type() == pgt::v_type_e::l) ? "+" : "-";
-			str = pv_cmp::format(
+			str = qs::format(
 				"\t{} [style=filled, fillcolor=lightblue, "
 				"label = \"{} \\n ({}{}) \\n [{},{}]\"];\n",
 				i, i, vertex.g_v_id(), sign, vertex.pre_order(),
@@ -945,9 +941,9 @@ void Tree::print_dot(std::ostream &os)
 		std::string clr =
 			e.get_color() == pgt::color_e::gray ? "gray" : "black";
 
-		os << pv_cmp::format(
-			"\t{}  -- {}  [label=\"{} {}\" color={}];\n", p_v_idx,
-			e.get_child_v_idx(), e.id(), cls, clr);
+		os << qs::format("\t{}  -- {}  [label=\"{} {}\" color={}];\n",
+				 p_v_idx, e.get_child_v_idx(), e.id(), cls,
+				 clr);
 	};
 
 	auto be_to_dot =
@@ -973,10 +969,9 @@ void Tree::print_dot(std::ostream &os)
 			}
 		}();
 
-		os << pv_cmp::format(
-			"\t{} -- {} [label=\"{} {}\" style=\"dotted\" "
-			"penwidth=\"3\" color=\"{}\"];\n",
-			i, be.get_tgt(), cl, class_, color);
+		os << qs::format("\t{} -- {} [label=\"{} {}\" style=\"dotted\" "
+				 "penwidth=\"3\" color=\"{}\"];\n",
+				 i, be.get_tgt(), cl, class_, color);
 	};
 
 	/* ---------- dot format header ---------- */

@@ -5,7 +5,8 @@
 
 #include "ita/graph/bfs_tree.hpp"
 
-#include "povu/common/compat.hpp" // for pv_cmp, contains, format
+#include <quilt/shim.hpp> // for format, contains
+
 #include "povu/common/core.hpp"
 #include "povu/common/log.hpp" // for WARN, ERR
 #include "povu/common/utils.hpp"
@@ -127,7 +128,7 @@ ita::bfs::BfsTree comp_bfs_tree(const bd::VG &g, pvst::route_e route,
 			auto [side, alt_idx] = e.get_other_vtx(v_idx, ve);
 			idx_or_t nbr{alt_idx, get_or(side, nbr_dir)};
 
-			if (pv_cmp::contains(seen, nbr.v_id)) { // cross edge
+			if (qs::contains(seen, nbr.v_id)) { // cross edge
 				pt::u32 from = parent_map[curr];
 				pt::u32 to = parent_map[nbr];
 
@@ -249,14 +250,13 @@ std::list<pt::u32> gen_sort(const bd::VG &g, ir::RoV &rov,
 		for (pt::u32 j{start}; j < (start + len); j++) {
 			pt::u32 v_id = rw->v_ids[j];
 
-			if (pv_cmp::contains(left_cxt, v_id))
+			if (qs::contains(left_cxt, v_id))
 				continue;
 
-			if (pv_cmp::contains(w_to_it, v_id))
+			if (qs::contains(w_to_it, v_id))
 				left_cxt[v_id] = w_to_it.at(v_id);
 			else if (j > start) {
-				if (pv_cmp::contains(w_to_it,
-						     rw->v_ids[j - 1])) {
+				if (qs::contains(w_to_it, rw->v_ids[j - 1])) {
 					x = w_to_it.at(rw->v_ids[j - 1]);
 				}
 
@@ -269,14 +269,13 @@ std::list<pt::u32> gen_sort(const bd::VG &g, ir::RoV &rov,
 		for (pt::u32 j{start + len - 1}; j >= (start); j--) {
 			pt::u32 v_id = rw->v_ids[j];
 
-			if (pv_cmp::contains(right_cxt, v_id))
+			if (qs::contains(right_cxt, v_id))
 				continue;
 
-			if (pv_cmp::contains(w_to_it, v_id))
+			if (qs::contains(w_to_it, v_id))
 				right_cxt[v_id] = w_to_it.at(v_id);
 			else if (j + 1 < (start + len)) {
-				if (pv_cmp::contains(w_to_it,
-						     rw->v_ids[j + 1])) {
+				if (qs::contains(w_to_it, rw->v_ids[j + 1])) {
 					y = w_to_it.at(rw->v_ids[j + 1]);
 				}
 
@@ -294,7 +293,7 @@ std::list<pt::u32> gen_sort(const bd::VG &g, ir::RoV &rov,
 		for (pt::u32 j{start}; j < (start + len); j++) {
 			pt::u32 v_id = rw->v_ids[j];
 
-			if (pv_cmp::contains(w_to_it, v_id))
+			if (qs::contains(w_to_it, v_id))
 				continue;
 
 			auto it = sw.insert(sw.end(), v_id);
@@ -348,7 +347,7 @@ std::list<pt::u32> gen_sort(const bd::VG &g, ir::RoV &rov,
 				// if (dbg)
 				//	std::cerr << v_id << ",";
 
-				if (pv_cmp::contains(w_to_it, v_id))
+				if (qs::contains(w_to_it, v_id))
 					continue;
 
 				/* v_id not in sw */
@@ -425,7 +424,7 @@ std::list<pt::u32> gen_sort_old(const bd::VG &g, ir::RoV &rov,
 				if (dbg)
 					std::cerr << v_id << ",";
 
-				if (pv_cmp::contains(w_to_it, v_id)) {
+				if (qs::contains(w_to_it, v_id)) {
 					// move v_id to the back of the list
 					auto it = w_to_it.at(v_id);
 					sw.erase(it);

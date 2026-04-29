@@ -5,18 +5,18 @@
 #include <iostream>   // for basic_ostream, operator<<, cerr
 #include <string>     // for basic_string, char_traits, opera...
 
-#include "fmt/core.h"		  // for format
-#include "povu/call.hpp"	  // for do_call
-#include "povu/common/compat.hpp" // for format, pv_cmp
-#include "povu/decompose.hpp"	  // for do_decompose
+#include <quilt/shim.hpp> // for format
+
+#include "fmt/core.h"	      // for format
+#include "povu/call.hpp"      // for do_call
+#include "povu/decompose.hpp" // for do_decompose
 
 namespace povu::subcommands::gfa2vcf
 {
 
 void do_gfa2vcf(const core::config &app_config)
 {
-	std::string fn_name =
-		pv_cmp::format("[povu::subcommands::{}]", __func__);
+	std::string fn_name = qs::format("[povu::subcommands::{}]", __func__);
 	std::size_t ll = app_config.verbosity();
 
 	// Create a temporary directory for the forest files

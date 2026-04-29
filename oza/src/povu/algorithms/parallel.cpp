@@ -4,16 +4,16 @@
 #include <string> // for basic_string, string
 #include <vector> // for vector
 
-#include "fmt/core.h"		  // for format
-#include "povu/common/compat.hpp" // for format, pv_cmp
-#include "povu/common/core.hpp"	  // for idx_t, pt
+#include <quilt/shim.hpp> // for format
+
+#include "povu/common/core.hpp" // for idx_t, pt
 
 namespace oza::parallel
 {
 
 bool inspect_trunk(const pst::Tree &st, pt::idx_t ai, pt::idx_t zi)
 {
-	const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
+	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	// bool dbg = (ai == 1338 && zi == 1343) ? true : false;
 
@@ -97,7 +97,7 @@ bool inspect_trunk(const pst::Tree &st, pt::idx_t ai, pt::idx_t zi)
 
 bool in_trunk(const pst::Tree &st, const pvst::Flubble &ft_v)
 {
-	const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
+	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	pt::idx_t ai = ft_v.get_ai();
 	pt::idx_t zi = ft_v.get_zi();
@@ -193,7 +193,7 @@ bool in_trunk(const pst::Tree &st, const pvst::Flubble &ft_v)
 bool in_branch(const pst::Tree &st, const ptu::tree_meta &tm,
 	       const pvst::Flubble &ft_v)
 {
-	const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
+	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	pt::idx_t ai = ft_v.get_ai();
 	pt::idx_t zi = ft_v.get_zi();
@@ -263,7 +263,7 @@ bool in_branch(const pst::Tree &st, const ptu::tree_meta &tm,
 void find_parallel(const pst::Tree &st, pvst::Tree &ft,
 		   const ptu::tree_meta &tm)
 {
-	const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
+	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	for (pt::idx_t ft_v_idx{}; ft_v_idx < ft.vtx_count(); ft_v_idx++) {
 		if (!ft.is_leaf(ft_v_idx)) {

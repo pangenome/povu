@@ -216,6 +216,7 @@ target_link_libraries(ita
   liteseq      # gfa handling
   meza
   dynamo
+  quilt
 )
 
 target_link_libraries(mto

@@ -7,6 +7,7 @@
 #include <ncurses.h>
 
 #include <liteseq/refs.h> // for ref_walk, ref
+#include <quilt/shim.hpp> // for format
 
 #include "mto/from_vcf.hpp"		  // for VCFile
 #include "povu/common/core.hpp"		  // for pt
@@ -178,9 +179,9 @@ void update_status_bar(ui_state &state, status_bar &sb,
 	std::string vcf_rec_line; // right
 	if (state.current_view == View::PATHS) {
 		auto [a, b] = state.paths_view_range;
-		vcf_rec_line = pv_cmp::format(
-			"| L{} H{} I{} | [{}:{}]", state.selected_line,
-			state.hap_count, total_line_count, a, b);
+		vcf_rec_line = qs::format("| L{} H{} I{} | [{}:{}]",
+					  state.selected_line, state.hap_count,
+					  total_line_count, a, b);
 	}
 
 	sb.draw(state, "", pane_name, vcf_rec_line);
@@ -197,9 +198,9 @@ void update_status_bar(const mto::from_vcf::VCFile &vcf_file, ui_state &state,
 	const std::string &pane_name = pane_names.at(state.active_pane_id);
 
 	// right
-	std::string vcf_rec_line = pv_cmp::format(
-		"{} [{}/{}]", state.selected_line, state.vcf_selected_rec + 1,
-		vcf_file.record_count());
+	std::string vcf_rec_line =
+		qs::format("{} [{}/{}]", state.selected_line,
+			   state.vcf_selected_rec + 1, vcf_file.record_count());
 
 	sb.draw(state, "", pane_name, vcf_rec_line);
 };

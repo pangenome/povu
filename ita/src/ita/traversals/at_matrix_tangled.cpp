@@ -3,6 +3,8 @@
 
 #include <meza/pool/pool.hpp> // for pool
 
+#include <quilt/shim.hpp> // for contains
+
 // #include <meza/pool/split.hpp> // for matrix_pool
 
 #include "ita/traversals/at_matrix.hpp" // for matrix_pool
@@ -95,7 +97,7 @@ void from_tangled(const bd::VG &g, const ir::RoV *rov,
 	rov_job j{rov, I, hap_itns};
 
 	for (pt::u32 ref_h_idx : to_call_ref_ids) {
-		if (!pv_cmp::contains(ac.all_chains, ref_h_idx))
+		if (!qs::contains(ac.all_chains, ref_h_idx))
 			continue;
 
 		ita::traversals::untangle::chain c =

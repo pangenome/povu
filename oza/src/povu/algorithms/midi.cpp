@@ -8,10 +8,12 @@
 #include <utility>   // for get, pair
 #include <vector>    // for vector
 
-#include "fmt/core.h"		  // for format
-#include "povu/common/compat.hpp" // for format, pv_cmp
-#include "povu/common/core.hpp"	  // for pt, idx_t
-#include "povu/common/log.hpp"	  // for WARN, ERR
+#include <quilt/shim.hpp> // for format
+
+#include "fmt/core.h" // for format
+// #include "povu/common/compat.hpp" // for format, pv_cmp
+#include "povu/common/core.hpp" // for pt, idx_t
+#include "povu/common/log.hpp"	// for WARN, ERR
 
 namespace oza::midi
 {
@@ -21,7 +23,7 @@ void add_midi(const ptu::tree_meta &tm,
 	      std::map<pt::idx_t, std::vector<pvst::MidiBubble>> &midis,
 	      pvst::Tree &pvst)
 {
-	const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
+	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	const std::vector<pt::idx_t> &depth = tm.depth;
 
@@ -67,7 +69,7 @@ void add_midi(const ptu::tree_meta &tm,
 pvst::MidiBubble gen_midi_bub(const pvst::Tree &pvst,
 			      const std::vector<pt::idx_t> &c_bubs)
 {
-	const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
+	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	pt::idx_t fst = c_bubs[0]; // first
 	pt::idx_t snd = c_bubs[1]; // second
@@ -224,7 +226,7 @@ std::vector<pvst::MidiBubble> handle_fl(const pst::Tree &st,
 
 void find_midi(const pst::Tree &st, pvst::Tree &pvst, const ptu::tree_meta &tm)
 {
-	const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
+	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	std::map<pt::idx_t, std::vector<pvst::MidiBubble>> x;
 	for (pt::idx_t ft_v_idx{}; ft_v_idx < pvst.vtx_count(); ft_v_idx++) {

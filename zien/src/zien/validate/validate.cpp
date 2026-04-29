@@ -3,9 +3,10 @@
 #include <cctype>
 #include <fstream>
 #include <string>
+#include <vector>
 
 #include <liteseq/refs.h> // for ref_walk, ref
-#include <vector>
+#include <quilt/shim.hpp> // for format
 
 #include "mto/from_vcf.hpp" // for read_vcf
 
@@ -200,7 +201,7 @@ bool validate_rec(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 				//     rec_idx, rec.get_id(), rec.get_pos(), sn,
 				//     at, h_id);
 				if (report_f != nullptr)
-					*report_f << pv_cmp::format(
+					*report_f << qs::format(
 						"{}\t{}\t{}\t{}\t{}\t{}\n",
 						rec_idx, rec.get_id(),
 						rec.get_pos(), at, ploidy_id,
@@ -220,7 +221,7 @@ bool validate_rec(const bd::VG &g, const mto::from_vcf::VCFile &vcf_file,
 
 void write_summary(const core::config &app_config, pt::u32 err_recs, pt::u32 N)
 {
-	std::string summary_fp = pv_cmp::format(
+	std::string summary_fp = qs::format(
 		"{}/summary.txt",
 		std::string{app_config.get_output_dir()}); // file path and name
 
@@ -254,9 +255,9 @@ std::vector<pt::u32> validate_vcf_records(const bd::VG &g,
 
 	if (output_to_file) {
 		// file path & name
-		std::string report_fp = pv_cmp::format(
-			"{}/report.tsv",
-			std::string{app_config.get_output_dir()});
+		std::string report_fp =
+			qs::format("{}/report.tsv",
+				   std::string{app_config.get_output_dir()});
 
 		file_stream.open(report_fp);
 		if (!file_stream.is_open()) {

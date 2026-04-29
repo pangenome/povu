@@ -4,6 +4,7 @@
 #include <vector>
 
 #include <liteseq/refs.h> // for ref_walk, ref
+#include <quilt/shim.hpp> // for format
 
 #include "ita/genomics/allele.hpp"  // for Exp, allele_slice_t, itn_t
 #include "ita/graph/slice_tree.hpp" // for poi
@@ -180,9 +181,9 @@ void gen_inv_recs(const bd::VG &g, const ist::st &it_,
 				tc = '>';
 			}
 
-			std::string id = pv_cmp::format("{}{}{}{}", sc,
-							ref_h_w->v_ids[s], tc,
-							ref_h_w->v_ids[t]);
+			std::string id =
+				qs::format("{}{}{}{}", sc, ref_h_w->v_ids[s],
+					   tc, ref_h_w->v_ids[t]);
 
 			ia::hap_slice ref_sl = {g.get_ref_vec(ref_h_idx)->walk,
 						ref_h_idx, ref_h_start, len};
@@ -324,8 +325,7 @@ void context_free(const bd::VG &g,
 			pt::u32 u_v_id = rw->v_ids[fwd_s];
 			pt::u32 v_v_id = rw->v_ids[fwd_s + len - 1];
 
-			std::string id =
-				pv_cmp::format("|{}|{}|", u_v_id, v_v_id);
+			std::string id = qs::format("|{}|{}|", u_v_id, v_v_id);
 
 			ia::hap_slice ref_sl{rw, hap_idx, fwd_s, len};
 

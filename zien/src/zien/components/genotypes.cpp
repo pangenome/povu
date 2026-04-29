@@ -1,5 +1,7 @@
 #include <ncurses.h>
 
+#include <quilt/shim.hpp> // for contains
+
 #include "mto/from_vcf.hpp" // for VCFile
 #include "povu/common/core.hpp"
 #include "povu/graph/bidirected.hpp"	  // for VG
@@ -33,7 +35,7 @@ std::vector<std::string> comp_gt_data(const bd::VG &g,
 	// count rows
 	pt::u32 row_count{};
 	for (pt::u32 at_idx{}; at_idx < at_count; at_idx++) {
-		if (!pv_cmp::contains(d.get_data(), at_idx)) {
+		if (!qs::contains(d.get_data(), at_idx)) {
 			continue;
 		}
 		// try {
@@ -54,7 +56,7 @@ std::vector<std::string> comp_gt_data(const bd::VG &g,
 	for (pt::u32 row_idx{}; row_idx < row_count; row_idx++) {
 		for (pt::u32 at_idx{}; at_idx < at_count; at_idx++) {
 
-			if (!pv_cmp::contains(d.get_data(), at_idx)) {
+			if (!qs::contains(d.get_data(), at_idx)) {
 				// AT is not supported by any haps
 				hl += "?";
 				hl += "\t";

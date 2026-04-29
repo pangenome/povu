@@ -6,6 +6,8 @@
 #include <optional>
 #include <set>
 
+#include <quilt/shim.hpp> // for format
+
 #include "povu/common/constants.hpp"
 #include "povu/common/core.hpp" // for pt, idx_t, id_t, op_t
 #include "povu/common/log.hpp"	// for ERR
@@ -177,7 +179,7 @@ public:
 	[[nodiscard]]
 	const std::set<pt::u32> *get_len_alts(pt::u32 len) const
 	{
-		if (pv_cmp::contains(this->len_haps, len))
+		if (qs::contains(this->len_haps, len))
 			return &this->len_haps.at(len);
 		else
 			return nullptr;
@@ -277,7 +279,7 @@ public:
 	[[nodiscard]]
 	bool alts_has_hap(pt::u32 alt_h_idx) const
 	{
-		return pv_cmp::contains(this->alts, alt_h_idx);
+		return qs::contains(this->alts, alt_h_idx);
 	}
 
 	[[nodiscard]]
@@ -617,7 +619,7 @@ private:
 				std::exit(EXIT_FAILURE);
 			}
 
-			if (pv_cmp::contains(visited, curr_v_idx)) {
+			if (qs::contains(visited, curr_v_idx)) {
 				PL_ERR("Revist vertex {}", curr_v_idx);
 				std::exit(EXIT_FAILURE);
 			}
@@ -716,7 +718,7 @@ private:
 	update_params find_insert_point(pt::u32 ref_h_start, pt::u32 alt_h_idx,
 					pt::u32 alt_h_start, pt::u32 len)
 	{
-		if (pv_cmp::contains(vertices, ref_h_start)) {
+		if (qs::contains(vertices, ref_h_start)) {
 			// is contained somehow
 			return handle_existing_start(ref_h_start, alt_h_idx,
 						     alt_h_start, len);

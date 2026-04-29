@@ -8,6 +8,8 @@
 #include <utility>	 // for pair, make_pair
 #include <vector>	 // for vector
 
+#include <quilt/shim.hpp> // for format, contains
+
 #include "povu/common/core.hpp"		// for pt, idx_t
 #include "povu/graph/spanning_tree.hpp" // for Tree, BackEdge, Vertex, be_t...
 #include "povu/graph/tree_utils.hpp"
@@ -77,7 +79,7 @@ BranchDesc br_desc(const pst::Tree &st)
 	while (!s.empty()) {
 		pt::idx_t v_idx = s.top();
 
-		if (pv_cmp::contains(explored, v_idx)) {
+		if (qs::contains(explored, v_idx)) {
 
 			if (v_idx == root_idx) {
 				sort_branches(v_idx);
@@ -117,7 +119,7 @@ BranchDesc br_desc(const pst::Tree &st)
 		else if (st.get_children(v_idx).size() >
 			 1) { // 2 or more, a branching path
 
-			if (!pv_cmp::contains(in_br_stack, v_idx)) {
+			if (!qs::contains(in_br_stack, v_idx)) {
 				// if the vertex is branching, add it to the
 				// branch stack
 				br_stack.push(v_idx);
@@ -126,7 +128,7 @@ BranchDesc br_desc(const pst::Tree &st)
 
 			bool is_exp = true;
 			for (auto c_v_idx : st.get_children(v_idx)) {
-				if (!pv_cmp::contains(explored, c_v_idx)) {
+				if (!qs::contains(explored, c_v_idx)) {
 					s.push(c_v_idx);
 					is_exp = false;
 					break;
@@ -223,8 +225,7 @@ std::vector<pt::idx_t> collect_backedges_by_vertex(
 
 void compute_LoA(const pst::Tree &st, tree_meta &tm)
 {
-	const std::string fn_name =
-		pv_cmp::format("[povu::hubbles::{}]", __func__);
+	const std::string fn_name = qs::format("[povu::hubbles::{}]", __func__);
 
 	const std::vector<pt::idx_t> &depth = tm.depth;
 
@@ -274,8 +275,7 @@ void compute_LoA(const pst::Tree &st, tree_meta &tm)
 
 void compute_HiD(const pst::Tree &st, tree_meta &tm)
 {
-	const std::string fn_name =
-		pv_cmp::format("[povu::hubbles::{}]", __func__);
+	const std::string fn_name = qs::format("[povu::hubbles::{}]", __func__);
 
 	const std::vector<pt::idx_t> &depth = tm.depth;
 
@@ -320,8 +320,7 @@ void compute_HiD(const pst::Tree &st, tree_meta &tm)
 
 void compute_bracket_vals(const pst::Tree &st, tree_meta &tm)
 {
-	const std::string fn_name =
-		pv_cmp::format("[povu::hubbles::{}]", __func__);
+	const std::string fn_name = qs::format("[povu::hubbles::{}]", __func__);
 
 	compute_LoA(st, tm);
 	compute_HiD(st, tm);
@@ -349,7 +348,7 @@ void euler_tour(const pst::Tree &st, tree_meta &tm)
 
 		E.push_back(v_idx);
 
-		if (pv_cmp::contains(explored, v_idx)) {
+		if (qs::contains(explored, v_idx)) {
 			s.pop();
 			continue;
 		}
@@ -373,7 +372,7 @@ void euler_tour(const pst::Tree &st, tree_meta &tm)
 			 1) { // 2 or more, a branching path
 			bool is_exp = true;
 			for (auto c_v_idx : st.get_children(v_idx)) {
-				if (!pv_cmp::contains(explored, c_v_idx)) {
+				if (!qs::contains(explored, c_v_idx)) {
 					// start = c_v_idx;
 					s.push(c_v_idx);
 					is_exp = false;
@@ -400,7 +399,7 @@ void euler_tour(const pst::Tree &st, tree_meta &tm)
 
 	for (pt::idx_t i = 0; i < E.size(); ++i) {
 		pt::idx_t v_idx = E[i];
-		if (!pv_cmp::contains(seen, v_idx)) {
+		if (!qs::contains(seen, v_idx)) {
 			seen.insert(v_idx);
 			first.push_back(i);
 		}
@@ -431,7 +430,7 @@ pt::idx_t find_lca(const tree_meta &tm, std::vector<pt::idx_t> &vtxs)
 	//   pt::idx_t min {pc::MAX_IDX};
 	//   const std::vector<pt::idx_t> &D = tm.D;
 	//   for (pt::idx_t i {L}; i <= R; i++){
-	//     std::cerr << pv_cmp::format("c {} {}, ", i, D[i]);
+	//     std::cerr << qs::format("c {} {}, ", i, D[i]);
 	//     if( D[i] < min) {
 	//       min = D[i];
 	//     }
@@ -567,7 +566,7 @@ std::vector<pt::idx_t> count_brackets(const pst::Tree &st,
 
 	// print be_count
 	// for (pt::idx_t i = 0; i < be_count.size(); ++i) {
-	//   std::cerr << pv_cmp::format("({}, {}), ", i, be_count[i]);
+	//   std::cerr << qs::format("({}, {}), ", i, be_count[i]);
 	// }
 
 	return be_count;
@@ -618,10 +617,10 @@ void compute_pre_post(const pst::Tree &st, tree_meta &tm)
 	// for (pt::idx_t i {}; i < exp_size; ++i) {
 
 	//   if (pre[i] != pc::INVALID_IDX) {
-	//     std::cerr << pv_cmp::format("pre: {}  found\n", i);
+	//     std::cerr << qs::format("pre: {}  found\n", i);
 	//   }
 	//   if (post[i] != pc::INVALID_IDX) {
-	//     std::cerr << pv_cmp::format("post: {}  found\n", i);
+	//     std::cerr << qs::format("post: {}  found\n", i);
 	//     break;
 	//   }
 	// }
@@ -674,7 +673,7 @@ void pre_process(const pst::Tree &st, tree_meta &tm)
 tree_meta gen_tree_meta(const pst::Tree &st)
 {
 	const std::string fn_name =
-		pv_cmp::format("[povu::tree_utils::{}]", __func__);
+		qs::format("[povu::tree_utils::{}]", __func__);
 
 	tree_meta tm;
 	euler_tour(st, tm);

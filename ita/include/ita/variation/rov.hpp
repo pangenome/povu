@@ -5,6 +5,8 @@
 #include <string>   // for string
 #include <vector>   // for vector
 
+#include <quilt/shim.hpp> // for format
+
 #include "povu/common/core.hpp"	     // for pt
 #include "povu/graph/bidirected.hpp" // for VG, bd
 #include "povu/graph/pvst.hpp"	     // for Tree, VertexBase
@@ -177,7 +179,7 @@ public:
 	pt::u32 get_sorted_pos(pt::id_t v_id) const
 	{
 		// std::cerr << "Getting sorted pos for v_id: " << v_id << "\n";
-		if (!pv_cmp::contains(this->sort_order, v_id))
+		if (!qs::contains(this->sort_order, v_id))
 			return pc::INVALID_IDX;
 
 		return this->sort_order.at(v_id);

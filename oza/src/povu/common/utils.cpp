@@ -5,9 +5,9 @@
 #include <ctime>     // for tm, localtime, time, time_t
 #include <iomanip>   // for operator<<, setfill, setw
 
-#include "fmt/core.h"		  // for format
-#include "povu/common/compat.hpp" // for format, pv_cmp
-#include "povu/common/core.hpp"	  // for idx_t, pt
+#include <quilt/shim.hpp> // for format
+
+#include "povu/common/core.hpp" // for idx_t, pt
 
 namespace povu::utils
 {
@@ -81,8 +81,8 @@ void report_time(std::ostream &os, const std::string &fn_name,
 		 const std::string &action,
 		 std::chrono::duration<double> period)
 {
-	os << pv_cmp::format("{} INFO Time spent by {}: {:.2f} sec\n", fn_name,
-			     action, period.count());
+	os << qs::format("{} INFO Time spent by {}: {:.2f} sec\n", fn_name,
+			 action, period.count());
 }
 
 std::vector<std::string> immutable_erase(std::vector<std::string> v,

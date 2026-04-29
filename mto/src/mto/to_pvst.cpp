@@ -3,11 +3,13 @@
 #include <optional> // for optional
 #include <string>   // for char_traits, basic_string, string
 
-#include "fmt/core.h" // for format
+#include <quilt/shim.hpp> // for format
+
+// #include "fmt/core.h" // for format
 
 #include "mto/to_pvst.hpp"
 
-#include "povu/common/compat.hpp"    // for format, pv_cmp
+// #include "povu/common/compat.hpp"    // for format, pv_cmp
 #include "povu/common/constants.hpp" // for COL_SEP, NO_VALUE, PVST_CONCEAL...
 #include "povu/common/log.hpp"	     // for ERR
 #include "povu/common/utils.hpp"     // for print_with_comma
@@ -31,7 +33,7 @@ void write_pvst(const pvst::Tree &bt, const std::string &base_name,
 		const core::config &app_config)
 {
 	// TODO: combine and pass as single arg
-	std::string bub_file_name = pv_cmp::format(
+	std::string bub_file_name = qs::format(
 		"{}/{}.pvst", std::string{app_config.get_output_dir()},
 		base_name); // file path and name
 	std::ofstream bub_file(bub_file_name);

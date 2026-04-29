@@ -6,10 +6,11 @@
 
 #include "mto/common.hpp" // for fp_to_vector
 
-#include "povu/common/compat.hpp" // for pv_cmp
-#include "povu/common/core.hpp"	  // for pt
-#include "povu/common/log.hpp"	  // for INFO
-#include "povu/common/utils.hpp"  // for concat_with
+#include <quilt/shim.hpp> // for contains
+
+#include "povu/common/core.hpp"	 // for pt
+#include "povu/common/log.hpp"	 // for INFO
+#include "povu/common/utils.hpp" // for concat_with
 
 namespace mto::from_vcf
 {
@@ -60,7 +61,7 @@ extract_header_lines(const std::vector<std::string> &all_lines)
 std::string check_version(const std::vector<std::string> &headers)
 {
 	std::string vcf_version = get_version(headers);
-	if (!pv_cmp::contains(VCF_SUPPORTED_VERSIONS, vcf_version)) {
+	if (!qs::contains(VCF_SUPPORTED_VERSIONS, vcf_version)) {
 		std::string supported = pu::concat_with(
 			std::vector<std::string>(VCF_SUPPORTED_VERSIONS.begin(),
 						 VCF_SUPPORTED_VERSIONS.end()),

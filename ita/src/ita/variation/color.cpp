@@ -2,6 +2,8 @@
 
 #include <optional> // for optional, operator==
 
+#include <quilt/shim.hpp> // for contains
+
 #include "povu/common/constants.hpp"
 #include "povu/common/core.hpp" // for pt
 #include "povu/common/log.hpp"
@@ -71,8 +73,8 @@ std::set<pt::u32> color_pvst(const bd::VG &g, const pvst::Tree &pvst,
 
 			// remove parent from to_call if both parent and current
 			// vertex are in to_call.
-			if (pv_cmp::contains(to_call, p_pvst_v_idx) &&
-			    pv_cmp::contains(to_call, curr_pvst_v_idx))
+			if (qs::contains(to_call, p_pvst_v_idx) &&
+			    qs::contains(to_call, curr_pvst_v_idx))
 				to_call.erase(p_pvst_v_idx);
 		}
 

@@ -10,9 +10,9 @@
 
 #include <liteseq/refs.h>  // for ref_walk
 #include <liteseq/types.h> // for strand
+#include <quilt/shim.hpp>  // for format
 
-#include "ita/variation/rov.hpp"  // for RoV, var_type_e
-#include "povu/common/compat.hpp" // for contains, pv_cmp
+#include "ita/variation/rov.hpp" // for RoV, var_type_e
 #include "povu/common/constants.hpp"
 #include "povu/common/core.hpp" // for pt, idx_t, id_t, op_t
 #include "povu/common/utils.hpp"
@@ -324,7 +324,7 @@ struct at_itn {
 	{
 		std::string res = "";
 		for (const pgt::walk_t &w : this->it_)
-			res += pv_cmp::format("{{ {} }}", pgt::to_string(w));
+			res += qs::format("{{ {} }}", pgt::to_string(w));
 
 		return res;
 	}
@@ -350,8 +350,7 @@ public:
 	[[nodiscard]]
 	std::string to_string() const
 	{
-		return pv_cmp::format("{}{}", this->l_.as_str(),
-				      this->r_.as_str());
+		return qs::format("{}{}", this->l_.as_str(), this->r_.as_str());
 	}
 
 	static rov_boundaries create_null()
@@ -727,7 +726,7 @@ public:
 			os << "Ref hap idx " << ref_h_idx << "\n";
 
 			os << "No coverage: ";
-			if (pv_cmp::contains(no_cov, ref_h_idx)) {
+			if (qs::contains(no_cov, ref_h_idx)) {
 				os << "{";
 				std::cerr << pu::concat_with(
 					no_cov.at(ref_h_idx), ',');
@@ -848,7 +847,7 @@ public:
 		if (!this->is_tangled)
 			return 0;
 
-		if (pv_cmp::contains(this->hap_idx_to_loop_no, h_idx))
+		if (qs::contains(this->hap_idx_to_loop_no, h_idx))
 			return this->hap_idx_to_loop_no.at(h_idx);
 
 		return pc::INVALID_IDX;
@@ -978,8 +977,7 @@ public:
 		// print hap_idx_to_loop_no map
 		os << "#HapIdxToLoopNo\n";
 		for (const auto &[h_idx, loop_no] : this->hap_idx_to_loop_no)
-			os << pv_cmp::format("[hap {}, loop {}] ", h_idx,
-					     loop_no);
+			os << qs::format("[hap {}, loop {}] ", h_idx, loop_no);
 
 		os << "\n";
 

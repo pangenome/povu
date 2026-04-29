@@ -5,6 +5,8 @@
 #include <utility> // for move
 #include <vector>  // for vector
 
+#include <quilt/shim.hpp> // for contains
+
 #include "ita/align/align.hpp"		// for align, aln_level_e
 #include "ita/genomics/allele.hpp"	// for Exp, itn_t
 #include "ita/traversals/at_matrix.hpp" // for matrix_pool
@@ -83,7 +85,7 @@ void do_align(const bd::VG &g, const std::set<pt::u32> &to_call_ref_ids,
 	std::map<pt::u32, ia::at_itn> hap2at_itn;
 	auto get_at_itn = [&](pt::u32 h_idx) -> const ia::at_itn &
 	{
-		if (pv_cmp::contains(hap2at_itn, h_idx))
+		if (qs::contains(hap2at_itn, h_idx))
 			return hap2at_itn[h_idx];
 
 		const itinerary &itn = hap_itns[h_idx];
@@ -115,7 +117,7 @@ void do_align(const bd::VG &g, const std::set<pt::u32> &to_call_ref_ids,
 		}
 
 		// TODO: A: is this wise? theoretically
-		if (!pv_cmp::contains(chain.all_chains, ref_h_idx)) {
+		if (!qs::contains(chain.all_chains, ref_h_idx)) {
 			// when this is true entire alignment has no matches or
 			// mismatches (only insertions and deletions), so we
 			// skip it

@@ -3,6 +3,8 @@
 #include <filesystem> // for path
 #include <fstream>    // for basic_ofstream, operator<<, basic_ostream
 
+#include <quilt/shim.hpp> // for format
+
 #include "povu/common/core.hpp"
 #include "povu/common/log.hpp"
 #include "povu/graph/bidirected.hpp"
@@ -33,12 +35,12 @@ void write_gfa(const bd::VG &g, const std::filesystem::path &fp)
 	};
 
 	/* header */
-	os << pv_cmp::format("H\tVN:Z:1.0\n");
+	os << qs::format("H\tVN:Z:1.0\n");
 
 	/* vertices */
 	// A is a placeholder sequence
 	for (size_t v_idx{}; v_idx < g.vtx_count(); ++v_idx)
-		os << pv_cmp::format("S\t{}\tA\n", g.v_idx_to_id(v_idx));
+		os << qs::format("S\t{}\tA\n", g.v_idx_to_id(v_idx));
 
 	/* edges */
 	for (pt::u32 e_idx{}; e_idx < g.edge_count(); ++e_idx) {
@@ -46,9 +48,9 @@ void write_gfa(const bd::VG &g, const std::filesystem::path &fp)
 
 		auto [v1_idx, v1_e, v2_idx, v2_e] = vxt_pair_to_edge_pair(e);
 
-		os << pv_cmp::format("L\t{}\t{}\t{}\t{}\t0M\n",
-				     g.v_idx_to_id(v1_idx), v1_e,
-				     g.v_idx_to_id(v2_idx), v2_e);
+		os << qs::format("L\t{}\t{}\t{}\t{}\t0M\n",
+				 g.v_idx_to_id(v1_idx), v1_e,
+				 g.v_idx_to_id(v2_idx), v2_e);
 	}
 }
 } // namespace mto::to_gfa

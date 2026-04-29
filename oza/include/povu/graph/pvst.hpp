@@ -10,7 +10,9 @@
 #include <string_view>
 #include <vector>
 
-#include "povu/common/compat.hpp"
+#include <quilt/shim.hpp> // for format, erase_if
+
+// #include "povu/common/compat.hpp"
 #include "povu/common/constants.hpp"
 // #include "povu/common/log.hpp"
 #include "povu/graph/types.hpp"
@@ -151,8 +153,8 @@ inline const char *to_str(route_e r)
 	case route_e::e2s:
 		return "R";
 	default:
-		std::cerr << pv_cmp::format("Unknown route_e value: {}",
-					    static_cast<int>(r));
+		std::cerr << qs::format("Unknown route_e value: {}",
+					static_cast<int>(r));
 		// ERR("Unknown route_e value: {}", static_cast<int>(r));
 		std::exit(1);
 	}
@@ -411,8 +413,7 @@ public:
 	// ------
 	std::string as_str() const override
 	{
-		return pv_cmp::format("{}{}", this->a_.as_str(),
-				      this->z_.as_str());
+		return qs::format("{}{}", this->a_.as_str(), this->z_.as_str());
 	}
 };
 
@@ -521,12 +522,12 @@ public:
 	std::string as_str() const override
 	{
 		if (with_ai()) { // formed with a
-			return pv_cmp::format("{}{}", this->fl_b_.as_str(),
-					      this->cn_b_.as_str());
+			return qs::format("{}{}", this->fl_b_.as_str(),
+					  this->cn_b_.as_str());
 		}
 		else { // formed with z
-			return pv_cmp::format("{}{}", this->cn_b_.as_str(),
-					      this->fl_b_.as_str());
+			return qs::format("{}{}", this->cn_b_.as_str(),
+					  this->fl_b_.as_str());
 		}
 	}
 };
@@ -623,19 +624,17 @@ public:
 	{
 		if (this->cn_type_ == cb_e::g) {  // g
 			if (this->cn_b_is_ans_) { // cn_b is ancestor of sm_b
-				return pv_cmp::format("{}{}",
-						      this->cn_b_.as_str(),
-						      this->sm_b_.as_str());
+				return qs::format("{}{}", this->cn_b_.as_str(),
+						  this->sm_b_.as_str());
 			}
 			else { // sm_b is ancestor of cn_b
-				return pv_cmp::format("{}{}",
-						      this->sm_b_.as_str(),
-						      this->cn_b_.as_str());
+				return qs::format("{}{}", this->sm_b_.as_str(),
+						  this->cn_b_.as_str());
 			}
 		}
 		else { // s
-			return pv_cmp::format("{}{}", this->sm_b_.as_str(),
-					      this->cn_b_.as_str());
+			return qs::format("{}{}", this->sm_b_.as_str(),
+					  this->cn_b_.as_str());
 		}
 	}
 };
@@ -714,8 +713,7 @@ public:
 
 	std::string as_str() const override
 	{
-		return pv_cmp::format("{}{}", this->g_.as_str(),
-				      this->s_.as_str());
+		return qs::format("{}{}", this->g_.as_str(), this->s_.as_str());
 	}
 };
 
@@ -911,23 +909,21 @@ public:
 	// ----
 	void print_dot() const
 	{
-		std::cout << pv_cmp::format("graph G {{\n"
-					    "\trankdir = TD;\n"
-					    "\tnode[shape = circle];\n"
-					    "\tedge [arrowhead=vee];\n");
+		std::cout << qs::format("graph G {{\n"
+					"\trankdir = TD;\n"
+					"\tnode[shape = circle];\n"
+					"\tedge [arrowhead=vee];\n");
 
 		// print vertices
 		for (pt::idx_t i{}; i < this->vtx_count(); i++) {
-			std::cout
-				<< pv_cmp::format("\t{} [label=\"{}\"];\n", i,
-						  this->get_vertex(i).as_str());
+			std::cout << qs::format("\t{} [label=\"{}\"];\n", i,
+						this->get_vertex(i).as_str());
 		}
 
 		// print edges
 		for (pt::idx_t i{}; i < this->vtx_count(); i++) {
 			for (pt::idx_t c : this->get_children(i)) {
-				std::cout << pv_cmp::format("\t{} -- {};\n", i,
-							    c);
+				std::cout << qs::format("\t{} -- {};\n", i, c);
 			}
 		}
 

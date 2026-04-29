@@ -5,9 +5,9 @@
 #include <string>   // for basic_string, string
 #include <vector>   // for vector
 
-#include "fmt/core.h"		  // for format
-#include "povu/common/compat.hpp" // for format, pv_cmp
-#include "povu/common/core.hpp"	  // for pt, idx_t
+#include <quilt/shim.hpp> // for format
+
+#include "povu/common/core.hpp" // for pt, idx_t
 
 namespace oza::tiny
 {
@@ -33,7 +33,7 @@ std::vector<pt::idx_t> find_Y(const pst::Tree &st, pt::idx_t zi)
 bool branches(const pst::Tree &st, const ptu::tree_meta &tm, pt::idx_t ai,
 	      pt::idx_t zi)
 {
-	const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
+	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	// all brackets are to ai
 	auto has_be_to_ai = [&](pt::idx_t c) -> bool
@@ -73,7 +73,7 @@ bool branches(const pst::Tree &st, const ptu::tree_meta &tm, pt::idx_t ai,
 
 bool trunk(const pst::Tree &st, pt::idx_t ai, pt::idx_t zi)
 {
-	const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
+	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	for (auto c_e_idx : st.get_child_edge_idxs(zi)) {
 		const pst::Edge &e = st.get_tree_edge(c_e_idx);
@@ -99,7 +99,7 @@ bool trunk(const pst::Tree &st, pt::idx_t ai, pt::idx_t zi)
 
 void find_tiny(const pst::Tree &st, pvst::Tree &ft, const ptu::tree_meta &tm)
 {
-	const std::string fn_name{pv_cmp::format("[{}::{}]", MODULE, __func__)};
+	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	for (pt::idx_t ft_v_idx{}; ft_v_idx < ft.vtx_count(); ft_v_idx++) {
 

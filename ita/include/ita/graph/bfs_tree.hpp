@@ -7,7 +7,9 @@
 #include <string>
 #include <vector> // for vector
 
-#include "povu/common/compat.hpp"    // for pv_cmp, format
+#include <quilt/shim.hpp> // for format
+
+// #include "povu/common/compat.hpp"    // for pv_cmp, format
 #include "povu/common/constants.hpp" // for INVALID_IDX
 #include "povu/common/core.hpp"	     // for pt
 #include "povu/graph/types.hpp"	     // for id_or_t, op_t
@@ -178,14 +180,14 @@ public:
 
 	void print_dot(std::ostream &os) const
 	{
-		os << pv_cmp::format("digraph G {{\n"
-				     "\trankdir = LR;\n"
-				     "\tnode [shape = circle];\n"
-				     "\tedge [arrowhead=vee];\n");
+		os << qs::format("digraph G {{\n"
+				 "\trankdir = LR;\n"
+				 "\tnode [shape = circle];\n"
+				 "\tedge [arrowhead=vee];\n");
 
 		// print vertices
 		for (pt::u32 i{}; i < this->vertices.size(); i++) {
-			os << pv_cmp::format(
+			os << qs::format(
 				"\t{} [label=\"{} {} \n s:{} \n d:{}\" ", i, i,
 				this->vertices[i].as_str(),
 				this->get_sorted_pos(i), this->get_depth(i));
@@ -195,9 +197,9 @@ public:
 			else if (i == this->end)
 				os << "style=filled fillcolor=lightcoral";
 
-			os << pv_cmp::format("];\n", i, i,
-					     this->vertices[i].as_str(),
-					     this->get_sorted_pos(i));
+			os << qs::format("];\n", i, i,
+					 this->vertices[i].as_str(),
+					 this->get_sorted_pos(i));
 		}
 
 		std::string edge_meta;
@@ -207,8 +209,8 @@ public:
 			else if (et == edge_type::cross_edge)
 				edge_meta = R"( style="dotted" color="red" )";
 
-			os << pv_cmp::format("\t{} -> {} [{}];\n", from, to,
-					     edge_meta);
+			os << qs::format("\t{} -> {} [{}];\n", from, to,
+					 edge_meta);
 		}
 
 		os << "}\n";
@@ -287,7 +289,7 @@ public:
 
 		auto update_q = [&](pt::u32 u)
 		{
-			if (pv_cmp::contains(done, u))
+			if (qs::contains(done, u))
 				return;
 
 			deg[u]--;

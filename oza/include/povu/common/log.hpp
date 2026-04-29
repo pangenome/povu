@@ -4,9 +4,11 @@
 #include <fmt/color.h>
 #include <fmt/format.h>
 
-#include "povu/common/compat.hpp" // pv_cmp
+#include <quilt/shim.hpp> // for format
 
-#define FN() pv_cmp::format("[{}::{}]", MODULE, __func__)
+// #include "povu/common/compat.hpp" // pv_cmp
+
+#define FN() qs::format("[{}::{}]", MODULE, __func__)
 
 #define DEBUG_PRINT(format, ...)                                               \
 	fprintf(stderr, "%s:%d: " format, __FILE__, __LINE__, ##__VA_ARGS__)

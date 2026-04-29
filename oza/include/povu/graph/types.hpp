@@ -7,8 +7,10 @@
 #include <string_view> // for string_view, basic_string_view
 #include <vector>      // for vector
 
-#include "povu/common/compat.hpp" // for format, pv_cmp
-#include "povu/common/core.hpp"	  // for pt, id_t, idx_t
+#include <quilt/shim.hpp> // for format
+
+// #include "povu/common/compat.hpp" // for format, pv_cmp
+#include "povu/common/core.hpp" // for pt, id_t, idx_t
 
 namespace povu::types::graph
 {
@@ -88,8 +90,8 @@ struct id_or_t {
 	[[nodiscard]]
 	std::string as_str() const
 	{
-		return pv_cmp::format("{}{}", to_str(this->orientation),
-				      this->v_id);
+		return qs::format("{}{}", to_str(this->orientation),
+				  this->v_id);
 	}
 };
 
@@ -112,8 +114,8 @@ struct ref_step_t {
 	[[nodiscard]]
 	std::string as_str() const
 	{
-		return pv_cmp::format("{}{}@{}", to_str(this->orientation),
-				      this->v_id, this->locus);
+		return qs::format("{}{}@{}", to_str(this->orientation),
+				  this->v_id, this->locus);
 	}
 };
 

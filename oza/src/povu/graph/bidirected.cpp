@@ -7,10 +7,9 @@
 #include <unordered_set> // for unordered_set, operator!=
 #include <vector>
 
-#include <fmt/core.h>	 // for format
-#include <liteseq/gfa.h> // for gfa_props
+#include <liteseq/gfa.h>  // for gfa_props
+#include <quilt/shim.hpp> // for format, contains
 
-#include "povu/common/compat.hpp"    // for contains, pv_cmp, format
 #include "povu/common/constants.hpp" // for UNDEFINED_ID
 #include "povu/common/core.hpp"
 #include "povu/graph/types.hpp" // for v_end_e, side_n_id_t, complement
@@ -403,8 +402,8 @@ graph G {
 					   ? "d"
 					   : std::to_string(v.id());
 
-		os << pv_cmp::format("\t{}[label=\"+ {} - \\n ({})\"];\n",
-				     v_idx, v_id, v_idx);
+		os << qs::format("\t{}[label=\"+ {} - \\n ({})\"];\n", v_idx,
+				 v_id, v_idx);
 	}
 
 	/* edges */
@@ -414,8 +413,8 @@ graph G {
 		pt::idx_t v2_idx = e.get_v2_idx();
 		std::string v2_e = v_end_to_dot(e.get_v2_end());
 
-		os << pv_cmp::format("\t{}:{}--{}:{}[color=gray];\n", v1_idx,
-				     v1_e, v2_idx, v2_e);
+		os << qs::format("\t{}:{}--{}:{}[color=gray];\n", v1_idx, v1_e,
+				 v2_idx, v2_e);
 	}
 
 	/* footer */
@@ -462,7 +461,7 @@ void VG::print_gfa(std::ostream &os) const
 		   << "0M"
 		   << "\n";
 
-		// os << pv_cmp::format("L{}\t{}\t{}\t{}\n", v1_idx, v1_e,
+		// os << qs::format("L{}\t{}\t{}\t{}\n", v1_idx, v1_e,
 		// v2_idx,		     v2_e);
 	}
 
@@ -500,7 +499,7 @@ std::vector<VG *> VG::componetize(const bd::VG &g)
 		auto [_, adj_v_idx] = e.get_other_vtx(v_idx);
 
 		// also handles self loops
-		if (pv_cmp::contains(visited, adj_v_idx))
+		if (qs::contains(visited, adj_v_idx))
 			return;
 
 		s.push(adj_v_idx);
@@ -513,7 +512,7 @@ std::vector<VG *> VG::componetize(const bd::VG &g)
 			     pt::idx_t e_idx) -> void
 	{
 		// don't duplicate edges
-		if (pv_cmp::contains(added_edges, e_idx))
+		if (qs::contains(added_edges, e_idx))
 			return;
 
 		added_edges.insert(e_idx);
@@ -564,8 +563,8 @@ std::vector<VG *> VG::componetize(const bd::VG &g)
 
 			/* add tips */
 			for (auto [side, v_id] : g.tips()) {
-				if (pv_cmp::contains(comp_vtxs,
-						     g.v_id_to_idx(v_id))) {
+				if (qs::contains(comp_vtxs,
+						 g.v_id_to_idx(v_id))) {
 					curr_vg->add_tip(v_id, side);
 				}
 			}
@@ -578,9 +577,8 @@ std::vector<VG *> VG::componetize(const bd::VG &g)
 			/* find the next unvisited vertex */
 			for (std::size_t v_idx_{}; v_idx_ < g.vtx_count();
 			     ++v_idx_) {
-				if (!pv_cmp::contains(
-					    visited,
-					    v_idx_)) { // if not visited
+				if (!qs::contains(visited,
+						  v_idx_)) { // if not visited
 					comp_vtxs.clear();
 					s.push(v_idx_);
 					visited.insert(v_idx_);

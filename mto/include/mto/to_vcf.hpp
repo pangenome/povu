@@ -15,12 +15,13 @@
 #include <utility>     // for get, move
 #include <vector>      // for vector
 
+#include <quilt/shim.hpp> // for format, contains
+
 #include "ita/genomics/vcf.hpp" // for VcfRecIdx
 
 #include "mto/common.hpp" // for create_dir_if_not_exists
 
 #include "povu/common/app.hpp"	     // for config
-#include "povu/common/compat.hpp"    // for contains, pv_cmp
 #include "povu/common/core.hpp"	     // for id_t, pt
 #include "povu/common/log.hpp"	     // for ERR
 #include "povu/common/utils.hpp"     // for is_prefix
@@ -120,7 +121,7 @@ public:
 		if (combined_)
 			return *combined_;
 
-		if (pv_cmp::contains(label_to_ofs_idx_, ref_label))
+		if (qs::contains(label_to_ofs_idx_, ref_label))
 			return this->all_ofs_[label_to_ofs_idx_[ref_label]];
 
 		// TODO: [c] handle this before in the caller or at startup
@@ -138,10 +139,10 @@ public:
 		if (combined_)
 			return *combined_;
 
-		if (pv_cmp::contains(ref_id_to_ofs_idx_, ref_id))
+		if (qs::contains(ref_id_to_ofs_idx_, ref_id))
 			return this->all_ofs_[ref_id_to_ofs_idx_[ref_id]];
 
-		throw std::runtime_error(pv_cmp::format(
+		throw std::runtime_error(qs::format(
 			"[VcfOutput::stream_for] Unknown ref id: {}", ref_id));
 	}
 

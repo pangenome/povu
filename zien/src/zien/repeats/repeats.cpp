@@ -2,11 +2,12 @@
 
 #include <liteseq/refs.h> // for ref_walk, ref
 
+#include <quilt/shim.hpp> // for contains
+
 #include "ita/align/align.hpp"	   // for align, aln_level_e
 #include "ita/genomics/allele.hpp" // for ia::at_itn
 
-#include "povu/common/core.hpp" // for pt
-// #include "povu/common/utils.hpp"     // for pu::concat_with
+#include "povu/common/core.hpp"	     // for pt
 #include "povu/graph/bidirected.hpp" // for VG
 #include "povu/graph/types.hpp"
 
@@ -238,7 +239,7 @@ foo(const bd::VG &g, pt::u32 ref_h_idx, const pt::op_t<ptg::id_or_t> &ef,
 	// std::cerr << "B" << "\n";
 
 	for (pt::u32 i{}; i < g.get_hap_count(); i++) {
-		if (i == ref_h_idx || !pv_cmp::contains(itns, i))
+		if (i == ref_h_idx || !qs::contains(itns, i))
 			continue;
 
 		const ia::at_itn &ref_itn = itns.at(ref_h_idx);

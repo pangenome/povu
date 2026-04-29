@@ -5,8 +5,8 @@
 
 #include <liteseq/refs.h>	 // for ref_walk, ref
 #include <meza/owned/matrix.hpp> // for dense_matrix2d
+#include <quilt/shim.hpp>	 // for contains
 
-#include "povu/common/constants.hpp"	  // for pv_cmp
 #include "povu/common/core.hpp"		  // for pt, pc
 #include "povu/graph/bidirected.hpp"	  // for VG
 #include "zien/common/common.hpp"	  // for to_char
@@ -275,7 +275,7 @@ void comp_hap_rows(const bd::VG &g, pt::u32 hap_idx, pt::u32 start, pt::u32 end,
 
 			std::set<pt::u32> curr_pos_idxs;
 
-			if (pv_cmp::contains(buff, v_idx)) {
+			if (qs::contains(buff, v_idx)) {
 				auto &q = buff[v_idx];
 				while (!q.empty()) {
 					pt::u32 curr_pos_idx = q.front();
@@ -313,7 +313,7 @@ void comp_hap_rows(const bd::VG &g, pt::u32 hap_idx, pt::u32 start, pt::u32 end,
 					expected_row_idx--;
 
 				if (expected_row_idx < conceptual_row_idx || //
-				    pv_cmp::contains(seen, curr_step_idx))   //
+				    qs::contains(seen, curr_step_idx))	     //
 					continue;
 
 				if (expected_row_idx > conceptual_row_idx)
