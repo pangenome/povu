@@ -114,8 +114,6 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
   add_compile_definitions(RELEASE)
 endif()
 
-
-# Linker options for sanitizers
 # Linker options for sanitizers
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   # Default to ON in Debug mode, but allow manual override
@@ -124,30 +122,6 @@ else()
   # Default to OFF in non-Debug modes, and allow manual override
   option(USE_SANITIZER "Enable sanitizers (ON by default in Debug mode)" OFF)
 endif()
-
-# Include sanitizers only if USE_SANITIZER is ON
-#if (USE_SANITIZER)
-#  include(cmake/sanitizers.cmake)
-#endif()
-
-# ============== Dependencies ===================
-#include(cmake/deps.cmake)
-
-# # --- Silence compiler warnings for dependencies ---
-# function(silence_warnings target)
-#   if(TARGET ${target})
-#     get_target_property(type ${target} TYPE)
-#     if(type STREQUAL "INTERFACE_LIBRARY")
-#       target_compile_options(${target} INTERFACE -w)
-#     else()
-#       target_compile_options(${target} PRIVATE -w)
-#     endif()
-#   endif()
-# endfunction()
-
-# silence_warnings(log)
-
-# target_link_libraries(liteseq PRIVATE log)
 
 # --- Math Library (libm) ---
 
@@ -206,18 +180,6 @@ target_include_directories(liteseq
   ${SRC_INTERNAL_DIR}
 )
 
-# include(GNUInstallDirs)
-# install(TARGETS liteseq
-#   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-#   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-#   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-# )
-# install(DIRECTORY include/liteseq/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/liteseq)
-
-
-# message(STATUS "Install include dir: ${CMAKE_INSTALL_INCLUDEDIR}")
-# message(STATUS "Install lib dir: ${CMAKE_INSTALL_LIBDIR}")
-# message(STATUS "Install bin dir: ${CMAKE_INSTALL_BINDIR}")
 
 # === Tests ===
 
