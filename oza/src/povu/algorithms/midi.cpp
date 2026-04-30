@@ -8,13 +8,15 @@
 #include <utility>   // for get, pair
 #include <vector>    // for vector
 
-#include <quilt/shim.hpp>  // for format
-#include <quilt/types.hpp> // for qt
+#include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
+#include <quilt/shim.hpp>	 // for format
+#include <quilt/types.hpp>	 // for qt
 
 #include "povu/common/log.hpp" // for WARN, ERR
 
 namespace oza::midi
 {
+namespace pgt = quilt::types::graph;
 
 // add midi bubbles to the PVST
 void add_midi(const ptu::tree_meta &tm,

@@ -4,11 +4,13 @@
 #include <string> // for basic_string, string
 #include <vector> // for vector
 
-#include <quilt/shim.hpp>  // for format
-#include <quilt/types.hpp> // for qt
+#include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
+#include <quilt/shim.hpp>	 // for format
+#include <quilt/types.hpp>	 // for qt
 
 namespace oza::parallel
 {
+namespace pgt = quilt::types::graph;
 
 bool inspect_trunk(const pst::Tree &st, qt::idx_t ai, qt::idx_t zi)
 {

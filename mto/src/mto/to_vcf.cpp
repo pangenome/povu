@@ -3,17 +3,17 @@
 #include <sstream> // for basic_ostringstream
 #include <sys/types.h>
 
-#include <quilt/shim.hpp>  // for format
-#include <quilt/types.hpp> // for qt
+#include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
+#include <quilt/shim.hpp>	 // for format
+#include <quilt/types.hpp>	 // for qt
 
 #include "ita/variation/rov.hpp" // for var_type_e
-				 //
-// #include "povu/common/core.hpp"	 // for pt
+
 #include "povu/refs/refs.hpp" // for Ref, pr
 
 namespace mto::to_vcf
 {
-namespace pgt = povu::types::graph;
+namespace pgt = quilt::types::graph;
 
 constexpr std::string_view VCF_VERSION = "4.2";
 

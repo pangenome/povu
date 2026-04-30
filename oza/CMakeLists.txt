@@ -18,7 +18,6 @@ ADD_LIBRARY(oza
   ${OZA_SOURCES_DIR}/common/utils.cpp
 
   # graph
-  ${OZA_SOURCES_DIR}/graph/types.cpp
   ${OZA_SOURCES_DIR}/graph/bidirected.cpp
   ${OZA_SOURCES_DIR}/graph/bracket_list.cpp
   ${OZA_SOURCES_DIR}/graph/spanning_tree.cpp

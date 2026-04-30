@@ -1,5 +1,5 @@
-#ifndef POVU_TYPES_GRAPH_HPP
-#define POVU_TYPES_GRAPH_HPP
+#ifndef QT_TYPES_GRAPH_HPP
+#define QT_TYPES_GRAPH_HPP
 
 #include <cstddef>     // for size_t
 #include <iostream>    // for ostream
@@ -7,10 +7,10 @@
 #include <string_view> // for string_view, basic_string_view
 #include <vector>      // for vector
 
-#include <quilt/shim.hpp>  // for format
-#include <quilt/types.hpp> // for pt, id_t, idx_t
+#include "quilt/shim.hpp"  // for format
+#include "quilt/types.hpp" // for pt, id_t, idx_t
 
-namespace povu::types::graph
+namespace quilt::types::graph
 {
 enum class color_e {
 	gray,
@@ -119,9 +119,9 @@ struct ref_step_t {
 
 typedef std::vector<ref_step_t> ref_walk_t;
 
-} // namespace povu::types::graph
+} // namespace quilt::types::graph
 
 // NOLINTNEXTLINE(misc-unused-alias-decls)
-namespace ptg = povu::types::graph;
+namespace ptg = quilt::types::graph;
 
-#endif
+#endif // QT_TYPES_GRAPH_HPP

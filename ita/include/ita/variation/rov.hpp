@@ -5,18 +5,18 @@
 #include <string>   // for string
 #include <vector>   // for vector
 
-#include <quilt/shim.hpp>  // for format
-#include <quilt/types.hpp> // for qt
+#include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
+#include <quilt/shim.hpp>	 // for format
+#include <quilt/types.hpp>	 // for qt
 
 #include "povu/graph/bidirected.hpp" // for VG, bd
 #include "povu/graph/pvst.hpp"	     // for Tree, VertexBase
-#include "povu/graph/types.hpp"	     // for or_e, id_or_t, walk_t
 
 namespace ita::rov
 {
 inline constexpr std::string_view MODULE = "povu::genomics::rov";
 namespace pvst = oza::pvst;
-namespace pgt = povu::types::graph;
+namespace pgt = quilt::types::graph;
 
 enum class var_type_e : qt::u8 {
 	del,  // deletion

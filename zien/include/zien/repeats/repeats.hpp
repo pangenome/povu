@@ -3,11 +3,11 @@
 
 #include <vector>
 
-#include <liteseq/refs.h>  // for ref_walk, ref
-#include <quilt/types.hpp> // for qt
+#include <liteseq/refs.h>	 // for ref_walk, ref
+#include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
+#include <quilt/types.hpp>	 // for qt
 
 #include "povu/graph/bidirected.hpp" // for VG
-#include "povu/graph/types.hpp"
 
 namespace zien::tui::repeats
 {

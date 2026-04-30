@@ -5,12 +5,12 @@
 
 #include "ita/graph/bfs_tree.hpp"
 
-#include <quilt/shim.hpp>  // for format, contains
-#include <quilt/types.hpp> // for qt
+#include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
+#include <quilt/shim.hpp>	 // for format, contains
+#include <quilt/types.hpp>	 // for qt
 
 #include "povu/common/log.hpp" // for WARN, ERR
 #include "povu/common/utils.hpp"
-#include "povu/graph/types.hpp"
 
 namespace povu::genomics::graph
 {

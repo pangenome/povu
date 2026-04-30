@@ -12,13 +12,14 @@
 #include <utility>   // for pair, get
 #include <vector>    // for vector
 
-#include <quilt/shim.hpp>  // for format, erase_if
-#include <quilt/types.hpp> // for qt
-
-#include "fmt/core.h" // for format
+#include <quilt/constants.hpp>	 // for
+#include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
+#include <quilt/shim.hpp>	 // for format, erase_if
+#include <quilt/types.hpp>	 // for qt
 
 namespace oza::concealed
 {
+namespace pgt = quilt::types::graph;
 
 /*
   -----------------

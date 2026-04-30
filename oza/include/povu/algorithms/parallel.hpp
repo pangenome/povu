@@ -3,21 +3,15 @@
 
 #include <string_view> // for string_view
 
-#include "povu/common/constants.hpp"	// for constants
 #include "povu/graph/pvst.hpp"		// for Tree
 #include "povu/graph/spanning_tree.hpp" // for Tree
 #include "povu/graph/tree_utils.hpp"	// for tree_meta
-#include "povu/graph/types.hpp"		// for graph
 
 namespace oza::parallel
 {
 inline constexpr std::string_view MODULE = "povu::parallel";
 
-namespace pc = povu::constants;
 namespace ptu = oza::tree_utils;
-namespace pvst = oza::pvst;
-namespace pgt = povu::types::graph;
-namespace pst = oza::spanning_tree;
 
 void find_parallel(const pst::Tree &st, pvst::Tree &ft,
 		   const ptu::tree_meta &tm);

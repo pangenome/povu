@@ -5,24 +5,21 @@
 #include <string_view> // for string_view
 #include <vector>      // for vector
 
-#include <quilt/types.hpp> // for qt
+#include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
+#include <quilt/types.hpp>	 // for qt
 
-#include "povu/common/app.hpp"		// for config
-#include "povu/common/constants.hpp"	// for INVALID_IDX
+#include "povu/common/app.hpp" // for config
+// #include "povu/common/constants.hpp"	// for INVALID_IDX
 #include "povu/graph/pvst.hpp"		// for Tree
 #include "povu/graph/spanning_tree.hpp" // for Tree
 #include "povu/graph/tree_utils.hpp"	// for tree_utils
-#include "povu/graph/types.hpp"		// for or_e
 
 namespace oza::flubbles
 {
 inline constexpr std::string_view MODULE = "povu::graph::flubble_tree";
 
-namespace pc = povu::constants;
 namespace ptu = oza::tree_utils;
-namespace pvst = oza::pvst;
-namespace pgt = povu::types::graph;
-namespace pst = oza::spanning_tree;
+namespace pgt = quilt::types::graph;
 
 // a hairpin boundary
 struct boundary {

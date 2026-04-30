@@ -5,19 +5,19 @@
 
 #include <string_view> // for string_view
 
-#include <quilt/types.hpp> // for qt
+#include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
+#include <quilt/types.hpp>	 // for qt
 
 #include "ita/variation/rov.hpp" // for RoV
 
 #include "povu/graph/bidirected.hpp" // for VG, bd
 #include "povu/graph/pvst.hpp"	     // for VertexBase
-#include "povu/graph/types.hpp"	     // for walk_t, id_or_t
 
 namespace povu::genomics::graph
 {
 inline constexpr std::string_view MODULE = "povu::genomics::graph";
 namespace pvst = oza::pvst;
-namespace pgt = povu::types::graph;
+namespace pgt = quilt::types::graph;
 
 // Maximum number of steps to take from flubble start to end
 const qt::u32 MAX_FLUBBLE_STEPS{1000};

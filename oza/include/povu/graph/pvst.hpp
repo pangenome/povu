@@ -10,21 +10,17 @@
 #include <string_view>
 #include <vector>
 
-#include <quilt/shim.hpp>  // for format, erase_if
-#include <quilt/types.hpp> // for qt
-
-#include "povu/common/constants.hpp"
-#include "povu/graph/types.hpp"
+#include <quilt/constants.hpp>	 // for UNDEFINED_IDX
+#include <quilt/graph_types.hpp> // for pgt
+#include <quilt/shim.hpp>	 // for format, erase_if
+#include <quilt/types.hpp>	 // for qt
 
 /* === PVST pangenome variation structure tree === */
 
 namespace oza::pvst
 {
 inline constexpr std::string_view MODULE = "povu::pvst";
-
-namespace pc = povu::constants;
-namespace pgt = povu::types::graph;
-
+namespace pgt = quilt::types::graph;
 /*
 hierarchy of the types of vertices
 vertex clan

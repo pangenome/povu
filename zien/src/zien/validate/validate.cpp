@@ -5,17 +5,17 @@
 #include <string>
 #include <vector>
 
-#include <liteseq/refs.h>  // for ref_walk, ref
-#include <quilt/shim.hpp>  // for format
-#include <quilt/types.hpp> // for qt
+#include <liteseq/refs.h>	 // for ref_walk, ref
+#include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
+#include <quilt/shim.hpp>	 // for format
+#include <quilt/types.hpp>	 // for qt
 
-#include "mto/from_vcf.hpp" // for read_vcf
-
+#include "mto/from_vcf.hpp"	     // for read_vcf
 #include "povu/graph/bidirected.hpp" // for bidirected
-#include "povu/graph/types.hpp"	     // for or_e
-#include "zien/common/common.hpp"    // for get_ref_ids
 
 #include <povu/refs/refs.hpp> // for ref_format_e, Ref
+
+#include "zien/common/common.hpp" // for get_ref_ids
 
 namespace zien::validate
 {

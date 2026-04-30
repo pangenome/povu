@@ -8,19 +8,19 @@
 
 #include "ita/graph/slice_tree.hpp" // for it
 
-#include <quilt/shim.hpp>  // for contains
-#include <quilt/types.hpp> // for qt
+#include <quilt/constants.hpp>	 // for
+#include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
+#include <quilt/shim.hpp>	 // for contains
+#include <quilt/types.hpp>	 // for qt
 
-#include "povu/common/constants.hpp"
 #include "povu/graph/bidirected.hpp"
-#include "povu/graph/types.hpp" // for or_e, id_or_t
 
 namespace ita::sne // sne = seed and extend
 {
 constexpr std::string_view MODULE = "povu::overlay::sne";
 
 namespace lq = liteseq;
-namespace pgt = povu::types::graph;
+namespace pgt = quilt::types::graph;
 
 struct pin {
 	qt::u32 r_idx; // hap index
@@ -49,7 +49,7 @@ struct extension {
 						? pgt::or_e::forward
 						: pgt::or_e::reverse;
 
-				bd::id_or_t step{ref_v_id, ref_o};
+				pgt::id_or_t step{ref_v_id, ref_o};
 				std::cerr << step.as_str();
 			}
 			std::cerr << "\n";

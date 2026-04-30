@@ -5,23 +5,21 @@
 #include <optional>
 
 // deps
-#include <liteseq/refs.h> // for ref_walk, ref
-
-#include <quilt/types.hpp> // for qt
+#include <liteseq/refs.h>	 // for ref_walk, ref
+#include <quilt/constants.hpp>	 // for
+#include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
+#include <quilt/types.hpp>	 // for qt
 
 // ita includes
 #include "ita/graph/slice_tree.hpp" // for ist
 
 // povu includes
-#include "povu/common/constants.hpp"
 #include "povu/graph/pvst.hpp"
-#include "povu/graph/types.hpp" // pgt
 
 namespace ita::sne
 {
-
 namespace lq = liteseq;
-namespace pgt = povu::types::graph;
+namespace pgt = quilt::types::graph;
 
 /**
  * @brief match ref walks at index i and j in ref walk 1 and ref walk 2
@@ -347,13 +345,13 @@ bool is_slice_in_hap(const bd::VG &g, qt::u32 ref_h_idx, qt::u32 ref_h_start,
 	if (h2_slices.empty())
 		return false;
 
-	auto get_at = [](const lq::ref_walk *h_w, qt::u32 i) -> bd::id_or_t
+	auto get_at = [](const lq::ref_walk *h_w, qt::u32 i) -> ptg::id_or_t
 	{
 		qt::idx_t ref_v_id = h_w->v_ids[i];
 		pgt::or_e ref_o = h_w->strands[i] == lq::strand::STRAND_FWD
 					  ? pgt::or_e::forward
 					  : pgt::or_e::reverse;
-		bd::id_or_t step{ref_v_id, ref_o};
+		ptg::id_or_t step{ref_v_id, ref_o};
 		return step;
 	};
 

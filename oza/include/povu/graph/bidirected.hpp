@@ -13,18 +13,18 @@
 #include <liteseq/refs.h>	 // for ref
 #include <meza/owned/matrix.hpp> // for dense_matrix2d
 
-#include <quilt/types.hpp> // for qt
+#include <quilt/constants.hpp>	 // for
+#include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
+#include <quilt/types.hpp>	 // for qt
 
 #include "povu/common/utils.hpp" // for pu, TwoWayMap
-#include "povu/graph/types.hpp"	 // for v_end_e, side_n_id_t, side_n_idx_t
 #include "povu/refs/refs.hpp"	 // for pr, Ref, Refs
 
 namespace oza::bidirected
 {
 inline constexpr std::string_view MODULE = "povu::bidirected";
 
-using namespace povu::types::graph;
-namespace pgt = povu::types::graph;
+namespace pgt = quilt::types::graph;
 namespace lq = liteseq;
 
 /**

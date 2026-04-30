@@ -3,12 +3,12 @@
 #include <filesystem> // for path
 #include <fstream>    // for basic_ofstream, operator<<, basic_ostream
 
-#include <quilt/shim.hpp>  // for format
-#include <quilt/types.hpp> // for qt
+#include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
+#include <quilt/shim.hpp>	 // for format
+#include <quilt/types.hpp>	 // for qt
 
 #include "povu/common/log.hpp"
 #include "povu/graph/bidirected.hpp"
-#include "povu/graph/types.hpp"
 
 namespace mto::to_gfa
 {

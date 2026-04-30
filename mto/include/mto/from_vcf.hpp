@@ -9,13 +9,11 @@
 #include <string_view> // for string_view
 #include <vector>      // for vector
 
-#include <quilt/types.hpp> // for qt
+#include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
+#include <quilt/types.hpp>	 // for qt
 
 #include "ita/variation/rov.hpp" // for var_type_e
-
-#include "povu/common/constants.hpp" // for TAB_CHAR
-#include "povu/common/utils.hpp"     // for split
-#include "povu/graph/types.hpp"	     // for id_or_t
+#include "povu/common/utils.hpp" // for split
 
 namespace mto::from_vcf
 {

@@ -1,6 +1,6 @@
-#include "povu/graph/types.hpp"
+#include "quilt/graph_types.hpp"
 
-namespace povu::types::graph
+namespace quilt::types::graph
 {
 
 std::string_view to_str(v_type_e vt)
@@ -138,4 +138,4 @@ std::string to_string(const walk_t &w)
 	return res;
 }
 
-} // namespace povu::types::graph
+} // namespace quilt::types::graph

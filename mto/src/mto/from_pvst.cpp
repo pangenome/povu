@@ -11,28 +11,18 @@
 #include <utility> // for get, pair
 #include <vector>  // for vector
 
-// #include "fmt/core.h" // for format
-
-#include <quilt/types.hpp> // for qt
+#include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
+#include <quilt/types.hpp>	 // for qt
 
 #include "mto/common.hpp" // for FILE_ERROR
 #include "mto/from_pvst.hpp"
 
-// #include "povu/common/compat.hpp"    // for format, pv_cmp
-#include "povu/common/constants.hpp" // for INVALID_IDX, COL_SEP, EXPECTED_...
-#include "povu/common/log.hpp"	     // for ERR
-#include "povu/common/utils.hpp"     // for split, concat_with
-#include "povu/graph/types.hpp"	     // for id_or_t, or_e
+#include "povu/common/log.hpp"	 // for ERR
+#include "povu/common/utils.hpp" // for split, concat_with
 
 namespace mto::from_pvst
 {
-using povu::types::graph::id_or_t;
-namespace pgt = povu::types::graph;
-namespace pvst = oza::pvst;
-namespace pc = povu::constants;
-namespace pu = povu::utils;
-
-// constexpr std::vector<std::string_view> PVST_SUPPORTED_VERSIONS{"0.0.3"};
+namespace pgt = quilt::types::graph;
 
 const std::vector<std::string> PVST_SUPPORTED_VERSIONS = {"0.0.3"};
 

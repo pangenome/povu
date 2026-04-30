@@ -10,11 +10,13 @@
 #include <utility>	 // for get, pair
 #include <vector>	 // for vector
 
-#include <quilt/shim.hpp>  // for format
-#include <quilt/types.hpp> // for qt
+#include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
+#include <quilt/shim.hpp>	 // for format
+#include <quilt/types.hpp>	 // for qt
 
 namespace oza::smothered
 {
+namespace pgt = quilt::types::graph;
 
 struct fl_sls {
 	qt::idx_t cn_v_idx;

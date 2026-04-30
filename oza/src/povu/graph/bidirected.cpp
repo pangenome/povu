@@ -7,12 +7,15 @@
 #include <unordered_set> // for unordered_set, operator!=
 #include <vector>
 
-#include <liteseq/gfa.h>   // for gfa_props
-#include <quilt/shim.hpp>  // for format, contains
-#include <quilt/types.hpp> // for qt
+#include <liteseq/gfa.h>	 // for gfa_props
+#include <quilt/constants.hpp>	 // for
+#include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
+#include <quilt/shim.hpp>	 // for format, contains
+#include <quilt/types.hpp>	 // for qt
 
-#include "povu/common/constants.hpp" // for UNDEFINED_ID
-#include "povu/graph/types.hpp"	     // for v_end_e, side_n_id_t, complement
+// #include "povu/common/constants.hpp" // for UNDEFINED_ID
+// #include "povu/graph/types.hpp"	     // for v_end_e, side_n_id_t,
+// complement
 
 namespace oza::bidirected
 {
@@ -398,7 +401,7 @@ graph G {
 	/* vertices */
 	for (size_t v_idx{}; v_idx < this->vtx_count(); ++v_idx) {
 		const Vertex &v = this->get_vertex_by_idx(v_idx);
-		std::string v_id = v.id() == povu::constants::UNDEFINED_ID
+		std::string v_id = v.id() == pc::UNDEFINED_ID
 					   ? "d"
 					   : std::to_string(v.id());
 
@@ -442,7 +445,7 @@ void VG::print_gfa(std::ostream &os) const
 	/* vertices */
 	for (size_t v_idx{}; v_idx < this->vtx_count(); ++v_idx) {
 		const Vertex &v = this->get_vertex_by_idx(v_idx);
-		std::string v_id = v.id() == povu::constants::UNDEFINED_ID
+		std::string v_id = v.id() == pc::UNDEFINED_ID
 					   ? "d"
 					   : std::to_string(v.id());
 

@@ -6,11 +6,10 @@
 #include <string_view>
 #include <sys/types.h>
 
-#include <quilt/types.hpp> // for
+#include "quilt/graph_types.hpp" // for id_or_t
+#include "quilt/types.hpp"	 // for
 
-#include "povu/graph/types.hpp"
-
-namespace povu::constants
+namespace quilt::constants
 {
 // colors for DOT format
 inline constexpr std::string_view GRAY{"gray"};
@@ -71,8 +70,8 @@ inline constexpr std::string_view SHORT_TAB = "  ";
 // VCF
 inline constexpr char COL_SEP = '\t'; // column separator
 inline constexpr char NO_VALUE = '.'; // null character
-} // namespace povu::constants
+} // namespace quilt::constants
 // NOLINTNEXTLINE(misc-unused-alias-decls)
-namespace pc = povu::constants;
+namespace pc = quilt::constants;
 
 #endif

@@ -6,11 +6,10 @@
 #include <optional>
 #include <set>
 
-#include <quilt/shim.hpp>  // for format
-#include <quilt/types.hpp> // for qt
+#include <quilt/constants.hpp> // for
+#include <quilt/shim.hpp>      // for format
+#include <quilt/types.hpp>     // for qt
 
-#include "povu/common/constants.hpp"
-// #include "povu/common/core.hpp" // for pt, idx_t, id_t, op_t
 #include "povu/common/log.hpp" // for ERR
 
 namespace ita::slice_tree

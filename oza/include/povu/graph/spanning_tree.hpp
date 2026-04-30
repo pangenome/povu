@@ -8,18 +8,17 @@
 #include <utility> // for pair
 #include <vector>  // for vector
 
-#include "bidirected.hpp"   // for VG, bd
-#include "bracket_list.hpp" // for WBracketList, Bracket, BracketList
-// #include "povu/common/core.hpp" // for pt, idx_t, id_t
-#include "types.hpp" // for color_e, v_type_e
+#include <quilt/graph_types.hpp> // for color_e, v_type_e
+#include <quilt/types.hpp>	 // for qt
 
-#include <quilt/types.hpp> // for qt
+#include "povu/graph/bidirected.hpp"   // for VG, bd
+#include "povu/graph/bracket_list.hpp" // for WBracketList, Bracket, BracketList
 
 namespace oza::spanning_tree
 {
 using namespace oza::bracket_list;
-using namespace povu::types::graph;
-namespace pgt = povu::types::graph;
+namespace pgt = quilt::types::graph;
+using namespace quilt::types::graph;
 
 enum class be_type_e {
 	// tree_edge, // TODO: remove

@@ -8,19 +8,18 @@
 #include <string_view> // for string_view
 #include <vector>      // for vector
 
-#include <quilt/shim.hpp>  // for format
-#include <quilt/types.hpp> // for qt
+#include <quilt/constants.hpp>	 // for pc
+#include <quilt/graph_types.hpp> // for graph
+#include <quilt/shim.hpp>	 // for format
+#include <quilt/types.hpp>	 // for qt
 
-#include "fmt/core.h"			// for format
-#include "povu/common/constants.hpp"	// for pc, INVALID_IDX
 #include "povu/graph/spanning_tree.hpp" // for Tree
-#include "povu/graph/types.hpp"		// for graph
 
 namespace oza::tree_utils
 {
 inline constexpr std::string_view MODULE = "povu::tree_utils";
-using namespace povu::types::graph;
-namespace pgt = povu::types::graph;
+
+namespace pgt = quilt::types::graph;
 namespace pst = oza::spanning_tree;
 
 // key is edge idx of an edge and value is the v idx of the next braching vtx or

@@ -8,17 +8,20 @@
 #include <sys/types.h>	 // for u_int8_t
 #include <unordered_set> // for unordered_set, operator!=
 
-#include <quilt/shim.hpp>  // for format, contains
-#include <quilt/types.hpp> // for qt
+#include <quilt/constants.hpp>	 // for
+#include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
+#include <quilt/shim.hpp>	 // for format, contains
+#include <quilt/types.hpp>	 // for qt
 
-#include "povu/common/constants.hpp"   // for INVALID_CLS, COL_SEP, INVALI...
+// #include "povu/common/constants.hpp"   // for INVALID_CLS, COL_SEP, INVALI...
 #include "povu/graph/bidirected.hpp"   // for Vertex, VG, pgt, Edge
 #include "povu/graph/bracket_list.hpp" // for WBracketList, Bracket, Bracke...
-#include "povu/graph/types.hpp"	       // for v_type_e, v_end_e, color_e
+
+// #include "povu/graph/types.hpp"	       // for v_type_e, v_end_e, color_e
 
 namespace oza::spanning_tree
 {
-using namespace povu::constants;
+using namespace quilt::constants;
 
 /*
  * Edge

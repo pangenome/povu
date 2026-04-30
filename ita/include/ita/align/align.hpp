@@ -6,19 +6,21 @@
 #include <string_view> // for operator<<, string_view
 #include <vector>      // for vector
 
-#include <quilt/types.hpp> // for qt
+#include <quilt/constants.hpp>	 // for
+#include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
+#include <quilt/types.hpp>	 // for q
 
-#include "ita/genomics/allele.hpp"   // for itn_t
-				     //
-#include "povu/common/constants.hpp" // for INF, INVALID_IDX
-#include "povu/graph/types.hpp"	     // for walk_t
+#include "ita/genomics/allele.hpp" // for itn_t
+				   //
+
+// #include "povu/common/constants.hpp" // for INF, INVALID_IDX
+//  #include "povu/graph/types.hpp"	     // for walk_t
 
 namespace ita::align
 {
 inline constexpr std::string_view MODULE = "povu::align";
 
-namespace pc = povu::constants;
-namespace pgt = povu::types::graph;
+namespace pgt = quilt::types::graph;
 
 /**
  * used in untangling, the level of alignment

@@ -1,7 +1,7 @@
 #include "zien/repeats/repeats.hpp" // for foo
 
 #include <liteseq/refs.h> // for ref_walk, ref
-
+#include <quilt/graph_types.hpp>
 #include <quilt/shim.hpp>  // for contains
 #include <quilt/types.hpp> // for qt
 
@@ -9,7 +9,6 @@
 #include "ita/genomics/allele.hpp" // for ia::at_itn
 
 #include "povu/graph/bidirected.hpp" // for VG
-#include "povu/graph/types.hpp"
 
 namespace zien::tui::repeats
 {

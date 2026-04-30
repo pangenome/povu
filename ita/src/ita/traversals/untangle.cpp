@@ -5,15 +5,17 @@
 #include <utility> // for move
 #include <vector>  // for vector
 
-#include <quilt/shim.hpp>  // for contains
-#include <quilt/types.hpp> // for qt
+#include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
+#include <quilt/shim.hpp>	 // for contains
+#include <quilt/types.hpp>	 // for qt
+
+#include "povu/graph/bidirected.hpp" // for VG, bd
+#include "povu/refs/refs.hpp"	     // for lq_strand_to_pv_or
 
 #include "ita/align/align.hpp"	   // for align, aln_level_e
 #include "ita/genomics/allele.hpp" // for Exp, itn_t
 #include "ita/traversals/traversals.hpp" // for unroll_haps, itinerary, allele_traversal
-#include "povu/graph/bidirected.hpp" // for VG, bd
-#include "povu/graph/types.hpp"	     // for or_e, id_or_t
-#include "povu/refs/refs.hpp"	     // for lq_strand_to_pv_or
+					 //
 
 namespace ita::traversals::untangle
 {

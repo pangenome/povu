@@ -1,10 +1,10 @@
 #include "povu/graph/bracket_list.hpp"
 
-#include "povu/common/constants.hpp" // for UNDEFINED_SIZE_T
+#include <quilt/constants.hpp>
 
 namespace oza::bracket_list
 {
-using namespace povu::constants;
+using namespace quilt::constants;
 
 /*
  * Bracket

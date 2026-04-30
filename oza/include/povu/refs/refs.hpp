@@ -10,13 +10,13 @@
 
 #include <liteseq/gfa.h>
 
-#include <quilt/shim.hpp>  // for contains
-#include <quilt/types.hpp> // for qt
+#include <quilt/constants.hpp>	 // for
+#include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
+#include <quilt/shim.hpp>	 // for contains
+#include <quilt/types.hpp>	 // for qt
 
-#include "povu/common/constants.hpp"
 #include "povu/common/log.hpp"
 #include "povu/common/utils.hpp"
-#include "povu/graph/types.hpp"
 
 namespace oza::refs
 {

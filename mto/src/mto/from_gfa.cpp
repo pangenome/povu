@@ -4,18 +4,19 @@
 #include <thread>  // for thread, sleep_for
 #include <vector>  // for vector
 
-#include <liteseq/gfa.h>   // for gfa_config, gfa...
-#include <liteseq/refs.h>  // for get_step_count
-#include <quilt/types.hpp> // for qt
+#include <liteseq/gfa.h>	 // for gfa_config, gfa...
+#include <liteseq/refs.h>	 // for get_step_count
+#include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
+#include <quilt/types.hpp>	 // for qt
+
+#include "povu/common/log.hpp" // for WARN
 
 #include "mto/from_gfa.hpp"
-#include "povu/common/log.hpp"	// for WARN
-#include "povu/graph/types.hpp" // for v_end_e
 
 namespace mto::from_gfa
 {
 namespace lq = liteseq;
-namespace pgt = povu::types::graph;
+namespace pgt = quilt::types::graph;
 
 inline lq::gfa_config gen_lq_conf(const core::config &app_config,
 				  std::string &gfa_fp)

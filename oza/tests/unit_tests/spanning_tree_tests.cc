@@ -1,12 +1,14 @@
 #include <gtest/gtest.h>
 
+#include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
+
 #include "povu/graph/bidirected.hpp"
 #include "povu/graph/pvst.hpp"
 #include "povu/graph/spanning_tree.hpp"
 
 namespace povu::unit_tests_spanning_tree
 {
-// namespace pfl = povu::flubbles;
+using namespace quilt::types::graph;
 
 bd::VG *create_test_vg()
 {
@@ -22,15 +24,15 @@ bd::VG *create_test_vg()
 	vg->add_vertex(7, "C");
 
 	// Add edges
-	vg->add_edge(1, bd::v_end_e::r, 3, bd::v_end_e::l);
-	vg->add_edge(1, bd::v_end_e::r, 4, bd::v_end_e::l);
-	vg->add_edge(2, bd::v_end_e::r, 4, bd::v_end_e::l);
-	vg->add_edge(3, bd::v_end_e::r, 4, bd::v_end_e::l);
-	vg->add_edge(4, bd::v_end_e::r, 5, bd::v_end_e::l);
-	vg->add_edge(4, bd::v_end_e::r, 6, bd::v_end_e::l);
-	vg->add_edge(4, bd::v_end_e::l, 7, bd::v_end_e::r);
-	vg->add_edge(5, bd::v_end_e::r, 7, bd::v_end_e::l);
-	vg->add_edge(6, bd::v_end_e::r, 7, bd::v_end_e::l);
+	vg->add_edge(1, v_end_e::r, 3, v_end_e::l);
+	vg->add_edge(1, v_end_e::r, 4, v_end_e::l);
+	vg->add_edge(2, v_end_e::r, 4, v_end_e::l);
+	vg->add_edge(3, v_end_e::r, 4, v_end_e::l);
+	vg->add_edge(4, v_end_e::r, 5, v_end_e::l);
+	vg->add_edge(4, v_end_e::r, 6, v_end_e::l);
+	vg->add_edge(4, v_end_e::l, 7, v_end_e::r);
+	vg->add_edge(5, v_end_e::r, 7, v_end_e::l);
+	vg->add_edge(6, v_end_e::r, 7, v_end_e::l);
 
 	return vg;
 }

@@ -3,21 +3,15 @@
 
 #include <string_view> // for string_view
 
-#include "povu/common/constants.hpp"	// for constants
 #include "povu/graph/pvst.hpp"		// for Tree
 #include "povu/graph/spanning_tree.hpp" // for Tree
 #include "povu/graph/tree_utils.hpp"	// for tree_meta
-#include "povu/graph/types.hpp"		// for graph
 
 namespace oza::tiny
 {
 inline constexpr std::string_view MODULE = "povu::tiny";
 
-namespace pc = povu::constants;
 namespace ptu = oza::tree_utils;
-namespace pst = oza::spanning_tree;
-namespace pvst = oza::pvst;
-namespace pgt = povu::types::graph;
 
 void find_tiny(const pst::Tree &st, pvst::Tree &pvst, const ptu::tree_meta &tm);
 

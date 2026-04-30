@@ -10,8 +10,6 @@
 #include <quilt/shim.hpp>  // for format
 #include <quilt/types.hpp> // for qt
 
-#include "povu/common/constants.hpp" // for INVALID_IDX
-
 namespace ita::bfs
 {
 

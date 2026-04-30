@@ -8,24 +8,24 @@
 #include <utility>     // for move, pair
 #include <vector>      // for vector
 
-#include <liteseq/refs.h>  // for ref_walk
-#include <liteseq/types.h> // for strand
-#include <quilt/shim.hpp>  // for format
-#include <quilt/types.hpp> // for qt
+#include <liteseq/refs.h>	 // for ref_walk
+#include <liteseq/types.h>	 // for strand
+#include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
+#include <quilt/shim.hpp>	 // for format
+#include <quilt/types.hpp>	 // for qt
 
-#include "ita/variation/rov.hpp" // for RoV, var_type_e
-#include "povu/common/constants.hpp"
 #include "povu/common/utils.hpp"
 #include "povu/graph/bidirected.hpp" // for bd, VG
 #include "povu/graph/pvst.hpp"	     // for VertexBase
-#include "povu/graph/types.hpp"	     // for or_e, id_or_t, walk_t
+
+#include "ita/variation/rov.hpp" // for RoV, var_type_e
 
 namespace ita::allele
 {
 inline constexpr std::string_view MODULE = "povu::genomics::allele";
 
 namespace lq = liteseq;
-namespace pgt = povu::types::graph;
+namespace pgt = quilt::types::graph;
 
 // idx_in_hap, v_id, or_e
 using extended_step = std::tuple<qt::u32, qt::u32, pgt::or_e>;
@@ -147,7 +147,7 @@ struct hap_slice {
 	}
 
 	[[nodiscard]]
-	bd::id_or_t get_step(qt::idx_t idx) const
+	ptg::id_or_t get_step(qt::idx_t idx) const
 	{
 		qt::idx_t ref_v_id = ref_w->v_ids[idx];
 		pgt::or_e ref_o = ref_w->strands[idx] == lq::strand::STRAND_FWD

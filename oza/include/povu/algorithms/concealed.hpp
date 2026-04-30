@@ -3,22 +3,21 @@
 
 #include <string_view> // for string_view
 
-#include "povu/common/constants.hpp"	// for constants
+#include <quilt/constants.hpp>	 // for
+#include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
+
 #include "povu/graph/pvst.hpp"		// for Tree
 #include "povu/graph/spanning_tree.hpp" // for Tree
 #include "povu/graph/tree_utils.hpp"	// for tree_meta
-#include "povu/graph/types.hpp"		// for graph
+
+// #include "povu/graph/types.hpp"		// for graph
 
 namespace oza::concealed
 {
-
 inline constexpr std::string_view MODULE = "povu::concealed";
 
-namespace pgt = povu::types::graph;
-namespace pc = povu::constants;
 namespace pst = oza::spanning_tree;
 namespace pvst = oza::pvst;
-namespace pc = povu::constants;
 namespace ptu = oza::tree_utils;
 
 void find_concealed(const pst::Tree &st, pvst::Tree &ft,

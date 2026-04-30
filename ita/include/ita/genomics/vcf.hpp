@@ -12,16 +12,14 @@
 #include <utility>     // for get, move, pair
 #include <vector>      // for vector
 
-#include <quilt/types.hpp> // for qt
-
-// #include "fmt/core.h" // for format
+#include <quilt/constants.hpp>	 // for
+#include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
+#include <quilt/types.hpp>	 // for qt
 
 #include "ita/genomics/allele.hpp"  // for allele_slice_t, Exp
 #include "ita/graph/slice_tree.hpp" // for poi
 #include "ita/variation/rov.hpp"    // for var_type_e
 
-#include "povu/common/constants.hpp"
-// #include "povu/common/core.hpp"	     // for pt, idx_t, id_t, op_t
 #include "povu/common/log.hpp"	     // for ERR
 #include "povu/common/utils.hpp"     // for concat_with, pu
 #include "povu/graph/bidirected.hpp" // for VG
@@ -29,7 +27,7 @@
 namespace ita::vcf
 {
 inline constexpr std::string_view MODULE = "povu::genomics::vcf";
-namespace pgt = povu::types::graph;
+namespace pgt = quilt::types::graph;
 
 enum class var_class_e : qt::u8 { // variation class
 	simple,
