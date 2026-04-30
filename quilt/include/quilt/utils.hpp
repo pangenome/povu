@@ -11,9 +11,9 @@
 #include <utility>	 // for pair
 #include <vector>	 // for vector
 
-#include <quilt/types.hpp> // for qt
+#include "quilt/types.hpp" // for qt
 
-namespace povu::utils
+namespace quilt::utils
 {
 
 std::string reverse_complement(const std::string &sequence);
@@ -167,8 +167,8 @@ inline thread_local bool tp_in_worker = false;
 
 std::size_t comp_prog(qt::idx_t pos, qt::idx_t total);
 
-} // namespace povu::utils
+} // namespace quilt::utils
 
 // NOLINTNEXTLINE(misc-unused-alias-decls)
-namespace pu = povu::utils;
+namespace pu = quilt::utils;
 #endif

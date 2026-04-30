@@ -7,10 +7,10 @@
 
 #include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
 #include <quilt/shim.hpp>	 // for format, contains
-#include <quilt/types.hpp>	 // for qt
+#include <quilt/types.hpp>	 // for
+#include <quilt/utils.hpp>
 
 #include "povu/common/log.hpp" // for WARN, ERR
-#include "povu/common/utils.hpp"
 
 namespace povu::genomics::graph
 {

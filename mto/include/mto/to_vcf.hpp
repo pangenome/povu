@@ -15,16 +15,15 @@
 #include <utility>     // for get, move
 #include <vector>      // for vector
 
-#include <quilt/shim.hpp>  // for format, contains
-#include <quilt/types.hpp> // for qt
-
 #include "ita/genomics/vcf.hpp" // for VcfRecIdx
+#include <quilt/shim.hpp>	// for format, contains
+#include <quilt/types.hpp>	// for qt
+#include <quilt/utils.hpp>	// for is_prefix
 
 #include "mto/common.hpp" // for create_dir_if_not_exists
 
 #include "povu/common/app.hpp"	     // for config
 #include "povu/common/log.hpp"	     // for ERR
-#include "povu/common/utils.hpp"     // for is_prefix
 #include "povu/graph/bidirected.hpp" // for VG
 
 namespace mto::to_vcf

@@ -8,9 +8,9 @@
 
 #include <quilt/shim.hpp>  // for contains
 #include <quilt/types.hpp> // for qt
+#include <quilt/utils.hpp> // for concat_with
 
-#include "povu/common/log.hpp"	 // for INFO
-#include "povu/common/utils.hpp" // for concat_with
+#include "povu/common/log.hpp" // for INFO
 
 namespace mto::from_vcf
 {

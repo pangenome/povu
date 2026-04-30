@@ -11,9 +11,9 @@
 
 #include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
 #include <quilt/types.hpp>	 // for qt
+#include <quilt/utils.hpp>
 
 #include "ita/variation/rov.hpp" // for var_type_e
-#include "povu/common/utils.hpp" // for split
 
 namespace mto::from_vcf
 {
@@ -87,13 +87,13 @@ private:
 	void extract_ats(const std::string &s)
 	{
 		std::vector<std::string> info_fields;
-		povu::utils::split(s, ';', &info_fields);
+		pu::split(s, ';', &info_fields);
 
 		for (const auto &field : info_fields) {
 			if (field.rfind("AT=", 0) == 0) {
 				std::string ats_str = field.substr(3);
-				povu::utils::split(ats_str, ',',
-						   &this->allele_traversals);
+				pu::split(ats_str, ',',
+					  &this->allele_traversals);
 			}
 		}
 	}
@@ -101,7 +101,7 @@ private:
 	void extract_var_type(const std::string &s)
 	{
 		std::vector<std::string> info_fields;
-		povu::utils::split(s, ';', &info_fields);
+		pu::split(s, ';', &info_fields);
 
 		for (const auto &field : info_fields) {
 			if (field.rfind("VARTYPE=", 0) == 0) {
@@ -124,7 +124,7 @@ private:
 	void extract_tangled(const std::string &s)
 	{
 		std::vector<std::string> info_fields;
-		povu::utils::split(s, ';', &info_fields);
+		pu::split(s, ';', &info_fields);
 
 		for (const auto &field : info_fields) {
 			if (field.rfind("TANGLED=", 0) == 0) {
@@ -141,7 +141,7 @@ private:
 	void extract_ef(const std::string &s) // extract encapsulating flubble
 	{
 		std::vector<std::string> info_fields;
-		povu::utils::split(s, ';', &info_fields);
+		pu::split(s, ';', &info_fields);
 
 		for (const auto &field : info_fields) {
 			if (field.rfind("ES=", 0) == 0) {
@@ -169,7 +169,7 @@ private:
 	void handle_gt(qt::u32 i, const std::string &gt_str, gt_data &a)
 	{
 		std::vector<std::string> d;
-		povu::utils::split(gt_str, '|', &d);
+		pu::split(gt_str, '|', &d);
 		for (qt::u32 j = 0; j < d.size(); j++) {
 			const std::string &allele = d[j];
 			if (allele == ".")
@@ -215,7 +215,7 @@ public:
 		rec.pos = static_cast<qt::u32>(std::stoul(fields[1]));
 		rec.id = fields[2];
 		rec.ref = fields[3];
-		povu::utils::split(fields[4], ',', &rec.alts);
+		pu::split(fields[4], ',', &rec.alts);
 
 		rec.extract_ats(fields[7]);
 		rec.extract_var_type(fields[7]);

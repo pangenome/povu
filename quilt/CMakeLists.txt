@@ -4,6 +4,7 @@ set(QUILT_SOURCES_DIR ${SRC_DIR}/quilt)
 
 ADD_LIBRARY(quilt
   ${QUILT_SOURCES_DIR}/graph_types.cpp
+  ${QUILT_SOURCES_DIR}/utils.cpp
 )
 
 target_include_directories(quilt

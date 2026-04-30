@@ -12,8 +12,9 @@
 #include <utility>
 #include <vector>
 
+#include <quilt/utils.hpp> // for pu
+
 #include "povu/common/log.hpp"
-#include "povu/common/utils.hpp"
 
 namespace core
 {

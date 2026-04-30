@@ -6,15 +6,14 @@
 #include <quilt/constants.hpp>	 // for
 #include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
 #include <quilt/shim.hpp>	 // for format
+#include <quilt/utils.hpp>	 // for print_with_comma
 
-#include "povu/common/log.hpp"	 // for ERR
-#include "povu/common/utils.hpp" // for print_with_comma
+#include "povu/common/log.hpp" // for ERR
 
 #include "mto/to_pvst.hpp"
 
 namespace mto::to_pvst
 {
-namespace pu = povu::utils;
 
 inline void write_header_line(std::ofstream &bub_file) noexcept
 {

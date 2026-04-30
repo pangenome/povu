@@ -1,4 +1,4 @@
-#include "povu/common/utils.hpp"
+#include "quilt/utils.hpp"
 
 #include <algorithm> // for all_of
 #include <cctype>    // for isdigit
@@ -8,7 +8,7 @@
 #include <quilt/shim.hpp>  // for format
 #include <quilt/types.hpp> // for qt
 
-namespace povu::utils
+namespace quilt::utils
 {
 char complement(char nucleotide)
 {
@@ -133,4 +133,4 @@ std::size_t comp_prog(qt::idx_t pos, qt::idx_t total)
 	return static_cast<std::size_t>(prog);
 }
 
-} // namespace povu::utils
+} // namespace quilt::utils

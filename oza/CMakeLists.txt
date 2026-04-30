@@ -14,9 +14,6 @@ ADD_LIBRARY(oza
 
   ${OZA_SOURCES_DIR}/refs/refs.cpp
 
-  # common
-  ${OZA_SOURCES_DIR}/common/utils.cpp
-
   # graph
   ${OZA_SOURCES_DIR}/graph/bidirected.cpp
   ${OZA_SOURCES_DIR}/graph/bracket_list.cpp

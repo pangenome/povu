@@ -16,9 +16,9 @@
 #include <quilt/constants.hpp>	 // for
 #include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
 #include <quilt/types.hpp>	 // for qt
+#include <quilt/utils.hpp>	 // for pu
 
-#include "povu/common/utils.hpp" // for pu, TwoWayMap
-#include "povu/refs/refs.hpp"	 // for pr, Ref, Refs
+#include "povu/refs/refs.hpp" // for pr, Ref, Refs
 
 namespace oza::bidirected
 {
