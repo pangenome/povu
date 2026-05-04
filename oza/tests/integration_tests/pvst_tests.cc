@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
 
+#include <quilt/app.hpp>	 // for config
 #include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
 #include <quilt/types.hpp>	 // for qt
 
 #include "oza/algorithms/flubbles.hpp"
-#include "oza/common/app.hpp"
 #include "oza/graph/bidirected.hpp"
 #include "oza/graph/pvst.hpp"
 #include "oza/graph/spanning_tree.hpp"

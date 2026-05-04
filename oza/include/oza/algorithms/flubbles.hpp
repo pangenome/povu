@@ -5,10 +5,10 @@
 #include <string_view> // for string_view
 #include <vector>      // for vector
 
+#include <quilt/app.hpp>	 // for config
 #include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
 #include <quilt/types.hpp>	 // for qt
 
-#include "oza/common/app.hpp"	       // for config
 #include "oza/graph/pvst.hpp"	       // for Tree
 #include "oza/graph/spanning_tree.hpp" // for Tree
 

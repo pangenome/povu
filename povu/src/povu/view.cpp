@@ -7,7 +7,7 @@
 #include <mto/from_gfa.hpp>	      // for to_bd
 #include <mto/from_vcf.hpp>	      // for read_vcf
 #include <mto/to_gfa.hpp>	      // for write_gfa
-#include <oza/common/app.hpp>	      // for config
+#include <quilt/app.hpp>	      // for config
 #include <oza/graph/bidirected.hpp>   // for bidirected
 #include <oza/graph/pvst.hpp>	      // for pvst
 #include <quilt/types.hpp>	      // for qt

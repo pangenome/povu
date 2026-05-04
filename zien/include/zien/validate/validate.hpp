@@ -2,7 +2,7 @@
 #define ZIEN_VALIDATE_HPP
 
 #include <mto/from_vcf.hpp>	    // for read_vcf
-#include <oza/common/app.hpp>	    // for config
+#include <quilt/app.hpp>	    // for config
 #include <oza/graph/bidirected.hpp> // for bd::VG
 #include <quilt/types.hpp>	    // for qt
 

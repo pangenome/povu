@@ -17,8 +17,8 @@
 
 #include <ita/genomics/vcf.hpp>	    // for VcfRecIdx
 #include <log.h>		    // for log_fatal
-#include <oza/common/app.hpp>	    // for config
 #include <oza/graph/bidirected.hpp> // for VG
+#include <quilt/app.hpp>	    // for config
 #include <quilt/shim.hpp>	    // for format, contains
 #include <quilt/types.hpp>	    // for qt
 #include <quilt/utils.hpp>	    // for is_prefix

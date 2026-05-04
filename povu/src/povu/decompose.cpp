@@ -22,7 +22,7 @@
 #include <oza/algorithms/parallel.hpp>	// for find_parallel
 #include <oza/algorithms/smothered.hpp> // for find_smothered
 #include <oza/algorithms/tiny.hpp>	// for find_tiny
-#include <oza/common/app.hpp>		// for config
+#include <quilt/app.hpp>		// for config
 #include <oza/graph/bidirected.hpp>	// for bidirected
 #include <oza/graph/pvst.hpp>		// for pvst
 #include <oza/graph/spanning_tree.hpp>	// for spanning_tree

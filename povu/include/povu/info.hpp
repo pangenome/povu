@@ -1,7 +1,7 @@
 #ifndef PV_SUBCOMMANDS_INF_HPP
 #define PV_SUBCOMMANDS_INF_HPP
 
-#include <oza/common/app.hpp>
+#include <quilt/app.hpp>
 
 namespace povu::subcommands::info
 {

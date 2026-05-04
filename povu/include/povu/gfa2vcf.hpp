@@ -1,7 +1,7 @@
 #ifndef POVU_GFA2VCF_HPP
 #define POVU_GFA2VCF_HPP
 
-#include <oza/common/app.hpp> // for config
+#include <quilt/app.hpp> // for config
 
 namespace povu::subcommands::gfa2vcf
 {

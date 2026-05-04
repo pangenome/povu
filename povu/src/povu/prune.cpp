@@ -6,7 +6,7 @@
 #include <log.h>		    // for log_info
 #include <mto/from_gfa.hpp>	    // for to_bd
 #include <mto/to_gfa.hpp>	    // for write_gfa
-#include <oza/common/app.hpp>	    // for config
+#include <quilt/app.hpp>	    // for config
 #include <oza/graph/bidirected.hpp> // for bidirected
 #include <oza/graph/pvst.hpp>	    // for pvst
 #include <quilt/shim.hpp>	    // for format

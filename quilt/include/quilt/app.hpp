@@ -1,5 +1,5 @@
-#ifndef CORE_HPP
-#define CORE_HPP
+#ifndef QT_CORE_HPP
+#define QT_CORE_HPP
 
 #include <cstddef>
 #include <cstdint>
@@ -512,4 +512,4 @@ public:
 	}
 };
 } // namespace core
-#endif // CORE_HPP
+#endif // QT_CORE_HPP

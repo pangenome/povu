@@ -3,7 +3,7 @@
 
 #include <string_view> // for string_view
 
-#include <oza/common/app.hpp> // for config
+#include <quilt/app.hpp> // for config
 
 namespace povu::subcommands::view
 {

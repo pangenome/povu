@@ -5,9 +5,9 @@
 #include <string_view> // for string_view
 #include <vector>      // for vector
 
-#include <oza/common/app.hpp>	    // for config
 #include <oza/graph/bidirected.hpp> // for VG, bd
 #include <oza/graph/pvst.hpp>	    // for Tree
+#include <quilt/app.hpp>	    // for config
 #include <quilt/types.hpp>	    // for qt
 
 #include "ita/genomics/vcf.hpp"	       // for VcfRecIdx
