@@ -1,4 +1,4 @@
-#include "povu/algorithms/tiny.hpp"
+#include "oza/algorithms/tiny.hpp"
 
 #include <assert.h> // for assert
 #include <string>   // for basic_string, string

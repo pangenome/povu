@@ -2,9 +2,9 @@
 
 #include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
 
-#include "povu/graph/bidirected.hpp"
-#include "povu/graph/pvst.hpp"
-#include "povu/graph/spanning_tree.hpp"
+#include "oza/graph/bidirected.hpp"
+#include "oza/graph/pvst.hpp"
+#include "oza/graph/spanning_tree.hpp"
 
 namespace povu::unit_tests_spanning_tree
 {

@@ -3,10 +3,10 @@
 
 #include <ncurses.h>
 
-#include <quilt/types.hpp> // for qt
+#include <mto/from_vcf.hpp>	    // for VCFile
+#include <oza/graph/bidirected.hpp> // for VG
+#include <quilt/types.hpp>	    // for qt
 
-#include "mto/from_vcf.hpp"		  // for VCFile
-#include "povu/graph/bidirected.hpp"	  // for VG
 #include "zien/components/components.hpp" // for display_lines
 
 namespace zien::components::alts

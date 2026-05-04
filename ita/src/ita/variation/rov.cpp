@@ -7,14 +7,14 @@
 #include <string>   // for basic_string, string
 #include <vector>   // for vector
 
-#include "povu/graph/pvst.hpp" // for Tree, VertexBase
-#include <liteseq/refs.h>      // for ref_walk
-#include <log.h>
-#include <quilt/types.hpp> // for qt
+#include <liteseq/refs.h>     // for ref_walk
+#include <log.h>	      // for log_error, log_fatal
+#include <oza/graph/pvst.hpp> // for Tree, VertexBase
+#include <quilt/shim.hpp>     // for format
+#include <quilt/types.hpp>    // for qt
 
-#include "ita/graph/graph.hpp" // for RoV, find_walks, pgt
-#include "ita/variation/color.hpp"
-#include "quilt/shim.hpp"
+#include "ita/graph/graph.hpp"	   // for RoV, find_walks, pgt
+#include "ita/variation/color.hpp" // for color, color_e
 
 namespace ita::rov
 {

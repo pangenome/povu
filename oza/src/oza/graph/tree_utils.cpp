@@ -11,8 +11,8 @@
 #include <quilt/shim.hpp>  // for format, contains
 #include <quilt/types.hpp> // for qt
 
-#include "povu/graph/spanning_tree.hpp" // for Tree, BackEdge, Vertex, be_t...
-#include "povu/graph/tree_utils.hpp"
+#include "oza/graph/spanning_tree.hpp" // for Tree, BackEdge, Vertex, be_t...
+#include "oza/graph/tree_utils.hpp"
 
 namespace oza::tree_utils
 {

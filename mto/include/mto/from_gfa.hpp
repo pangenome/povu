@@ -3,8 +3,8 @@
 
 #include <string_view> // for string_view
 
-#include "povu/common/app.hpp"	     // for config
-#include "povu/graph/bidirected.hpp" // for VG
+#include <oza/common/app.hpp>	    // for config
+#include <oza/graph/bidirected.hpp> // for VG
 
 namespace mto::from_gfa
 {

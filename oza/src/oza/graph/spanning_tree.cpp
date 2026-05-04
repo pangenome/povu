@@ -1,4 +1,4 @@
-#include "povu/graph/spanning_tree.hpp"
+#include "oza/graph/spanning_tree.hpp"
 
 #include <algorithm>	 // for max, min
 #include <stack>	 // for stack
@@ -13,11 +13,8 @@
 #include <quilt/shim.hpp>	 // for format, contains
 #include <quilt/types.hpp>	 // for qt
 
-// #include "povu/common/constants.hpp"   // for INVALID_CLS, COL_SEP, INVALI...
-#include "povu/graph/bidirected.hpp"   // for Vertex, VG, pgt, Edge
-#include "povu/graph/bracket_list.hpp" // for WBracketList, Bracket, Bracke...
-
-// #include "povu/graph/types.hpp"	       // for v_type_e, v_end_e, color_e
+#include "oza/graph/bidirected.hpp"   // for Vertex, VG, pgt, Edge
+#include "oza/graph/bracket_list.hpp" // for WBracketList, Bracket, Bracke...
 
 namespace oza::spanning_tree
 {

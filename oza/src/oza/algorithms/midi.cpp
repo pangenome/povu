@@ -1,4 +1,4 @@
-#include "povu/algorithms/midi.hpp"
+#include "oza/algorithms/midi.hpp"
 
 #include <exception>   // for exception
 #include <map>	       // for map
@@ -14,8 +14,6 @@
 #include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
 #include <quilt/shim.hpp>	 // for format
 #include <quilt/types.hpp>	 // for qt
-
-// #include "povu/common/log.hpp" // for WARN, ERR
 
 namespace oza::midi
 {

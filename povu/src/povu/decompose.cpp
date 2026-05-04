@@ -13,21 +13,20 @@
 #include <quilt/shim.hpp>  // for format
 #include <quilt/types.hpp> // for qt
 
-#include "mto/from_gfa.hpp" // for to_bd
-#include "mto/to_gfa.hpp"
-#include "mto/to_pvst.hpp" // for write_pvst, pv_to_pvst
-
-#include "povu/algorithms/concealed.hpp" // for find_concealed
-#include "povu/algorithms/flubbles.hpp"	 // for flubbles
-#include "povu/algorithms/midi.hpp"	 // for find_midi
-#include "povu/algorithms/parallel.hpp"	 // for find_parallel
-#include "povu/algorithms/smothered.hpp" // for find_smothered
-#include "povu/algorithms/tiny.hpp"	 // for find_tiny
-#include "povu/common/app.hpp"		 // for config
-#include "povu/graph/bidirected.hpp"	 // for bidirected
-#include "povu/graph/pvst.hpp"		 // for pvst
-#include "povu/graph/spanning_tree.hpp"	 // for spanning_tree
-#include "povu/graph/tree_utils.hpp"	 // for tree_utils
+#include <mto/from_gfa.hpp> // for to_bd
+#include <mto/to_gfa.hpp>
+#include <mto/to_pvst.hpp>		// for write_pvst, pv_to_pvst
+#include <oza/algorithms/concealed.hpp> // for find_concealed
+#include <oza/algorithms/flubbles.hpp>	// for flubbles
+#include <oza/algorithms/midi.hpp>	// for find_midi
+#include <oza/algorithms/parallel.hpp>	// for find_parallel
+#include <oza/algorithms/smothered.hpp> // for find_smothered
+#include <oza/algorithms/tiny.hpp>	// for find_tiny
+#include <oza/common/app.hpp>		// for config
+#include <oza/graph/bidirected.hpp>	// for bidirected
+#include <oza/graph/pvst.hpp>		// for pvst
+#include <oza/graph/spanning_tree.hpp>	// for spanning_tree
+#include <oza/graph/tree_utils.hpp>	// for tree_utils
 
 namespace povu::subcommands::decompose
 {

@@ -1,13 +1,12 @@
 #include <liteseq/refs.h> // for ref_walk, ref
 
-#include "mto/from_vcf.hpp"		  // for VCFile
-#include "povu/graph/bidirected.hpp"	  // for VG
+#include <mto/from_vcf.hpp>	    // for VCFile
+#include <oza/graph/bidirected.hpp> // for VG
+#include <oza/refs/refs.hpp>	    // for ref_format_e, Ref, lq_strand_to_char
+#include <quilt/types.hpp>	    // for qt
+
 #include "zien/common/common.hpp"	  // for comp_update_refs
 #include "zien/components/components.hpp" // for status_bar
-
-#include <povu/refs/refs.hpp> // for ref_format_e, Ref, lq_strand_to_char
-
-#include <quilt/types.hpp> // for qt
 
 namespace zien::components::common
 {

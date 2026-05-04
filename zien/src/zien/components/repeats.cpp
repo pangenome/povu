@@ -1,7 +1,8 @@
 #include <quilt/types.hpp> // for qt
 
-#include "mto/from_vcf.hpp"		  // for VCFile
-#include "povu/graph/bidirected.hpp"	  // for VG
+#include <mto/from_vcf.hpp>	    // for VCFile
+#include <oza/graph/bidirected.hpp> // for VG
+
 #include "zien/components/components.hpp" // for Mode
 #include "zien/repeats/repeats.hpp"	  // for foo
 

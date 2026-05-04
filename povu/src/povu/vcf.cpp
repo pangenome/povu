@@ -5,16 +5,14 @@
 
 #include <quilt/types.hpp> // for qt
 
-#include "mto/from_gfa.hpp" // for to_bd
-#include "mto/from_vcf.hpp" // for read_vcf
-#include "mto/to_gfa.hpp"   // for write_gfa
-
-#include "povu/common/app.hpp"	      // for config
-#include "povu/graph/bidirected.hpp"  // for bidirected
-#include "povu/graph/pvst.hpp"	      // for pvst
-				      //
-#include "zien/tui/tui.hpp"	      // for view
-#include "zien/validate/validate.hpp" // for validate_vcf_records
+#include <mto/from_gfa.hpp>	      // for to_bd
+#include <mto/from_vcf.hpp>	      // for read_vcf
+#include <mto/to_gfa.hpp>	      // for write_gfa
+#include <oza/common/app.hpp>	      // for config
+#include <oza/graph/bidirected.hpp>   // for bidirected
+#include <oza/graph/pvst.hpp>	      // for pvst
+#include <zien/tui/tui.hpp>	      // for view
+#include <zien/validate/validate.hpp> // for validate_vcf_records
 
 namespace povu::subcommands::vcf
 {

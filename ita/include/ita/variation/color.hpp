@@ -1,10 +1,9 @@
 #ifndef IT_COLOR_HPP
 #define IT_COLOR_HPP
 
-#include <quilt/types.hpp> // for qt
-
-#include "povu/graph/bidirected.hpp" // for VG, bd
-#include "povu/graph/pvst.hpp"	     // for Tree, VertexBase
+#include <oza/graph/bidirected.hpp> // for VG, bd
+#include <oza/graph/pvst.hpp>	    // for Tree, VertexBase
+#include <quilt/types.hpp>	    // for qt
 
 namespace ita::color
 {

@@ -5,12 +5,11 @@
 #include <utility> // for move
 #include <vector>  // for vector
 
-#include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
-#include <quilt/shim.hpp>	 // for contains
-#include <quilt/types.hpp>	 // for qt
-
-#include "povu/graph/bidirected.hpp" // for VG, bd
-#include "povu/refs/refs.hpp"	     // for lq_strand_to_pv_or
+#include <oza/graph/bidirected.hpp> // for VG, bd
+#include <oza/refs/refs.hpp>	    // for lq_strand_to_pv_or
+#include <quilt/graph_types.hpp>    // for v_end_e, side_n_id_t, side_n_idx_t
+#include <quilt/shim.hpp>	    // for contains
+#include <quilt/types.hpp>	    // for qt
 
 #include "ita/align/align.hpp"	   // for align, aln_level_e
 #include "ita/genomics/allele.hpp" // for Exp, itn_t

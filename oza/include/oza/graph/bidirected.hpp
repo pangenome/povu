@@ -18,7 +18,7 @@
 #include <quilt/types.hpp>	 // for qt
 #include <quilt/utils.hpp>	 // for pu
 
-#include "povu/refs/refs.hpp" // for pr, Ref, Refs
+#include "oza/refs/refs.hpp" // for pr, Ref, Refs
 
 namespace oza::bidirected
 {

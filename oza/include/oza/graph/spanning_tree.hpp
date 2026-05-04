@@ -11,8 +11,8 @@
 #include <quilt/graph_types.hpp> // for color_e, v_type_e
 #include <quilt/types.hpp>	 // for qt
 
-#include "povu/graph/bidirected.hpp"   // for VG, bd
-#include "povu/graph/bracket_list.hpp" // for WBracketList, Bracket, BracketList
+#include "oza/graph/bidirected.hpp"   // for VG, bd
+#include "oza/graph/bracket_list.hpp" // for WBracketList, Bracket, BracketList
 
 namespace oza::spanning_tree
 {

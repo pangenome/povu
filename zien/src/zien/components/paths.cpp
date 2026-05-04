@@ -3,12 +3,12 @@
 #include <string>
 #include <vector>
 
-#include <liteseq/refs.h>	 // for ref_walk, ref
-#include <meza/owned/matrix.hpp> // for dense_matrix2d
-#include <quilt/shim.hpp>	 // for contains
-#include <quilt/types.hpp>	 // for qt
+#include <liteseq/refs.h>	    // for ref_walk, ref
+#include <meza/owned/matrix.hpp>    // for dense_matrix2d
+#include <oza/graph/bidirected.hpp> // for VG
+#include <quilt/shim.hpp>	    // for contains
+#include <quilt/types.hpp>	    // for qt
 
-#include "povu/graph/bidirected.hpp"	  // for VG
 #include "zien/common/common.hpp"	  // for to_char
 #include "zien/components/components.hpp" // for display_lines
 

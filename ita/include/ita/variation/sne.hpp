@@ -6,14 +6,13 @@
 #include <utility>	  // for pair
 #include <vector>	  // for vector
 
+#include <oza/graph/bidirected.hpp> // for VG
+#include <quilt/constants.hpp>	    // for
+#include <quilt/graph_types.hpp>    // for v_end_e, side_n_id_t, side_n_idx_t
+#include <quilt/shim.hpp>	    // for contains
+#include <quilt/types.hpp>	    // for qt
+
 #include "ita/graph/slice_tree.hpp" // for it
-
-#include <quilt/constants.hpp>	 // for
-#include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
-#include <quilt/shim.hpp>	 // for contains
-#include <quilt/types.hpp>	 // for qt
-
-#include "povu/graph/bidirected.hpp"
 
 namespace ita::sne // sne = seed and extend
 {

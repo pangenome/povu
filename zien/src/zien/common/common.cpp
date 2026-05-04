@@ -3,13 +3,11 @@
 #include <set>
 #include <string>
 
-#include <liteseq/refs.h>  // for ref_walk, ref
-#include <quilt/types.hpp> // for qt
-
-#include "mto/from_vcf.hpp"	     // for VCFile
-#include "povu/graph/bidirected.hpp" // for bidirected
-
-#include <povu/refs/refs.hpp> // for Ref
+#include <liteseq/refs.h>	    // for ref_walk, ref
+#include <mto/from_vcf.hpp>	    // for VCFile
+#include <oza/graph/bidirected.hpp> // for bidirected
+#include <oza/refs/refs.hpp>	    // for Ref
+#include <quilt/types.hpp>	    // for qt
 
 namespace zien::common
 {

@@ -1,14 +1,13 @@
 #include "zien/repeats/repeats.hpp" // for foo
 
-#include <liteseq/refs.h> // for ref_walk, ref
+#include <liteseq/refs.h>	    // for ref_walk, ref
+#include <oza/graph/bidirected.hpp> // for VG
 #include <quilt/graph_types.hpp>
 #include <quilt/shim.hpp>  // for contains
 #include <quilt/types.hpp> // for qt
 
 #include "ita/align/align.hpp"	   // for align, aln_level_e
 #include "ita/genomics/allele.hpp" // for ia::at_itn
-
-#include "povu/graph/bidirected.hpp" // for VG
 
 namespace zien::tui::repeats
 {

@@ -1,4 +1,4 @@
-#include "povu/algorithms/smothered.hpp"
+#include "oza/algorithms/smothered.hpp"
 
 #include <iostream>	 // for basic_ostream, operator<<, basic_ios
 #include <map>		 // for map

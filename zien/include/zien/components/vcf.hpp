@@ -2,10 +2,11 @@
 #define ZIEN_COMPONENTS_VCF_HPP
 
 #include <ncurses.h>
-#include <quilt/types.hpp> // for qt
 
-#include "mto/from_vcf.hpp"		  // for VCFile
-#include "povu/graph/bidirected.hpp"	  // for VG
+#include <mto/from_vcf.hpp>	    // for VCFile
+#include <oza/graph/bidirected.hpp> // for VG
+#include <quilt/types.hpp>	    // for qt
+
 #include "zien/components/components.hpp" // for Mode
 
 namespace zien::components::vcf

@@ -5,14 +5,13 @@
 #include <string_view>
 #include <vector>
 
-#include <meza/pool/pool.hpp> // for matrix_pool
-
-#include <quilt/types.hpp> // for qt
+#include <meza/pool/pool.hpp>	    // for matrix_pool
+#include <oza/graph/bidirected.hpp> // for VG
+#include <quilt/types.hpp>	    // for qt
 
 #include "ita/genomics/allele.hpp"	// for trek
 #include "ita/traversals/at_matrix.hpp" // rov_matrix_set
 #include "ita/variation/rov.hpp"	// for RoV
-#include "povu/graph/bidirected.hpp"	// for VG
 
 namespace ita::convolutions
 {

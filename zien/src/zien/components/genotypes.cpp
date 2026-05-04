@@ -1,10 +1,10 @@
 #include <ncurses.h>
 
-#include <quilt/shim.hpp>  // for contains
-#include <quilt/types.hpp> // for qt
+#include <mto/from_vcf.hpp>	    // for VCFile
+#include <oza/graph/bidirected.hpp> // for VG
+#include <quilt/shim.hpp>	    // for contains
+#include <quilt/types.hpp>	    // for qt
 
-#include "mto/from_vcf.hpp"		  // for VCFile
-#include "povu/graph/bidirected.hpp"	  // for VG
 #include "zien/components/components.hpp" // for Mode
 
 namespace zien::components::genotypes

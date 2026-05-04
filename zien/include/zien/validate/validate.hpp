@@ -1,12 +1,10 @@
 #ifndef ZIEN_VALIDATE_HPP
 #define ZIEN_VALIDATE_HPP
 
-#include <quilt/types.hpp> // for qt
-
-#include "mto/from_vcf.hpp" // for read_vcf
-
-#include "povu/common/app.hpp"	     // for config
-#include "povu/graph/bidirected.hpp" // for bd::VG
+#include <mto/from_vcf.hpp>	    // for read_vcf
+#include <oza/common/app.hpp>	    // for config
+#include <oza/graph/bidirected.hpp> // for bd::VG
+#include <quilt/types.hpp>	    // for qt
 
 namespace zien::validate
 {

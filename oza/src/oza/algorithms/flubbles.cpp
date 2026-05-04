@@ -1,4 +1,4 @@
-#include "povu/algorithms/flubbles.hpp"
+#include "oza/algorithms/flubbles.hpp"
 
 #include <algorithm>	 // for min, sort
 #include <assert.h>	 // for assert
@@ -17,7 +17,7 @@
 #include <quilt/shim.hpp>  // for format, contains
 #include <quilt/types.hpp> // for qt
 
-#include "povu/graph/bracket_list.hpp" // for Bracket
+#include "oza/graph/bracket_list.hpp" // for Bracket
 
 namespace oza::flubbles
 {

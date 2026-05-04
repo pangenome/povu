@@ -7,17 +7,13 @@
 #include <liteseq/refs.h>		  // for ref_walk, ref
 #include <meza/pool/pool.hpp>		  // for pool
 #include <meza/pool/split_pool_types.hpp> // for ov_mat_t
+#include <oza/graph/bidirected.hpp>	  // for VG
+#include <quilt/types.hpp>		  // for qt
 
 #include "ita/genomics/allele.hpp"	   // for hap_slice
 #include "ita/traversals/depth_matrix.hpp" // for depth_matrix
 #include "ita/traversals/traversals.hpp"   // for itinerary
 #include "ita/variation/rov.hpp"	   // for RoV
-
-#include "povu/graph/bidirected.hpp" // for VG
-
-#include "quilt/types.hpp"
-
-#include <quilt/types.hpp> // for qt
 
 namespace ita::at_matrix
 {

@@ -1,9 +1,7 @@
 #ifndef POVU_GFA2VCF_HPP
 #define POVU_GFA2VCF_HPP
 
-#include <chrono> // for filesystem
-
-#include "povu/common/app.hpp" // for config
+#include <oza/common/app.hpp> // for config
 
 namespace povu::subcommands::gfa2vcf
 {

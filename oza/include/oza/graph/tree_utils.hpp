@@ -13,7 +13,7 @@
 #include <quilt/shim.hpp>	 // for format
 #include <quilt/types.hpp>	 // for qt
 
-#include "povu/graph/spanning_tree.hpp" // for Tree
+#include "oza/graph/spanning_tree.hpp" // for Tree
 
 namespace oza::tree_utils
 {

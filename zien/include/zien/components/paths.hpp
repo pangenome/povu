@@ -3,7 +3,8 @@
 
 #include <ncurses.h>
 
-#include "povu/graph/bidirected.hpp"	  // for VG
+#include <oza/graph/bidirected.hpp> // for VG
+
 #include "zien/components/components.hpp" // for display_lines
 #include "zien/tui/state.hpp"		  // for ui_state
 

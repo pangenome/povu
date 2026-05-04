@@ -1,14 +1,13 @@
 #include <gtest/gtest.h>
-// #include <vector>
 
 #include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
 #include <quilt/types.hpp>	 // for qt
 
-#include "povu/algorithms/flubbles.hpp"
-#include "povu/common/app.hpp"
-#include "povu/graph/bidirected.hpp"
-#include "povu/graph/pvst.hpp"
-#include "povu/graph/spanning_tree.hpp"
+#include "oza/algorithms/flubbles.hpp"
+#include "oza/common/app.hpp"
+#include "oza/graph/bidirected.hpp"
+#include "oza/graph/pvst.hpp"
+#include "oza/graph/spanning_tree.hpp"
 
 namespace pfl = oza::flubbles;
 using namespace quilt::types::graph;

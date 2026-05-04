@@ -5,10 +5,10 @@
 #include <set>
 #include <vector>
 
-#include <liteseq/refs.h>	     // for ref_walk, ref
-#include <meza/pool/pool.hpp>	     // for pool
-#include <povu/graph/bidirected.hpp> // for VG
-#include <quilt/types.hpp>	     // for u8, u32
+#include <liteseq/refs.h>	    // for ref_walk, ref
+#include <meza/pool/pool.hpp>	    // for pool
+#include <oza/graph/bidirected.hpp> // for VG
+#include <quilt/types.hpp>	    // for u8, u32
 
 #include "ita/convolutions/trip.hpp"	   // for gen_trip
 #include "ita/genomics/allele.hpp"	   // for hap_slice, trek

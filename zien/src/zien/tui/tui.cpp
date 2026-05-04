@@ -6,12 +6,12 @@
 
 #include <ncurses.h>
 
-#include <liteseq/refs.h>  // for ref_walk, ref
-#include <quilt/shim.hpp>  // for format
-#include <quilt/types.hpp> // for qt
-
-#include "mto/from_vcf.hpp"		  // for VCFile
-#include "povu/graph/bidirected.hpp"	  // for VG
+#include <liteseq/refs.h>		  // for ref_walk, ref
+#include <mto/from_vcf.hpp>		  // for VCFile
+#include <oza/graph/bidirected.hpp>	  // for VG
+#include <quilt/shim.hpp>		  // for format
+#include <quilt/types.hpp>		  // for qt
+					  //
 #include "zien/components/alts.hpp"	  // for update_alts
 #include "zien/components/components.hpp" // for status_bar
 #include "zien/components/genotypes.hpp"  // for update_haps

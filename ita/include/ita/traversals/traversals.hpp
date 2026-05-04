@@ -3,9 +3,8 @@
 
 #include <vector> // for vector
 
-#include <quilt/types.hpp> // for qt
-
-#include "povu/graph/bidirected.hpp" // for VG, bd
+#include <oza/graph/bidirected.hpp> // for VG, bd
+#include <quilt/types.hpp>	    // for qt
 
 namespace ita::traversals::traversals
 {

@@ -1,4 +1,4 @@
-#include "povu/algorithms/parallel.hpp"
+#include "oza/algorithms/parallel.hpp"
 
 #include <set>	  // for set
 #include <string> // for basic_string, string

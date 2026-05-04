@@ -4,7 +4,7 @@
 #include <string>      // for string
 #include <string_view> // for string_view
 
-#include "povu/graph/pvst.hpp" // for Tree
+#include <oza/graph/pvst.hpp> // for Tree
 
 namespace mto::from_pvst
 {

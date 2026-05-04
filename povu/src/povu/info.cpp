@@ -4,12 +4,10 @@
 #include <string>   // for basic_string, operator<<, string
 #include <vector>   // for vector
 
-#include <quilt/shim.hpp>  // for format
-#include <quilt/types.hpp> // for qt
-
-#include "mto/from_gfa.hpp" // for to_bd
-
-#include "povu/graph/bidirected.hpp" // for VG
+#include <mto/from_gfa.hpp>	    // for to_bd
+#include <oza/graph/bidirected.hpp> // for VG
+#include <quilt/shim.hpp>	    // for format
+#include <quilt/types.hpp>	    // for qt
 
 namespace povu::subcommands::info
 {

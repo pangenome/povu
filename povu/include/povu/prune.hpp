@@ -3,7 +3,7 @@
 
 #include <string_view> // for string_view
 
-#include "povu/common/app.hpp"
+#include <oza/common/app.hpp> // for config
 
 namespace povu::subcommands::prune
 {

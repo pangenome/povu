@@ -8,13 +8,13 @@
 #include <utility>     // for move, pair
 #include <vector>      // for vector
 
-#include "povu/graph/bidirected.hpp" // for bd, VG
-#include "povu/graph/pvst.hpp"	     // for VertexBase
-#include <liteseq/refs.h>	     // for ref_walk
-#include <liteseq/types.h>	     // for strand
-#include <quilt/graph_types.hpp>     // for v_end_e, side_n_id_t, side_n_idx_t
-#include <quilt/shim.hpp>	     // for format
-#include <quilt/types.hpp>	     // for qt
+#include <liteseq/refs.h>	    // for ref_walk
+#include <liteseq/types.h>	    // for strand
+#include <oza/graph/bidirected.hpp> // for bd, VG
+#include <oza/graph/pvst.hpp>	    // for VertexBase
+#include <quilt/graph_types.hpp>    // for v_end_e, side_n_id_t, side_n_idx_t
+#include <quilt/shim.hpp>	    // for format
+#include <quilt/types.hpp>	    // for qt
 #include <quilt/utils.hpp>
 
 #include "ita/variation/rov.hpp" // for RoV, var_type_e

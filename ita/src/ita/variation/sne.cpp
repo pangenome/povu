@@ -5,16 +5,14 @@
 #include <optional>
 
 // deps
-#include <liteseq/refs.h>	 // for ref_walk, ref
+#include <liteseq/refs.h> // for ref_walk, ref
+#include <oza/graph/pvst.hpp>
 #include <quilt/constants.hpp>	 // for
 #include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
 #include <quilt/types.hpp>	 // for qt
 
 // ita includes
 #include "ita/graph/slice_tree.hpp" // for ist
-
-// povu includes
-#include "povu/graph/pvst.hpp"
 
 namespace ita::sne
 {

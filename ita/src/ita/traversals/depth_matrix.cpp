@@ -2,15 +2,14 @@
 
 #include <vector>
 
-#include <liteseq/refs.h>      // for ref_walk, ref
-#include <meza/pool/joint.hpp> // for joint_pool
+#include <liteseq/refs.h>	    // for ref_walk, ref
+#include <meza/pool/joint.hpp>	    // for joint_pool
+#include <meza/pool/pool.hpp>	    // for pool
+#include <oza/graph/bidirected.hpp> // for VG
+#include <quilt/types.hpp>	    // for qt
 
-#include <meza/pool/pool.hpp> // for pool
-#include <quilt/types.hpp>    // for qt
-
-#include "ita/traversals/at_matrix_no_tangle.hpp" // for no_tangle
-#include "ita/variation/rov.hpp"		  // for RoV
-#include "povu/graph/bidirected.hpp"		  // for VG
+// #include "ita/traversals/at_matrix_no_tangle.hpp" // for no_tangle
+#include "ita/variation/rov.hpp" // for RoV
 
 namespace ita::depth_matrix
 {

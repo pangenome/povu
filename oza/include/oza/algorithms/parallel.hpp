@@ -3,9 +3,9 @@
 
 #include <string_view> // for string_view
 
-#include "povu/graph/pvst.hpp"		// for Tree
-#include "povu/graph/spanning_tree.hpp" // for Tree
-#include "povu/graph/tree_utils.hpp"	// for tree_meta
+#include "oza/graph/pvst.hpp"	       // for Tree
+#include "oza/graph/spanning_tree.hpp" // for Tree
+#include "oza/graph/tree_utils.hpp"    // for tree_meta
 
 namespace oza::parallel
 {

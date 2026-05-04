@@ -3,16 +3,14 @@
 #include <string>
 #include <vector> // for vector
 
-#include <log.h>	   // for log_info
-#include <quilt/shim.hpp>  // for format
-#include <quilt/types.hpp> // for qt
-
-#include "mto/from_gfa.hpp" // for to_bd
-#include "mto/to_gfa.hpp"   // for write_gfa
-
-#include "povu/common/app.hpp"	     // for config
-#include "povu/graph/bidirected.hpp" // for bidirected
-#include "povu/graph/pvst.hpp"	     // for pvst
+#include <log.h>		    // for log_info
+#include <mto/from_gfa.hpp>	    // for to_bd
+#include <mto/to_gfa.hpp>	    // for write_gfa
+#include <oza/common/app.hpp>	    // for config
+#include <oza/graph/bidirected.hpp> // for bidirected
+#include <oza/graph/pvst.hpp>	    // for pvst
+#include <quilt/shim.hpp>	    // for format
+#include <quilt/types.hpp>	    // for qt
 
 namespace povu::subcommands::prune
 {
