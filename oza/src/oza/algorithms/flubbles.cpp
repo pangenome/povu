@@ -18,9 +18,11 @@
 #include <quilt/types.hpp> // for qt
 
 #include "oza/graph/bracket_list.hpp" // for Bracket
+#include "oza/graph/tree_utils.hpp"   // for tree_utils
 
 namespace oza::flubbles
 {
+namespace ptu = oza::tree_utils;
 
 [[nodiscard]] constexpr pvst::endpoints
 normalize_endpoints(qt::id_t s_id, pgt::or_e s_or, qt::id_t e_id,

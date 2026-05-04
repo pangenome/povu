@@ -1,5 +1,5 @@
-#ifndef POVU_TYPES_PVST_HPP
-#define POVU_TYPES_PVST_HPP
+#ifndef OZ_PVST_HPP
+#define OZ_PVST_HPP
 
 #include <algorithm>
 #include <iostream>
@@ -928,7 +928,7 @@ public:
 
 } // namespace oza::pvst
 
-#endif
-
 // NOLINTNEXTLINE(misc-unused-alias-decls)
 namespace pvst = oza::pvst;
+
+#endif // OZ_PVST_HPP

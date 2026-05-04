@@ -1,5 +1,5 @@
-#ifndef B_LIST_HPP
-#define B_LIST_HPP
+#ifndef OZ_B_LIST_HPP
+#define OZ_B_LIST_HPP
 
 #include <cstddef>
 #include <list>
@@ -62,4 +62,4 @@ public:
 
 } // namespace oza::bracket_list
 
-#endif
+#endif // OZ_B_LIST_HPP

@@ -1,5 +1,5 @@
-#ifndef PV_TINY_HPP
-#define PV_TINY_HPP
+#ifndef OZ_TINY_HPP
+#define OZ_TINY_HPP
 
 #include <string_view> // for string_view
 
@@ -16,4 +16,4 @@ namespace ptu = oza::tree_utils;
 void find_tiny(const pst::Tree &st, pvst::Tree &pvst, const ptu::tree_meta &tm);
 
 } // namespace oza::tiny
-#endif // PV_TINY_HPP
+#endif // OZ_TINY_HPP

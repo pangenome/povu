@@ -1,5 +1,5 @@
-#ifndef BIDIRECTED_HPP
-#define BIDIRECTED_HPP
+#ifndef OZ_BIDIRECTED_HPP
+#define OZ_BIDIRECTED_HPP
 
 #include <cstddef>     // for size_t
 #include <iostream>    // for ostream
@@ -215,4 +215,4 @@ using VG = VariationGraph;
 // NOLINTNEXTLINE(misc-unused-alias-decls)
 namespace bd = oza::bidirected;
 
-#endif
+#endif // OZ_BIDIRECTED_HPP

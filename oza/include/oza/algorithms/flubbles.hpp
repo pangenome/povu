@@ -1,5 +1,5 @@
-#ifndef PV_FLUBBLES_HPP
-#define PV_FLUBBLES_HPP
+#ifndef OZ_FLUBBLES_HPP
+#define OZ_FLUBBLES_HPP
 
 #include <cstddef>     // for size_t
 #include <string_view> // for string_view
@@ -11,13 +11,11 @@
 #include "oza/common/app.hpp"	       // for config
 #include "oza/graph/pvst.hpp"	       // for Tree
 #include "oza/graph/spanning_tree.hpp" // for Tree
-#include "oza/graph/tree_utils.hpp"    // for tree_utils
 
 namespace oza::flubbles
 {
 inline constexpr std::string_view MODULE = "povu::graph::flubble_tree";
 
-namespace ptu = oza::tree_utils;
 namespace pgt = quilt::types::graph;
 
 // a hairpin boundary
@@ -57,4 +55,4 @@ struct eq_class_stack_t {
  */
 pvst::Tree find_flubbles(pst::Tree &t, const core::config &app_config);
 } // namespace oza::flubbles
-#endif
+#endif // OZ_FLUBBLES_HPP

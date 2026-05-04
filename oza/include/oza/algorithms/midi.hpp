@@ -1,5 +1,5 @@
-#ifndef PV_MISC_HPP
-#define PV_MISC_HPP
+#ifndef OZ_MISC_HPP
+#define OZ_MISC_HPP
 
 #include <string_view> // for string_view
 
@@ -16,4 +16,4 @@ namespace ptu = oza::tree_utils;
 void find_midi(const pst::Tree &st, pvst::Tree &pvst, const ptu::tree_meta &tm);
 } // namespace oza::midi
 
-#endif // PV_MISC_HPP
+#endif // OZ_MISC_HPP

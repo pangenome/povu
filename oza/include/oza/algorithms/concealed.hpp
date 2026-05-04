@@ -1,5 +1,5 @@
-#ifndef PV_CONCEALED_HPP
-#define PV_CONCEALED_HPP
+#ifndef OZ_CONCEALED_HPP
+#define OZ_CONCEALED_HPP
 
 #include <string_view> // for string_view
 
@@ -21,4 +21,4 @@ namespace ptu = oza::tree_utils;
 void find_concealed(const pst::Tree &st, pvst::Tree &ft,
 		    const ptu::tree_meta &tm);
 } // namespace oza::concealed
-#endif // PV_CONCEALED_HPP
+#endif // OZ_CONCEALED_HPP

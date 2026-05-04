@@ -1,5 +1,5 @@
-#ifndef PV_TREE_UTILS_HPP
-#define PV_TREE_UTILS_HPP
+#ifndef OZ_TREE_UTILS_HPP
+#define OZ_TREE_UTILS_HPP
 
 #include <cstddef>     // for size_t
 #include <iostream>    // for basic_ostream, operator<<, cerr
@@ -136,4 +136,4 @@ tree_meta gen_tree_meta(const pst::Tree &st);
 BranchDesc br_desc(const pst::Tree &st);
 } // namespace oza::tree_utils
 
-#endif
+#endif // OZ_TREE_UTILS_HPP

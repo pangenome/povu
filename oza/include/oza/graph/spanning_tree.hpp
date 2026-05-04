@@ -1,5 +1,5 @@
-#ifndef SPANNING_TREE_HPP
-#define SPANNING_TREE_HPP
+#ifndef OZ_SPANNING_TREE_HPP
+#define OZ_SPANNING_TREE_HPP
 
 #include <cstddef> // for size_t
 #include <map>	   // for map
@@ -406,4 +406,5 @@ public:
 
 // NOLINTNEXTLINE(misc-unused-alias-decls)
 namespace pst = oza::spanning_tree;
-#endif
+
+#endif // OZ_SPANNING_TREE_HPP

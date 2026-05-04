@@ -1,5 +1,5 @@
-#ifndef PV_SMOTHERED_HPP
-#define PV_SMOTHERED_HPP
+#ifndef OZ_SMOTHERED_HPP
+#define OZ_SMOTHERED_HPP
 
 #include <string_view> // for string_view
 
@@ -17,4 +17,4 @@ void find_smothered(const pst::Tree &st, pvst::Tree &ft,
 		    const ptu::tree_meta &tm);
 } // namespace oza::smothered
 
-#endif // PV_SMOTHERED_HPP
+#endif // OZ_SMOTHERED_HPP

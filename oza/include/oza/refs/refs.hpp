@@ -1,5 +1,5 @@
-#ifndef POVU_REFS_HPP
-#define POVU_REFS_HPP
+#ifndef OZ_REFS_HPP
+#define OZ_REFS_HPP
 
 #include <iostream>
 #include <map>
@@ -442,4 +442,4 @@ public:
 // NOLINTNEXTLINE(misc-unused-alias-decls)
 namespace pr = oza::refs;
 
-#endif // POVU_REFS_HPP
+#endif // OZ_REFS_HPP
