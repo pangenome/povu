@@ -9,6 +9,7 @@
 #include <utility>    // for move
 #include <vector>     // for vector
 
+#include <log.h>	   // for log_err, log_info, log_fatal
 #include <quilt/types.hpp> // for qt
 
 #include "ita/genomics/genomics.hpp"   // for gen_vcf_rec_map
@@ -20,7 +21,6 @@
 #include "mto/from_pvst.hpp" // for read_pvst
 #include "mto/to_vcf.hpp"    // for VcfOutput, init_vcfs, wri...
 
-#include "povu/common/log.hpp"	     // for ERR
 #include "povu/graph/bidirected.hpp" // for VG, bd
 #include "povu/graph/pvst.hpp"	     // for Tree
 
@@ -38,8 +38,8 @@ void read_pvsts(const core::config &app_config, std::vector<pvst::Tree> &pvsts)
 		mto::common::get_files(app_config.get_forest_dir(), ".pvst");
 
 	if (fps.empty()) {
-		PL_ERR("Could not find pvst files in {}",
-		       app_config.get_forest_dir().string());
+		log_fatal("Could not find pvst files in %s",
+			  app_config.get_forest_dir().string().c_str());
 		exit(EXIT_FAILURE);
 	}
 

@@ -207,10 +207,12 @@ target_link_libraries(oza
   liteseq  # gfa handling
   quilt
   meza
+  log
 )
 
 target_link_libraries(ita
   PRIVATE
+  log
   oza
   fmt::fmt     # formatting
   liteseq      # gfa handling
@@ -221,6 +223,7 @@ target_link_libraries(ita
 
 target_link_libraries(mto
   PRIVATE
+  log
   oza
   fmt::fmt     # formatting
   liteseq      # gfa handling
@@ -230,6 +233,7 @@ target_link_libraries(mto
 
 target_link_libraries(zien
   PRIVATE
+  log
   oza
   ita
   liteseq      # gfa handling
@@ -241,7 +245,9 @@ target_link_libraries(zien
 target_link_libraries(povu
   PRIVATE
 
+
   # internal libraries
+  log
   oza
   zien
   ita

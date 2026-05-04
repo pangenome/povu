@@ -7,14 +7,14 @@
 #include <string>   // for basic_string, string
 #include <vector>   // for vector
 
-#include <liteseq/refs.h>  // for ref_walk
+#include "povu/graph/pvst.hpp" // for Tree, VertexBase
+#include <liteseq/refs.h>      // for ref_walk
+#include <log.h>
 #include <quilt/types.hpp> // for qt
 
 #include "ita/graph/graph.hpp" // for RoV, find_walks, pgt
 #include "ita/variation/color.hpp"
-
-#include "povu/common/log.hpp" // for INFO, WARN, ERR
-#include "povu/graph/pvst.hpp" // for Tree, VertexBase
+#include "quilt/shim.hpp"
 
 namespace ita::rov
 {
@@ -42,7 +42,7 @@ var_type_e covariant(var_type_e a) noexcept
 		return var_type_e::inv;
 	}
 
-	PL_ERR("Unknown variant type");
+	log_fatal("Unknown variant type");
 	std::exit(EXIT_FAILURE);
 }
 
@@ -56,25 +56,25 @@ parse_genomic_region(const std::string &region_str)
 	// Find the colon separator
 	std::size_t colon_pos = region_str.find(':');
 	if (colon_pos == std::string::npos) {
-		PL_ERR("Invalid region format '{}': missing colon "
-		       "separator",
-		       region_str);
+		log_error("Invalid region format '%s': missing colon "
+			  "separator",
+			  region_str.c_str());
 		return std::nullopt;
 	}
 
 	std::string ref_name = region_str.substr(0, colon_pos);
 	if (ref_name.empty()) {
-		PL_ERR("Invalid region format '{}': empty reference name",
-		       region_str);
+		log_error("Invalid region format '%s': empty reference name",
+			  region_str.c_str());
 		return std::nullopt;
 	}
 
 	std::string range_str = region_str.substr(colon_pos + 1);
 	std::size_t dash_pos = range_str.find('-');
 	if (dash_pos == std::string::npos) {
-		PL_ERR("Invalid region format '{}': missing dash "
-		       "separator in range",
-		       region_str);
+		log_error("Invalid region format '%s': missing dash "
+			  "separator in range",
+			  region_str.c_str());
 		return std::nullopt;
 	}
 
@@ -84,17 +84,17 @@ parse_genomic_region(const std::string &region_str)
 	// Validate that start and end are numeric
 	for (char c : start_str) {
 		if (!std::isdigit(c)) {
-			PL_ERR("Invalid region format '{}': non-numeric "
-			       "start position",
-			       region_str);
+			log_error("Invalid region format '%s': non-numeric "
+				  "start position",
+				  region_str.c_str());
 			return std::nullopt;
 		}
 	}
 	for (char c : end_str) {
 		if (!std::isdigit(c)) {
-			PL_ERR("Invalid region format '{}': non-numeric "
-			       "end position",
-			       region_str);
+			log_error("Invalid region format '%s': non-numeric "
+				  "end position",
+				  region_str.c_str());
 			return std::nullopt;
 		}
 	}
@@ -104,16 +104,17 @@ parse_genomic_region(const std::string &region_str)
 		qt::idx_t end = std::stoull(end_str);
 
 		if (start >= end) {
-			PL_ERR("Invalid region '{}': start position ({}) "
-			       "must be less than end position ({})",
-			       region_str, start, end);
+			log_error("Invalid region '%s': start position (%ul) "
+				  "must be less than end position (%ul)",
+				  region_str.c_str(), start, end);
 			return std::nullopt;
 		}
 
 		return genomic_region(ref_name, start, end);
 	}
 	catch (const std::exception &e) {
-		PL_ERR("Failed to parse region '{}': {}", region_str, e.what());
+		log_error("Failed to parse region '%s': %s", region_str.c_str(),
+			  e.what());
 		return std::nullopt;
 	}
 }
@@ -207,8 +208,8 @@ void find_pvst_rovs(const bd::VG &g, const pvst::Tree &pvst,
 		qt::status_t s = povu::genomics::graph::find_walks(g, r);
 
 		if (r.size() < 3) {
-			WARN("RoV too small (size={}): {}. Skipping.", r.size(),
-			     r.as_str());
+			log_warn("RoV too small (size=%ul): %s. Skipping.",
+				 r.size(), r.as_str().c_str());
 			continue;
 		}
 
@@ -239,15 +240,19 @@ std::vector<RoV> gen_rov(const std::vector<pvst::Tree> &pvsts, const bd::VG &g,
 	if (region.has_value()) {
 		region_ref_id = g.get_ref_id(region.value().ref_name);
 		if (!region_ref_id.has_value()) {
-			PL_ERR("Reference path '{}' not found in graph",
-			       region.value().ref_name);
-			WARN("No RoVs will be generated due to invalid "
-			     "region");
+			std::string err = qs::format(
+				"Reference path '{}' not found in graph",
+				region.value().ref_name);
+			log_error("%s", err.c_str());
+			log_warn("No RoVs will be generated due to invalid "
+				 "region");
 			return rs; // Return empty result
 		}
-		INFO("Filtering RoVs to region {}:{}-{}",
-		     region.value().ref_name, region.value().start,
-		     region.value().end);
+		std::string inf =
+			qs::format("Filtering RoVs to region {}:{}-{}",
+				   region.value().ref_name,
+				   region.value().start, region.value().end);
+		log_info("%s", inf.c_str());
 	}
 
 	for (qt::idx_t i{}; i < pvsts.size(); i++) { // for each pvst
@@ -260,9 +265,11 @@ std::vector<RoV> gen_rov(const std::vector<pvst::Tree> &pvsts, const bd::VG &g,
 	}
 
 	if (region.has_value()) {
-		INFO("Generated {} RoVs in region {}:{}-{}", rs.size(),
-		     region.value().ref_name, region.value().start,
-		     region.value().end);
+		std::string inf =
+			qs::format("Generated {} RoVs in region {}:{}-{}",
+				   rs.size(), region.value().ref_name,
+				   region.value().start, region.value().end);
+		log_info("%s", inf.c_str());
 	}
 
 	return rs;

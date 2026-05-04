@@ -1,18 +1,21 @@
 #include "povu/algorithms/midi.hpp"
 
-#include <exception> // for exception
-#include <map>	     // for map
-#include <memory>    // for make_unique
-#include <stdexcept> // for runtime_error
-#include <string>    // for basic_string, string
-#include <utility>   // for get, pair
-#include <vector>    // for vector
+#include <exception>   // for exception
+#include <map>	       // for map
+#include <memory>      // for make_unique
+#include <stdexcept>   // for runtime_error
+#include <string>      // for basic_string, string
+#include <string_view> // for string_view
+#include <utility>     // for get, pair
+#include <vector>      // for vector
+
+#include <log.h>
 
 #include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
 #include <quilt/shim.hpp>	 // for format
 #include <quilt/types.hpp>	 // for qt
 
-#include "povu/common/log.hpp" // for WARN, ERR
+// #include "povu/common/log.hpp" // for WARN, ERR
 
 namespace oza::midi
 {
@@ -113,9 +116,12 @@ pvst::MidiBubble gen_midi_bub(const pvst::Tree &pvst,
 
 	// Validate indices before creating MidiBubble
 	if (g_pvst_idx == pc::INVALID_IDX || s_pvst_idx == pc::INVALID_IDX) {
-		PL_ERR("{} Invalid MidiBubble indices: g_pvst_idx={}, "
-		       "s_pvst_idx={}, fst={}, snd={}",
-		       fn_name, g_pvst_idx, s_pvst_idx, fst, snd);
+		std::string err = qs::format(
+			"{} Invalid MidiBubble indices: g_pvst_idx={}, "
+			"s_pvst_idx={}, fst={}, snd={}",
+			fn_name, g_pvst_idx, s_pvst_idx, fst, snd);
+		log_fatal("%s", err.data());
+
 		throw std::runtime_error(
 			"Cannot create MidiBubble with invalid indices");
 	}
@@ -123,9 +129,11 @@ pvst::MidiBubble gen_midi_bub(const pvst::Tree &pvst,
 	// Ensure indices are within reasonable bounds
 	qt::idx_t max_valid_idx = pvst.vtx_count();
 	if (g_pvst_idx >= max_valid_idx || s_pvst_idx >= max_valid_idx) {
-		PL_ERR("{} MidiBubble indices out of bounds: g_pvst_idx={}, "
-		       "s_pvst_idx={}, max_valid={}",
-		       fn_name, g_pvst_idx, s_pvst_idx, max_valid_idx);
+		std::string err = qs::format(
+			"{} MidiBubble indices out of bounds: g_pvst_idx={}, "
+			"s_pvst_idx={}, max_valid={}",
+			fn_name, g_pvst_idx, s_pvst_idx, max_valid_idx);
+		log_fatal("%s", err.data());
 		throw std::runtime_error(
 			"MidiBubble indices exceed PVST vertex count");
 	}
@@ -201,8 +209,14 @@ std::vector<pvst::MidiBubble> handle_fl(const pst::Tree &st,
 			res.push_back(gen_midi_bub(pvst, trunk_c_bubs));
 		}
 		catch (const std::exception &e) {
-			WARN("Failed to generate trunk MidiBubble: {}",
-			     e.what());
+			// std::string err = qs::format(
+			//	"Failed to generate trunk MidiBubble for "
+			//	"flubble with zi {}: {}",
+			//	zi, e.what());
+			std::string err = qs::format(
+				"Failed to generate trunk MidiBubble: {}",
+				e.what());
+			log_error("%s", err.data());
 		}
 	}
 
@@ -214,9 +228,12 @@ std::vector<pvst::MidiBubble> handle_fl(const pst::Tree &st,
 				res.push_back(gen_midi_bub(pvst, v));
 			}
 			catch (const std::exception &e) {
-				WARN("Failed to generate branch MidiBubble for "
-				     "c_idx {}: {}",
-				     c_idx, e.what());
+				std::string err =
+					qs::format("Failed to generate branch "
+						   "MidiBubble for "
+						   "c_idx {}: {}",
+						   c_idx, e.what());
+				log_error("%s", err.data());
 			}
 		}
 	}
@@ -260,8 +277,10 @@ void find_midi(const pst::Tree &st, pvst::Tree &pvst, const ptu::tree_meta &tm)
 			}
 		}
 		catch (const std::exception &e) {
-			WARN("{} Failed to handle flubble {}: {}", fn_name,
-			     ft_v_idx, e.what());
+			std::string err =
+				qs::format("{} Failed to handle flubble {}: {}",
+					   fn_name, ft_v_idx, e.what());
+			log_error("%s", err.data());
 			continue;
 		}
 	}

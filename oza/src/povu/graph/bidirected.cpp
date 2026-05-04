@@ -13,10 +13,6 @@
 #include <quilt/shim.hpp>	 // for format, contains
 #include <quilt/types.hpp>	 // for qt
 
-// #include "povu/common/constants.hpp" // for UNDEFINED_ID
-// #include "povu/graph/types.hpp"	     // for v_end_e, side_n_id_t,
-// complement
-
 namespace oza::bidirected
 {
 
@@ -140,7 +136,7 @@ void Vertex::add_edge_r(qt::idx_t e_idx)
 }
 
 // ============================================================
-//      Variation Graph
+//                    Variation Graph
 // ============================================================
 
 // --------------

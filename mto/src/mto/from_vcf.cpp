@@ -6,11 +6,10 @@
 
 #include "mto/common.hpp" // for fp_to_vector
 
+#include <log.h>	   // for log_fatal
 #include <quilt/shim.hpp>  // for contains
 #include <quilt/types.hpp> // for qt
 #include <quilt/utils.hpp> // for concat_with
-
-#include "povu/common/log.hpp" // for INFO
 
 namespace mto::from_vcf
 {
@@ -44,8 +43,8 @@ extract_header_lines(const std::vector<std::string> &all_lines)
 
 	for (const std::string &line : all_lines) {
 		if (line.empty()) {
-			PL_ERR("Malformed VCF, Empty line found in VCF "
-			       "header.");
+			log_fatal("Malformed VCF, Empty line found in VCF "
+				  "header.");
 			std::exit(EXIT_FAILURE);
 		}
 
@@ -67,9 +66,9 @@ std::string check_version(const std::vector<std::string> &headers)
 						 VCF_SUPPORTED_VERSIONS.end()),
 			',');
 
-		PL_ERR("Unsupported VCF version: {}. Supported versions are: "
-		       "{}",
-		       vcf_version, supported);
+		log_fatal("Unsupported VCF version: %s. "
+			  "Supported versions are: %s",
+			  vcf_version.c_str(), supported.c_str());
 
 		std::exit(EXIT_FAILURE);
 	}
@@ -102,7 +101,7 @@ pu::TwoWayMap<std::string, qt::u32> extract_sample_names(const std::string &s)
 void read_vcf(const fs::path &fp, qt::u32 ll, mto::from_vcf::VCFile &vcf_file)
 {
 	if (ll > 1)
-		INFO("Reading VCF from: {}", fp.string());
+		log_info("Reading VCF from: {}", fp.string().c_str());
 
 	std::vector<std::string> lines;
 	mto::common::fp_to_vector(fp, &lines);
@@ -111,7 +110,7 @@ void read_vcf(const fs::path &fp, qt::u32 ll, mto::from_vcf::VCFile &vcf_file)
 	std::string vcf_version = check_version(headers);
 
 	if (ll > 1)
-		INFO("VCF version: {}", vcf_version);
+		log_info("VCF version: {}", vcf_version.c_str());
 
 	vcf_file.add_sample_names(headers.back());
 

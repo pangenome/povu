@@ -9,14 +9,13 @@
 #include <string_view>
 
 #include <liteseq/gfa.h>
+#include <log.h>
 
 #include <quilt/constants.hpp>	 // for
 #include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
 #include <quilt/shim.hpp>	 // for contains
 #include <quilt/types.hpp>	 // for qt
 #include <quilt/utils.hpp>	 // for pu, TwoWayMap
-
-#include "povu/common/log.hpp"
 
 namespace oza::refs
 {
@@ -71,8 +70,13 @@ public:
 				return i;
 
 		std::string contents = pu::concat_with(this->hap_ids, ',');
-		PL_ERR("Hap id {} not found in ploidy metadata. Contains: {}",
-		       ploidy_id, contents);
+		std::string err = qs::format(
+			"Hap id {} not found in ploidy metadata. Contains: {}",
+			ploidy_id, contents);
+		log_fatal("%s", err.c_str());
+		// PL_ERR("Hap id {} not found in ploidy metadata. Contains:
+		// {}",
+		//        ploidy_id, contents);
 		std::exit(EXIT_FAILURE);
 	}
 
@@ -80,8 +84,12 @@ public:
 	qt::u32 get_hap_id(qt::u32 ploidy_idx) const
 	{
 		if (ploidy_idx >= this->hap_ids.size()) {
-			PL_ERR("Hap idx {} out of bounds for ploidy {}",
-			       ploidy_idx, this->hap_ids.size());
+			std::string err = qs::format(
+				"Hap idx {} out of bounds for ploidy {}",
+				ploidy_idx, this->hap_ids.size());
+			log_fatal("%s", err.c_str());
+			// PL_ERR("Hap idx {} out of bounds for ploidy {}",
+			//        ploidy_idx, this->hap_ids.size());
 			std::exit(EXIT_FAILURE);
 		}
 
@@ -234,7 +242,10 @@ public:
 	{
 		auto it = this->sn2pm.find(sample_name);
 		if (it == this->sn2pm.end()) {
-			PL_ERR("Sample name {} not found", sample_name);
+			std::string err = qs::format("Sample name {} not found",
+						     sample_name);
+			log_fatal("%s", err.c_str());
+			// PL_ERR("Sample name {} not found", sample_name);
 			std::exit(EXIT_FAILURE);
 		}
 
@@ -257,7 +268,9 @@ public:
 	{
 		auto it = this->sn2pm.find(sample_name);
 		if (it == this->sn2pm.end()) {
-			PL_ERR("Sample name {} not found", sample_name);
+			std::string err = qs::format("Sample name {} not found",
+						     sample_name);
+			log_fatal("%s", err.c_str());
 			std::exit(EXIT_FAILURE);
 		}
 

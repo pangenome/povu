@@ -3,12 +3,11 @@
 #include <optional> // for optional
 #include <string>   // for char_traits, basic_string, string
 
+#include <log.h>		 // for log_error
 #include <quilt/constants.hpp>	 // for
 #include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
 #include <quilt/shim.hpp>	 // for format
 #include <quilt/utils.hpp>	 // for print_with_comma
-
-#include "povu/common/log.hpp" // for ERR
 
 #include "mto/to_pvst.hpp"
 
@@ -32,7 +31,7 @@ void write_pvst(const pvst::Tree &bt, const std::string &base_name,
 	std::ofstream bub_file(bub_file_name);
 
 	if (!bub_file.is_open()) {
-		PL_ERR("Could not open file {}", bub_file_name);
+		log_fatal("Could not open file %s", bub_file_name.c_str());
 		std::exit(EXIT_FAILURE);
 	}
 
@@ -67,8 +66,8 @@ void write_pvst(const pvst::Tree &bt, const std::string &base_name,
 			bub_file << pc::PVST_MIDI_SYMBOL << pc::COL_SEP;
 			break;
 		default:
-			PL_ERR("Unknown vertex type in write_bub: {}",
-			       v.as_str());
+			log_fatal("Unknown vertex type in write_bub: {}",
+				  v.as_str().c_str());
 			std::exit(EXIT_FAILURE);
 		}
 

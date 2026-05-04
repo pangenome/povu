@@ -5,12 +5,12 @@
 
 #include "ita/graph/bfs_tree.hpp"
 
+#include <log.h>
 #include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
 #include <quilt/shim.hpp>	 // for format, contains
 #include <quilt/types.hpp>	 // for
 #include <quilt/utils.hpp>
-
-#include "povu/common/log.hpp" // for WARN, ERR
+#include <string>
 
 namespace povu::genomics::graph
 {
@@ -46,7 +46,7 @@ inline pgt::v_end_e get_v_end(pgt::or_e o, dir_e e) noexcept
 						 : pgt::v_end_e::l;
 	}
 
-	PL_ERR("Invalid v_end : {}", static_cast<int>(e));
+	log_fatal("Invalid v_end : %d", static_cast<int>(e));
 	std::exit(EXIT_FAILURE);
 };
 
@@ -69,7 +69,7 @@ inline pgt::or_e get_or(pgt::v_end_e side, dir_e d) noexcept
 						: pgt::or_e::forward);
 	}
 
-	PL_ERR("Invalid orientation: {}", static_cast<int>(d));
+	log_fatal("Invalid orientation: %d", static_cast<int>(d));
 	std::exit(EXIT_FAILURE);
 };
 
@@ -195,7 +195,7 @@ void find_laps(const bd::VG &g, qt::u32 h_idx, qt::id_t u, qt::id_t v,
 std::list<qt::u32> gen_sort(const bd::VG &g, ir::RoV &rov,
 			    const qt::u32 HAP_COUNT, bool dbg)
 {
-	INFO("Generating sort for RoV: {}", rov.as_str());
+	log_info("Generating sort for RoV: %s", rov.as_str().c_str());
 	dbg = rov.as_str() == ">96686>96691" ? true : false;
 	dbg = false;
 
@@ -263,7 +263,7 @@ std::list<qt::u32> gen_sort(const bd::VG &g, ir::RoV &rov,
 				left_cxt[v_id] = x.value();
 			}
 			else
-				PL_ERR("v_id {} has no left context", v_id);
+				log_error("v_id %ul has no left context", v_id);
 		}
 
 		for (qt::u32 j{start + len - 1}; j >= (start); j--) {
@@ -282,7 +282,8 @@ std::list<qt::u32> gen_sort(const bd::VG &g, ir::RoV &rov,
 				right_cxt[v_id] = y.value();
 			}
 			else
-				PL_ERR("v_id {} has no right context", v_id);
+				log_fatal("v_id %ul has no right context",
+					  v_id);
 		}
 	};
 
@@ -386,7 +387,8 @@ std::list<qt::u32> gen_sort(const bd::VG &g, ir::RoV &rov,
 	}
 
 	if (dbg) {
-		INFO("sw: {}", rov.as_str());
+		std::string inf = qs::format("sw: {}", rov.as_str());
+		log_info("%s", inf.c_str());
 		std::cerr << pu::concat_with(sw, ',') << "\n";
 	}
 
@@ -496,7 +498,7 @@ qt::status_t enum_walks(const bd::VG &g, pvst::route_e route, idx_or_t src,
 		auto w_len = static_cast<qt::u32>(curr_w.size());
 
 		if (w_len > MAX_FLUBBLE_STEPS) {
-			WARN("max steps reached for {}", rov_label);
+			log_warn("max steps reached for {}", rov_label);
 			std::cerr << pgt::to_string(to_id_walk(curr_w)) << "\n";
 			continue;
 		}
@@ -617,7 +619,7 @@ qt::status_t find_walks(const bd::VG &g, ir::RoV &rov)
 	auto sorted_v_ids = bfs_sort(g, rov);
 	if (!sorted_v_ids.empty()) {
 		if (dbg)
-			INFO("called 1");
+			log_info("called 1");
 		rov.add_sort_data(sorted_v_ids.begin(), sorted_v_ids.end());
 		return 0; // Success
 	}
@@ -626,7 +628,7 @@ qt::status_t find_walks(const bd::VG &g, ir::RoV &rov)
 	std::list<qt::u32> sw = gen_sort(g, rov, g.get_hap_count(), dbg);
 	if (!sw.empty()) {
 		if (dbg)
-			INFO("called 2");
+			log_info("called 2");
 		rov.add_sort_data(sw.begin(), sw.end());
 		return 0; // Success
 	}

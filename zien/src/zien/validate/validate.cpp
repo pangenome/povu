@@ -5,15 +5,14 @@
 #include <string>
 #include <vector>
 
-#include <liteseq/refs.h>	 // for ref_walk, ref
-#include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
-#include <quilt/shim.hpp>	 // for format
-#include <quilt/types.hpp>	 // for qt
-
 #include "mto/from_vcf.hpp"	     // for read_vcf
 #include "povu/graph/bidirected.hpp" // for bidirected
-
-#include <povu/refs/refs.hpp> // for ref_format_e, Ref
+#include <liteseq/refs.h>	     // for ref_walk, ref
+#include <log.h>		     // for log_fatal
+#include <povu/refs/refs.hpp>	     // for ref_format_e, Ref
+#include <quilt/graph_types.hpp>     // for v_end_e, side_n_id_t, side_n_idx_t
+#include <quilt/shim.hpp>	     // for format
+#include <quilt/types.hpp>	     // for qt
 
 #include "zien/common/common.hpp" // for get_ref_ids
 
@@ -227,7 +226,7 @@ void write_summary(const core::config &app_config, qt::u32 err_recs, qt::u32 N)
 
 	std::ofstream os(summary_fp);
 	if (!os.is_open()) {
-		PL_ERR("Could not open file {}", summary_fp);
+		log_fatal("Could not open file %s", summary_fp.c_str());
 		std::exit(EXIT_FAILURE);
 	}
 
@@ -261,7 +260,7 @@ std::vector<qt::u32> validate_vcf_records(const bd::VG &g,
 
 		file_stream.open(report_fp);
 		if (!file_stream.is_open()) {
-			PL_ERR("Could not open file {}", report_fp);
+			log_fatal("Could not open file %s", report_fp.c_str());
 			std::exit(EXIT_FAILURE);
 		}
 

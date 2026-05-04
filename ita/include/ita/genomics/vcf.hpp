@@ -15,12 +15,12 @@
 #include "ita/genomics/allele.hpp"  // for allele_slice_t, Exp
 #include "ita/graph/slice_tree.hpp" // for poi
 #include "ita/variation/rov.hpp"    // for var_type_e
+#include <log.h>		    // for log_fatal
 #include <quilt/constants.hpp>	    // for
 #include <quilt/graph_types.hpp>    // for v_end_e, side_n_id_t, side_n_idx_t
 #include <quilt/types.hpp>	    // for qt
 #include <quilt/utils.hpp>	    // for pu
 
-#include "povu/common/log.hpp"	     // for ERR
 #include "povu/graph/bidirected.hpp" // for VG
 
 namespace ita::vcf
@@ -291,7 +291,7 @@ public:
 		const qt::idx_t AN = this->get_an();
 
 		if (AN == 0) {
-			PL_ERR("AN should never be 0");
+			log_fatal("AN should never be 0");
 			std::exit(EXIT_FAILURE);
 		}
 

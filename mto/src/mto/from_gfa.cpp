@@ -6,10 +6,9 @@
 
 #include <liteseq/gfa.h>	 // for gfa_config, gfa...
 #include <liteseq/refs.h>	 // for get_step_count
+#include <log.h>		 // for log_warn, log_info
 #include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
 #include <quilt/types.hpp>	 // for qt
-
-#include "povu/common/log.hpp" // for WARN
 
 #include "mto/from_gfa.hpp"
 
@@ -42,7 +41,7 @@ inline lq::gfa_config gen_lq_conf(const core::config &app_config,
 bd::VG *to_bd(const core::config &app_config)
 {
 	if (app_config.verbosity() > 1)
-		INFO("Processing GFA");
+		log_info("Processing GFA");
 
 	/* initialize a liteseq gfa */
 	std::vector<const char *> refs;
@@ -63,7 +62,7 @@ bd::VG *to_bd(const core::config &app_config)
 
 	/* add vertices */
 	if (app_config.verbosity() > 0)
-		INFO("Adding Vertices");
+		log_info("Adding Vertices");
 
 	for (qt::idx_t i{}; i < vtx_count; ++i) {
 		lq::vtx *v = lq::get_vtx(gfa, i);
@@ -79,7 +78,7 @@ bd::VG *to_bd(const core::config &app_config)
 
 	/* add edges */
 	if (app_config.verbosity() > 1)
-		INFO("Adding edges");
+		log_info("Adding edges");
 
 	for (std::size_t i{}; i < edge_count; ++i) {
 		std::size_t v1 = gfa->e[i].v1_id;
@@ -98,7 +97,7 @@ bd::VG *to_bd(const core::config &app_config)
 	/* refs */
 	if (app_config.inc_refs()) {
 		if (app_config.verbosity() > 1)
-			INFO("Adding refs");
+			log_info("Adding refs");
 
 		vg->set_refs_meta(gfa->refs, ref_count);
 
@@ -114,7 +113,7 @@ bd::VG *to_bd(const core::config &app_config)
 
 	/* populate tips */
 	if (app_config.verbosity() > 1)
-		INFO("Processing tips");
+		log_info("Processing tips");
 
 	for (std::size_t v_idx{}; v_idx < vg->vtx_count(); ++v_idx) {
 		const bd::Vertex &v = vg->get_vertex_by_idx(v_idx);
@@ -122,7 +121,7 @@ bd::VG *to_bd(const core::config &app_config)
 		// TODO: [c] improve logic on handling isolated vertices
 		if (v.get_edges_l().empty() && v.get_edges_r().empty()) {
 			if (app_config.verbosity() > 2)
-				WARN("isolated vertex {}", v.id());
+				log_warn("isolated vertex %ul", v.id());
 			vg->add_tip(v.id(), pgt::v_end_e::l);
 		}
 		else if (v.get_edges_l().empty()) {

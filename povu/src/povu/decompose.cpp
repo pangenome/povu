@@ -9,6 +9,7 @@
 #include <utility>    // for get, make_pair, pair
 #include <vector>     // for vector
 
+#include <log.h>	   // for log_fatal
 #include <quilt/shim.hpp>  // for format
 #include <quilt/types.hpp> // for qt
 
@@ -96,14 +97,14 @@ void do_decompose(const core::config &app_config)
 	bd::VG *g = mto::from_gfa::to_bd(app_config); // read graph
 
 	if (ll > 1)
-		INFO("Finding components");
+		log_info("Finding components");
 
 	std::vector<bd::VG *> components = bd::VG::componetize(*g);
 
 	delete g;
 
 	if (ll > 1)
-		INFO("Found {} components", components.size());
+		log_info("Found %ul components", components.size());
 
 	std::pair<qt::u32, qt::u32> thread_config =
 		thread_count(app_config, components.size());
@@ -128,14 +129,15 @@ void do_decompose(const core::config &app_config)
 					qt::u32 component_id{i + 1};
 
 					if (app_config.verbosity())
-						INFO("Handling component: {}",
-						     component_id);
+						log_info("Handling component: "
+							 "%ul",
+							 component_id);
 
 					qt::u32 N = components[i]->vtx_count();
 					if (N < 3) {
 						// clang-format off
 						if (ll > 2)
-							INFO("Skipping component {} because it is too small. (size: {})", component_id, N);
+							log_info("Skipping component %ul because it is too small. (size: %ul)", component_id, N);
 						// clang-format on
 						continue;
 					}

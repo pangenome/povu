@@ -3,6 +3,7 @@
 #include <string>
 #include <vector> // for vector
 
+#include <log.h>	   // for log_info
 #include <quilt/shim.hpp>  // for format
 #include <quilt/types.hpp> // for qt
 
@@ -22,14 +23,14 @@ void do_prune(const core::config &app_config)
 	bd::VG *g = mto::from_gfa::to_bd(app_config); // read graph
 
 	if (ll > 1)
-		INFO("Finding components");
+		log_info("Finding components");
 
 	std::vector<bd::VG *> components = bd::VG::componetize(*g);
 
 	delete g;
 
 	if (ll > 1)
-		INFO("Found {} components", components.size());
+		log_info("Found %ul components", components.size());
 
 	std::string out_dir = app_config.get_output_dir();
 

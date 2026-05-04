@@ -202,7 +202,7 @@ std::optional<extension> extend_link(const bd::VG &g, const link_pair &lp,
 		z--;
 
 	if (dist_a == 0 && dist_b == 0) {
-		WARN("extend: no ext for ({}, {})", ref_r_id, alt_r_id);
+		log_warn("extend: no ext for (%ul, %ul)", ref_r_id, alt_r_id);
 		return std::nullopt;
 	}
 

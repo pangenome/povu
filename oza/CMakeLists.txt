@@ -27,6 +27,12 @@ target_include_directories(oza
   $<INSTALL_INTERFACE:include>
 )
 
+
+target_link_libraries(oza
+  PRIVATE
+  log
+)
+
 if (TEST_OZA)
   message(STATUS "Tests enabled for oza")
   # Add the global TESTING definition

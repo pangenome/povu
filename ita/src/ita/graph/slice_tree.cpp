@@ -1,5 +1,6 @@
 #include "ita/graph/slice_tree.hpp" // for poi
 
+#include <log.h>
 #include <quilt/types.hpp> // for qt
 
 namespace ita::slice_tree
@@ -25,7 +26,7 @@ std::string to_string(comp_type ct)
 		return "EXTEND_ALT";
 	}
 
-	PL_ERR("Unknown comp_type value: {}", static_cast<qt::u8>(ct));
+	log_fatal("Unknown comp_type value: %u", static_cast<qt::u8>(ct));
 	return "UNDEFINED";
 }
 
@@ -48,7 +49,7 @@ std::string to_string(update_type ut)
 		return "EXTEND_ALT";
 	}
 
-	PL_ERR("Unknown update_type value: {}", static_cast<qt::u8>(ut));
+	log_fatal("Unknown update_type value: %u", static_cast<qt::u8>(ut));
 	return "UNDEFINED";
 }
 

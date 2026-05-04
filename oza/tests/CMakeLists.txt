@@ -11,6 +11,7 @@ target_link_libraries(test_oza
   fmt::fmt
   taywee::args
 
+  log
   oza
   liteseq
   meza

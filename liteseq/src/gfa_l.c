@@ -26,7 +26,7 @@
  * representable in a bidirected graph without node duplication
  *
  * @param [in] l_line the line to parse
- * @param [in] line_length the length of the line
+ * @param [in] line_len the length of the line
  * @param [in] idx the index of the line
  * @param [in] tokens the tokens to parse
  * @param [in] c the config
@@ -68,11 +68,13 @@ status_t handle_l(const char *l_line, u32 line_len, size_t idx, char **tokens,
 				v1_id, v1_strand_symbol, v2_id,
 				v2_strand_symbol);
 			return -1;
-		} else if (v1_strand_symbol == v2_strand_symbol) {
+		}
+		else if (v1_strand_symbol == v2_strand_symbol) {
 			v1_side = LEFT;
 			v2_side = RIGHT;
 		}
-	} else {
+	}
+	else {
 		v1_side = (v1_strand_symbol == '+') ? RIGHT : LEFT;
 		v2_side = (v2_strand_symbol == '+') ? LEFT : RIGHT;
 	}

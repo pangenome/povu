@@ -11,14 +11,13 @@
 #include <utility> // for get, pair
 #include <vector>  // for vector
 
+#include <log.h>		 // for log_fatal, log_fatal
 #include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
 #include <quilt/types.hpp>	 // for qt
 #include <quilt/utils.hpp>
 
 #include "mto/common.hpp" // for FILE_ERROR
 #include "mto/from_pvst.hpp"
-
-#include "povu/common/log.hpp" // for ERR
 
 namespace mto::from_pvst
 {
@@ -57,12 +56,15 @@ void check_pvst_version_support(const std::string &fp,
 				const std::string &pvst_version)
 {
 	if (!in_vector(PVST_SUPPORTED_VERSIONS, pvst_version)) {
-		PL_ERR("Unsupported PVST version in file {}, got {}. Supported "
-		       "versions are: {}.",
-		       fp, pvst_version,
-		       pu::concat_with(PVST_SUPPORTED_VERSIONS, ','));
+		std::string err = qs::format(
+			"Unsupported PVST version in file {}, got {}. "
+			"Supported "
+			"versions are: {}.",
+			fp, pvst_version,
+			pu::concat_with(PVST_SUPPORTED_VERSIONS, ','));
+		log_fatal("%s", err.c_str());
 
-		std::exit(1);
+		std::exit(EXIT_FAILURE);
 	}
 
 	return;
@@ -183,8 +185,8 @@ pvst::Tree read_pvst(const std::string &fp)
 				<< "File " << fp << ", line " << line_idx
 				<< ". Expected " << pc::EXPECTED_PVST_COL_NUMS
 				<< ", got " << tokens.size() << '\n';
-			PL_ERR("{}", err_msg.str());
-			std::exit(1);
+			log_fatal("%s", err_msg.str().c_str());
+			std::exit(EXIT_FAILURE);
 		}
 
 		char typ = tokens[0][0];
@@ -255,8 +257,10 @@ pvst::Tree read_pvst(const std::string &fp)
 			break;
 		}
 		default: {
-			PL_ERR("Unknown vertex type in PVST file {}: L:{}", fp,
-			       line_idx + 1);
+			std::string err = qs::format(
+				"Unknown vertex type in PVST file {}: L:{}", fp,
+				line_idx + 1);
+			log_error("%s", err.c_str());
 			break;
 		}
 		}

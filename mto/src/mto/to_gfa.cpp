@@ -3,12 +3,11 @@
 #include <filesystem> // for path
 #include <fstream>    // for basic_ofstream, operator<<, basic_ostream
 
+#include "povu/graph/bidirected.hpp"
+#include <log.h>		 // for log_error
 #include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
 #include <quilt/shim.hpp>	 // for format
 #include <quilt/types.hpp>	 // for qt
-
-#include "povu/common/log.hpp"
-#include "povu/graph/bidirected.hpp"
 
 namespace mto::to_gfa
 {
@@ -16,7 +15,8 @@ void write_gfa(const bd::VG &g, const std::filesystem::path &fp)
 {
 	std::ofstream os(fp);
 	if (!os.is_open())
-		PL_ERR("Could not open file {} for writing", fp.string());
+		log_error("Could not open file %s for writing",
+			  fp.string().c_str());
 
 	auto vxt_pair_to_edge_pair = [&](const bd::Edge &e)
 		-> std::tuple<qt::idx_t, std::string, qt::idx_t, std::string>

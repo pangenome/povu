@@ -6,11 +6,10 @@
 #include <optional>
 #include <set>
 
+#include <log.h>
 #include <quilt/constants.hpp> // for
 #include <quilt/shim.hpp>      // for format
 #include <quilt/types.hpp>     // for qt
-
-#include "povu/common/log.hpp" // for ERR
 
 namespace ita::slice_tree
 {
@@ -249,7 +248,7 @@ public:
 	void set_parent(qt::u32 p_idx)
 	{
 		if (p_idx == this->get_r_start()) {
-			PL_ERR("Setting parent to self");
+			log_fatal("Setting parent to self");
 			std::exit(EXIT_FAILURE);
 		}
 
@@ -259,7 +258,7 @@ public:
 	void set_left(qt::u32 l_idx)
 	{
 		if (this->left() != pc::INVALID_IDX) {
-			PL_ERR("Adding leaf to non-empty left child");
+			log_fatal("Adding leaf to non-empty left child");
 			std::exit(EXIT_FAILURE);
 		}
 
@@ -269,7 +268,7 @@ public:
 	void set_right(qt::u32 r_idx)
 	{
 		if (this->right() != pc::INVALID_IDX) {
-			PL_ERR("Adding leaf to non-empty right child");
+			log_fatal("Adding leaf to non-empty right child");
 			std::exit(EXIT_FAILURE);
 		}
 
@@ -375,8 +374,10 @@ public:
 	{
 		std::vector<alt> &alts_vec = this->get_alts_mut(alt_h_idx);
 		if (alt_idx >= alts_vec.size()) {
-			PL_ERR("Alt index {} out of bounds for alt hap {}",
-			       alt_idx, alt_h_idx);
+			std::string err = qs::format(
+				"Alt index {} out of bounds for alt hap {}",
+				alt_idx, alt_h_idx);
+			log_fatal("%s", err.c_str());
 			std::exit(EXIT_FAILURE);
 		}
 
@@ -496,7 +497,9 @@ private:
 		vertex &v = this->get_vertex_mut(v_idx);
 		qt::u32 p_idx = v.parent();
 		if (p_idx == pc::INVALID_IDX) {
-			PL_ERR("Non root leaf vertex {} has no parent", v_idx);
+			std::string err = qs::format(
+				"Non root leaf vertex {} has no parent", v_idx);
+			log_fatal("%s", err.c_str());
 			std::exit(EXIT_FAILURE);
 		}
 
@@ -615,12 +618,12 @@ private:
 			//	  << "\n";
 
 			if (ctr++ >= this->size()) {
-				PL_ERR("Exceeded max traversal steps");
+				log_fatal("Exceeded max traversal steps");
 				std::exit(EXIT_FAILURE);
 			}
 
 			if (qs::contains(visited, curr_v_idx)) {
-				PL_ERR("Revist vertex {}", curr_v_idx);
+				log_fatal("Revist vertex %ul", curr_v_idx);
 				std::exit(EXIT_FAILURE);
 			}
 
@@ -651,8 +654,8 @@ private:
 					return {update_type::MERGE_REPLACE,
 						curr_v_idx, cr.ai};
 				case comp_type::EXTEND_ALT:
-					PL_ERR("Did not expect EXTEND_ALT "
-					       "here");
+					log_fatal("Did not expect EXTEND_ALT "
+						  "here");
 					std::exit(EXIT_FAILURE);
 				}
 			}
@@ -677,7 +680,7 @@ private:
 
 			if (ref_h_start == curr.get_r_start()) {
 				// should not reach here
-				PL_ERR("Reached unexpected code path");
+				log_fatal("Reached unexpected code path");
 				std::exit(EXIT_FAILURE);
 			}
 		}
@@ -707,11 +710,16 @@ private:
 		case comp_type::EXTEND_ALT:
 			return {update_type::EXTEND_ALT, ref_h_start};
 		case comp_type::NO_OVERLAP:
-			PL_ERR("Did not expect comp type {}", to_string(cr.ct));
+			std::string err =
+				qs::format("Did not expect comp type {}",
+					   to_string(cr.ct));
+			log_fatal("%s", err.c_str());
 			std::exit(EXIT_FAILURE);
 		}
 
-		PL_ERR("Reached unexpected code path {}", to_string(cr.ct));
+		std::string err = qs::format("Reached unexpected code path {}",
+					     to_string(cr.ct));
+		log_fatal("%s", err.c_str());
 		std::exit(EXIT_FAILURE);
 	}
 

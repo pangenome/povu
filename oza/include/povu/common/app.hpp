@@ -12,9 +12,8 @@
 #include <utility>
 #include <vector>
 
+#include <log.h>
 #include <quilt/utils.hpp> // for pu
-
-#include "povu/common/log.hpp"
 
 namespace core
 {
@@ -116,7 +115,7 @@ inline const char *to_str(task_e t)
 		return "unset";
 	}
 
-	PL_ERR("unknown task");
+	log_fatal("unknown task");
 	std::exit(EXIT_FAILURE); // should not reach here
 }
 
@@ -461,7 +460,7 @@ public:
 		const std::string spc = "  "; // could use \t
 
 #ifdef DEBUG
-		INFO("povu is in debug mode");
+		log_info("povu is in debug mode");
 #endif
 		std::cerr << "CLI parameters:\n";
 

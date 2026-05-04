@@ -5,7 +5,8 @@
 #include <set>	     // for std::set
 #include <vector>    // for std::vector
 
-#include <liteseq/refs.h>		  // for ref_walk, ref
+#include <liteseq/refs.h> // for ref_walk, ref
+#include <log.h>
 #include <meza/pool/hap_comp.hpp>	  // for haps_comp_set
 #include <meza/pool/split_pool_types.hpp> // for ov_mat_t
 #include <quilt/types.hpp>		  // for qt
@@ -57,8 +58,9 @@ find_hap_slice_no_tangle(const bd::VG &g, qt::u32 h_idx,
 					 "is not present in the hap walk");
 
 	if (u_positions.size() > 1 || v_positions.size() > 1)
-		WARN("Multiple positions found for a vertex in the context. "
-		     "This should not happen when no tangling is present.");
+		log_warn(
+			"Multiple positions found for a vertex in the context. "
+			"This should not happen when no tangling is present.");
 
 	u_step_idx = std::min(u_positions.front(), v_positions.front());
 	v_step_idx = std::max(u_positions.front(), v_positions.front());

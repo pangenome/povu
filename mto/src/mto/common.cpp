@@ -3,8 +3,7 @@
 #include <fstream> // for basic_ifstream, basic_istream, basic_ios
 
 #include "mto/common.hpp"
-
-#include "povu/common/log.hpp" // for ERR
+#include <log.h> // for log_fatal
 
 namespace mto::common
 {
@@ -12,7 +11,7 @@ std::vector<fs::path> get_files(const std::string &dir_path,
 				const std::string &ext)
 {
 	if (!fs::exists(dir_path)) {
-		PL_ERR("Directory does not exist: {}", dir_path);
+		log_fatal("Directory does not exist: %s", dir_path.c_str());
 		exit(EXIT_FAILURE);
 	}
 

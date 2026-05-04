@@ -6,7 +6,9 @@
 #include <optional>  // for optional
 #include <utility>   // for move
 
-#include <dynamo/dynamo.hpp>  // for dynamic_interval_tree
+#include "povu/common/app.hpp" // for config
+#include <dynamo/dynamo.hpp>   // for dynamic_interval_tree
+#include <log.h>
 #include <meza/pool/pool.hpp> // for matrix_pool
 #include <quilt/types.hpp>    // for qt
 
@@ -16,11 +18,6 @@
 #include "ita/traversals/at_matrix.hpp"	     // rov_matrix_set
 #include "ita/variation/rov.hpp"	     // for RoV, gen_rov
 #include "ita/variation/sne.hpp"	     // for sne
-#include "povu/common/app.hpp"		     // for config
-// #include "povu/common/core.hpp"		     // for pt, idx_t, id_t
-#include "povu/common/log.hpp" // for ERR
-
-// #include "quilt/types.hpp"
 
 namespace ita::genomics
 {
@@ -121,7 +118,7 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 		     const core::config &app_config)
 {
 	if (app_config.verbosity() > 0)
-		INFO("Generating regions of variation (RoVs)");
+		log_info("Generating regions of variation (RoVs)");
 
 	// Parse genomic region if specified
 	std::optional<ir::genomic_region> region = std::nullopt;
@@ -129,7 +126,7 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 		region = ir::parse_genomic_region(
 			app_config.get_genomic_region().value());
 		if (!region.has_value()) {
-			PL_ERR("Failed to parse genomic region");
+			log_fatal("Failed to parse genomic region");
 			std::exit(EXIT_FAILURE);
 		}
 	}
@@ -142,7 +139,7 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 	qt::u32 total_chunks = (N + CHUNK_SIZE - 1) / CHUNK_SIZE;
 
 	if (app_config.verbosity() > 0)
-		INFO("Processing chunks. Chunk count: {}", total_chunks);
+		log_info("Processing chunks. Chunk count: {}", total_chunks);
 
 	ise::pin_cushion pc;
 	std::vector<ia::trek> treks;
@@ -182,7 +179,7 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 			qt::u32 chunk_num = (base / CHUNK_SIZE) + 1;
 
 			if (app_config.verbosity() > 0)
-				INFO("\t{}/{}", chunk_num, total_chunks);
+				log_info("\t%ul/%ul", chunk_num, total_chunks);
 
 			comp_expeditions(g, all_rovs, base, count,
 					 to_call_ref_ids, p, batch, treks);
@@ -201,7 +198,7 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 		// inversions
 		{
 			if (app_config.verbosity() > 0)
-				INFO("Processing inversions");
+				log_info("Processing inversions");
 
 			find_inversions_new(g, to_call_ref_ids, inv_slices);
 

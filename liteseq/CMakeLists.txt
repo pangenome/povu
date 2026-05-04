@@ -1,14 +1,3 @@
-# === CMake Setup ===
-cmake_minimum_required(VERSION 3.14)
-
-# Project name, version and languages
-project(liteseq VERSION 0.0.1 LANGUAGES C CXX)
-
-configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/liteseq/version.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/generated/liteseq/version.h
-  @ONLY)
-
 # === BUILD OPTIONS ===
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 # Check if CMAKE_BUILD_TYPE is set; if not, default to Release
@@ -183,7 +172,6 @@ target_include_directories(liteseq
   PRIVATE
   ${SRC_INTERNAL_DIR}
 )
-
 
 # === Tests ===
 

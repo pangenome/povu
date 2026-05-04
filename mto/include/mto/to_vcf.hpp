@@ -15,16 +15,15 @@
 #include <utility>     // for get, move
 #include <vector>      // for vector
 
-#include "ita/genomics/vcf.hpp" // for VcfRecIdx
-#include <quilt/shim.hpp>	// for format, contains
-#include <quilt/types.hpp>	// for qt
-#include <quilt/utils.hpp>	// for is_prefix
+#include "ita/genomics/vcf.hpp"	     // for VcfRecIdx
+#include "povu/common/app.hpp"	     // for config
+#include "povu/graph/bidirected.hpp" // for VG
+#include <log.h>		     // for log_fatal
+#include <quilt/shim.hpp>	     // for format, contains
+#include <quilt/types.hpp>	     // for qt
+#include <quilt/utils.hpp>	     // for is_prefix
 
 #include "mto/common.hpp" // for create_dir_if_not_exists
-
-#include "povu/common/app.hpp"	     // for config
-#include "povu/common/log.hpp"	     // for ERR
-#include "povu/graph/bidirected.hpp" // for VG
 
 namespace mto::to_vcf
 {
@@ -54,8 +53,8 @@ class VcfOutput
 		}
 		std::ofstream ofs(fp, std::ios::out | std::ios::app);
 		if (!ofs) {
-			PL_ERR("Append open failed: {}",
-			       fs::absolute(fp).string());
+			log_fatal("Append open failed: {}",
+				  fs::absolute(fp).string().c_str());
 			std::exit(EXIT_FAILURE);
 		}
 		this->all_ofs_.push_back(std::move(ofs));
