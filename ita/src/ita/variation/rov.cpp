@@ -104,8 +104,8 @@ parse_genomic_region(const std::string &region_str)
 		qt::idx_t end = std::stoull(end_str);
 
 		if (start >= end) {
-			log_error("Invalid region '%s': start position (%ul) "
-				  "must be less than end position (%ul)",
+			log_error("Invalid region '%s': start position (%u) "
+				  "must be less than end position (%u)",
 				  region_str.c_str(), start, end);
 			return std::nullopt;
 		}
@@ -208,7 +208,7 @@ void find_pvst_rovs(const bd::VG &g, const pvst::Tree &pvst,
 		qt::status_t s = povu::genomics::graph::find_walks(g, r);
 
 		if (r.size() < 3) {
-			log_warn("RoV too small (size=%ul): %s. Skipping.",
+			log_warn("RoV too small (size=%u): %s. Skipping.",
 				 r.size(), r.as_str().c_str());
 			continue;
 		}

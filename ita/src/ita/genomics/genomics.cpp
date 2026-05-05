@@ -179,7 +179,7 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 			qt::u32 chunk_num = (base / CHUNK_SIZE) + 1;
 
 			if (app_config.verbosity() > 0)
-				log_info("\t%ul/%ul", chunk_num, total_chunks);
+				log_info("\t%u/%u", chunk_num, total_chunks);
 
 			comp_expeditions(g, all_rovs, base, count,
 					 to_call_ref_ids, p, batch, treks);

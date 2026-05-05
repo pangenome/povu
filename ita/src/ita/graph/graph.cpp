@@ -263,7 +263,7 @@ std::list<qt::u32> gen_sort(const bd::VG &g, ir::RoV &rov,
 				left_cxt[v_id] = x.value();
 			}
 			else
-				log_error("v_id %ul has no left context", v_id);
+				log_error("v_id %u has no left context", v_id);
 		}
 
 		for (qt::u32 j{start + len - 1}; j >= (start); j--) {
@@ -282,7 +282,7 @@ std::list<qt::u32> gen_sort(const bd::VG &g, ir::RoV &rov,
 				right_cxt[v_id] = y.value();
 			}
 			else
-				log_fatal("v_id %ul has no right context",
+				log_fatal("v_id %u has no right context",
 					  v_id);
 		}
 	};

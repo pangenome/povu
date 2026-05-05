@@ -121,7 +121,7 @@ bd::VG *to_bd(const core::config &app_config)
 		// TODO: [c] improve logic on handling isolated vertices
 		if (v.get_edges_l().empty() && v.get_edges_r().empty()) {
 			if (app_config.verbosity() > 2)
-				log_warn("isolated vertex %ul", v.id());
+				log_warn("isolated vertex %u", v.id());
 			vg->add_tip(v.id(), pgt::v_end_e::l);
 		}
 		else if (v.get_edges_l().empty()) {

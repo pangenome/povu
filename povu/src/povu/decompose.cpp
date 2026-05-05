@@ -102,7 +102,7 @@ void do_decompose(const core::config &app_config)
 	delete g;
 
 	if (ll > 1)
-		log_info("Found %ul components", components.size());
+		log_info("Found %u components", components.size());
 
 	std::pair<qt::u32, qt::u32> thread_config =
 		thread_count(app_config, components.size());
@@ -128,14 +128,14 @@ void do_decompose(const core::config &app_config)
 
 					if (app_config.verbosity())
 						log_info("Handling component: "
-							 "%ul",
+							 "%u",
 							 component_id);
 
 					qt::u32 N = components[i]->vtx_count();
 					if (N < 3) {
 						// clang-format off
 						if (ll > 2)
-							log_info("Skipping component %ul because it is too small. (size: %ul)", component_id, N);
+							log_info("Skipping component %u because it is too small. (size: %u)", component_id, N);
 						// clang-format on
 						continue;
 					}

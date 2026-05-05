@@ -622,7 +622,7 @@ private:
 			}
 
 			if (qs::contains(visited, curr_v_idx)) {
-				log_fatal("Revist vertex %ul", curr_v_idx);
+				log_fatal("Revist vertex %u", curr_v_idx);
 				std::exit(EXIT_FAILURE);
 			}
 

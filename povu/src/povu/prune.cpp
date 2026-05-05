@@ -28,7 +28,7 @@ void do_prune(const core::config &app_config)
 	delete g;
 
 	if (ll > 1)
-		log_info("Found %ul components", components.size());
+		log_info("Found %u components", components.size());
 
 	std::string out_dir = app_config.get_output_dir();
 
