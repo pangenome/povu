@@ -22,7 +22,6 @@
 
 namespace oza::bidirected
 {
-inline constexpr std::string_view MODULE = "povu::bidirected";
 
 namespace pgt = quilt::types::graph;
 namespace lq = liteseq;

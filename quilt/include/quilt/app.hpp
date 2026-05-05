@@ -17,7 +17,6 @@
 
 namespace core
 {
-constexpr std::string_view MODULE = "povu::app::core";
 
 enum class task_e : uint8_t {
 	call,	   // call variants

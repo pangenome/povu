@@ -3,16 +3,15 @@
 
 #include <cstddef>
 #include <stdexcept>
-#include <string_view>
+
+#include <log/location.hpp> // for LOG_HERE
+#include <quilt/shim.hpp>   // for qs::contains, qs::format
+#include <quilt/types.hpp>  // for qt::u32, qt::u8, qt::op_t
 
 #include "meza/shared/shared.hpp" // for layout
 
-#include "quilt/shim.hpp"  // for qs::contains, qs::format
-#include "quilt/types.hpp" // for qt::u32, qt::u8, qt::op_t
-
 namespace meza::view::base
 {
-inline constexpr std::string_view MODULE = "meza::matrix::non_own";
 
 using layout = meza::shared::layout;
 
@@ -77,12 +76,14 @@ struct matrix {
 			return (size_t)i * stride + j;
 		}
 		else if (this->lo == layout::LowerSymmetricSquare) {
-			if (i < j)
+			if (i < j) {
 				throw std::out_of_range(
 					qs::format("{} Index out of range for "
 						   "LowerSymmetricSquare: "
 						   "i={}, j={}",
-						   MODULE, i, j));
+						   LOG_HERE, i, j));
+			}
+
 			return (size_t)i * (i + 1) / 2 + j;
 		}
 		else if (this->lo == layout::RepeatedRow) {
@@ -91,7 +92,7 @@ struct matrix {
 		}
 		else {
 			throw std::logic_error(
-				qs::format("{} Invalid layout: {}", MODULE,
+				qs::format("{} Invalid layout: {}", LOG_HERE,
 					   static_cast<int>(lo)));
 		}
 	}

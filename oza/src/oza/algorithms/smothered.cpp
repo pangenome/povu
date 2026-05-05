@@ -2,14 +2,13 @@
 
 #include <iostream>	 // for basic_ostream, operator<<, basic_ios
 #include <map>		 // for map
-#include <memory>	 // for make_unique
 #include <optional>	 // for optional, nullopt, nullopt_t
 #include <set>		 // for set
-#include <string>	 // for char_traits, basic_string, string
 #include <unordered_set> // for unordered_set
 #include <utility>	 // for get, pair
 #include <vector>	 // for vector
 
+#include <log/location.hpp>	 // for LOG_HERE
 #include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
 #include <quilt/shim.hpp>	 // for format
 #include <quilt/types.hpp>	 // for qt
@@ -38,7 +37,6 @@ struct fl_sls {
 pvst::bounds_t compute_bounds(const pst::Tree &st, qt::idx_t cn_st_idx,
 			      qt::idx_t sm_st_idx)
 {
-	std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	if (st.is_desc(cn_st_idx, sm_st_idx)) {
 		return pvst::bounds_t{cn_st_idx, sm_st_idx};
@@ -51,7 +49,6 @@ pvst::bounds_t compute_bounds(const pst::Tree &st, qt::idx_t cn_st_idx,
 bool is_nesting(const pst::Tree &st, const pvst::bounds_t &outer,
 		const pvst::bounds_t &inner)
 {
-	std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	return st.is_desc(outer.upper, inner.upper) &&
 	       st.is_desc(inner.lower, outer.lower);
@@ -64,7 +61,6 @@ void trunk(const pst::Tree &st, const pvst::Tree &pvst,
 	   const pvst::Concealed &ft_v, qt::idx_t cn_pvst_v_idx,
 	   const ptu::tree_meta &tm, std::vector<pvst::Smothered> &res)
 {
-	std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	const std::vector<qt::idx_t> &depth = tm.depth;
 
@@ -138,7 +134,6 @@ void branch(const pst::Tree &st, const pvst::Tree &pvst,
 	    const pvst::Concealed &ft_v, qt::idx_t cn_pvst_v_idx,
 	    const ptu::tree_meta &tm, std::vector<pvst::Smothered> &res)
 {
-	std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	const pvst::Concealed &cn_v = ft_v;
 	qt::idx_t fl_v_idx = cn_v.get_fl_idx();
@@ -220,7 +215,6 @@ void trunk(const pst::Tree &st, const pvst::Tree &pvst,
 	   const pvst::Concealed &ft_v, qt::idx_t cn_pvst_v_idx,
 	   const ptu::tree_meta &tm, std::vector<pvst::Smothered> &res)
 {
-	std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	const std::vector<qt::idx_t> &depth = tm.depth;
 
@@ -278,7 +272,6 @@ void branch(const pst::Tree &st, const pvst::Tree &pvst,
 	    const pvst::Concealed &ft_v, qt::idx_t cn_pvst_v_idx,
 	    std::vector<pvst::Smothered> &res)
 {
-	std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	const pvst::Concealed &cn_v = ft_v;
 	qt::idx_t fl_v_idx = cn_v.get_fl_idx();
@@ -356,7 +349,6 @@ void nest(const pst::Tree &st, pvst::Tree &pvst, qt::idx_t cn_pvst_v_idx,
 void add_smothered(const pst::Tree &st, pvst::Tree &pvst,
 		   const std::vector<fl_sls> &al_smo)
 {
-	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	for (const fl_sls &smo : al_smo) {
 
@@ -386,7 +378,6 @@ void add_smothered(const pst::Tree &st, pvst::Tree &pvst,
 void find_smothered(const pst::Tree &st, pvst::Tree &ft,
 		    const ptu::tree_meta &tm)
 {
-	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	pvst::Tree &pvst = ft;
 
@@ -417,7 +408,7 @@ void find_smothered(const pst::Tree &st, pvst::Tree &ft,
 			s::branch(st, pvst, cn_v, ft_v_idx, smo.s_adj);
 			break;
 		default:
-			std::cerr << fn_name
+			std::cerr << LOG_HERE
 				  << " unknown slubble type: " << ft_v_idx
 				  << "\n";
 			continue; // skip this vertex

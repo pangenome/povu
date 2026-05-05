@@ -8,7 +8,6 @@
 
 namespace mto::from_pvst
 {
-constexpr std::string_view MODULE = "povu::io::from_pvst";
 
 pvst::Tree read_pvst(const std::string &fp);
 } // namespace mto::from_pvst

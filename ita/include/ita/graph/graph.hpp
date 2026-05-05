@@ -14,7 +14,6 @@
 
 namespace povu::genomics::graph
 {
-inline constexpr std::string_view MODULE = "povu::genomics::graph";
 namespace pvst = oza::pvst;
 namespace pgt = quilt::types::graph;
 

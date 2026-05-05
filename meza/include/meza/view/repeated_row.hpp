@@ -5,10 +5,11 @@
 #include <stdexcept>
 #include <vector>
 
-#include "meza/view/base.hpp" // for matrix
+#include <log/location.hpp> // for LOG_HERE
+#include <quilt/shim.hpp>   // for qs::contains, qs::format
+#include <quilt/types.hpp>  // for qt::u32, qt::u8, qt::op_t
 
-#include "quilt/shim.hpp"  // for qs::contains, qs::format
-#include "quilt/types.hpp" // for qt::u32, qt::u8, qt::op_t
+#include "meza/view/base.hpp" // for matrix
 
 namespace meza::view::repeated_row
 {
@@ -36,7 +37,7 @@ struct repeated_row : public matrix<T> {
 		if (i >= this->rows() || j >= this->cols())
 			throw std::out_of_range(
 				qs::format("{} Index out of range: i={}, j={}",
-					   MODULE, i, j));
+					   LOG_HERE, i, j));
 
 		row_has_data_ = state;
 		col_has_data_[j] = state;

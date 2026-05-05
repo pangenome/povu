@@ -5,41 +5,37 @@
 #include <iostream>   // for basic_ostream, operator<<, cerr
 #include <string>     // for basic_string, char_traits, opera...
 
-#include <quilt/shim.hpp> // for format
-
-#include "fmt/core.h"	      // for format
-#include "povu/call.hpp"      // for do_call
-#include "povu/decompose.hpp" // for do_decompose
+#include <log/location.hpp>   // for LOG_HERE
+#include <povu/call.hpp>      // for do_call
+#include <povu/decompose.hpp> // for do_decompose
+#include <quilt/shim.hpp>     // for format
 
 namespace povu::subcommands::gfa2vcf
 {
 
 void do_gfa2vcf(const core::config &app_config)
 {
-	std::string fn_name = qs::format("[povu::subcommands::{}]", __func__);
 	std::size_t ll = app_config.verbosity();
 
 	// Create a temporary directory for the forest files
 	char temp_template[] = "/tmp/povu_gfa2vcf_XXXXXX";
 	char *temp_dir = mkdtemp(temp_template);
 	if (temp_dir == nullptr) {
-		std::cerr << fn_name
-			  << " Error: Could not create temporary directory"
-			  << std::endl;
+		std::cerr << LOG_HERE
+			  << " Error: Could not create temporary directory\n";
 		exit(EXIT_FAILURE);
 	}
 	std::string temp_dir_str(temp_dir);
 
 	if (ll > 0) {
-		std::cerr << fn_name
+		std::cerr << LOG_HERE
 			  << " Using temporary directory: " << temp_dir_str
-			  << std::endl;
+			  << "\n";
 	}
 
 	// Step 1: Run decompose to generate forest of PVST files
 	if (ll > 0) {
-		std::cerr << fn_name << " Step 1: Decomposing graph..."
-			  << std::endl;
+		std::cerr << LOG_HERE << " Step 1: Decomposing graph...\n";
 	}
 
 	// Create a config for decompose with the temp directory
@@ -52,8 +48,7 @@ void do_gfa2vcf(const core::config &app_config)
 
 	// Step 2: Run call to generate VCF
 	if (ll > 0) {
-		std::cerr << fn_name << " Step 2: Calling variants..."
-			  << std::endl;
+		std::cerr << LOG_HERE << " Step 2: Calling variants...\n";
 	}
 
 	// Create a config for call with stdout output and the temp forest

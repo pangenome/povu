@@ -21,7 +21,6 @@
 
 namespace ita::allele
 {
-inline constexpr std::string_view MODULE = "povu::genomics::allele";
 
 namespace lq = liteseq;
 namespace pgt = quilt::types::graph;

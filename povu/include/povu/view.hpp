@@ -7,7 +7,6 @@
 
 namespace povu::subcommands::view
 {
-constexpr std::string_view MODULE = "povu::subcommands::view";
 
 void do_view(const core::config &app_config);
 } // namespace povu::subcommands::view

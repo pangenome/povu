@@ -147,11 +147,7 @@ include(cmake/deps.cmake)
 set(BIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
 add_subdirectory(quilt)
-add_subdirectory(meza)
 
-target_link_libraries(meza
-  PUBLIC
-  quilt)
 
 add_subdirectory(log)
 add_subdirectory(liteseq)
@@ -177,6 +173,7 @@ add_subdirectory(ita)
 add_subdirectory(mto)
 add_subdirectory(zien)
 add_subdirectory(povu)
+add_subdirectory(meza)
 
 function(add_compile_options_for_build_type target)
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -195,6 +192,11 @@ endfunction()
 
 add_compile_options_for_build_type(povu)
 add_compile_options_for_build_type(oza)
+
+target_link_libraries(meza
+  PUBLIC
+  log
+  quilt)
 
 target_link_libraries(quilt
   INTERFACE

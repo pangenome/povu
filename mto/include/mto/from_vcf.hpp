@@ -17,7 +17,6 @@
 
 namespace mto::from_vcf
 {
-inline constexpr std::string_view MODULE = "povu::io::from_vcf";
 namespace fs = std::filesystem;
 
 struct at_meta {

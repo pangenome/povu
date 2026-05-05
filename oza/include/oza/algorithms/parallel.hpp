@@ -9,7 +9,6 @@
 
 namespace oza::parallel
 {
-inline constexpr std::string_view MODULE = "povu::parallel";
 
 namespace ptu = oza::tree_utils;
 

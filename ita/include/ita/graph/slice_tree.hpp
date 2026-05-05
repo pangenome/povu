@@ -13,7 +13,6 @@
 
 namespace ita::slice_tree
 {
-constexpr std::string_view MODULE = "ita::slice_tree";
 
 /**/
 enum class comp_type : qt::u8 {

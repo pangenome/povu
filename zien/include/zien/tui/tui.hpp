@@ -13,7 +13,6 @@
 
 namespace zien::tui
 {
-inline constexpr std::string_view MODULE = "zien";
 
 struct NcursesGuard {
 	NcursesGuard()

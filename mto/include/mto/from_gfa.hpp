@@ -8,7 +8,6 @@
 
 namespace mto::from_gfa
 {
-inline constexpr std::string_view MODULE = "povu::io::from_gfa";
 
 /**
  * Remember to free the returned graph after use

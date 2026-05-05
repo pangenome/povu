@@ -36,7 +36,6 @@ namespace pfl = oza::flubbles;
 void decompose_component(bd::VG *g, std::size_t component_id,
 			 const core::config &app_config)
 {
-	const std::string fn_name = qs::format("[{}::{}]", MODULE, __func__);
 
 #ifdef DEBUG
 	if (app_config.verbosity() > 4) {

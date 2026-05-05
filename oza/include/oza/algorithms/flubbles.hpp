@@ -14,7 +14,6 @@
 
 namespace oza::flubbles
 {
-inline constexpr std::string_view MODULE = "povu::graph::flubble_tree";
 
 namespace pgt = quilt::types::graph;
 

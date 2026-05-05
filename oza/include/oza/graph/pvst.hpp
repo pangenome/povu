@@ -19,7 +19,6 @@
 
 namespace oza::pvst
 {
-inline constexpr std::string_view MODULE = "povu::pvst";
 namespace pgt = quilt::types::graph;
 /*
 hierarchy of the types of vertices

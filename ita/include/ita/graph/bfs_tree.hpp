@@ -13,7 +13,6 @@
 namespace ita::bfs
 {
 
-inline constexpr std::string_view MODULE = "povu::graph::bfs";
 
 enum edge_type : qt::u8 {
 	tree_edge,

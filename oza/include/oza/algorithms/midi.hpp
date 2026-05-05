@@ -9,7 +9,6 @@
 
 namespace oza::midi
 {
-inline constexpr std::string_view MODULE = "povu::misc";
 
 namespace ptu = oza::tree_utils;
 

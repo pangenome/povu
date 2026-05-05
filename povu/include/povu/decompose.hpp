@@ -7,7 +7,6 @@
 
 namespace povu::subcommands::decompose
 {
-constexpr std::string_view MODULE = "povu::subcommands::decompose";
 
 void do_decompose(const core::config &app_config);
 } // namespace povu::subcommands::decompose

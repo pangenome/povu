@@ -5,7 +5,6 @@
 
 namespace meza::shared
 {
-inline constexpr std::string_view MODULE = "meza::shared";
 
 enum class layout : qt::u8 {
 	DenseRowMajor,

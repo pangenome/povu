@@ -18,7 +18,6 @@
 
 namespace oza::refs
 {
-inline constexpr std::string_view MODULE = "povu::refs";
 namespace lq = liteseq;
 
 enum class ref_format_e : qt::u8 {

@@ -13,7 +13,6 @@
 
 namespace ita::trip
 {
-constexpr std::string_view MODULE = "ita::trip";
 
 std::optional<ia::trek>
 gen_trip(const bd::VG &g, const ir::RoV *rov, bool is_tangled,

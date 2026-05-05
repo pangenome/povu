@@ -1,9 +1,9 @@
 #include "povu/info.hpp"
 
 #include <iostream> // for basic_ostream, basic_ios, cerr
-#include <string>   // for basic_string, operator<<, string
 #include <vector>   // for vector
 
+#include <log/location.hpp>	    // for LOG_HERE
 #include <mto/from_gfa.hpp>	    // for to_bd
 #include <oza/graph/bidirected.hpp> // for VG
 #include <quilt/shim.hpp>	    // for format
@@ -14,7 +14,6 @@ namespace povu::subcommands::info
 
 void do_info(const core::config &app_config)
 {
-	std::string fn_name = qs::format("[povu::main::{}]", __func__);
 
 	// -----
 	// read the input gfa into a bidirected variation graph
@@ -26,7 +25,7 @@ void do_info(const core::config &app_config)
 
 	delete g;
 
-	std::cerr << qs::format("{} Component count {}\n", fn_name,
+	std::cerr << qs::format("{} Component count {}\n", LOG_HERE,
 				components.size());
 
 	for (qt::idx_t i{}; i < components.size(); ++i) {

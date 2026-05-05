@@ -16,7 +16,6 @@
 
 namespace ita::sne // sne = seed and extend
 {
-constexpr std::string_view MODULE = "povu::overlay::sne";
 
 namespace lq = liteseq;
 namespace pgt = quilt::types::graph;

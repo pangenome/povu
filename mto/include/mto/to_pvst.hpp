@@ -9,7 +9,6 @@
 
 namespace mto::to_pvst
 {
-constexpr std::string_view MODULE = "povu::io::to_pvst";
 namespace pvst = oza::pvst;
 
 void write_pvst(const pvst::Tree &bt, const std::string &base_name,

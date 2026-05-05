@@ -8,6 +8,7 @@
 #include <sys/types.h>	 // for u_int8_t
 #include <unordered_set> // for unordered_set, operator!=
 
+#include <log/location.hpp>	 // for LOG_HERE
 #include <quilt/constants.hpp>	 // for
 #include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
 #include <quilt/shim.hpp>	 // for format, contains
@@ -813,9 +814,6 @@ void Tree::set_hi(std::size_t vertex, std::size_t val)
 void Tree::concat_bracket_lists(std::size_t parent_vertex,
 				std::size_t child_vertex)
 {
-	std::string fn_name =
-		qs::format("[povu::spanning_tree::Tree::{}]", __func__);
-
 	WBracketList *bl_p = this->bracket_lists[parent_vertex];
 	WBracketList *bl_c = this->bracket_lists[child_vertex];
 
@@ -836,16 +834,12 @@ void Tree::concat_bracket_lists(std::size_t parent_vertex,
  */
 void Tree::del_bracket(std::size_t vertex, std::size_t backedge_idx)
 {
-	std::string fn_name =
-		qs::format("[povu::spanning_tree::Tree::{}]", __func__);
-
 	std::size_t be_id = this->back_edges.at(backedge_idx).id();
 	this->bracket_lists[vertex]->del(be_id);
 }
 
 void Tree::push(std::size_t vertex, std::size_t backege_idx)
 {
-	std::string fn_name = qs::format("[povu::spanning_tree::{}]", __func__);
 
 	// TODO: based on the Tree constructor we expect the pointer at v_idx
 	// will never be null why then do we need to check for null else code
@@ -861,10 +855,9 @@ void Tree::push(std::size_t vertex, std::size_t backege_idx)
 
 BracketList &Tree::get_bracket_list(std::size_t vertex)
 {
-	std::string fn_name = qs::format("[povu::spanning_tree::{}]", __func__);
 	if (this->bracket_lists[vertex] == nullptr) {
 		throw std::runtime_error(
-			qs::format("{} Bracket list is null", fn_name));
+			qs::format("{} Bracket list is null", LOG_HERE));
 	}
 
 	return this->bracket_lists[vertex]->get_bracket_list();
@@ -872,7 +865,6 @@ BracketList &Tree::get_bracket_list(std::size_t vertex)
 
 Bracket &Tree::top(std::size_t vertex)
 {
-	std::string fn_name = qs::format("[povu::spanning_tree::{}]", __func__);
 
 	return this->bracket_lists[vertex]->top();
 }

@@ -8,7 +8,6 @@
 
 namespace zien::validate
 {
-constexpr std::string_view MODULE = "povu::validate::vcf";
 
 std::vector<qt::u32> validate_vcf_records(const bd::VG &g,
 					  const mto::from_vcf::VCFile &vcf_file,

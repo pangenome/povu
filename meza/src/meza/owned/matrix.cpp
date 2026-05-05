@@ -5,8 +5,9 @@
 #include <string>
 #include <string_view>
 
-#include "quilt/shim.hpp"  // for qs::format
-#include "quilt/types.hpp" // for qt::u32, qt::u8
+#include <log/location.hpp> // for LOG_HERE
+#include <quilt/shim.hpp>   // for qs::contains, qs::format
+#include <quilt/types.hpp>  // for qt::u32, qt::u8, qt::op_t
 
 namespace meza::matrix
 {
@@ -16,7 +17,7 @@ std::size_t get_idx(qt::u32 i, qt::u32 j, layout l, const qt::u32 I,
 {
 	if (i >= I || j >= J) {
 		std::string err = qs::format("{} out of bounds access [{},{}]",
-					     MODULE, i, j);
+					     LOG_HERE, i, j);
 		throw std::out_of_range(err);
 	}
 
@@ -28,7 +29,7 @@ std::size_t get_idx(qt::u32 i, qt::u32 j, layout l, const qt::u32 I,
 			std::string err =
 				qs::format("{} LowerSymmetricSquare requires I "
 					   "== J got {} x {} ",
-					   MODULE, I, J);
+					   LOG_HERE, I, J);
 			throw std::invalid_argument(err);
 		}
 		if (i < j)
@@ -38,7 +39,7 @@ std::size_t get_idx(qt::u32 i, qt::u32 j, layout l, const qt::u32 I,
 		return j;
 	}
 
-	std::string err = qs::format("{} Invalid layout: {}", MODULE,
+	std::string err = qs::format("{} Invalid layout: {}", LOG_HERE,
 				     static_cast<int>(l));
 	throw std::invalid_argument(err);
 }

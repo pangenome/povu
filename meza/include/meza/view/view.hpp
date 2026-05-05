@@ -3,11 +3,11 @@
 
 #include <iostream>
 #include <stdexcept>
-#include <thread>
 #include <vector>
 
-#include <quilt/shim.hpp>  // for qs::contains, qs::format
-#include <quilt/types.hpp> // for qt::u32, qt::u8, qt::op_t
+#include <log/location.hpp> // for LOG_HERE
+#include <quilt/shim.hpp>   // for qs::contains, qs::format
+#include <quilt/types.hpp>  // for qt::u32, qt::u8, qt::op_t
 
 #include "meza/shared/shared.hpp"     // for layout
 #include "meza/view/full.hpp"	      // for full
@@ -15,7 +15,6 @@
 
 namespace meza::view
 {
-inline constexpr std::string_view MODULE = "meza::matrix::named";
 
 // -----
 // type aliases
@@ -146,7 +145,7 @@ struct matrix_wrapper {
 	{
 		if (names.size() != base().rows())
 			throw std::invalid_argument(
-				qs::format("{} Row size mismatch", MODULE));
+				qs::format("{} Row size mismatch", LOG_HERE));
 
 		row_names_.names_ = std::move(names);
 	}
@@ -155,7 +154,7 @@ struct matrix_wrapper {
 	{
 		if (names.size() != base().cols())
 			throw std::invalid_argument(
-				qs::format("{} Col size mismatch", MODULE));
+				qs::format("{} Col size mismatch", LOG_HERE));
 
 		col_names_.names_ = std::move(names);
 	}

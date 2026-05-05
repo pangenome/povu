@@ -12,7 +12,6 @@
 
 namespace oza::concealed
 {
-inline constexpr std::string_view MODULE = "povu::concealed";
 
 namespace pst = oza::spanning_tree;
 namespace pvst = oza::pvst;

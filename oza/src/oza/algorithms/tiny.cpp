@@ -33,8 +33,6 @@ std::vector<qt::idx_t> find_Y(const pst::Tree &st, qt::idx_t zi)
 bool branches(const pst::Tree &st, const ptu::tree_meta &tm, qt::idx_t ai,
 	      qt::idx_t zi)
 {
-	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
-
 	// all brackets are to ai
 	auto has_be_to_ai = [&](qt::idx_t c) -> bool
 	{
@@ -73,8 +71,6 @@ bool branches(const pst::Tree &st, const ptu::tree_meta &tm, qt::idx_t ai,
 
 bool trunk(const pst::Tree &st, qt::idx_t ai, qt::idx_t zi)
 {
-	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
-
 	for (auto c_e_idx : st.get_child_edge_idxs(zi)) {
 		const pst::Edge &e = st.get_tree_edge(c_e_idx);
 		if (e.get_color() == pgt::color_e::black) {
@@ -99,8 +95,6 @@ bool trunk(const pst::Tree &st, qt::idx_t ai, qt::idx_t zi)
 
 void find_tiny(const pst::Tree &st, pvst::Tree &ft, const ptu::tree_meta &tm)
 {
-	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
-
 	for (qt::idx_t ft_v_idx{}; ft_v_idx < ft.vtx_count(); ft_v_idx++) {
 
 		if (!ft.is_leaf(ft_v_idx)) {

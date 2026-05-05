@@ -225,7 +225,6 @@ std::vector<qt::idx_t> collect_backedges_by_vertex(
 
 void compute_LoA(const pst::Tree &st, tree_meta &tm)
 {
-	const std::string fn_name = qs::format("[povu::hubbles::{}]", __func__);
 
 	const std::vector<qt::idx_t> &depth = tm.depth;
 
@@ -275,7 +274,6 @@ void compute_LoA(const pst::Tree &st, tree_meta &tm)
 
 void compute_HiD(const pst::Tree &st, tree_meta &tm)
 {
-	const std::string fn_name = qs::format("[povu::hubbles::{}]", __func__);
 
 	const std::vector<qt::idx_t> &depth = tm.depth;
 
@@ -320,7 +318,6 @@ void compute_HiD(const pst::Tree &st, tree_meta &tm)
 
 void compute_bracket_vals(const pst::Tree &st, tree_meta &tm)
 {
-	const std::string fn_name = qs::format("[povu::hubbles::{}]", __func__);
 
 	compute_LoA(st, tm);
 	compute_HiD(st, tm);
@@ -672,9 +669,6 @@ void pre_process(const pst::Tree &st, tree_meta &tm)
 
 tree_meta gen_tree_meta(const pst::Tree &st)
 {
-	const std::string fn_name =
-		qs::format("[povu::tree_utils::{}]", __func__);
-
 	tree_meta tm;
 	euler_tour(st, tm);
 	compute_depth(st, tm);

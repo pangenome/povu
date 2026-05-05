@@ -1,8 +1,10 @@
 #ifndef ITA_AT_MATRIX_HPP
 #define ITA_AT_MATRIX_HPP
 
-#include <optional>
-#include <vector> // for vector
+#include <map>	    // for map
+#include <optional> // for optional, nullopt, nullopt_t
+#include <thread>   // for thread
+#include <vector>   // for vector
 
 #include <liteseq/refs.h>		  // for ref_walk, ref
 #include <meza/pool/pool.hpp>		  // for pool

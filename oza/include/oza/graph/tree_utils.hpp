@@ -1,12 +1,10 @@
 #ifndef OZ_TREE_UTILS_HPP
 #define OZ_TREE_UTILS_HPP
 
-#include <cstddef>     // for size_t
-#include <iostream>    // for basic_ostream, operator<<, cerr
-#include <map>	       // for map
-#include <string>      // for operator<<
-#include <string_view> // for string_view
-#include <vector>      // for vector
+#include <cstddef>  // for size_t
+#include <iostream> // for basic_ostream, operator<<, cerr
+#include <map>	    // for map
+#include <vector>   // for vector
 
 #include <quilt/constants.hpp>	 // for pc
 #include <quilt/graph_types.hpp> // for graph
@@ -17,7 +15,6 @@
 
 namespace oza::tree_utils
 {
-inline constexpr std::string_view MODULE = "povu::tree_utils";
 
 namespace pgt = quilt::types::graph;
 namespace pst = oza::spanning_tree;

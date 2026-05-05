@@ -3,7 +3,6 @@
 #include <algorithm> // for sort
 #include <assert.h>  // for assert
 #include <iostream>  // for basic_ostream, operator<<, cerr
-#include <memory>    // for make_unique
 #include <optional>  // for optional
 #include <set>	     // for set
 #include <stdio.h>   // for perror
@@ -12,6 +11,7 @@
 #include <utility>   // for pair, get
 #include <vector>    // for vector
 
+#include <log/location.hpp>	 // for LOG_HERE
 #include <quilt/constants.hpp>	 // for
 #include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
 #include <quilt/shim.hpp>	 // for format, erase_if
@@ -73,7 +73,6 @@ bool is_desc(const pst::Tree &st, qt::idx_t a, qt::idx_t d)
 pvst::Concealed gen_ai_slubble(const pst::Tree &st, qt::idx_t ai_st_v_idx,
 			       src_lca_t tb, pvst::cl_e t, qt::idx_t fl_v_idx)
 {
-	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	auto [be_src_v_idx, sl_st_idx] = tb;
 
@@ -119,7 +118,7 @@ pvst::Concealed gen_ai_slubble(const pst::Tree &st, qt::idx_t ai_st_v_idx,
 	}
 	else {
 		std::string err_msg = qs::format(
-			"{} called with invalid slubble type", fn_name);
+			"{} called with invalid slubble type", LOG_HERE);
 		perror(err_msg.c_str());
 		exit(1);
 	}
@@ -155,7 +154,6 @@ pvst::Concealed gen_zi_slubble(const pst::Tree &st, qt::idx_t zi_st_v_idx,
 			       qt::idx_t sl_st_idx, pvst::cl_e t,
 			       qt::idx_t fl_v_idx)
 {
-	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	// find z
 	pst::Vertex zi_st_v = st.get_vertex(zi_st_v_idx);
@@ -211,7 +209,6 @@ bool is_btwn(const pst::Tree &st, qt::idx_t v_idx, qt::idx_t upper,
 qt::idx_t compute_m(const pst::Tree &st, const ptu::tree_meta &tm,
 		    qt::idx_t ii_v_idx, qt::idx_t ji_v_idx)
 {
-	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 	if (st.get_ibe_src_v_idxs(ii_v_idx).size() == 0) {
 		return ii_v_idx;
 	}
@@ -321,7 +318,6 @@ bool can_contain(const pst::Tree &st, const ptu::tree_meta &tm,
 		 qt::idx_t ii_v_idx, qt::idx_t ji_v_idx, qt::idx_t m,
 		 qt::idx_t n)
 {
-	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	const std::vector<qt::idx_t> &depth = tm.depth;
 	const std::vector<qt::idx_t> &lo = tm.lo;
@@ -370,7 +366,6 @@ namespace ai
 src_lca_t ai_trunk(const pst::Tree &st, const ptu::tree_meta &tm, qt::idx_t m,
 		   qt::idx_t n, qt::idx_t ai, qt::idx_t zi)
 {
-	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	const std::vector<qt::idx_t> &depth = tm.depth;
 
@@ -589,7 +584,6 @@ void with_ai(const pst::Tree &st, const ptu::tree_meta &tm,
 	     std::vector<pvst::Concealed> &res, qt::idx_t m, qt::idx_t n,
 	     qt::idx_t ii_v_idx, qt::idx_t ji_v_idx, qt::idx_t fl_v_idx)
 {
-	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	src_lca_t tb = ai_trunk(st, tm, m, n, ii_v_idx, ji_v_idx);
 	if (tb.lca != pc::INVALID_IDX) {
@@ -619,8 +613,6 @@ qt::idx_t override_ji_trunk(const pst::Tree &st, const ptu::tree_meta &tm,
 			    qt::idx_t m, qt::idx_t n, qt::idx_t ii_v_idx,
 			    qt::idx_t ji_v_idx)
 {
-
-	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	// std::cerr << pv_cmp::format("{}\n", fn_name);
 
@@ -704,8 +696,6 @@ qt::idx_t override_ji_trunk(const pst::Tree &st, const ptu::tree_meta &tm,
 qt::idx_t ji_trunk(const pst::Tree &st, const ptu::tree_meta &tm, qt::idx_t m,
 		   qt::idx_t n, qt::idx_t ii_v_idx, qt::idx_t ji_v_idx)
 {
-
-	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	// std::cerr << pv_cmp::format("{}\n", fn_name);
 
@@ -914,7 +904,6 @@ void with_ji(const pst::Tree &st, const ptu::tree_meta &tm,
 	     std::vector<pvst::Concealed> &res, qt::idx_t m, qt::idx_t n,
 	     qt::idx_t ii_v_idx, qt::idx_t ji_v_idx, qt::idx_t ft_v_idx)
 {
-	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	qt::idx_t tb = ji_trunk(st, tm, m, n, ii_v_idx, ji_v_idx);
 	if (tb != pc::INVALID_IDX) {
@@ -996,7 +985,6 @@ void nest_branch_ai(const pst::Tree &st, pvst::Tree &vst,
 		    qt::idx_t fl_v_idx, qt::idx_t sl_v_idx, qt::idx_t ai,
 		    std::vector<qt::idx_t> &ch)
 {
-	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	// TODO: use pvst::bounds_t
 
@@ -1049,8 +1037,6 @@ void add_conc_ai(const pst::Tree &st, pvst::Tree &vst, const ptu::tree_meta &tm,
 		 const std::vector<pvst::Concealed> &ai_adj, bool is_leaf)
 {
 
-	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
-
 	for (auto &sl : ai_adj) {
 		qt::idx_t sl_v_idx = vst.add_vertex(sl);
 		qt::idx_t sl_st_idx = sl.get_sl_st_idx();
@@ -1089,7 +1075,6 @@ void nest_trunk_zi(const pst::Tree &st, pvst::Tree &vst, const fl_sls &slubbles,
 		   qt::idx_t fl_v_idx, qt::idx_t sl_v_idx, qt::idx_t zi,
 		   std::vector<qt::idx_t> &ch)
 {
-	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	for (qt::idx_t c_v_idx : ch) {
 
@@ -1119,7 +1104,6 @@ void nest_branch_zi(const pst::Tree &st, pvst::Tree &vst, qt::idx_t sl_st_idx,
 		    qt::idx_t fl_v_idx, qt::idx_t sl_v_idx,
 		    std::vector<qt::idx_t> &ch)
 {
-	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	for (qt::idx_t c_v_idx : ch) {
 		if (!is_nestable(vst, c_v_idx)) {
@@ -1142,7 +1126,6 @@ void add_conc_zi(const pst::Tree &st, const fl_sls &slubbles, pvst::Tree &vst,
 		 qt::idx_t fl_v_idx, const pvst::Flubble &v,
 		 const std::vector<pvst::Concealed> &zi_adj, bool is_leaf)
 {
-	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	for (auto &sl : zi_adj) {
 		qt::idx_t sl_v_idx = vst.add_vertex(sl);
@@ -1183,7 +1166,6 @@ void add_conc_zi(const pst::Tree &st, const fl_sls &slubbles, pvst::Tree &vst,
 void add_concealed(const pst::Tree &st, pvst::Tree &vst,
 		   const ptu::tree_meta &tm, const fl_sls &slubbles)
 {
-	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	const auto &[fl_v_idx, ai_adj, zi_adj, _, __] = slubbles;
 
@@ -1200,7 +1182,6 @@ void add_concealed(const pst::Tree &st, pvst::Tree &vst,
 void find_concealed(const pst::Tree &st, pvst::Tree &ft,
 		    const ptu::tree_meta &tm)
 {
-	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	std::vector<fl_sls> all_slubbles;
 	for (qt::idx_t ft_v_idx{}; ft_v_idx < ft.vtx_count(); ft_v_idx++) {

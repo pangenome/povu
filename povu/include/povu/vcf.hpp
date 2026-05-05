@@ -7,7 +7,6 @@
 
 namespace povu::subcommands::vcf
 {
-constexpr std::string_view MODULE = "povu::subcommands::vcf";
 
 void do_vcf(const core::config &app_config);
 } // namespace povu::subcommands::vcf

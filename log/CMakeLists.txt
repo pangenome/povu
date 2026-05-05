@@ -108,7 +108,9 @@ endif()
 
 # Find and link the Threads library
 find_package(Threads REQUIRED)
-target_link_libraries(log PRIVATE Threads::Threads)
+target_link_libraries(log
+  PRIVATE
+  Threads::Threads)
 
 # Log success if Threads library was linked
 message(STATUS "Threads library linked successfully.")

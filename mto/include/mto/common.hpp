@@ -9,7 +9,6 @@
 
 namespace mto::common
 {
-inline constexpr std::string_view MODULE = "povu::io::common";
 namespace fs = std::filesystem;
 
 #define FILE_ERROR(name)                                                       \

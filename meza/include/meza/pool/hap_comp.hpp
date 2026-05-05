@@ -15,7 +15,6 @@
 
 namespace meza::pool::hap_comp
 {
-inline constexpr std::string_view MODULE = "meza::pool::hap_comp";
 
 // -------
 // aliases

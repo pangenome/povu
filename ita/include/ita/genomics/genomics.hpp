@@ -15,7 +15,6 @@
 
 namespace ita::genomics
 {
-inline constexpr std::string_view MODULE = "povu::genomics";
 
 void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 		     const std::set<qt::id_t> &to_call_ref_ids,

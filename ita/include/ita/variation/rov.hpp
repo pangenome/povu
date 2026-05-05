@@ -13,7 +13,6 @@
 
 namespace ita::rov
 {
-inline constexpr std::string_view MODULE = "povu::genomics::rov";
 namespace pvst = oza::pvst;
 namespace pgt = quilt::types::graph;
 

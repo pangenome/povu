@@ -15,7 +15,6 @@
 
 namespace ita::convolutions
 {
-constexpr std::string_view MODULE = "ita::convolutions";
 
 using pool_t = meza::pool::pool<qt::u8, qt::u32>;
 

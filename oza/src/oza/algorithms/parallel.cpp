@@ -14,7 +14,6 @@ namespace pgt = quilt::types::graph;
 
 bool inspect_trunk(const pst::Tree &st, qt::idx_t ai, qt::idx_t zi)
 {
-	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	// bool dbg = (ai == 1338 && zi == 1343) ? true : false;
 
@@ -98,7 +97,6 @@ bool inspect_trunk(const pst::Tree &st, qt::idx_t ai, qt::idx_t zi)
 
 bool in_trunk(const pst::Tree &st, const pvst::Flubble &ft_v)
 {
-	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	qt::idx_t ai = ft_v.get_ai();
 	qt::idx_t zi = ft_v.get_zi();
@@ -194,7 +192,6 @@ bool in_trunk(const pst::Tree &st, const pvst::Flubble &ft_v)
 bool in_branch(const pst::Tree &st, const ptu::tree_meta &tm,
 	       const pvst::Flubble &ft_v)
 {
-	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	qt::idx_t ai = ft_v.get_ai();
 	qt::idx_t zi = ft_v.get_zi();
@@ -264,7 +261,6 @@ bool in_branch(const pst::Tree &st, const ptu::tree_meta &tm,
 void find_parallel(const pst::Tree &st, pvst::Tree &ft,
 		   const ptu::tree_meta &tm)
 {
-	const std::string fn_name{qs::format("[{}::{}]", MODULE, __func__)};
 
 	for (qt::idx_t ft_v_idx{}; ft_v_idx < ft.vtx_count(); ft_v_idx++) {
 		if (!ft.is_leaf(ft_v_idx)) {

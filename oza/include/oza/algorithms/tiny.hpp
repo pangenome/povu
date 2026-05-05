@@ -9,7 +9,6 @@
 
 namespace oza::tiny
 {
-inline constexpr std::string_view MODULE = "povu::tiny";
 
 namespace ptu = oza::tree_utils;
 

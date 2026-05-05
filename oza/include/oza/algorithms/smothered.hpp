@@ -9,7 +9,6 @@
 
 namespace oza::smothered
 {
-inline constexpr std::string_view MODULE = "povu::smothered";
 
 namespace ptu = oza::tree_utils;
 

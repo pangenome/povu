@@ -18,7 +18,6 @@
 
 namespace ita::align
 {
-inline constexpr std::string_view MODULE = "povu::align";
 
 namespace pgt = quilt::types::graph;
 

@@ -7,7 +7,6 @@
 
 namespace povu::subcommands::call
 {
-constexpr std::string_view MODULE = "povu::subcommands::call";
 
 void do_call(core::config &app_config);
 } // namespace povu::subcommands::call

@@ -4,21 +4,18 @@
 #include <cstddef>
 #include <functional> // for std::invoke
 #include <iostream>
-#include <queue> // for queue
-#include <set>	 // for set
-#include <string_view>
+#include <queue>  // for queue
+#include <set>	  // for set
 #include <vector> // for vector
+
+#include <log/location.hpp> // for LOG_HERE
+#include <quilt/shim.hpp>   // for qs::contains, qs::format
+#include <quilt/types.hpp>  // for qt::u32, qt::u8, qt::op_t
 
 #include "meza/shared/shared.hpp" // for layout
 
-// #include "meza/matrix_view.hpp" // for layout
-
-#include "quilt/shim.hpp"  // for qs::contains, qs::format
-#include "quilt/types.hpp" // for qt::u32, qt::u8, qt::op_t
-
 namespace meza::matrix
 {
-inline constexpr std::string_view MODULE = "meza::matrix";
 
 using layout = meza::shared::layout;
 
@@ -70,7 +67,7 @@ struct dense_matrix2d {
 	{
 		if (i >= this->rows() || j >= this->cols())
 			throw std::out_of_range(
-				qs::format("{} ({}, {})", MODULE, i, j));
+				qs::format("{} ({}, {})", LOG_HERE, i, j));
 
 		row_has_data_[i] = 1;
 		col_has_data_[j] = 1;
@@ -81,7 +78,7 @@ struct dense_matrix2d {
 	{
 		if (i >= this->rows())
 			throw std::out_of_range(qs::format(
-				"{} Invalid row index: {}", MODULE, i));
+				"{} Invalid row index: {}", LOG_HERE, i));
 
 		return row_has_data_[i] == 0;
 	}
@@ -129,7 +126,7 @@ struct dense_matrix2d {
 	{
 		if (i >= this->rows()) {
 			// std::string err = pv_cmp::format(
-			//	"{} Invalid row index: {}", MODULE, i);
+			//	"{} Invalid row index: {}", LOG_HERE, i);
 			throw std::out_of_range("");
 		}
 
@@ -182,7 +179,7 @@ struct dense_matrix2d {
 	{
 		if (i >= this->rows())
 			throw std::out_of_range(qs::format(
-				"{} Invalid row index: {}", MODULE, i));
+				"{} Invalid row index: {}", LOG_HERE, i));
 
 		std::size_t offset = static_cast<std::size_t>(i) * this->cols();
 		return std::make_pair(data_.begin() + offset,
@@ -241,7 +238,7 @@ struct repeated_row_matrix2d {
 	{
 		if (i >= this->rows())
 			throw std::out_of_range(qs::format(
-				"{} Invalid row index: {}", MODULE, i));
+				"{} Invalid row index: {}", LOG_HERE, i));
 
 		return this->row_has_data_;
 	}
@@ -250,7 +247,7 @@ struct repeated_row_matrix2d {
 	{
 		if (i >= this->rows() || j >= this->cols())
 			throw std::out_of_range(
-				qs::format("{} ({}, {})", MODULE, i, j));
+				qs::format("{} ({}, {})", LOG_HERE, i, j));
 
 		row_has_data_ = 1;
 		col_has_data_[j] = 1;
@@ -259,8 +256,9 @@ struct repeated_row_matrix2d {
 	void set(qt::u32 i, qt::u32 j, T value)
 	{
 		if (i >= this->rows() || j >= this->cols())
-			throw std::out_of_range(qs::format(
-				"{} out of bounds access {}{}", MODULE, i, j));
+			throw std::out_of_range(
+				qs::format("{} out of bounds access {}{}",
+					   LOG_HERE, i, j));
 
 		row0[j] = value;
 
@@ -272,8 +270,9 @@ struct repeated_row_matrix2d {
 	const T &at(qt::u32 i, qt::u32 j) const
 	{
 		if (i >= this->rows() || j >= this->cols())
-			throw std::out_of_range(qs::format(
-				"{} out of bounds access {}{}", MODULE, i, j));
+			throw std::out_of_range(
+				qs::format("{} out of bounds access {}{}",
+					   LOG_HERE, i, j));
 
 		return row0[j];
 	}
@@ -285,7 +284,7 @@ struct repeated_row_matrix2d {
 	{
 		if (i >= this->rows())
 			throw std::out_of_range(qs::format(
-				"{} Invalid row index: {}", MODULE, i));
+				"{} Invalid row index: {}", LOG_HERE, i));
 
 		return row0;
 	}
@@ -296,7 +295,7 @@ struct repeated_row_matrix2d {
 	{
 		if (i >= this->rows())
 			throw std::out_of_range(qs::format(
-				"{} Invalid row index: {}", MODULE, i));
+				"{} Invalid row index: {}", LOG_HERE, i));
 
 		return std::make_pair(row0.begin(), row0.end());
 	}
@@ -342,7 +341,7 @@ struct symmetric_square_matrix2d {
 				qs::format("{} For symmetric matrix, I and "
 					   "J must be equal "
 					   "(got I={}, J={})",
-					   MODULE, I_, J_));
+					   LOG_HERE, I_, J_));
 
 		if (init != T{}) {
 			std::fill(row_has_data_.begin(), row_has_data_.end(),
@@ -377,7 +376,7 @@ struct symmetric_square_matrix2d {
 		if (i >= this->rows() || j >= this->cols())
 			throw std::out_of_range(
 				qs::format("{} out of bounds access [{},{}]",
-					   MODULE, i, j));
+					   LOG_HERE, i, j));
 
 		return data_[get_idx(i, j, LO_, this->I_, this->J_)];
 	}
@@ -388,8 +387,9 @@ struct symmetric_square_matrix2d {
 	void set(qt::u32 i, qt::u32 j, T value)
 	{
 		if (i >= this->rows() || j >= this->cols())
-			throw std::out_of_range(qs::format(
-				"{} out of bounds access {}{}", MODULE, i, j));
+			throw std::out_of_range(
+				qs::format("{} out of bounds access {}{}",
+					   LOG_HERE, i, j));
 
 		data_[get_idx(i, j, LO_, this->I_, this->J_)] = value;
 	}
@@ -572,7 +572,7 @@ struct matrix_wrapper {
 	{
 		if (names.size() != base().rows())
 			throw std::invalid_argument(
-				qs::format("{} Row size mismatch", MODULE));
+				qs::format("{} Row size mismatch", LOG_HERE));
 
 		row_names_.names_ = std::move(names);
 	}
@@ -581,7 +581,7 @@ struct matrix_wrapper {
 	{
 		if (names.size() != base().cols())
 			throw std::invalid_argument(
-				qs::format("{} Col size mismatch", MODULE));
+				qs::format("{} Col size mismatch", LOG_HERE));
 
 		col_names_.names_ = std::move(names);
 	}
