@@ -11,6 +11,14 @@
 #error "Platform not supported"
 #endif
 
+#include <limits.h>
+#include <pthread.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <log/log.h>
+
 #include "../include/liteseq/gfa.h"
 #include "../include/liteseq/types.h"
 #include "../src/internal/lq_io.h"
@@ -20,13 +28,6 @@
 #include "./gfa_s.h"
 #include "./refs/ref_impl.h"
 
-#include <log.h>
-
-#include <limits.h>
-#include <pthread.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
 /*
  * Utility Functions
  * -----------------

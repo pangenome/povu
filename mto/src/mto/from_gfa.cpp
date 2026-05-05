@@ -6,7 +6,7 @@
 
 #include <liteseq/gfa.h>	 // for gfa_config, gfa...
 #include <liteseq/refs.h>	 // for get_step_count
-#include <log.h>		 // for log_warn, log_info
+#include <log/log.h>		 // for log_warn, log_info
 #include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
 #include <quilt/types.hpp>	 // for qt
 

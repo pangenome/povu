@@ -3,7 +3,7 @@
 #include <optional> // for optional
 #include <string>   // for char_traits, basic_string, string
 
-#include <log.h>		 // for log_error
+#include <log/log.h>		 // for log_error
 #include <quilt/constants.hpp>	 // for
 #include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
 #include <quilt/shim.hpp>	 // for format

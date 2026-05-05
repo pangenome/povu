@@ -9,7 +9,7 @@
 #include <utility>    // for get, make_pair, pair
 #include <vector>     // for vector
 
-#include <log.h>	   // for log_fatal
+#include <log/log.h>	   // for log_fatal
 #include <quilt/shim.hpp>  // for format
 #include <quilt/types.hpp> // for qt
 

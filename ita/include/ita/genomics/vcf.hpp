@@ -12,7 +12,7 @@
 #include <utility>     // for get, move, pair
 #include <vector>      // for vector
 
-#include <log.h>		    // for log_fatal
+#include <log/log.h>		    // for log_fatal
 #include <oza/graph/bidirected.hpp> // for VG
 #include <quilt/constants.hpp>	    // for
 #include <quilt/graph_types.hpp>    // for v_end_e, side_n_id_t, side_n_idx_t

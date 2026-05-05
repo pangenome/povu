@@ -9,7 +9,7 @@
 #include <utility>     // for get, pair
 #include <vector>      // for vector
 
-#include <log.h>
+#include <log/log.h>
 #include <log/location.hpp>	 // for LOG_HERE
 #include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
 #include <quilt/shim.hpp>	 // for format

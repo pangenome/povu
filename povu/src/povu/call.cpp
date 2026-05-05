@@ -12,7 +12,7 @@
 #include <ita/genomics/genomics.hpp>   // for gen_vcf_rec_map
 #include <ita/genomics/vcf.hpp>	       // for VcfRecIdx
 #include <ita/queue/bounded_queue.hpp> // for bounded_queue
-#include <log.h>		       // for log_err, log_info, log_fatal
+#include <log/log.h>		       // for log_err, log_info, log_fatal
 #include <mto/common.hpp>	       // for get_files, read_lines_to_...
 #include <mto/from_gfa.hpp>	       // for to_bd
 #include <mto/from_pvst.hpp>	       // for read_pvst

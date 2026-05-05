@@ -6,7 +6,7 @@
 
 #include "mto/common.hpp" // for fp_to_vector
 
-#include <log.h>	   // for log_fatal
+#include <log/log.h>	   // for log_fatal
 #include <quilt/shim.hpp>  // for contains
 #include <quilt/types.hpp> // for qt
 #include <quilt/utils.hpp> // for concat_with

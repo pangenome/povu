@@ -7,7 +7,7 @@
 #include <utility>   // for move
 
 #include <dynamo/dynamo.hpp> // for dynamic_interval_tree
-#include <log.h>
+#include <log/log.h>
 #include <meza/pool/pool.hpp> // for matrix_pool
 #include <quilt/app.hpp>      // for config
 #include <quilt/types.hpp>    // for qt

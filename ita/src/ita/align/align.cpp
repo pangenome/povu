@@ -3,7 +3,7 @@
 #include <algorithm> // for min, max, reverse
 #include <cstdlib>   // for exit
 
-#include <log.h>
+#include <log/log.h>
 #include <quilt/types.hpp> // for qt
 
 namespace ita::align

@@ -1,6 +1,6 @@
 #include <pthread.h>
 
-#include <log.h>
+#include <log/log.h>
 #include <stdlib.h>
 
 #include "./gfa_s.h"

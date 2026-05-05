@@ -6,7 +6,7 @@
 #include <vector>    // for std::vector
 
 #include <liteseq/refs.h> // for ref_walk, ref
-#include <log.h>
+#include <log/log.h>
 #include <meza/pool/hap_comp.hpp>	  // for haps_comp_set
 #include <meza/pool/split_pool_types.hpp> // for ov_mat_t
 #include <quilt/types.hpp>		  // for qt

@@ -8,7 +8,7 @@
 #include <vector>   // for vector
 
 #include <liteseq/refs.h>     // for ref_walk
-#include <log.h>	      // for log_error, log_fatal
+#include <log/log.h>	      // for log_error, log_fatal
 #include <oza/graph/pvst.hpp> // for Tree, VertexBase
 #include <quilt/shim.hpp>     // for format
 #include <quilt/types.hpp>    // for qt

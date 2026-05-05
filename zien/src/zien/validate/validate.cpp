@@ -6,7 +6,7 @@
 #include <vector>
 
 #include <liteseq/refs.h>	    // for ref_walk, ref
-#include <log.h>		    // for log_fatal
+#include <log/log.h>		    // for log_fatal
 #include <mto/from_vcf.hpp>	    // for read_vcf
 #include <oza/graph/bidirected.hpp> // for bidirected
 #include <oza/refs/refs.hpp>	    // for ref_format_e, Ref

@@ -1,6 +1,6 @@
 #include "ita/graph/slice_tree.hpp" // for poi
 
-#include <log.h>
+#include <log/log.h>
 #include <quilt/types.hpp> // for qt
 
 namespace ita::slice_tree

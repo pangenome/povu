@@ -10,7 +10,7 @@
 #error "Platform not supported"
 #endif
 
-#include <log.h>
+#include <log/log.h>
 #include <stdio.h> // for snprintf
 #include <stdlib.h>
 #include <string.h> // for strlen

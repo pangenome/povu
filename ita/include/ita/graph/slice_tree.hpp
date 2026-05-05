@@ -6,7 +6,7 @@
 #include <optional>
 #include <set>
 
-#include <log.h>
+#include <log/log.h>
 #include <quilt/constants.hpp> // for
 #include <quilt/shim.hpp>      // for format
 #include <quilt/types.hpp>     // for qt

@@ -2,7 +2,7 @@
 #include <cstdlib> // for exit, EXIT_FAILURE
 #include <fstream> // for basic_ifstream, basic_istream, basic_ios
 
-#include <log.h>	  // for log_fatal
+#include <log/log.h>	  // for log_fatal
 #include <mto/common.hpp> // for get_file_size, read_lines_to_vec_str, fp_to_vector
 
 namespace mto::common

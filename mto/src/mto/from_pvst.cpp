@@ -11,7 +11,7 @@
 #include <utility> // for get, pair
 #include <vector>  // for vector
 
-#include <log.h>		 // for log_fatal, log_fatal
+#include <log/log.h>		 // for log_fatal, log_fatal
 #include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
 #include <quilt/types.hpp>	 // for qt
 #include <quilt/utils.hpp>

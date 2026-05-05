@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <log.h>
+#include <log/log.h>
 
 #include "../../include/liteseq/refs.h"
 #include "../../include/liteseq/types.h"

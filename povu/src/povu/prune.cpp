@@ -3,7 +3,7 @@
 #include <string>
 #include <vector> // for vector
 
-#include <log.h>		    // for log_info
+#include <log/log.h>		    // for log_info
 #include <mto/from_gfa.hpp>	    // for to_bd
 #include <mto/to_gfa.hpp>	    // for write_gfa
 #include <quilt/app.hpp>	    // for config

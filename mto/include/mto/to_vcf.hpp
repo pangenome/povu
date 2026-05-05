@@ -16,7 +16,7 @@
 #include <vector>      // for vector
 
 #include <ita/genomics/vcf.hpp>	    // for VcfRecIdx
-#include <log.h>		    // for log_fatal
+#include <log/log.h>		    // for log_fatal
 #include <oza/graph/bidirected.hpp> // for VG
 #include <quilt/app.hpp>	    // for config
 #include <quilt/shim.hpp>	    // for format, contains

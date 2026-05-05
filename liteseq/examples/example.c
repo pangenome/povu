@@ -7,7 +7,7 @@
 #include <liteseq/gfa.h>
 #include <liteseq/types.h>
 #include <liteseq/version.h>
-#include <log.h>
+#include <log/log.h>
 #include <stdlib.h>
 
 gfa_config gen_config(const char *fp)

@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <stdio.h>
 
-#include <log.h>
+#include <log/log.h>
 
 static bool s_stop = false;
 pthread_mutex_t MUTEX_LOG;

@@ -9,7 +9,7 @@
 #include <string_view>
 
 #include <liteseq/gfa.h>
-#include <log.h>
+#include <log/log.h>
 #include <quilt/constants.hpp>	 // for
 #include <quilt/graph_types.hpp> // for v_end_e, side_n_id_t, side_n_idx_t
 #include <quilt/shim.hpp>	 // for contains

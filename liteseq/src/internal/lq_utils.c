@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <log.h>
+#include <log/log.h>
 #include <math.h>
 
 #include "../../include/liteseq/types.h"

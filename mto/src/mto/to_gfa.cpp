@@ -3,7 +3,7 @@
 #include <filesystem> // for path
 #include <fstream>    // for basic_ofstream, operator<<, basic_ostream
 
-#include <log.h>		    // for log_error
+#include <log/log.h>		    // for log_error
 #include <oza/graph/bidirected.hpp> // for bd::VG
 #include <quilt/graph_types.hpp>    // for v_end_e, side_n_id_t, side_n_idx_t
 #include <quilt/shim.hpp>	    // for format
