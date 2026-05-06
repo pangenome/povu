@@ -83,11 +83,8 @@ struct match_result find_delim(const char *start, char c,
 			       const char *fallback_chars,
 			       int fallback_chars_count)
 {
-	const char *fn = "[liteseq::utils::find_delim]";
-
-	char *res;
-	res = strchr_bounded(start, c); // Locate the position of the token
-	/* res = strchr(start, c); // Locate the position of the token */
+	// Locate the position of the token
+	const char *res = strchr_bounded(start, c);
 	if (res != NULL)
 		return (struct match_result){res, (int)(res - start), false};
 
@@ -107,8 +104,6 @@ struct match_result find_delim(const char *start, char c,
 
 status_t split_str2(struct split_str_params *p)
 {
-	const char *fn = "[liteseq::utils::split_str]";
-
 	const char *str = p->str;
 	const char *up_to = p->up_to;
 	const char c = p->delimiter;
@@ -145,7 +140,7 @@ status_t split_str2(struct split_str_params *p)
 
 		char *tok = malloc(sizeof(char) * len + 1);
 		if (tok == NULL) {
-			log_error("%s Memory allocation failed\n", fn);
+			log_error("Memory allocation failed\n");
 			return ERROR_CODE_FAILURE;
 		}
 
@@ -153,10 +148,10 @@ status_t split_str2(struct split_str_params *p)
 		tok[len] = '\0';
 
 		if (len_read > max_len) {
-			log_error("%s Attempted to read past the up_to limit\n",
-				  fn);
+			log_error("Attempted to read past the up_to limit\n");
 			return ERROR_CODE_FAILURE;
-		} else if (max_len == 13371958) {
+		}
+		else if (max_len == 13371958) {
 			printf("%s\n", tok);
 			log_info("%d", len_read);
 		}
@@ -176,8 +171,6 @@ status_t split_str2(struct split_str_params *p)
 
 status_t split_str(struct split_str_params *p)
 {
-	const char *fn = "[liteseq::utils::split_str]";
-
 	const char *str = p->str;
 	const char *up_to = p->up_to;
 	const char c = p->delimiter;
@@ -209,7 +202,7 @@ status_t split_str(struct split_str_params *p)
 
 		char *tok = malloc(sizeof(char) * len + 1);
 		if (tok == NULL) {
-			log_error("%s Memory allocation failed\n", fn);
+			log_error("Memory allocation failed\n");
 			return ERROR_CODE_FAILURE;
 		}
 
