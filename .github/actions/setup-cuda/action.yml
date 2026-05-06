@@ -1,16 +1,29 @@
-name: Setup Cuda Toolkit
-description: Install and configure Cuda Toolkit
+name: Setup CUDA Toolkit
+description: Install and configure CUDA Toolkit
+
+inputs:
+  cuda-version:
+    description: CUDA Toolkit version to install
+    required: false
+    default: "13.2.0"
 
 runs:
-  using: "composite"
+  using: composite
   steps:
-    - uses: Jimver/cuda-toolkit@v0.2.35
+    - name: Install CUDA toolkit
+      uses: Jimver/cuda-toolkit@v0.2.35
       id: cuda-toolkit
       with:
-        cuda: '13.2.0'
+        cuda: ${{ inputs.cuda-version }}
 
-    - run: echo "Installed cuda version is: ${{steps.cuda-toolkit.outputs.cuda}}"
+    - name: Print CUDA version
+      shell: bash
+      run: echo "Installed CUDA version is: ${{ steps.cuda-toolkit.outputs.cuda }}"
 
-    - run: echo "Cuda install location: ${{steps.cuda-toolkit.outputs.CUDA_PATH}}"
+    - name: Print CUDA install location
+      shell: bash
+      run: echo "CUDA install location: ${{ steps.cuda-toolkit.outputs.CUDA_PATH }}"
 
-    - run: nvcc -V
+    - name: Check nvcc
+      shell: bash
+      run: nvcc -V
