@@ -25,7 +25,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup GCC 11
-        uses: ./.github/actions/setup-gcc
+        uses: ./.github/actions/setup-compilers
 
       - name: Configure CMake
         run: |
