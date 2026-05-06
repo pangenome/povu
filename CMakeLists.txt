@@ -193,16 +193,16 @@ endfunction()
 add_compile_options_for_build_type(povu)
 add_compile_options_for_build_type(oza)
 
-target_link_libraries(meza
-  PUBLIC
-  log
-  quilt)
-
 target_link_libraries(quilt
   INTERFACE
   log
   fmt::fmt
 )
+
+target_link_libraries(meza
+  PUBLIC
+  log
+  quilt)
 
 target_link_libraries(oza
   PRIVATE
