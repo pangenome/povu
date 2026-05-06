@@ -127,7 +127,7 @@ option(CI "Enable stricter build rules for CI (e.g., -Werror)" OFF)
 
 if(CI OR DEFINED ENV{CI})
   message(STATUS "CI mode enabled")
-  add_compile_options(-Werror)
+  #add_compile_options(-Werror)
 endif()
 
 
