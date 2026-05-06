@@ -4,19 +4,17 @@ description: Install and configure CUDA Toolkit
 runs:
   using: composite
   steps:
-    - uses: Jimver/cuda-toolkit@v0.2.35
+    - name: Install CUDA toolkit
+      uses: Jimver/cuda-toolkit@v0.2.35
       id: cuda-toolkit
       with:
         cuda: "13.2.0"
+        method: local
+        linux-local-args: '["--toolkit"]'
 
-    - shell: bash
+    - name: Print CUDA info
+      shell: bash
       run: |
         echo "Installed CUDA version is: ${{ steps.cuda-toolkit.outputs.cuda }}"
-
-    - shell: bash
-      run: |
         echo "CUDA install location: ${{ steps.cuda-toolkit.outputs.CUDA_PATH }}"
-
-    - shell: bash
-      run: |
         nvcc -V
