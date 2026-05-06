@@ -5,16 +5,20 @@ runs:
   using: composite
   steps:
     - name: Install CUDA toolkit
-      uses: Jimver/cuda-toolkit@v0.2.35
-      id: cuda-toolkit
-      with:
-        cuda: "13.2.0"
-        method: local
-        linux-local-args: '["--toolkit"]'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y nvidia-cuda-toolkit
+
+    - name: Export CUDA environment
+      shell: bash
+      run: |
+        CUDA_PATH="$(dirname "$(dirname "$(readlink -f "$(command -v nvcc)")")")"
+        echo "CUDA_PATH=$CUDA_PATH" >> "$GITHUB_ENV"
+        echo "$CUDA_PATH/bin" >> "$GITHUB_PATH"
 
     - name: Print CUDA info
       shell: bash
       run: |
-        echo "Installed CUDA version is: ${{ steps.cuda-toolkit.outputs.cuda }}"
-        echo "CUDA install location: ${{ steps.cuda-toolkit.outputs.CUDA_PATH }}"
+        echo "CUDA install location: $CUDA_PATH"
         nvcc -V
