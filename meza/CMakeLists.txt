@@ -209,7 +209,10 @@ if(MEZA_ENABLE_CUDA)
     ${MEZA_SOURCES_DIR}/ops/ops.cu
   )
 
-  target_link_libraries(meza PRIVATE CUDA::cudart)
+  target_link_libraries(meza
+    PRIVATE
+    CUDA::cudart
+  )
 
   # TODO: make this PRIVATE
   target_include_directories(meza INTERFACE
@@ -217,7 +220,16 @@ if(MEZA_ENABLE_CUDA)
   )
 
   target_compile_options(meza PRIVATE
+    # 1. Wrap warnings for the host compiler
     $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-Wno-pedantic>
+
+    # 2. Fix the __builtin_dynamic_object_size error (Fortify Source)
+    $<$<COMPILE_LANGUAGE:CUDA>:-U_FORTIFY_SOURCE>
+    $<$<COMPILE_LANGUAGE:CUDA>:-D_FORTIFY_SOURCE=0>
+
+    # 3. Fix the nvcc fatal: Value '-g' is not defined for option 'Werror'
+    # We ensure -g is only passed to CXX, and use -g -G for CUDA debug
+    $<$<AND:$<COMPILE_LANGUAGE:CUDA>,$<CONFIG:Debug>>:-g -G>
   )
 
   set_source_files_properties(
