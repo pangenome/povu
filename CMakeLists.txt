@@ -1,58 +1,48 @@
-# === CMake Setup ===
-# Minimum version required for FetchContent and modern features
+# ==============================================================================
+# CMAKE SETUP & PROJECT METADATA
+# ==============================================================================
 cmake_minimum_required(VERSION 3.14)
 
-# --- CMake Policy Handling ---
-# Suppress warnings in CMake 3.24+ about DOWNLOAD_EXTRACT_TIMESTAMP
-# See: https://cmake.org/cmake/help/latest/policy/CMP0135.html
+# Handle policy for FetchContent (CMake 3.24+)
 if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
   cmake_policy(SET CMP0135 NEW)
 endif()
 
-option(ENABLE_CUDA "Enable CUDA acceleration (build CUDA targets)" ON)
+project(povu VERSION 0.0.1 LANGUAGES C CXX)
+
+# Standard C++17 configuration
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Generate compile_commands.json for LSP (clangd, etc.)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# ==============================================================================
+# BUILD FEATURES & OPTIONS
+# ==============================================================================
+
+# CUDA Support
+option(ENABLE_CUDA "Enable CUDA acceleration" ON)
 if(ENABLE_CUDA)
   message(STATUS "CUDA support enabled")
   set(MEZA_ENABLE_CUDA ON)
 else()
   message(STATUS "CUDA support disabled")
 endif()
-#option(MEZA_BUILD_EXAMPLE "Build examples for meza" OFF)
 
-# === Project Metadata ===
-project(povu VERSION 0.0.1 LANGUAGES C CXX)
-
-# === C++ Standard Configuration ===
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-# === Compile Commands for Tooling ===
-# Generate compile_commands.json for use with clangd, clang-tidy, etc.
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-
-# === Build Configuration Options ===
-
-# Optional testing toggle.
-# Enable with -DPOVU_ENABLE_TESTING=ON
-# This will build and run tests using GoogleTest.
-#option(POVU_ENABLE_TESTING "Build and run tests" OFF)
+# Testing Toggles
 option(ENABLE_ALL_TESTS "Enable all tests (including dependencies)" OFF)
-#option(ENABLE_TESTS "Enable CTest testing framework" ON)
 if(ENABLE_ALL_TESTS)
   message(STATUS "Testing internal deps")
-
   set(TEST_MEZA ON)
   set(TEST_OZA ON)
 endif()
 
-# --- Build Type Defaults ---
-# Default to Release if user hasn't set a build type
-# Can be overridden via -DCMAKE_BUILD_TYPE=Debug
+# Default Build Type (Release if not specified)
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build (Debug, Release)" FORCE)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build" FORCE)
 endif()
 message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
-
 
 # ==============================================================================
 # LIBRARY DEFAULTS & LINKING STRATEGY
@@ -66,6 +56,7 @@ message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 # one would set(BUILD_SHARED_LIBS ON).
 
 # 2. POSITION INDEPENDENT CODE (PIC)
+# Required for monorepos when linking static libs into shared libs (.so).
 # In a monorepo, you often link Static libraries into Shared libraries
 # (e.g., linking static 'quilt' into shared 'oza').
 # On Linux, Shared libraries (.so) REQUIRE their dependencies to be
@@ -73,115 +64,82 @@ message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 # We enable this globally to ensure compatibility regardless of library type.
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# 3. FULLY STATIC BINARY OPTION
-# While CMake defaults to static internal libs, it still links to shared
-# system libs (libc, libstdc++). This toggle attempts a "Full Static" build.
-option(BUILD_STATIC
-    "Build a fully static executable (including system runtimes like glibc)"
-    OFF
-)
-
-# Provide feedback during the 'cmake ..' configuration step
-if(BUILD_STATIC)
-  message(STATUS "Build Mode: FULLY STATIC (Experimental/Portable)")
-else()
-  message(STATUS "Build Mode: DYNAMIC (Standard/Shared)")
-endif()
+# 2. FULLY STATIC BINARY OPTION
+# Attempts to bundle system runtimes (glibc, libstdc++) for maximum portability.
+option(BUILD_STATIC "Build a fully static executable" OFF)
 
 if(BUILD_STATIC)
-    message(STATUS "Build Mode: FULLY STATIC (-static)")
+    message(STATUS "Build Mode: FULLY STATIC (Experimental/Portable)")
 
-    # Force 'find_library' to ignore .so files and look only for .a archives
+    # Defaults all add_library calls to STATIC
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+
+    # Force search for .a instead of .so
     set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
 
-    # Linker flags to pull in system runtimes (Linux only)
-    # -static-libgcc/stdc++ ensures the user doesn't need a specific GCC version.
+    # Linux-specific static flags
     if(UNIX AND NOT APPLE)
         set(CMAKE_EXE_LINKER_FLAGS
             "${CMAKE_EXE_LINKER_FLAGS} -static -static-libgcc -static-libstdc++")
     endif()
 else()
-    message(STATUS "Build Mode: DYNAMIC (Default shared system linking)")
+    message(STATUS "Build Mode: DYNAMIC (Standard/Shared)")
 endif()
-
-# ==============================================================================
-
-# This section configures compile-time warnings, optimization levels,
-# and debug/release-specific behavior using generator expressions.
-# Flags are applied conditionally based on the active build configuration.
-# Users can add extra flags via CMake options if needed:
-#   cmake -DCMAKE_C_FLAGS="-Wpadded" -DCMAKE_CXX_FLAGS="-Wpadded" ..
-
-# Warnings that apply to all build types
-set(COMMON_WARNINGS
-  -Wall
-)
-
-# Additional warnings enabled only for Debug builds
-set(DEBUG_WARNINGS
-  -Wextra
-  -Wpedantic
-  -Wshadow
-  -Wunused
-  -Wunknown-pragmas
-  -Wunused-parameter
-  -Wunused-variable
-  -Wunused-function
-  -Wunused-but-set-variable
-  -Wmissing-field-initializers
-  -Wunused-local-typedefs
-  -Wuninitialized
-  # -Wmaybe-uninitialized
-  # -Wpadded # Uncomment or gate by compiler if needed
-)
-
-# Add GCC-specific warnings
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  list(APPEND DEBUG_WARNINGS
-    -Wmaybe-uninitialized)
-endif()
-
-# Add Clang-specific suppressions (especially for macOS)
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-  list(APPEND DEBUG_WARNINGS
-    -Wno-uninitialized
-    -Wno-gnu-zero-variadic-macro-arguments
-  )
-endif()
-
-# --- CI Mode Configuration ---
-# CI is a build environment, not a build type.
-# Enable stricter checks (e.g., -Werror) using -DCI=ON or if ENV{CI} is set
-option(CI "Enable stricter build rules for CI (e.g., -Werror)" OFF)
 
 if(CI OR DEFINED ENV{CI})
   message(STATUS "CI mode enabled")
-  #add_compile_options(-Werror)
+  add_compile_options(-Werror)
 endif()
 
 
-# ========================== Dependencies ===============================
+# ==============================================================================
+# COMPILER WARNINGS & HARDENING
+# ==============================================================================
 
-# --- Enable Sanitizers for Debug Builds ---
-#
-# This file typically enables AddressSanitizer, UndefinedBehaviorSanitizer, etc.
-# It's included unconditionally, but should internally check for Debug mode and compiler support.
-# sanitizers.cmake checks if build mode is Debug and if not it returns early.
+set(COMMON_WARNINGS -Wall)
+
+set(DEBUG_WARNINGS
+  -Wextra -Wpedantic -Wshadow -Wunused -Wunknown-pragmas
+  -Wunused-parameter -Wunused-variable -Wunused-function
+  -Wunused-but-set-variable -Wmissing-field-initializers
+  -Wunused-local-typedefs -Wuninitialized
+)
+
+# GCC-specific warnings
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  list(APPEND DEBUG_WARNINGS -Wmaybe-uninitialized)
+endif()
+
+# Clang/macOS specific suppressions
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+  list(APPEND DEBUG_WARNINGS -Wno-uninitialized -Wno-gnu-zero-variadic-macro-arguments)
+endif()
+
+# CI Mode: Stricter rules
+option(CI "Enable stricter build rules for CI" OFF)
+if(CI OR DEFINED ENV{CI})
+  message(STATUS "CI mode enabled")
+endif()
+
+# ==============================================================================
+# EXTERNAL DEPENDENCIES
+# ==============================================================================
+
+# Sanitizers for Debugging
 include(cmake/sanitizers.cmake)
 
-# --- Depds from CPM.cmake --
+# External package management (CPM.cmake)
 include(cmake/deps.cmake)
 
-
-set(BIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+# ==============================================================================
+# PROJECT SUBDIRECTORIES (Internal Libraries)
+# ==============================================================================
 
 add_subdirectory(quilt)
-
-
 add_subdirectory(log)
 add_subdirectory(liteseq)
 
-# --- Silence compiler warnings for dependencies ---
+# Helper function to silence noise from dependencies
 function(silence_warnings target)
   if(TARGET ${target})
     get_target_property(type ${target} TYPE)
@@ -194,8 +152,8 @@ function(silence_warnings target)
 endfunction()
 
 silence_warnings(log)
-target_link_libraries(liteseq PRIVATE log)
 
+# Internal sub-modules
 add_subdirectory(dynamo)
 add_subdirectory(oza)
 add_subdirectory(ita)
@@ -204,17 +162,17 @@ add_subdirectory(zien)
 add_subdirectory(povu)
 add_subdirectory(meza)
 
+# ==============================================================================
+# COMPILER FLAG APPLICATION
+# ==============================================================================
+
+# Helper function to apply warnings/optimizations based on build type
 function(add_compile_options_for_build_type target)
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_options(${target} PRIVATE
-      ${COMMON_WARNINGS}
-      ${DEBUG_WARNINGS}
-      -g -Wno-system-headers)
+    target_compile_options(${target} PRIVATE ${COMMON_WARNINGS} ${DEBUG_WARNINGS} -g -Wno-system-headers)
     target_compile_definitions(${target} PRIVATE DEBUG)
   elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
-    target_compile_options(${target} PRIVATE
-      ${COMMON_WARNINGS}
-      -O3 -Wno-system-headers)
+    target_compile_options(${target} PRIVATE ${COMMON_WARNINGS} -O3 -Wno-system-headers)
     target_compile_definitions(${target} PRIVATE RELEASE)
   endif()
 endfunction()
@@ -222,84 +180,33 @@ endfunction()
 add_compile_options_for_build_type(povu)
 add_compile_options_for_build_type(oza)
 
-target_link_libraries(quilt
-  PUBLIC
-  log
-  fmt::fmt
-)
+# ==============================================================================
+# TARGET LINKING & DEPENDENCY GRAPH
+# ==============================================================================
 
-target_link_libraries(meza
-  PUBLIC
-  log
-  quilt)
+target_link_libraries(liteseq PRIVATE log)
 
-target_link_libraries(oza
-  PRIVATE
-  fmt::fmt # formatting
-  liteseq  # gfa handling
-  quilt
-  meza
-  log
-)
+target_link_libraries(quilt PUBLIC log fmt::fmt)
 
-target_link_libraries(ita
-  PRIVATE
-  log
-  oza
-  fmt::fmt     # formatting
-  liteseq      # gfa handling
-  meza
-  dynamo
-  quilt
-)
+target_link_libraries(meza PUBLIC log quilt)
 
-target_link_libraries(mto
-  PRIVATE
-  log
-  oza
-  fmt::fmt     # formatting
-  liteseq      # gfa handling
-  ita
-  meza
-)
+target_link_libraries(oza PRIVATE fmt::fmt liteseq quilt meza log)
 
-target_link_libraries(zien
-  PRIVATE
-  log
-  oza
-  ita
-  liteseq      # gfa handling
-  fmt::fmt     # formatting
-  ncurses
-  meza
-)
+target_link_libraries(ita PRIVATE log oza fmt::fmt liteseq meza dynamo quilt)
 
-target_link_libraries(povu
-  PRIVATE
+target_link_libraries(mto PRIVATE log oza fmt::fmt liteseq ita meza)
 
-  # internal libraries
-  log
-  oza
-  zien
-  ita
-  mto
+target_link_libraries(zien PRIVATE log oza ita liteseq fmt::fmt ncurses meza)
 
-  # external libraries
-  liteseq      # gfa handling
-  fmt::fmt     # formatting
-  taywee::args # argument parsing
-  ncurses
-  meza
-)
+target_link_libraries(povu PRIVATE log oza zien ita mto liteseq fmt::fmt taywee::args ncurses meza)
 
+# ==============================================================================
+# OUTPUT & TESTING CONFIGURATION
+# ==============================================================================
 
-# # =================== Set Build-Time Output Directory ========================
+set(BIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
-# Set the runtime output directory for the binary
-set_target_properties(povu PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY ${BIN_DIR}
-)
+set_target_properties(povu PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${BIN_DIR})
 message(STATUS "Build-time binary output directory: ${BIN_DIR}")
 
-# ============================ Testing Configuration ===========================
 include(CTest)
