@@ -19,17 +19,17 @@ inline constexpr std::string_view BLUE{"blue"};
 
 // numeric
 inline constexpr std::size_t MAX_SIZE_T = std::numeric_limits<size_t>::max();
-inline constexpr std::size_t UNDEFINED_SIZE_T = MAX_SIZE_T;
 inline constexpr qt::idx_t MAX_ID = std::numeric_limits<qt::idx_t>::max();
 inline constexpr qt::idx_t MAX_IDX = std::numeric_limits<qt::idx_t>::max();
 
 // TODO: replace UNDEFINED with INVALID ? or at least be consistent
+inline constexpr std::size_t UNDEFINED_SIZE_T = MAX_SIZE_T;
 inline constexpr qt::idx_t UNDEFINED_IDX = MAX_IDX;
 inline constexpr qt::id_t UNDEFINED_ID = MAX_ID;
-inline constexpr qt::id_t DUMMY_VTX_ID = UNDEFINED_ID;
-inline constexpr qt::id_t INVALID_ID = MAX_ID;
 inline constexpr qt::idx_t INVALID_IDX = MAX_IDX;
 inline constexpr qt::idx_t INVALID_CLS = MAX_IDX; // equivalence class
+inline constexpr qt::id_t INVALID_ID = MAX_ID;
+inline constexpr qt::id_t DUMMY_VTX_ID = UNDEFINED_ID;
 
 //
 inline constexpr ptg::id_or_t INVALID_ID_OR{INVALID_ID, ptg::or_e::forward};
@@ -46,7 +46,6 @@ inline constexpr std::size_t UNDEFINED_PATH_ID{INVALID_ID};
 inline constexpr std::size_t UNDEFINED_PATH_POS{INVALID_ID};
 
 // PVST
-
 inline constexpr char PVST_HEADER_SYMBOL = 'H';
 inline constexpr char PVST_FLUBBLE_SYMBOL = 'F';
 inline constexpr char PVST_CONCEALED_SYMBOL = 'C';
