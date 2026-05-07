@@ -53,29 +53,58 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
-# Optional static build toggle.
-# Enable with: -DBUILD_STATIC=ON
-# This forces fully static linking for portable binaries (primarily Linux).
+
+# ==============================================================================
+# LIBRARY DEFAULTS & LINKING STRATEGY
+# ==============================================================================
+
+# 1. THE "STATIC BY DEFAULT" RULE
+# By default, 'add_library(name sources...)' creates STATIC libraries (.a).
+# This is because the global variable BUILD_SHARED_LIBS defaults to OFF.
+# Static linking copies the library code into the target, making the final
+# binary more portable but larger. To change this default project-wide,
+# one would set(BUILD_SHARED_LIBS ON).
+
+# 2. POSITION INDEPENDENT CODE (PIC)
+# In a monorepo, you often link Static libraries into Shared libraries
+# (e.g., linking static 'quilt' into shared 'oza').
+# On Linux, Shared libraries (.so) REQUIRE their dependencies to be
+# Position Independent. If this is OFF, you get "relocation" linker errors.
+# We enable this globally to ensure compatibility regardless of library type.
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+# 3. FULLY STATIC BINARY OPTION
+# While CMake defaults to static internal libs, it still links to shared
+# system libs (libc, libstdc++). This toggle attempts a "Full Static" build.
 option(BUILD_STATIC
-  "Build a fully static executable (including libstdc++, libgcc, glibc, etc.)"
-  OFF
+    "Build a fully static executable (including system runtimes like glibc)"
+    OFF
 )
 
+# Provide feedback during the 'cmake ..' configuration step
 if(BUILD_STATIC)
-  # Use static libraries where possible
-  set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-
-  # Linker should prefer .a files
-  set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
-
-  # Pass static linking flags to the linker (Linux only)
-  if(UNIX AND NOT APPLE)
-    set(CMAKE_EXE_LINKER_FLAGS
-      "${CMAKE_EXE_LINKER_FLAGS} -static -static-libgcc -static-libstdc++")
-  endif()
+  message(STATUS "Build Mode: FULLY STATIC (Experimental/Portable)")
+else()
+  message(STATUS "Build Mode: DYNAMIC (Standard/Shared)")
 endif()
 
+if(BUILD_STATIC)
+    message(STATUS "Build Mode: FULLY STATIC (-static)")
 
+    # Force 'find_library' to ignore .so files and look only for .a archives
+    set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
+
+    # Linker flags to pull in system runtimes (Linux only)
+    # -static-libgcc/stdc++ ensures the user doesn't need a specific GCC version.
+    if(UNIX AND NOT APPLE)
+        set(CMAKE_EXE_LINKER_FLAGS
+            "${CMAKE_EXE_LINKER_FLAGS} -static -static-libgcc -static-libstdc++")
+    endif()
+else()
+    message(STATUS "Build Mode: DYNAMIC (Default shared system linking)")
+endif()
+
+# ==============================================================================
 
 # This section configures compile-time warnings, optimization levels,
 # and debug/release-specific behavior using generator expressions.
