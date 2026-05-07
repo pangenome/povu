@@ -51,7 +51,7 @@ endif()
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build (Debug, Release)" FORCE)
 endif()
-message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 
 
 # ==============================================================================
