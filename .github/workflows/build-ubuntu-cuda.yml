@@ -1,4 +1,4 @@
-name: Build (Ubuntu)
+name: Build (Ubuntu Cuda)
 # Test build for Ubuntu with C++17 & CMake
 
 on:
@@ -28,10 +28,13 @@ jobs:
       - name: Setup GCC 11
         uses: ./.github/actions/setup-gcc
 
+      - name: Setup Cuda
+        uses: ./.github/actions/setup-cuda
+
       - name: Configure CMake
         run: |
           cmake -B ${{ github.workspace }}/build \
-          -DENABLE_CUDA=OFF \
+          -DENABLE_CUDA=ON \
           -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }}
 
       - name: Build
