@@ -7,10 +7,12 @@ runs:
     - name: Install NVIDIA CUDA apt repository
       shell: bash
       run: |
+        set -eux
         . /etc/os-release
-        ubuntu_version="${VERSION_ID/./}"
-# Download the repository pin and add the repository
-        wget -q "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu${ubuntu_version}/x86_64/cuda-keyring_1.1-1_all.deb"
+        ubuntu_version="$(echo "$VERSION_ID" | tr -d '.')"
+        repo_url="https://developer.download.nvidia.com/compute/cuda/repos/ubuntu${ubuntu_version}/x86_64/cuda-keyring_1.1-1_all.deb"
+
+        wget -q "$repo_url"
         sudo dpkg -i cuda-keyring_1.1-1_all.deb
         sudo apt-get update
 
