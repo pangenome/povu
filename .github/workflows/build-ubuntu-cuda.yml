@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04 # gcc 11 is default on 22.04
 
     strategy:
       matrix:
@@ -25,8 +25,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup GCC 11
-        uses: ./.github/actions/setup-gcc
+      - name: Print compiler version
+        run: |
+          gcc --version
+          g++ --version
 
       - name: Setup Cuda
         uses: ./.github/actions/setup-cuda
