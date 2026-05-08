@@ -4,6 +4,16 @@ description: Install and configure CUDA Toolkit
 runs:
   using: composite
   steps:
+    - name: Install NVIDIA CUDA apt repository
+      shell: bash
+      run: |
+        . /etc/os-release
+        ubuntu_version="${VERSION_ID/./}"
+# Download the repository pin and add the repository
+        wget -q "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu${ubuntu_version}/x86_64/cuda-keyring_1.1-1_all.deb"
+        sudo dpkg -i cuda-keyring_1.1-1_all.deb
+        sudo apt-get update
+
     - name: Install minimal CUDA compiler/runtime dev packages
       shell: bash
       run: |
