@@ -86,12 +86,6 @@ else()
     message(STATUS "Build Mode: DYNAMIC (Standard/Shared)")
 endif()
 
-if(CI OR DEFINED ENV{CI})
-  message(STATUS "CI mode enabled")
-  add_compile_options(-Werror)
-endif()
-
-
 # ==============================================================================
 # COMPILER WARNINGS & HARDENING
 # ==============================================================================
@@ -116,9 +110,16 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "App
 endif()
 
 # CI Mode: Stricter rules
+# C/C++ builds fail on warnings in CI.
+# CUDA compilation is excluded because nvcc treats plain -Werror differently.
 option(CI "Enable stricter build rules for CI" OFF)
+
 if(CI OR DEFINED ENV{CI})
   message(STATUS "CI mode enabled")
+  add_compile_options(
+    $<$<COMPILE_LANGUAGE:C>:-Werror>
+    $<$<COMPILE_LANGUAGE:CXX>:-Werror>
+  )
 endif()
 
 # ==============================================================================
