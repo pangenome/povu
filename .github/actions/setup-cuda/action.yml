@@ -32,12 +32,14 @@ runs:
     - name: Export CUDA environment
       shell: bash
       run: |
-        CUDA_PATH="$(dirname "$(dirname "$(readlink -f "$(command -v nvcc)")")")"
+        CUDA_PATH="/usr/local/cuda"
         echo "CUDA_PATH=$CUDA_PATH" >> "$GITHUB_ENV"
         echo "$CUDA_PATH/bin" >> "$GITHUB_PATH"
 
     - name: Print CUDA info
       shell: bash
       run: |
+        export PATH="$CUDA_PATH/bin:$PATH"
         echo "CUDA install location: $CUDA_PATH"
+        which nvcc
         nvcc -V
