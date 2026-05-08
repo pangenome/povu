@@ -1,21 +1,13 @@
 name: Setup CUDA Toolkit
 description: Install and configure CUDA Toolkit
 
-inputs:
-  cuda-version:
-    description: CUDA version in package form, e.g. 12-4
-    required: false
-    default: "12-4"
-
 runs:
   using: composite
   steps:
     - name: Install minimal CUDA compiler/runtime dev packages
       shell: bash
       run: |
-        sudo apt-get install -y \
-          cuda-nvcc-${{ inputs.cuda-version }} \
-          cuda-cudart-dev-${{ inputs.cuda-version }}
+        sudo apt-get install -y cuda-nvcc cuda-cudart-dev
 
     - name: Export CUDA environment
       shell: bash
