@@ -29,15 +29,15 @@ struct dense_matrix2d {
 	qt::u32 I_;
 	qt::u32 J_;
 
-	// otcional: track which rows and cols have data for quick filtering
+	// optional: track which rows and cols have data for quick filtering
 	std::vector<qt::u8> row_has_data_;
 	std::vector<qt::u8> col_has_data_;
 
 	std::vector<T> data_; // row-major order
 
 	dense_matrix2d(qt::u32 I, qt::u32 J, T init = T{})
-	    : I_(I), J_(J), data_(static_cast<std::size_t>(I) * J, init),
-	      row_has_data_(I, 0), col_has_data_(J, 0)
+	    : I_(I), J_(J), row_has_data_(I, 0), col_has_data_(J, 0),
+	      data_(static_cast<std::size_t>(I) * J, init)
 	{
 		if (init != T{}) {
 			std::fill(row_has_data_.begin(), row_has_data_.end(),

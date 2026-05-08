@@ -78,32 +78,39 @@ status_t set_version(const char *h_line, const char *newline, gfa_props *g)
 }
 
 /**
- * @brief used to extract the v id from an S line
+ * @brief used to extract the vertex id from an S line
  *
  * @param [in] str the start of the S line
  * @return the vertex id
  */
-u32 get_num_vid(const char *str, u32 linum)
+u32 get_num_v_id(const char *str)
 {
-	char *start = NULL;
-	char *end = NULL;
-	int count = 0;
-	do {
-		start = end;
-		end = strchr(str, TAB_CHAR);
-		if (end == NULL)
-			log_fatal("Badly formatted S Line on line %u", linum);
-		count++;
-	} while (count < 2);
+	const char *first_tab = NULL;
 
-	u32 num = strtoull(start, &end, 10);
+	first_tab = strchr(str, TAB_CHAR);
+	if (first_tab == NULL)
+		return NULL_IDX;
 
-	return num;
+	const char *num_start = first_tab + 1;
+
+	char *end_ptr = NULL;
+	u32 v_id = strtoull(num_start, &end_ptr, 10);
+
+	if (num_start == (const char *)end_ptr) // no digits were found
+		return NULL_IDX;
+
+	return v_id;
 }
 
 void set_v_id_bounds(const char *curr_char, gfa_props *g, idx_t linum)
 {
-	u32 curr_v_id = get_num_vid(curr_char, linum);
+	u32 curr_v_id = get_num_v_id(curr_char);
+
+	if (curr_v_id == NULL_IDX) {
+		log_fatal("Failed to parse vertex id on line: [%d]", linum);
+		return;
+	}
+
 	if (curr_v_id > g->max_v_id)
 		g->max_v_id = curr_v_id;
 	if (curr_v_id < g->min_v_id)
