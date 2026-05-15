@@ -13,6 +13,9 @@ fn main() {
     println!("cargo:rustc-link-search=native={}/build/povu-rs/povu-ffi", dst.display());
     println!("cargo:rustc-link-search=native={}/build", dst.display());
     println!("cargo:rustc-link-lib=static=povu_ffi");
+    // The FFI GFA loader calls the migrated mto::from_gfa API, so Cargo must
+    // link libmto explicitly in addition to the core povulib archive.
+    println!("cargo:rustc-link-lib=static=mto");
     println!("cargo:rustc-link-lib=static=povulib");
 
     // Link dependencies

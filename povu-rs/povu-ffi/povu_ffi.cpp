@@ -2,20 +2,22 @@
 
 #include <cstring>
 #include <exception>
+#include <filesystem>
+#include <fstream>
 #include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
 
+#include <liteseq/refs.h>
+
 // Povu headers
+#include "mto/from_gfa.hpp"
 #include "povu/algorithms/flubbles.hpp"
 #include "povu/common/app.hpp"
 #include "povu/graph/bidirected.hpp"
 #include "povu/graph/pvst.hpp"
 #include "povu/graph/spanning_tree.hpp"
-#include "povu/io/from_gfa.hpp"
-#include "povu/io/to_vcf.hpp"
-#include "povu/genomics/vcf.hpp"
 
 // Internal wrapper structures
 struct PovuGraph {
@@ -54,7 +56,10 @@ struct PovuVcfOutput {
 static void set_error(PovuError* error, int code, const char* message) {
     if (error) {
         error->code = code;
-        error->message = strdup(message);
+        const char* safe_message = message ? message : "Unknown error";
+        const size_t len = std::strlen(safe_message);
+        error->message = new char[len + 1];
+        std::memcpy(error->message, safe_message, len + 1);
     }
 }
 
@@ -74,12 +79,32 @@ PovuGraph* povu_graph_new(size_t vertex_capacity, size_t edge_capacity, size_t p
 
 PovuGraph* povu_graph_from_gfa(const char* gfa_path, PovuError* error) {
     try {
+        if (!gfa_path || gfa_path[0] == '\0') {
+            set_error(error, 1, "GFA path must not be empty");
+            return nullptr;
+        }
+
+        std::error_code fs_error;
+        if (!std::filesystem::is_regular_file(gfa_path, fs_error)) {
+            std::string message = "GFA file does not exist: ";
+            message += gfa_path;
+            if (fs_error) {
+                message += " (";
+                message += fs_error.message();
+                message += ")";
+            }
+            set_error(error, 1, message.c_str());
+            return nullptr;
+        }
+
         core::config config;
         config.set_input_gfa(gfa_path);
         config.set_inc_refs(true);
         config.set_inc_vtx_labels(true);
 
-        povu::bidirected::VG* vg = povu::io::from_gfa::to_bd(config);
+        // GFA loading moved from the former povu::io namespace into the mto
+        // library; keep the Rust FFI bound to the current C++ API directly.
+        povu::bidirected::VG* vg = mto::from_gfa::to_bd(config);
         if (!vg) {
             set_error(error, 1, "Failed to load GFA file");
             return nullptr;
@@ -178,7 +203,7 @@ size_t povu_graph_edge_count(const PovuGraph* graph) {
 }
 
 size_t povu_graph_path_count(const PovuGraph* graph) {
-    return graph ? graph->vg->get_ref_count() : 0;
+    return graph ? graph->vg->get_hap_count() : 0;
 }
 
 PovuVertex* povu_graph_get_vertices(const PovuGraph* graph, size_t* count) {
@@ -236,7 +261,7 @@ PovuPath* povu_graph_get_paths(const PovuGraph* graph, size_t* count) {
         return nullptr;
     }
 
-    size_t path_count = graph->vg->get_ref_count();
+    size_t path_count = graph->vg->get_hap_count();
     *count = path_count;
 
     if (path_count == 0) {
@@ -247,7 +272,6 @@ PovuPath* povu_graph_get_paths(const PovuGraph* graph, size_t* count) {
 
     for (size_t ref_id = 0; ref_id < path_count; ref_id++) {
         const auto* ref_vec = graph->vg->get_ref_vec(ref_id);
-        const auto& ref = graph->vg->get_ref_by_id(ref_id);
 
         // Get path name using tag
         const char* tag = liteseq::get_tag(ref_vec);
@@ -505,7 +529,7 @@ bool povu_gfa_to_vcf(const char* gfa_path, const char* vcf_path,
 // Error handling
 void povu_error_free(PovuError* error) {
     if (error && error->message) {
-        free(error->message);
+        delete[] error->message;
         error->message = nullptr;
         error->code = 0;
     }

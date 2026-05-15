@@ -9,6 +9,7 @@ target_include_directories(povu_ffi PUBLIC
 )
 
 target_link_libraries(povu_ffi PUBLIC
+    mto
     povulib
     fmt::fmt
     liteseq
