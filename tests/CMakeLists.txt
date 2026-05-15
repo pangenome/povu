@@ -3,6 +3,8 @@ target_link_libraries(test_povu
   PRIVATE
   gtest_main
   povulib  # Replace with your actual target
+  ita
+  mto
   liteseq      # gfa handling
   fmt::fmt     # formatting
   taywee::args # argument parsing
