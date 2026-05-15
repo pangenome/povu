@@ -1,4 +1,5 @@
 import PovuLean.Algorithms.Flubble
+import PovuLean.Algorithms.Hairpin
 import PovuLean.Algorithms.FlubbleTree
 
 /-!
