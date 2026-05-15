@@ -30,6 +30,9 @@ All trusted proof modules live under namespace `PovuLean`.
   flubble-tree algorithm modules owned by their downstream proof tasks.
 - [`VCF.lean`](VCF.lean) aggregates semantic VCF modules owned by
   `lean4-vcf-semantics`.
+- [`Pipeline.lean`](Pipeline.lean) is the synthesis-owned trusted proof-path
+  join point. It exposes `Pipeline.semanticGfaToVcf_correct` after the core,
+  GFA, algorithm, and VCF proof families import together.
 
 Downstream tasks should add substantive modules under their owned module
 families, then import completed trusted modules from the appropriate
