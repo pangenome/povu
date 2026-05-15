@@ -9,7 +9,7 @@
 //! use povu::PovuGraph;
 //!
 //! // Simple one-shot conversion
-//! povu::gfa_to_vcf("input.gfa", "output.vcf", None)?;
+//! povu::gfa_to_vcf("input.gfa", "output.vcf", None::<&std::path::Path>)?;
 //!
 //! // Or with more control
 //! let graph = PovuGraph::load("input.gfa")?;
@@ -55,7 +55,7 @@ pub use path::{Path, Step, Orientation};
 /// # Example
 ///
 /// ```no_run
-/// povu::gfa_to_vcf("input.gfa", "output.vcf", None)?;
+/// povu::gfa_to_vcf("input.gfa", "output.vcf", None::<&std::path::Path>)?;
 /// # Ok::<(), povu::Error>(())
 /// ```
 pub fn gfa_to_vcf(
