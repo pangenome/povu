@@ -108,7 +108,8 @@ trusted theorem and are not meaningful for this fixture:
 - `##fileDate` and other metadata header ordering;
 - duplicate or reordered metadata lines;
 - INFO field ordering within a record;
-- record ordering before semantic comparison.
+- record ordering before semantic comparison, except for fixtures that
+  explicitly opt into strict record-order checking.
 
 It does not normalize allele spelling, positions, record IDs, INFO values,
 sample names, genotype values, `QUAL`, `FILTER`, or `FORMAT`.
@@ -137,9 +138,12 @@ To add one fixture:
 
 1. Add a GFA file under `tests/lean4_conformance/fixtures/`.
 2. Add a semantic call or call list to
-   `tests/lean4_conformance/lean_reference.lean`.
+   `tests/lean4_conformance/lean_reference.lean` for accepted-GFA VCF fixtures.
 3. Add a fixture entry in `tests/lean4_conformance/src/main.rs` with the GFA
-   path and reference prefix arguments passed to `povu gfa2vcf`.
+   path, reference prefix arguments passed to `povu gfa2vcf`, and expected
+   outcome. Unsupported or malformed boundary fixtures should use an expected
+   povu failure instead of assigning Lean VCF semantics; crashes still fail the
+   harness.
 4. Run:
 
 ```bash
@@ -151,3 +155,6 @@ lake build
 If the new fixture reveals a real implementation mismatch, keep the diagnostic
 output in the downstream issue or WG task so the failing semantic fields are
 visible.
+
+The expanded end-to-end corpus and per-fixture notes are maintained in
+`docs/lean4-proof/e2e_validation.md`.

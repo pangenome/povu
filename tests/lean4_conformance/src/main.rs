@@ -11,6 +11,13 @@ struct Fixture {
     description: &'static str,
     gfa_path: PathBuf,
     reference_prefixes: Vec<&'static str>,
+    expected: ExpectedOutcome,
+}
+
+#[derive(Clone, Debug)]
+enum ExpectedOutcome {
+    Vcf { check_record_order: bool },
+    PovuFailure { reason: &'static str },
 }
 
 #[derive(Clone, Debug, Default)]
@@ -198,12 +205,90 @@ fn absolutize(repo_root: &Path, path: PathBuf) -> PathBuf {
 }
 
 fn fixtures(repo_root: &Path) -> Vec<Fixture> {
-    vec![Fixture {
-        id: "minimal-substitution",
-        description: "two haploid paths diverge at one base and rejoin",
-        gfa_path: repo_root.join("tests/lean4_conformance/fixtures/minimal_substitution.gfa"),
-        reference_prefixes: vec!["HG1"],
-    }]
+    let fixture_dir = repo_root.join("tests/lean4_conformance/fixtures");
+    vec![
+        Fixture {
+            id: "minimal-substitution",
+            description: "two haploid paths diverge at one base and rejoin",
+            gfa_path: fixture_dir.join("minimal_substitution.gfa"),
+            reference_prefixes: vec!["HG1"],
+            expected: ExpectedOutcome::Vcf {
+                check_record_order: false,
+            },
+        },
+        Fixture {
+            id: "insertion-flubble",
+            description: "alternate path inserts one base between reference nodes",
+            gfa_path: fixture_dir.join("insertion_flubble.gfa"),
+            reference_prefixes: vec!["HG1"],
+            expected: ExpectedOutcome::Vcf {
+                check_record_order: false,
+            },
+        },
+        Fixture {
+            id: "deletion-flubble",
+            description: "alternate path deletes one reference base with an anchor",
+            gfa_path: fixture_dir.join("deletion_flubble.gfa"),
+            reference_prefixes: vec!["HG1"],
+            expected: ExpectedOutcome::Vcf {
+                check_record_order: false,
+            },
+        },
+        Fixture {
+            id: "nested-deletion",
+            description: "inner flubble emits a level-1 deletion and missing outer sample",
+            gfa_path: fixture_dir.join("nested_deletion.gfa"),
+            reference_prefixes: vec!["HG1"],
+            expected: ExpectedOutcome::Vcf {
+                check_record_order: false,
+            },
+        },
+        Fixture {
+            id: "hairpin-inversion-subr",
+            description: "reverse traversal emits one SUBR hairpin inversion record",
+            gfa_path: fixture_dir.join("hairpin_inversion_subr.gfa"),
+            reference_prefixes: vec!["ref"],
+            expected: ExpectedOutcome::Vcf {
+                check_record_order: false,
+            },
+        },
+        Fixture {
+            id: "linear-no-variant",
+            description: "identical haploid paths produce a header-only VCF",
+            gfa_path: fixture_dir.join("linear_no_variant.gfa"),
+            reference_prefixes: vec!["HG1"],
+            expected: ExpectedOutcome::Vcf {
+                check_record_order: false,
+            },
+        },
+        Fixture {
+            id: "two-ordered-substitutions",
+            description: "two independent substitutions remain in deterministic VCF order",
+            gfa_path: fixture_dir.join("two_ordered_substitutions.gfa"),
+            reference_prefixes: vec!["HG1"],
+            expected: ExpectedOutcome::Vcf {
+                check_record_order: true,
+            },
+        },
+        Fixture {
+            id: "unsupported-overlap",
+            description: "non-zero GFA link overlap is outside the accepted corpus subset",
+            gfa_path: fixture_dir.join("unsupported_overlap.gfa"),
+            reference_prefixes: vec!["HG1"],
+            expected: ExpectedOutcome::PovuFailure {
+                reason: "current gfa2vcf boundary rejects non-zero link overlaps",
+            },
+        },
+        Fixture {
+            id: "malformed-path-missing-overlaps",
+            description: "malformed GFA path line missing its overlaps column is rejected",
+            gfa_path: fixture_dir.join("malformed_path_missing_overlaps.gfa"),
+            reference_prefixes: vec!["HG1"],
+            expected: ExpectedOutcome::PovuFailure {
+                reason: "current gfa2vcf boundary rejects malformed path records",
+            },
+        },
+    ]
 }
 
 fn select_fixtures<'a>(
@@ -264,8 +349,32 @@ fn run_fixture(repo_root: &Path, povu_bin: &Path, fixture: &Fixture) -> Result<(
         )
     })?;
 
-    let expected_output = run_lean_reference(repo_root, fixture)?;
     let actual_output = run_povu(povu_bin, fixture)?;
+
+    match &fixture.expected {
+        ExpectedOutcome::Vcf { check_record_order } => run_vcf_fixture(
+            repo_root,
+            povu_bin,
+            fixture,
+            &gfa,
+            actual_output,
+            *check_record_order,
+        ),
+        ExpectedOutcome::PovuFailure { reason } => {
+            run_expected_povu_failure(fixture, povu_bin, &gfa, actual_output, reason)
+        }
+    }
+}
+
+fn run_vcf_fixture(
+    repo_root: &Path,
+    povu_bin: &Path,
+    fixture: &Fixture,
+    gfa: &str,
+    actual_output: Output,
+    check_record_order: bool,
+) -> Result<(), String> {
+    let expected_output = run_lean_reference(repo_root, fixture)?;
 
     if !expected_output.status.success() {
         return Err(format_command_failure(
@@ -295,7 +404,10 @@ fn run_fixture(repo_root: &Path, povu_bin: &Path, fixture: &Fixture) -> Result<(
     let actual = parse_vcf(&actual_stdout)
         .map_err(|err| format!("povu emitted invalid VCF for {}: {err}", fixture.id))?;
 
-    if expected == actual {
+    let expected_for_compare = comparable_vcf(&expected, check_record_order);
+    let actual_for_compare = comparable_vcf(&actual, check_record_order);
+
+    if expected_for_compare == actual_for_compare {
         Ok(())
     } else {
         Err(render_mismatch(
@@ -308,6 +420,37 @@ fn run_fixture(repo_root: &Path, povu_bin: &Path, fixture: &Fixture) -> Result<(
             &String::from_utf8_lossy(&actual_output.stderr),
         ))
     }
+}
+
+fn run_expected_povu_failure(
+    fixture: &Fixture,
+    povu_bin: &Path,
+    gfa: &str,
+    actual_output: Output,
+    reason: &str,
+) -> Result<(), String> {
+    if !actual_output.status.success() {
+        return actual_output.status.code().map(|_| ()).ok_or_else(|| {
+            render_uncontrolled_failure(
+                fixture,
+                &povu_command_display(povu_bin, fixture),
+                gfa,
+                &String::from_utf8_lossy(&actual_output.stdout),
+                &String::from_utf8_lossy(&actual_output.stderr),
+                reason,
+                &actual_output,
+            )
+        });
+    }
+
+    Err(render_unexpected_success(
+        fixture,
+        &povu_command_display(povu_bin, fixture),
+        gfa,
+        &String::from_utf8_lossy(&actual_output.stdout),
+        &String::from_utf8_lossy(&actual_output.stderr),
+        reason,
+    ))
 }
 
 fn run_lean_reference(repo_root: &Path, fixture: &Fixture) -> Result<Output, String> {
@@ -452,6 +595,18 @@ fn parse_vcf(text: &str) -> Result<NormalizedVcf, String> {
         return Err("missing #CHROM header".to_string());
     }
 
+    Ok(NormalizedVcf { samples, records })
+}
+
+fn comparable_vcf(vcf: &NormalizedVcf, check_record_order: bool) -> NormalizedVcf {
+    let mut comparable = vcf.clone();
+    if !check_record_order {
+        sort_records(&mut comparable.records);
+    }
+    comparable
+}
+
+fn sort_records(records: &mut [NormalizedRecord]) {
     records.sort_by(|left, right| {
         left.chrom
             .cmp(&right.chrom)
@@ -460,8 +615,6 @@ fn parse_vcf(text: &str) -> Result<NormalizedVcf, String> {
             .then(left.ref_allele.cmp(&right.ref_allele))
             .then(left.alt_alleles.cmp(&right.alt_alleles))
     });
-
-    Ok(NormalizedVcf { samples, records })
 }
 
 fn split_list(value: &str) -> Vec<String> {
@@ -534,6 +687,70 @@ fn render_mismatch(
         format_vcf(actual)
     )
     .unwrap();
+    writeln!(&mut message, "--- raw povu stdout ---\n{raw_stdout}").unwrap();
+    if !raw_stderr.trim().is_empty() {
+        writeln!(&mut message, "--- raw povu stderr ---\n{raw_stderr}").unwrap();
+    }
+    message
+}
+
+fn render_unexpected_success(
+    fixture: &Fixture,
+    command: &[String],
+    gfa: &str,
+    raw_stdout: &str,
+    raw_stderr: &str,
+    reason: &str,
+) -> String {
+    let mut message = String::new();
+    writeln!(
+        &mut message,
+        "povu succeeded for fixture '{}' but a failure was expected",
+        fixture.id
+    )
+    .unwrap();
+    writeln!(&mut message, "reason: {reason}").unwrap();
+    writeln!(&mut message, "command: {}", shell_join(command)).unwrap();
+    writeln!(
+        &mut message,
+        "input fixture: {}",
+        fixture.gfa_path.display()
+    )
+    .unwrap();
+    writeln!(&mut message, "\n--- input GFA ---\n{gfa}").unwrap();
+    writeln!(&mut message, "--- raw povu stdout ---\n{raw_stdout}").unwrap();
+    if !raw_stderr.trim().is_empty() {
+        writeln!(&mut message, "--- raw povu stderr ---\n{raw_stderr}").unwrap();
+    }
+    message
+}
+
+fn render_uncontrolled_failure(
+    fixture: &Fixture,
+    command: &[String],
+    gfa: &str,
+    raw_stdout: &str,
+    raw_stderr: &str,
+    reason: &str,
+    output: &Output,
+) -> String {
+    let mut message = String::new();
+    writeln!(
+        &mut message,
+        "povu failed without a controlled exit code for expected-failure fixture '{}'",
+        fixture.id
+    )
+    .unwrap();
+    writeln!(&mut message, "reason: {reason}").unwrap();
+    writeln!(&mut message, "command: {}", shell_join(command)).unwrap();
+    writeln!(&mut message, "status: {}", output.status).unwrap();
+    writeln!(
+        &mut message,
+        "input fixture: {}",
+        fixture.gfa_path.display()
+    )
+    .unwrap();
+    writeln!(&mut message, "\n--- input GFA ---\n{gfa}").unwrap();
     writeln!(&mut message, "--- raw povu stdout ---\n{raw_stdout}").unwrap();
     if !raw_stderr.trim().is_empty() {
         writeln!(&mut message, "--- raw povu stderr ---\n{raw_stderr}").unwrap();
@@ -629,6 +846,9 @@ mod tests {
             description: "diagnostic coverage",
             gfa_path: PathBuf::from("tests/lean4_conformance/fixtures/unit.gfa"),
             reference_prefixes: vec!["HG1"],
+            expected: ExpectedOutcome::Vcf {
+                check_record_order: false,
+            },
         };
         let expected = parse_vcf(&format!(
             "{}HG1#1#chr1\t2\t>0>3\tC\tG\t60\tPASS\tAC=1\tGT\t0\t1\n",
@@ -656,5 +876,16 @@ mod tests {
         assert!(diagnostic.contains("--- actual semantic VCF (povu) ---"));
         assert!(diagnostic.contains("C -> G"));
         assert!(diagnostic.contains("C -> T"));
+    }
+
+    #[test]
+    fn comparable_vcf_can_preserve_or_normalize_record_order() {
+        let first = "HG1#1#chr1\t4\t>3>6\tA\tC\t60\tPASS\tAC=1\tGT\t0\t1\n";
+        let second = "HG1#1#chr1\t2\t>0>3\tC\tG\t60\tPASS\tAC=1\tGT\t0\t1\n";
+        let parsed = parse_vcf(&format!("{HEADER}{first}{second}")).unwrap();
+
+        assert_eq!(parsed.records[0].pos, 4);
+        assert_eq!(comparable_vcf(&parsed, true).records[0].pos, 4);
+        assert_eq!(comparable_vcf(&parsed, false).records[0].pos, 2);
     }
 }
