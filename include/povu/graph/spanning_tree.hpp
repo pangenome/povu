@@ -61,13 +61,12 @@ class BackEdge
 	pt::idx_t tgt_;	  // source vertex
 	pt::idx_t class_; // equivalnce class id
 	be_type_e type_;
-	pgt::color_e
-		color_; // TODO: remove, color does not matter for a backedge
+	// TODO: remove, color does not matter for a backedge
+	// pgt::color_e color_;
 
 public:
 	// TODO: remove the default color
-	BackEdge(pt::id_t id, pt::idx_t src, pt::idx_t tgt, be_type_e t,
-		 color_e c);
+	BackEdge(pt::id_t id, pt::idx_t src, pt::idx_t tgt, be_type_e t);
 
 	/* getters */
 	pt::id_t id() const;
@@ -376,8 +375,7 @@ public:
 	void set_vertex_type(std::size_t vertex, pgt::v_type_e type);
 
 	// takes the frm and to are the dfs_nums of the vertices
-	pt::idx_t add_be(pt::idx_t frm, pt::idx_t to, be_type_e t,
-			 pgt::color_e clr);
+	pt::idx_t add_be(pt::idx_t frm, pt::idx_t to, be_type_e t);
 	void add_tree_edge(pt::idx_t frm, pt::idx_t to, pgt::color_e clr);
 
 	void set_hi(std::size_t vertex, std::size_t val);

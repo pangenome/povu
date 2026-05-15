@@ -5,4 +5,4 @@
 #include "./integration_tests/pvst_tests.cc"
 
 // unit tests
-#include "./unit_tests/spanning_tree.cc"
+#include "./unit_tests/spanning_tree_tests.cc"

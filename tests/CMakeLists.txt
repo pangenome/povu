@@ -6,7 +6,6 @@ target_link_libraries(test_povu
   liteseq      # gfa handling
   fmt::fmt     # formatting
   taywee::args # argument parsing
-  indicators   # progress bars
 )
 
 include(GoogleTest)

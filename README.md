@@ -1,10 +1,4 @@
-# povu
-
-[![Test Status](https://github.com/pangenome/povu/actions/workflows/test.yml/badge.svg?label=tests)](https://github.com/pangenome/povu/actions/workflows/test.yml)
-[![C++17 Build (CMake, macOS)](https://github.com/pangenome/povu/actions/workflows/macos.yml/badge.svg)](https://github.com/pangenome/povu/actions/workflows/macos.yml)
-[![C++17 Build (CMake, Ubuntu)](https://github.com/pangenome/povu/actions/workflows/build_cmake.yml/badge.svg)](https://github.com/pangenome/povu/actions/workflows/build_cmake.yml)
-![c++17](https://img.shields.io/badge/C++-17-informational.svg?style=flat&logo=c%2B%2B&logoColor=white)
-[![License: MIT](https://img.shields.io/badge/License-MIT-informational.svg)](https://opensource.org/licenses/MIT)
+# povu &middot; [![Test Status](https://github.com/pangenome/povu/actions/workflows/test.yml/badge.svg?label=tests)](https://github.com/pangenome/povu/actions/workflows/test.yml) [![C++17 Build (CMake, macOS)](https://github.com/pangenome/povu/actions/workflows/macos.yml/badge.svg)](https://github.com/pangenome/povu/actions/workflows/macos.yml) [![C++17 Build (CMake, Ubuntu)](https://github.com/pangenome/povu/actions/workflows/build_cmake.yml/badge.svg)](https://github.com/pangenome/povu/actions/workflows/build_cmake.yml) ![c++17](https://img.shields.io/badge/C++-17-informational.svg?style=flat&logo=c%2B%2B&logoColor=white) [![License: MIT](https://img.shields.io/badge/License-MIT-informational.svg)](https://opensource.org/licenses/MIT)
 
 A toolkit for exploring regions of genomic variation
 

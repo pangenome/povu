@@ -1,13 +1,12 @@
-#include <string_view> // for string_view
-
 #include "./cli/cli.hpp"	      // for cli
 #include "./subcommand/call.hpp"      // for do_call
 #include "./subcommand/decompose.hpp" // for do_decompose
 #include "./subcommand/gfa2vcf.hpp"   // for do_gfa2vcf
 #include "./subcommand/info.hpp"      // for do_info
+#include "./subcommand/prune.hpp"     // for do_prune
+#include "./subcommand/vcf.hpp"	      // for do_vcf
 #include "povu/common/app.hpp"	      // for task_e, config
 
-constexpr std::string_view MODULE = "povu::main";
 namespace pv = povu::subcommands;
 
 int main(int argc, char *argv[])
@@ -31,7 +30,13 @@ int main(int argc, char *argv[])
 	case core::task_e::info:
 		pv::info::do_info(app_config);
 		break;
-	default: // the help text handles this case
+	case core::task_e::prune:
+		pv::prune::do_prune(app_config);
+		break;
+	case core::task_e::vcf:
+		pv::vcf::do_vcf(app_config);
+		break;
+	default:
 		break;
 	}
 

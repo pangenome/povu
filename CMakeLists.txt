@@ -9,10 +9,9 @@ if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
 endif()
 
 # === Project Metadata ===
-project(povu LANGUAGES C CXX)
+project(povu VERSION 0.0.1 LANGUAGES C CXX)
 
 # === C++ Standard Configuration ===
-# Require C++17 for all targets
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -85,23 +84,23 @@ set(DEBUG_WARNINGS
   -Wmissing-field-initializers
   -Wunused-local-typedefs
   -Wuninitialized
-  -Wmaybe-uninitialized
+  # -Wmaybe-uninitialized
   # -Wpadded # Uncomment or gate by compiler if needed
 )
 
-# Apply compiler flags per build type
-# Define macros for use in #ifdef DEBUG / #ifdef RELEASE
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  add_compile_options(-g)
-  add_compile_options(${COMMON_WARNINGS})
-  add_compile_options(${DEBUG_WARNINGS})
-  add_compile_definitions(DEBUG)
-elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
-  add_compile_options(${COMMON_WARNINGS})
-  add_compile_options(-O3)
-  add_compile_definitions(RELEASE)
+# Add GCC-specific warnings
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  list(APPEND DEBUG_WARNINGS
+    -Wmaybe-uninitialized)
 endif()
 
+# Add Clang-specific suppressions (especially for macOS)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+  list(APPEND DEBUG_WARNINGS
+    -Wno-uninitialized
+    -Wno-gnu-zero-variadic-macro-arguments
+  )
+endif()
 
 # --- CI Mode Configuration ---
 # CI is a build environment, not a build type.
@@ -126,23 +125,6 @@ include(cmake/sanitizers.cmake)
 # --- Depds from CPM.cmake --
 include(cmake/deps.cmake)
 
-# --- Silence compiler warnings for dependencies ---
-function(silence_warnings target)
-  if(TARGET ${target})
-    get_target_property(type ${target} TYPE)
-    if(type STREQUAL "INTERFACE_LIBRARY")
-      target_compile_options(${target} INTERFACE -w)
-    else()
-      target_compile_options(${target} PRIVATE -w)
-    endif()
-  endif()
-endfunction()
-
-silence_warnings(fmt)
-silence_warnings(liteseq)
-silence_warnings(args)
-silence_warnings(indicators)
-
 # ============================ povu config =============================
 
 # These variables define paths for source code, headers, and tests.
@@ -153,6 +135,9 @@ set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(TESTS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests)
 set(BIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 set(POVULIB_SOURCES_DIR ${SRC_DIR}/povu)
+set(ZIENLIB_SOURCES_DIR ${SRC_DIR}/zien)
+set(ITA_SOURCES_DIR ${SRC_DIR}/ita)
+set(MTO_SOURCES_DIR ${SRC_DIR}/mto)
 
 # When set uses uses build dir for output binaries
 # set(BIN_DIR ${CMAKE_BINARY_DIR}/bin)
@@ -174,18 +159,10 @@ ADD_LIBRARY(povulib
   ${POVULIB_SOURCES_DIR}/algorithms/tiny.cpp
   ${POVULIB_SOURCES_DIR}/algorithms/flubbles.cpp
 
-  # align
-  ${POVULIB_SOURCES_DIR}/align/align.cpp
+  ${POVULIB_SOURCES_DIR}/refs/refs.cpp
 
   # common
   ${POVULIB_SOURCES_DIR}/common/utils.cpp
-
-  # genomics
-  ${POVULIB_SOURCES_DIR}/genomics/vcf.cpp
-  ${POVULIB_SOURCES_DIR}/genomics/graph.cpp
-  ${POVULIB_SOURCES_DIR}/genomics/allele.cpp
-  ${POVULIB_SOURCES_DIR}/genomics/untangle.cpp
-  ${POVULIB_SOURCES_DIR}/genomics/genomics.cpp
 
   # graph
   ${POVULIB_SOURCES_DIR}/graph/types.cpp
@@ -193,13 +170,62 @@ ADD_LIBRARY(povulib
   ${POVULIB_SOURCES_DIR}/graph/bracket_list.cpp
   ${POVULIB_SOURCES_DIR}/graph/spanning_tree.cpp
   ${POVULIB_SOURCES_DIR}/graph/tree_utils.cpp
+)
 
-  # io
-  ${POVULIB_SOURCES_DIR}/io/from_pvst.cpp
-  ${POVULIB_SOURCES_DIR}/io/to_pvst.cpp
-  ${POVULIB_SOURCES_DIR}/io/from_gfa.cpp
-  ${POVULIB_SOURCES_DIR}/io/common.cpp
-  ${POVULIB_SOURCES_DIR}/io/to_vcf.cpp
+ADD_LIBRARY(mto # io library
+  ${MTO_SOURCES_DIR}/from_pvst.cpp
+  ${MTO_SOURCES_DIR}/to_pvst.cpp
+  ${MTO_SOURCES_DIR}/from_gfa.cpp
+  ${MTO_SOURCES_DIR}/to_gfa.cpp
+  ${MTO_SOURCES_DIR}/common.cpp
+  ${MTO_SOURCES_DIR}/to_vcf.cpp
+  ${MTO_SOURCES_DIR}/from_vcf.cpp
+)
+
+
+ADD_LIBRARY(ita
+  # align
+  ${ITA_SOURCES_DIR}/align/align.cpp
+
+  # genomics
+  ${ITA_SOURCES_DIR}/genomics/genomics.cpp
+  ${ITA_SOURCES_DIR}/genomics/untangle.cpp
+  ${ITA_SOURCES_DIR}/genomics/vcf.cpp
+
+  # trees
+  ${ITA_SOURCES_DIR}/graph/slice_tree.cpp
+  ${ITA_SOURCES_DIR}/graph/graph.cpp
+
+  # variation
+  ${ITA_SOURCES_DIR}/variation/overlay.cpp
+  ${ITA_SOURCES_DIR}/variation/sne.cpp
+  ${ITA_SOURCES_DIR}/variation/rov.cpp
+  ${ITA_SOURCES_DIR}/variation/color.cpp
+)
+
+
+ADD_LIBRARY(zien
+  ${ZIENLIB_SOURCES_DIR}/tui/tui.cpp
+  ${ZIENLIB_SOURCES_DIR}/tui/state.cpp
+  ${ZIENLIB_SOURCES_DIR}/tui/input.cpp
+
+  #common
+  ${ZIENLIB_SOURCES_DIR}/common/common.cpp
+
+  #components
+  ${ZIENLIB_SOURCES_DIR}/components/repeats.cpp
+  ${ZIENLIB_SOURCES_DIR}/components/common.cpp
+  ${ZIENLIB_SOURCES_DIR}/components/genotypes.cpp
+  ${ZIENLIB_SOURCES_DIR}/components/refs.cpp
+  ${ZIENLIB_SOURCES_DIR}/components/alts.cpp
+  ${ZIENLIB_SOURCES_DIR}/components/paths.cpp
+  ${ZIENLIB_SOURCES_DIR}/components/vcf.cpp
+
+  #validate
+  ${ZIENLIB_SOURCES_DIR}/validate/validate.cpp
+
+  #repeats
+  ${ZIENLIB_SOURCES_DIR}/repeats/repeats.cpp
 )
 
 # ..... executable .......
@@ -214,10 +240,31 @@ add_executable(povu
   ${APP_DIR}/subcommand/decompose.cpp
   ${APP_DIR}/subcommand/info.cpp
   ${APP_DIR}/subcommand/call.cpp
+  ${APP_DIR}/subcommand/prune.cpp
   ${APP_DIR}/subcommand/gfa2vcf.cpp
-
+  ${APP_DIR}/subcommand/vcf.cpp
   ${APP_DIR}/main.cpp
 )
+
+function(add_compile_options_for_build_type target)
+  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_options(${target} PRIVATE
+      ${COMMON_WARNINGS}
+      ${DEBUG_WARNINGS}
+      -g -Wno-system-headers)
+    target_compile_definitions(${target} PRIVATE DEBUG)
+  elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_compile_options(${target} PRIVATE
+      ${COMMON_WARNINGS}
+      -O3 -Wno-system-headers)
+    target_compile_definitions(${target} PRIVATE RELEASE)
+  endif()
+endfunction()
+
+# Apply compile options only to your own targets
+add_compile_options_for_build_type(povulib)
+add_compile_options_for_build_type(povu)
+
 
 target_include_directories(povulib
   PUBLIC
@@ -229,18 +276,47 @@ target_include_directories(povulib
 
 target_link_libraries(povulib
   PRIVATE
-  fmt::fmt
-  liteseq     # gfa handling
-  indicators  # progress bars
+  fmt::fmt # formatting
+  liteseq  # gfa handling
+)
+
+target_link_libraries(mto
+  PRIVATE
+  povulib
+  fmt::fmt     # formatting
+  liteseq      # gfa handling
+)
+
+
+target_link_libraries(ita
+  PRIVATE
+  povulib
+  fmt::fmt     # formatting
+  liteseq      # gfa handling
+)
+
+target_link_libraries(zien
+  PRIVATE
+  povulib
+  ita
+  liteseq      # gfa handling
+  fmt::fmt     # formatting
+  ncurses
 )
 
 target_link_libraries(povu
   PRIVATE
-  povulib      # internal library
+  # internal libraries
+  povulib
+  zien
+  ita
+  mto
+
+  # external libraries
   liteseq      # gfa handling
   fmt::fmt     # formatting
   taywee::args # argument parsing
-  indicators   # progress bars
+  ncurses
 )
 
 # =================== Set Build-Time Output Directory ========================

@@ -4,56 +4,28 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
+#include <ostream>
 #include <sys/types.h>
 #include <tuple>
 
 namespace povu::types::core
 {
+/* type aliases for fixed width types */
+using u8 = u_int8_t;
+using u32 = u_int32_t;
+using status_t = int8_t;			 // return status of a fn
+using Time = std::chrono::high_resolution_clock; // C++ timer
 
-typedef std::chrono::high_resolution_clock Time; // C++ timer
-
-typedef u_int32_t id_t;
-typedef u_int32_t idx_t;
-typedef int8_t status_t; // return status of a fn
-
-struct slice_t {
-	idx_t start;
-	idx_t len;
-
-	slice_t(idx_t start, idx_t len) : start{start}, len{len}
-	{}
-};
-
-class Config
-{
-	unsigned int requested_threads_{1};
-	uint8_t log_level_{0};
-
-	Config() = default;
-
-public:
-	Config(unsigned int reqested_theads, uint8_t log_level)
-	{
-		this->requested_threads_ = reqested_theads;
-		this->log_level_ = log_level;
-	}
-
-	unsigned int requested_threads() const
-	{
-		return this->requested_threads_;
-	}
-
-	uint8_t log_level() const
-	{
-		return this->log_level_;
-	}
-};
+// TODO: deprecate and replace id_t and idx_ types with u32
+using id_t = u32;
+using idx_t = u32;
 
 /**
  * an ordered pair type similar to std::pair but with same type on both sides
  * for less typing
  */
-template <typename T> using op_t = std::pair<T, T>;
+template <typename T>
+using op_t = std::pair<T, T>;
 
 /**
  * unordered pair with same type on both sides
@@ -61,7 +33,8 @@ template <typename T> using op_t = std::pair<T, T>;
  * we prefer (a,b) over (l,r) to avoid confusion with (left, right) in unordered
  * pairs
  */
-template <typename T> struct unordered_pair {
+template <typename T>
+struct unordered_pair {
 	T a_;
 	T b_;
 
@@ -94,10 +67,66 @@ template <typename T> struct unordered_pair {
 	}
 };
 
-template <typename T> using up_t = unordered_pair<T>;
+template <typename T>
+using up_t = unordered_pair<T>;
+
+struct slice_t {
+private:
+	u32 start_;
+	u32 len_;
+
+public:
+	// -----------
+	// constructor
+	// -----------
+	slice_t(u32 s, u32 l) : start_{s}, len_{l}
+	{}
+
+	// -------
+	// getter(s)
+	// -------
+	[[nodiscard]]
+	op_t<u32> data() const
+	{
+		return {start_, len_};
+	}
+
+	[[nodiscard]]
+	u32 start() const
+	{
+		return start_;
+	}
+
+	[[nodiscard]]
+	u32 len() const
+	{
+		return len_;
+	}
+
+	// -------
+	// friends
+	// -------
+	friend bool operator==(const slice_t &s1, const slice_t &s2)
+	{
+		return s1.start_ == s2.start_ && s1.len_ == s2.len_;
+	}
+
+	friend bool operator!=(const slice_t &s1, const slice_t &s2)
+	{
+		return !(s1 == s2);
+	}
+
+	friend std::ostream &operator<<(std::ostream &os, const slice_t &s)
+	{
+		return os << "(" << s.start_ << "," << s.len_ << ")";
+	}
+};
+
+using slice = slice_t;
+
 } // namespace povu::types::core
 
 // NOLINTNEXTLINE(misc-unused-alias-decls)
 namespace pt = povu::types::core;
 
-#endif
+#endif // POVU_TYPES_CORE_HPP

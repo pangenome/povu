@@ -111,9 +111,9 @@ pvst::MidiBubble gen_midi_bub(const pvst::Tree &pvst,
 
 	// Validate indices before creating MidiBubble
 	if (g_pvst_idx == pc::INVALID_IDX || s_pvst_idx == pc::INVALID_IDX) {
-		ERR("{} Invalid MidiBubble indices: g_pvst_idx={}, "
-		    "s_pvst_idx={}, fst={}, snd={}",
-		    fn_name, g_pvst_idx, s_pvst_idx, fst, snd);
+		PL_ERR("{} Invalid MidiBubble indices: g_pvst_idx={}, "
+		       "s_pvst_idx={}, fst={}, snd={}",
+		       fn_name, g_pvst_idx, s_pvst_idx, fst, snd);
 		throw std::runtime_error(
 			"Cannot create MidiBubble with invalid indices");
 	}
@@ -121,9 +121,9 @@ pvst::MidiBubble gen_midi_bub(const pvst::Tree &pvst,
 	// Ensure indices are within reasonable bounds
 	pt::idx_t max_valid_idx = pvst.vtx_count();
 	if (g_pvst_idx >= max_valid_idx || s_pvst_idx >= max_valid_idx) {
-		ERR("{} MidiBubble indices out of bounds: g_pvst_idx={}, "
-		    "s_pvst_idx={}, max_valid={}",
-		    fn_name, g_pvst_idx, s_pvst_idx, max_valid_idx);
+		PL_ERR("{} MidiBubble indices out of bounds: g_pvst_idx={}, "
+		       "s_pvst_idx={}, max_valid={}",
+		       fn_name, g_pvst_idx, s_pvst_idx, max_valid_idx);
 		throw std::runtime_error(
 			"MidiBubble indices exceed PVST vertex count");
 	}

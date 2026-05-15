@@ -388,8 +388,7 @@ void handle_vertex(pst::Tree &t, std::size_t v, std::vector<boundary> &hairpins,
 		// add a capping backedge
 		std::size_t dest_v = hi_2;
 		std::size_t be_idx =
-			t.add_be(v, dest_v, pst::be_type_e::capping_back_edge,
-				 pgt::color_e::gray);
+			t.add_be(v, dest_v, pst::be_type_e::capping_back_edge);
 		t.push(v, be_idx);
 	}
 
@@ -410,8 +409,7 @@ void handle_vertex(pst::Tree &t, std::size_t v, std::vector<boundary> &hairpins,
 
 		// add a simplifying back edge
 		std::size_t be_idx = t.add_be(
-			v, dest_v, pst::be_type_e::simplifying_back_edge,
-			pgt::color_e::gray);
+			v, dest_v, pst::be_type_e::simplifying_back_edge);
 		t.push(v, be_idx);
 		t.get_vertex_mut(v).set_hi(t.get_root_idx());
 

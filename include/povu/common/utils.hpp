@@ -44,15 +44,13 @@ std::string concat_with(const Container &v, char delim)
 template <typename T>
 void print_with_comma(std::ostream &os, const T &v, char delim)
 {
-	if (v.empty()) {
+	if (v.empty())
 		return;
-	}
 
 	for (auto it{v.begin()}; it != v.end(); ++it) {
 		os << *it;
-		if (std::next(it) != v.end()) {
+		if (std::next(it) != v.end())
 			os << delim << " ";
-		}
 	}
 }
 
@@ -79,7 +77,8 @@ std::vector<std::string> immutable_erase(std::vector<std::string> v,
 					 std::size_t idx);
 
 // TODO : move to povu::types
-template <typename Key, typename Value> class TwoWayMap
+template <typename Key, typename Value>
+class TwoWayMap
 {
 	std::unordered_map<Key, Value> keyToValueMap;
 	std::unordered_map<Value, Key> valueToKeyMap;
@@ -133,7 +132,8 @@ public:
 	}
 };
 
-template <typename T> void push_front(std::vector<T> &v, const T &elem)
+template <typename T>
+void push_front(std::vector<T> &v, const T &elem)
 {
 	v.insert(v.begin(), elem);
 }

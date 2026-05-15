@@ -24,12 +24,6 @@ CPMAddPackage(
 )
 
 CPMAddPackage(
-  NAME              indicators
-  GITHUB_REPOSITORY p-ranav/indicators
-  GIT_TAG           26d39ad8fb438f5f50fb16427f554045d8431030 # v2.3.0
-)
-
-CPMAddPackage(
   NAME              liteseq
   GITHUB_REPOSITORY urbanslug/liteseq
   GIT_TAG           3678c8b7d1c5e1bfaa9e3f07133e6e3f00567015
