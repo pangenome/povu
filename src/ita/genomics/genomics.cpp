@@ -114,7 +114,7 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 		for (pt::idx_t base{}; base < N; base += CHUNK_SIZE) {
 			pt::u32 end = std::min(base + CHUNK_SIZE, N);
 			pt::u32 count = end - base;
-			pt::u32 chunk_num = (base / CHUNK_SIZE) + 1;
+			bool final_chunk = end == N;
 
 			// if (prog) {
 			//	pt::idx_t chunk_num = (base /
@@ -135,7 +135,12 @@ void gen_vcf_rec_map(const std::vector<pvst::Tree> &pvsts, bd::VG &g,
 						to_call_ref_ids, pc, treks);
 
 			std::vector<ist::st> i_trees;
-			if (chunk_num == CHUNK_SIZE)
+			// SNE consumes the cumulative pin cushion populated
+			// while overlaying RoVs. Run it exactly once after the
+			// final chunk; per-chunk invocation would re-emit pins
+			// from earlier chunks. SUBR generation remains limited
+			// to inversion pins found by overlay_generic.
+			if (final_chunk)
 				i_trees = ise::sne(g, pc, to_call_ref_ids);
 
 			if (treks.empty() && i_trees.empty())
