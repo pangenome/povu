@@ -1,11 +1,11 @@
 // #include <chrono>	 // for milliseconds
 #include <cstddef>	 // for size_t
+#include <fstream>	 // for ifstream
 #include <liteseq/gfa.h> // for gfa_config, gfa...
 // #include <optional>	 // for optional
-#include <set>	  // for set
-#include <string> // for basic_string
-#include <thread> // for thread, sleep_for
-#include <vector> // for vector
+#include <stdexcept> // for runtime_error
+#include <string>    // for basic_string
+#include <thread>    // for thread, sleep_for
 
 #include <liteseq/refs.h> // for get_step_count
 
@@ -22,6 +22,96 @@ namespace bd = povu::bidirected;
 namespace pgt = povu::types::graph;
 
 // using namespace povu::progress;
+
+namespace
+{
+std::string invalid_gfa_msg(const std::string &gfa_fp,
+			    const std::string &detail)
+{
+	return "Invalid GFA '" + gfa_fp + "': " + detail;
+}
+
+void validate_segment_line(const std::string &gfa_fp, const std::string &line,
+			   std::size_t line_no)
+{
+	const std::size_t first_tab = line.find('\t');
+	if (first_tab == std::string::npos)
+		throw std::runtime_error(invalid_gfa_msg(
+			gfa_fp, "S record on line " + std::to_string(line_no) +
+					" is missing a segment id and sequence"));
+
+	const std::size_t second_tab = line.find('\t', first_tab + 1);
+	if (second_tab == std::string::npos)
+		throw std::runtime_error(invalid_gfa_msg(
+			gfa_fp, "S record on line " + std::to_string(line_no) +
+					" is missing a sequence"));
+
+	const std::size_t seq_begin = second_tab + 1;
+	const std::size_t seq_end = line.find('\t', seq_begin);
+	if (seq_begin >= line.size() || seq_begin == seq_end)
+		throw std::runtime_error(invalid_gfa_msg(
+			gfa_fp, "S record on line " + std::to_string(line_no) +
+					" has an empty sequence"));
+}
+
+void validate_gfa_for_liteseq(const std::string &gfa_fp)
+{
+	std::ifstream in(gfa_fp);
+	if (!in)
+		throw std::runtime_error(
+			invalid_gfa_msg(gfa_fp, "could not open file"));
+
+	std::string line;
+	std::size_t line_no = 1;
+	while (std::getline(in, line)) {
+		if (!line.empty() && line.back() == '\r')
+			line.pop_back();
+		if (line.empty()) {
+			++line_no;
+			continue;
+		}
+
+		switch (line.front()) {
+		case 'H':
+		case 'L':
+		case 'P':
+		case 'W':
+			break;
+		case 'S':
+			validate_segment_line(gfa_fp, line, line_no);
+			break;
+		default:
+			throw std::runtime_error(invalid_gfa_msg(
+				gfa_fp,
+				"unsupported record type '" +
+					std::string(1, line.front()) +
+					"' on line " +
+					std::to_string(line_no)));
+		}
+
+		++line_no;
+	}
+
+	if (in.bad())
+		throw std::runtime_error(
+			invalid_gfa_msg(gfa_fp, "could not read file"));
+}
+
+void validate_liteseq_result(const std::string &gfa_fp, lq::gfa_props *gfa)
+{
+	if (gfa == nullptr)
+		throw std::runtime_error(
+			invalid_gfa_msg(gfa_fp, "liteseq returned no graph"));
+
+	if (gfa->status != 0)
+		throw std::runtime_error(invalid_gfa_msg(
+			gfa_fp, "liteseq could not parse the file"));
+
+	if (gfa->v == nullptr)
+		throw std::runtime_error(
+			invalid_gfa_msg(gfa_fp, "liteseq returned no vertices"));
+}
+} // namespace
 
 inline lq::gfa_config gen_lq_conf(const core::config &app_config,
 				  std::string &gfa_fp)
@@ -58,10 +148,10 @@ bd::VG *to_bd(const core::config &app_config)
 	// set_progress_bar_ind(&prep_bar);
 
 	/* initialize a liteseq gfa */
-	std::vector<const char *> refs;
 	std::string gfa_fp;
 	lq::gfa_config conf = gen_lq_conf(app_config, gfa_fp);
 	lq::gfa_props *gfa = nullptr;
+	validate_gfa_for_liteseq(gfa_fp);
 
 	std::thread get_gfa_async(
 		[&]()
@@ -84,6 +174,7 @@ bd::VG *to_bd(const core::config &app_config)
 	// }
 
 	get_gfa_async.join();
+	validate_liteseq_result(gfa_fp, gfa);
 
 	pt::idx_t vtx_count = gfa->vtx_arr_size;
 	pt::idx_t edge_count = gfa->l_line_count;
@@ -111,6 +202,12 @@ bd::VG *to_bd(const core::config &app_config)
 			continue;
 
 		std::size_t v_id = v->id;
+		if (app_config.inc_vtx_labels() && v->seq == nullptr)
+			throw std::runtime_error(invalid_gfa_msg(
+				gfa_fp,
+				"S record for segment " + std::to_string(v_id) +
+					" has no sequence"));
+
 		std::string label = app_config.inc_vtx_labels()
 					    ? std::string(v->seq)
 					    : std::string();
