@@ -7,6 +7,7 @@ fn test_create_empty_graph() {
     let graph = PovuGraph::new(10, 10, 0);
     assert_eq!(graph.vertex_count(), 0);
     assert_eq!(graph.edge_count(), 0);
+    assert_eq!(graph.path_count(), 0);
 }
 
 #[test]
@@ -97,6 +98,42 @@ fn test_finalize_graph() {
     // Graph should still be queryable
     assert_eq!(graph.vertex_count(), 2);
     assert_eq!(graph.edge_count(), 1);
+    assert_eq!(graph.path_count(), 0);
+    assert!(graph.paths().unwrap().is_empty());
+}
+
+#[test]
+fn test_parallel_in_memory_graphs_are_isolated() {
+    const WORKERS: usize = 8;
+    const ITERATIONS: usize = 100;
+
+    std::thread::scope(|scope| {
+        for worker in 0..WORKERS {
+            scope.spawn(move || {
+                for iteration in 0..ITERATIONS {
+                    let base_id = ((worker * ITERATIONS + iteration) as u64) * 10 + 1;
+                    let mut graph = PovuGraph::new(4, 4, 0);
+
+                    graph.add_vertex(base_id, "A").unwrap();
+                    graph.add_vertex(base_id + 1, "C").unwrap();
+                    graph.add_edge(
+                        base_id, Orientation::Forward,
+                        base_id + 1, Orientation::Reverse
+                    ).unwrap();
+                    graph.finalize();
+
+                    assert_eq!(graph.vertex_count(), 2);
+                    assert_eq!(graph.edge_count(), 1);
+                    assert_eq!(graph.path_count(), 0);
+
+                    let vertices = graph.vertices().unwrap();
+                    assert_eq!(vertices.len(), 2);
+                    assert!(vertices.iter().any(|v| v.id == base_id && v.sequence == "A"));
+                    assert!(vertices.iter().any(|v| v.id == base_id + 1 && v.sequence == "C"));
+                }
+            });
+        }
+    });
 }
 
 #[test]

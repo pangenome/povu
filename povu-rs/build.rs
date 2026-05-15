@@ -1,5 +1,26 @@
 use std::env;
-use std::path::PathBuf;
+use std::fs;
+use std::path::{Path, PathBuf};
+
+fn emit_rerun_if_changed(path: impl AsRef<Path>) {
+    let path = path.as_ref();
+    if path.is_file() {
+        println!("cargo:rerun-if-changed={}", path.display());
+        return;
+    }
+
+    if !path.is_dir() {
+        return;
+    }
+
+    let Ok(entries) = fs::read_dir(path) else {
+        return;
+    };
+
+    for entry in entries.flatten() {
+        emit_rerun_if_changed(entry.path());
+    }
+}
 
 fn main() {
     // Build the C++ library using CMake
@@ -10,7 +31,10 @@ fn main() {
         .build();
 
     // Tell cargo to tell rustc to link the povu libraries
-    println!("cargo:rustc-link-search=native={}/build/povu-rs/povu-ffi", dst.display());
+    println!(
+        "cargo:rustc-link-search=native={}/build/povu-rs/povu-ffi",
+        dst.display()
+    );
     println!("cargo:rustc-link-search=native={}/build", dst.display());
     println!("cargo:rustc-link-lib=static=povu_ffi");
     // The FFI GFA loader calls the migrated mto::from_gfa API, so Cargo must
@@ -19,9 +43,18 @@ fn main() {
     println!("cargo:rustc-link-lib=static=povulib");
 
     // Link dependencies
-    println!("cargo:rustc-link-search=native={}/build/_deps/liteseq-build", dst.display());
-    println!("cargo:rustc-link-search=native={}/build/_deps/fmt-build", dst.display());
-    println!("cargo:rustc-link-search=native={}/build/_deps/log-build", dst.display());
+    println!(
+        "cargo:rustc-link-search=native={}/build/_deps/liteseq-build",
+        dst.display()
+    );
+    println!(
+        "cargo:rustc-link-search=native={}/build/_deps/fmt-build",
+        dst.display()
+    );
+    println!(
+        "cargo:rustc-link-search=native={}/build/_deps/log-build",
+        dst.display()
+    );
     println!("cargo:rustc-link-lib=static=liteseq");
     println!("cargo:rustc-link-lib=static=fmtd");
     println!("cargo:rustc-link-lib=static=log");
@@ -34,9 +67,16 @@ fn main() {
         println!("cargo:rustc-link-lib=dylib=stdc++");
     }
 
-    // Tell cargo to invalidate the built crate whenever the wrapper changes
-    println!("cargo:rerun-if-changed=povu-ffi/povu_ffi.h");
-    println!("cargo:rerun-if-changed=povu-ffi/povu_ffi.cpp");
+    // Tell Cargo to rerun the native build when the C++ library or wrapper changes.
+    for path in [
+        "../CMakeLists.txt",
+        "../cmake",
+        "../include",
+        "../src",
+        "povu-ffi",
+    ] {
+        emit_rerun_if_changed(path);
+    }
 
     // Generate bindings
     let bindings = bindgen::Builder::default()
