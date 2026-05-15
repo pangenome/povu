@@ -4,6 +4,7 @@ Debug/
 Testing/
 .cache/
 __pycache__/
+.lake/
 
 # common povu output files
 *.vcf
