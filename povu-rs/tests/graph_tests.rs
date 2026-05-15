@@ -3,7 +3,7 @@
 //! These tests compare the Rust wrapper outputs to native Povu outputs
 //! to ensure correctness and compatibility.
 
-use povu::{PovuGraph, Error};
+use povu::PovuGraph;
 use std::path::PathBuf;
 
 fn test_data_dir() -> PathBuf {
