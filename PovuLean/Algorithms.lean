@@ -1,3 +1,5 @@
+import PovuLean.Algorithms.Flubble
+
 /-!
 Import aggregator for verified graph algorithm module families.
 
