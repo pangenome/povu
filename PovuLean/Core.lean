@@ -1,9 +1,9 @@
-/-!
-Import aggregator for foundational graph, path, finite, and DFS modules.
+import PovuLean.Core.Basic
+import PovuLean.Core.Walk
+import PovuLean.Core.Examples
 
-Owned downstream by `lean4-core-graph-model`. This scaffold contains no core
-definitions; future trusted modules should be imported here after they build
-without placeholders.
+/-!
+Import aggregator for foundational graph, path, finite, and traversal modules.
 -/
 
 namespace PovuLean
