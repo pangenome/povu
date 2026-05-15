@@ -1,5 +1,6 @@
 import PovuLean.Algorithms.Flubble
 import PovuLean.Algorithms.Hairpin
+import PovuLean.Algorithms.FlubbleTree
 
 /-!
 Import aggregator for verified graph algorithm module families.
