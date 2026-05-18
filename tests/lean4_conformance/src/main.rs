@@ -8,6 +8,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde_json::Value;
 
+use povu_lean4_conformance::downstream_profiles;
+
 #[derive(Clone, Debug)]
 struct Fixture {
     id: &'static str,
@@ -28,6 +30,7 @@ struct Options {
     repo_root: Option<PathBuf>,
     povu_bin: Option<PathBuf>,
     fixture_filter: Option<String>,
+    downstream_repetitive: bool,
     skip_build: bool,
     skip_lean_build: bool,
 }
@@ -62,6 +65,14 @@ fn main() {
 fn run() -> Result<(), String> {
     let options = parse_args(env::args().skip(1))?;
     let repo_root = discover_repo_root(options.repo_root.as_deref())?;
+
+    if options.downstream_repetitive {
+        return downstream_profiles::run_downstream_repetitive_corpus(
+            &repo_root,
+            options.fixture_filter.as_deref(),
+        );
+    }
+
     let fixtures = fixtures(&repo_root);
     let selected = select_fixtures(&fixtures, options.fixture_filter.as_deref())?;
 
@@ -126,6 +137,9 @@ where
             "--fixture" => {
                 options.fixture_filter = Some(next_value(&mut iter, "--fixture")?);
             }
+            "--downstream-repetitive" => {
+                options.downstream_repetitive = true;
+            }
             "--skip-build" => {
                 options.skip_build = true;
             }
@@ -155,6 +169,7 @@ fn print_help() {
          --repo-root <path>       Repository root. Defaults to current directory or an ancestor.\n  \
          --povu-bin <path>        Existing povu binary to run. Defaults to <repo>/bin/povu.\n  \
          --fixture <id>           Run one fixture only.\n  \
+         --downstream-repetitive  Run downstream repetitive profile corpus instead of Lean fixtures.\n  \
          --skip-build             Do not configure/build the povu CLI before running fixtures.\n  \
          --skip-lean-build        Do not run lake build before running the Lean reference.\n"
     );
