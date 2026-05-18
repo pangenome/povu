@@ -40,11 +40,9 @@ impl GraphAnalysis {
     /// # Ok::<(), povu::Error>(())
     /// ```
     pub fn write_vcf(&self, _path: impl AsRef<Path>) -> Result<()> {
-        // TODO: Implement VCF generation when FFI is complete
-        Err(Error::Povu {
-            code: 1,
-            message: "VCF generation not yet implemented".to_string(),
-        })
+        Err(Error::unsupported(
+            "GraphAnalysis::write_vcf requires a verified graph-to-VariantCall extractor; use VcfDocument::write_path for semantic VCF documents",
+        ))
     }
 }
 

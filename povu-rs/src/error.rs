@@ -11,6 +11,10 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     /// Error from the underlying C++ library
     Povu { code: i32, message: String },
+    /// Invalid semantic VCF input was supplied to the Rust emitter
+    InvalidVcf { message: String },
+    /// Operation is outside the currently verified Rust API boundary
+    Unsupported { message: String },
     /// Null pointer or invalid data
     NullPointer,
     /// String conversion error
@@ -25,6 +29,8 @@ impl fmt::Display for Error {
             Error::Povu { code, message } => {
                 write!(f, "Povu error (code {}): {}", code, message)
             }
+            Error::InvalidVcf { message } => write!(f, "Invalid VCF input: {}", message),
+            Error::Unsupported { message } => write!(f, "Unsupported operation: {}", message),
             Error::NullPointer => write!(f, "Null pointer encountered"),
             Error::StringConversion(msg) => write!(f, "String conversion error: {}", msg),
             Error::Io(e) => write!(f, "I/O error: {}", e),
@@ -54,6 +60,18 @@ impl From<std::io::Error> for Error {
 }
 
 impl Error {
+    pub(crate) fn invalid_vcf(message: impl Into<String>) -> Self {
+        Error::InvalidVcf {
+            message: message.into(),
+        }
+    }
+
+    pub(crate) fn unsupported(message: impl Into<String>) -> Self {
+        Error::Unsupported {
+            message: message.into(),
+        }
+    }
+
     /// Create an Error from a Povu FFI error
     pub(crate) fn from_ffi_error(error: crate::ffi::PovuError) -> Self {
         if error.message.is_null() {
