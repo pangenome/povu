@@ -1,0 +1,23 @@
+##fileformat=VCFv4.2
+##source=povu-downstream-fixture
+##profile=left-normalized
+##INFO=<ID=AC,Number=A,Type=Integer,Description="Alternate allele count">
+##INFO=<ID=AF,Number=A,Type=Float,Description="Alternate allele frequency">
+##INFO=<ID=AN,Number=1,Type=Integer,Description="Total called alleles">
+##INFO=<ID=NS,Number=1,Type=Integer,Description="Samples with called genotypes">
+##INFO=<ID=AT,Number=R,Type=String,Description="Raw graph traversal provenance">
+##INFO=<ID=VARTYPE,Number=1,Type=String,Description="povu variant type">
+##INFO=<ID=TANGLED,Number=1,Type=String,Description="Graph-faithful complex marker">
+##INFO=<ID=ES,Number=1,Type=String,Description="Enclosing flubble site">
+##INFO=<ID=LV,Number=1,Type=Integer,Description="Flubble nesting level">
+##INFO=<ID=ORIGIN,Number=1,Type=String,Description="Raw record id">
+##INFO=<ID=RAW_ALT_INDEX,Number=1,Type=Integer,Description="Raw ALT index">
+##INFO=<ID=PROFILE,Number=1,Type=String,Description="Downstream profile name">
+##INFO=<ID=LEFT_NORMALIZED,Number=1,Type=String,Description="Record was left-normalized">
+##INFO=<ID=RAW_POS,Number=1,Type=Integer,Description="Raw POS before profile rewrite">
+##INFO=<ID=RAW_REF,Number=1,Type=String,Description="Raw REF before profile rewrite">
+##INFO=<ID=RAW_ALT,Number=1,Type=String,Description="Raw ALT before profile rewrite">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	HG1	HG2	HG3
+HG1#1#chr1	1	>3>5:norm	AA	A	60	PASS	AC=1;AF=0.3333333333333333;AN=3;NS=3;AT=>3>4,>3;VARTYPE=DEL;TANGLED=F;ES=>3>5;LV=0;ORIGIN=>3>5;RAW_ALT_INDEX=1;PROFILE=left-normalized;LEFT_NORMALIZED=T;RAW_POS=4;RAW_REF=AA;RAW_ALT=A	GT	0	1	0
+HG1#1#chr1	1	>3>4:norm	A	AA	60	PASS	AC=1;AF=0.3333333333333333;AN=3;NS=3;AT=>3,>3>6;VARTYPE=INS;TANGLED=F;ES=>3>4;LV=0;ORIGIN=>3>4;RAW_ALT_INDEX=1;PROFILE=left-normalized;LEFT_NORMALIZED=T;RAW_POS=4;RAW_REF=A;RAW_ALT=AA	GT	0	0	1

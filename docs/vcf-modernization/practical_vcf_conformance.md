@@ -51,6 +51,17 @@ cargo run --manifest-path tests/lean4_conformance/Cargo.toml -- --repo-root . --
 The command currently covers thirteen fixtures: eleven positive semantic VCF
 cases and two controlled rejection cases.
 
+The downstream repetitive fixture assets are checked separately because they
+describe future profile outputs rather than current raw `gfa2vcf` behavior:
+
+```bash
+cargo test --manifest-path tests/lean4_conformance/Cargo.toml downstream_repetitive_fixture_assets_are_complete
+```
+
+Those assets live in
+`tests/lean4_conformance/fixtures/downstream_repetitive/` and are documented in
+`docs/vcf-modernization/downstream_repetitive_fixtures.md`.
+
 ## Common Record Defaults
 
 Every positive record below has:

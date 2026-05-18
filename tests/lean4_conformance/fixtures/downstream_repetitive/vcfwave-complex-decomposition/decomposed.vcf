@@ -1,0 +1,24 @@
+##fileformat=VCFv4.2
+##source=povu-downstream-fixture
+##profile=decomposed
+##INFO=<ID=AC,Number=A,Type=Integer,Description="Alternate allele count">
+##INFO=<ID=AF,Number=A,Type=Float,Description="Alternate allele frequency">
+##INFO=<ID=AN,Number=1,Type=Integer,Description="Total called alleles">
+##INFO=<ID=NS,Number=1,Type=Integer,Description="Samples with called genotypes">
+##INFO=<ID=AT,Number=R,Type=String,Description="Raw graph traversal provenance">
+##INFO=<ID=VARTYPE,Number=1,Type=String,Description="povu variant type">
+##INFO=<ID=TANGLED,Number=1,Type=String,Description="Graph-faithful complex marker">
+##INFO=<ID=ORIGIN,Number=1,Type=String,Description="Raw record id">
+##INFO=<ID=RAW_ALT_INDEX,Number=1,Type=Integer,Description="Raw ALT index">
+##INFO=<ID=PROFILE,Number=1,Type=String,Description="Downstream profile name">
+##INFO=<ID=DECOMPOSED,Number=1,Type=String,Description="Record came from allele decomposition">
+##INFO=<ID=PASSTHROUGH,Number=1,Type=String,Description="Record was kept because policy forbids decomposition">
+##INFO=<ID=PASS_THROUGH_REASON,Number=1,Type=String,Description="Reason pass-through was selected">
+##INFO=<ID=RAW_POS,Number=1,Type=Integer,Description="Raw POS before profile rewrite">
+##INFO=<ID=RAW_REF,Number=1,Type=String,Description="Raw REF before profile rewrite">
+##INFO=<ID=RAW_ALT,Number=1,Type=String,Description="Raw ALT before profile rewrite">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	HG1	HG2	HG3
+HG1#1#chr1	11	>9>14:1:snp1	C	T	60	PASS	AC=1;AF=0.5;AN=2;NS=2;AT=>10,>20;VARTYPE=SUB;TANGLED=F;ORIGIN=>9>14;RAW_ALT_INDEX=1;PROFILE=decomposed;DECOMPOSED=T;RAW_POS=10;RAW_REF=ACGT;RAW_ALT=ATGA	GT	0	1	.
+HG1#1#chr1	13	>9>14:1:snp2	T	A	60	PASS	AC=1;AF=0.5;AN=2;NS=2;AT=>12,>21;VARTYPE=SUB;TANGLED=F;ORIGIN=>9>14;RAW_ALT_INDEX=1;PROFILE=decomposed;DECOMPOSED=T;RAW_POS=10;RAW_REF=ACGT;RAW_ALT=ATGA	GT	0	1	.
+HG1#1#chr1	10	>9>14:2:passthrough	ACGT	ACGTACTACGTACGTA	60	PASS	AC=1;AF=0.5;AN=2;NS=2;AT=>9>10>11>12,>9>30>31>32;VARTYPE=SUB;TANGLED=T;ORIGIN=>9>14;RAW_ALT_INDEX=2;PROFILE=decomposed;PASSTHROUGH=T;PASS_THROUGH_REASON=max_allele_length;RAW_POS=10;RAW_REF=ACGT;RAW_ALT=ACGTACTACGTACGTA	GT	0	.	1

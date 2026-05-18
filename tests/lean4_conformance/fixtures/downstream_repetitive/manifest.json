@@ -1,0 +1,138 @@
+{
+  "schema": "povu.downstream_repetitive.fixtures.v1",
+  "source_design": "docs/vcf-modernization/repetitive_untangling.md",
+  "raw_contract": "docs/vcf-modernization/rust_vcf_output_spec.md",
+  "fixtures": [
+    {
+      "id": "tandem-repeat-left-normalization",
+      "class_tags": [
+        "tandem-repeat-normalization",
+        "homopolymer-valid-spellings",
+        "coordinate-shifting"
+      ],
+      "description": "A right-anchored homopolymer deletion and insertion stay at the graph anchor in raw-graph output, then shift left only in the left-normalized profile.",
+      "input_gfa": "tandem-repeat-left-normalization/input.gfa",
+      "reference_fasta": "tandem-repeat-left-normalization/reference.fa",
+      "profiles": [
+        {
+          "name": "raw-graph",
+          "kind": "raw",
+          "expected": "vcf",
+          "path": "tandem-repeat-left-normalization/raw_graph.vcf"
+        },
+        {
+          "name": "left-normalized",
+          "kind": "downstream-rewrite",
+          "expected": "vcf",
+          "path": "tandem-repeat-left-normalization/left_normalized.vcf",
+          "provenance": "tandem-repeat-left-normalization/provenance.jsonl",
+          "rewrite": "coordinate-shift"
+        }
+      ]
+    },
+    {
+      "id": "popped-parent-child-rescue",
+      "class_tags": [
+        "parent-popping-child-rescue",
+        "top-level-only-differs-from-popped"
+      ],
+      "description": "A large LV=0 parent is popped by size while its small LV=1 child is rescued, proving popped output is not equivalent to top-level-only filtering.",
+      "input_gfa": "popped-parent-child-rescue/input.gfa",
+      "profiles": [
+        {
+          "name": "raw-graph",
+          "kind": "raw",
+          "expected": "vcf",
+          "path": "popped-parent-child-rescue/raw_graph.vcf"
+        },
+        {
+          "name": "top-level-only",
+          "kind": "downstream-filter",
+          "expected": "vcf",
+          "path": "popped-parent-child-rescue/top_level_only.vcf"
+        },
+        {
+          "name": "popped",
+          "kind": "downstream-filter",
+          "expected": "vcf",
+          "path": "popped-parent-child-rescue/popped.vcf",
+          "provenance": "popped-parent-child-rescue/provenance.jsonl"
+        }
+      ]
+    },
+    {
+      "id": "vcfwave-complex-decomposition",
+      "class_tags": [
+        "complex-decomposition-pass-through",
+        "multi-alt-tangled-repeat",
+        "one-to-many-provenance"
+      ],
+      "description": "A tangled multi-ALT substitution decomposes one short ALT into primitive SNP rows while a long ALT remains a TANGLED pass-through because it exceeds the profile length limit.",
+      "input_gfa": "vcfwave-complex-decomposition/input.gfa",
+      "profiles": [
+        {
+          "name": "raw-graph",
+          "kind": "raw",
+          "expected": "vcf",
+          "path": "vcfwave-complex-decomposition/raw_graph.vcf"
+        },
+        {
+          "name": "decomposed",
+          "kind": "downstream-rewrite",
+          "expected": "vcf",
+          "path": "vcfwave-complex-decomposition/decomposed.vcf",
+          "provenance": "vcfwave-complex-decomposition/provenance.jsonl",
+          "rewrite": "one-to-many"
+        }
+      ]
+    },
+    {
+      "id": "nested-child-inside-insertion",
+      "class_tags": [
+        "nested-child-inside-insertion",
+        "expected-reject"
+      ],
+      "description": "A child site exists only on an inserted alternate path, so default raw VCF and the future inserted-path coordinate policy must reject until a coordinate contract exists.",
+      "input_gfa": "nested-child-inside-insertion/input.gfa",
+      "profiles": [
+        {
+          "name": "raw-graph",
+          "kind": "raw",
+          "expected": "reject",
+          "reject_path": "nested-child-inside-insertion/raw_graph.expected_reject.json"
+        },
+        {
+          "name": "inserted-path-raw",
+          "kind": "downstream-policy",
+          "expected": "reject",
+          "reject_path": "nested-child-inside-insertion/inserted_path_raw.expected_reject.json"
+        }
+      ]
+    },
+    {
+      "id": "subr-inversion-preservation",
+      "class_tags": [
+        "subr-inversion-preservation",
+        "decomposition-pass-through"
+      ],
+      "description": "A hairpin SUBR record remains graph-native in raw output and passes through a decomposed profile without becoming symbolic INV or primitive substitutions.",
+      "input_gfa": "subr-inversion-preservation/input.gfa",
+      "profiles": [
+        {
+          "name": "raw-graph",
+          "kind": "raw",
+          "expected": "vcf",
+          "path": "subr-inversion-preservation/raw_graph.vcf"
+        },
+        {
+          "name": "decomposed",
+          "kind": "downstream-rewrite",
+          "expected": "vcf",
+          "path": "subr-inversion-preservation/decomposed_passthrough.vcf",
+          "provenance": "subr-inversion-preservation/provenance.jsonl",
+          "rewrite": "pass-through"
+        }
+      ]
+    }
+  ]
+}

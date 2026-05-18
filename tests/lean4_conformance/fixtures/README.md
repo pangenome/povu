@@ -18,3 +18,4 @@ documented in `docs/lean4-proof/e2e_validation.md`.
 | `two_ordered_substitutions.gfa` | Deterministic ordering of multiple VCF records on one contig. |
 | `unsupported_overlap.gfa` | Unsupported non-zero-overlap GFA boundary is rejected instead of compared to Lean semantics. |
 | `malformed_path_missing_overlaps.gfa` | Malformed path record missing the GFA overlaps column is rejected instead of compared to Lean semantics. |
+| `downstream_repetitive/` | Golden raw/profile fixture assets for future downstream repeat popping, left-normalization, decomposition, expected-reject, and pass-through profiles. These are validated structurally by `tests/downstream_repetitive_assets.rs`, not registered as current raw `gfa2vcf` output. |
