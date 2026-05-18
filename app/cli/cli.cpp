@@ -43,12 +43,14 @@ struct output_opts {
 	args::Group outsel;
 	args::ValueFlag<std::string> output_dir;
 	args::Flag stdout_vcf;
+	args::ValueFlag<std::string> structure_export;
 
 	// clang-format off
 	explicit output_opts(args::Subparser &p)
 	    : outsel(p, "Output destination [default: stdout]", args::Group::Validators::DontCare),
 	      output_dir(outsel, "output_dir", "Output directory for VCF files", {'o', "output-dir"}),
-	      stdout_vcf(outsel, "stdout_vcf", "Output single VCF to stdout instead of separate files", {"stdout"})
+	      stdout_vcf(outsel, "stdout_vcf", "Output single VCF to stdout instead of separate files", {"stdout"}),
+	      structure_export(p, "structure_json", "Write canonical semantic structure export JSON [conformance]", {"structure-export"})
 	// clang-format on
 	{}
 };
@@ -130,6 +132,10 @@ void call_handler(args::Subparser &parser, core::config &app_config)
 		else { // default to stdout
 			app_config.set_stdout_vcf(true);
 		}
+		if (out_opts.structure_export) {
+			app_config.set_structure_export_path(
+				args::get(out_opts.structure_export));
+		}
 	}
 
 	{ // streaming options
@@ -185,6 +191,10 @@ void gfa2vcf_handler(args::Subparser &parser, core::config &app_config)
 		}
 		else { // default to stdout
 			app_config.set_stdout_vcf(true);
+		}
+		if (out_opts.structure_export) {
+			app_config.set_structure_export_path(
+				args::get(out_opts.structure_export));
 		}
 	}
 

@@ -4,6 +4,9 @@ use std::fmt::Write as _;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
+use std::time::{SystemTime, UNIX_EPOCH};
+
+use serde_json::Value;
 
 #[derive(Clone, Debug)]
 struct Fixture {
@@ -349,21 +352,49 @@ fn run_fixture(repo_root: &Path, povu_bin: &Path, fixture: &Fixture) -> Result<(
         )
     })?;
 
-    let actual_output = run_povu(povu_bin, fixture)?;
-
     match &fixture.expected {
-        ExpectedOutcome::Vcf { check_record_order } => run_vcf_fixture(
-            repo_root,
-            povu_bin,
-            fixture,
-            &gfa,
-            actual_output,
-            *check_record_order,
-        ),
+        ExpectedOutcome::Vcf { check_record_order } => {
+            let structure_export_path = create_structure_export_path(fixture)?;
+            let actual_output = run_povu(povu_bin, fixture, Some(&structure_export_path))?;
+            let result = run_vcf_fixture(
+                repo_root,
+                povu_bin,
+                fixture,
+                &gfa,
+                actual_output,
+                *check_record_order,
+                &structure_export_path,
+            );
+            if result.is_ok() {
+                if let Some(parent) = structure_export_path.parent() {
+                    let _ = fs::remove_dir_all(parent);
+                }
+            }
+            result
+        }
         ExpectedOutcome::PovuFailure { reason } => {
+            let actual_output = run_povu(povu_bin, fixture, None)?;
             run_expected_povu_failure(fixture, povu_bin, &gfa, actual_output, reason)
         }
     }
+}
+
+fn create_structure_export_path(fixture: &Fixture) -> Result<PathBuf, String> {
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|err| format!("system time is before UNIX_EPOCH: {err}"))?
+        .as_nanos();
+    let dir = env::temp_dir().join(format!(
+        "povu-lean4-conformance-structure-{}-{nanos}",
+        fixture.id
+    ));
+    fs::create_dir_all(&dir).map_err(|err| {
+        format!(
+            "failed to create structure export dir {}: {err}",
+            dir.display()
+        )
+    })?;
+    Ok(dir.join("actual.json"))
 }
 
 fn run_vcf_fixture(
@@ -373,8 +404,10 @@ fn run_vcf_fixture(
     gfa: &str,
     actual_output: Output,
     check_record_order: bool,
+    structure_export_path: &Path,
 ) -> Result<(), String> {
     let expected_output = run_lean_reference(repo_root, fixture)?;
+    let expected_structure_output = run_lean_structure_reference(repo_root, fixture)?;
 
     if !expected_output.status.success() {
         return Err(format_command_failure(
@@ -384,11 +417,19 @@ fn run_vcf_fixture(
             &expected_output,
         ));
     }
+    if !expected_structure_output.status.success() {
+        return Err(format_command_failure(
+            fixture,
+            "Lean structure reference",
+            &lean_structure_reference_command(repo_root, fixture),
+            &expected_structure_output,
+        ));
+    }
     if !actual_output.status.success() {
         return Err(format_command_failure(
             fixture,
             "povu gfa2vcf",
-            &povu_command_display(povu_bin, fixture),
+            &povu_command_display(povu_bin, fixture, Some(structure_export_path)),
             &actual_output,
         ));
     }
@@ -407,17 +448,54 @@ fn run_vcf_fixture(
     let expected_for_compare = comparable_vcf(&expected, check_record_order);
     let actual_for_compare = comparable_vcf(&actual, check_record_order);
 
-    if expected_for_compare == actual_for_compare {
-        Ok(())
-    } else {
-        Err(render_mismatch(
+    if expected_for_compare != actual_for_compare {
+        return Err(render_mismatch(
             fixture,
-            &povu_command_display(povu_bin, fixture),
+            &povu_command_display(povu_bin, fixture, Some(structure_export_path)),
             &gfa,
             &expected,
             &actual,
             &actual_stdout,
             &String::from_utf8_lossy(&actual_output.stderr),
+        ));
+    }
+
+    let expected_structure_stdout = String::from_utf8_lossy(&expected_structure_output.stdout);
+    let expected_structure = parse_structure_export(&expected_structure_stdout).map_err(|err| {
+        format!(
+            "Lean reference emitted invalid structure export for {}: {err}",
+            fixture.id
+        )
+    })?;
+    let actual_structure_text = fs::read_to_string(structure_export_path).map_err(|err| {
+        format!(
+            "povu did not write structure export for {} at {}: {err}",
+            fixture.id,
+            structure_export_path.display()
+        )
+    })?;
+    let actual_structure = parse_structure_export(&actual_structure_text).map_err(|err| {
+        format!(
+            "povu emitted invalid structure export for {}: {err}",
+            fixture.id
+        )
+    })?;
+
+    validate_structure_export("Lean reference", fixture, &expected_structure)?;
+    validate_structure_export("povu gfa2vcf", fixture, &actual_structure)?;
+
+    if expected_structure == actual_structure {
+        Ok(())
+    } else {
+        Err(render_structure_mismatch(
+            fixture,
+            &povu_command_display(povu_bin, fixture, Some(structure_export_path)),
+            &gfa,
+            &expected_structure,
+            &actual_structure,
+            &expected_structure_stdout,
+            &actual_structure_text,
+            structure_export_path,
         ))
     }
 }
@@ -433,7 +511,7 @@ fn run_expected_povu_failure(
         return actual_output.status.code().map(|_| ()).ok_or_else(|| {
             render_uncontrolled_failure(
                 fixture,
-                &povu_command_display(povu_bin, fixture),
+                &povu_command_display(povu_bin, fixture, None),
                 gfa,
                 &String::from_utf8_lossy(&actual_output.stdout),
                 &String::from_utf8_lossy(&actual_output.stderr),
@@ -445,7 +523,7 @@ fn run_expected_povu_failure(
 
     Err(render_unexpected_success(
         fixture,
-        &povu_command_display(povu_bin, fixture),
+        &povu_command_display(povu_bin, fixture, None),
         gfa,
         &String::from_utf8_lossy(&actual_output.stdout),
         &String::from_utf8_lossy(&actual_output.stderr),
@@ -465,7 +543,29 @@ fn run_lean_reference(repo_root: &Path, fixture: &Fixture) -> Result<Output, Str
         .map_err(|err| format!("failed to run Lean reference for {}: {err}", fixture.id))
 }
 
-fn run_povu(povu_bin: &Path, fixture: &Fixture) -> Result<Output, String> {
+fn run_lean_structure_reference(repo_root: &Path, fixture: &Fixture) -> Result<Output, String> {
+    Command::new("lake")
+        .arg("env")
+        .arg("lean")
+        .arg("--run")
+        .arg(repo_root.join("tests/lean4_conformance/lean_reference.lean"))
+        .arg("--structure")
+        .arg(fixture.id)
+        .current_dir(repo_root)
+        .output()
+        .map_err(|err| {
+            format!(
+                "failed to run Lean structure reference for {}: {err}",
+                fixture.id
+            )
+        })
+}
+
+fn run_povu(
+    povu_bin: &Path,
+    fixture: &Fixture,
+    structure_export_path: Option<&Path>,
+) -> Result<Output, String> {
     let mut command = Command::new(povu_bin);
     command
         .arg("gfa2vcf")
@@ -475,6 +575,9 @@ fn run_povu(povu_bin: &Path, fixture: &Fixture) -> Result<Output, String> {
         .arg("1");
     for prefix in &fixture.reference_prefixes {
         command.arg("-P").arg(prefix);
+    }
+    if let Some(path) = structure_export_path {
+        command.arg("--structure-export").arg(path);
     }
     command
         .output()
@@ -495,7 +598,26 @@ fn lean_reference_command(repo_root: &Path, fixture: &Fixture) -> Vec<String> {
     ]
 }
 
-fn povu_command_display(povu_bin: &Path, fixture: &Fixture) -> Vec<String> {
+fn lean_structure_reference_command(repo_root: &Path, fixture: &Fixture) -> Vec<String> {
+    vec![
+        "lake".to_string(),
+        "env".to_string(),
+        "lean".to_string(),
+        "--run".to_string(),
+        repo_root
+            .join("tests/lean4_conformance/lean_reference.lean")
+            .display()
+            .to_string(),
+        "--structure".to_string(),
+        fixture.id.to_string(),
+    ]
+}
+
+fn povu_command_display(
+    povu_bin: &Path,
+    fixture: &Fixture,
+    structure_export_path: Option<&Path>,
+) -> Vec<String> {
     let mut command = vec![
         povu_bin.display().to_string(),
         "gfa2vcf".to_string(),
@@ -507,6 +629,10 @@ fn povu_command_display(povu_bin: &Path, fixture: &Fixture) -> Vec<String> {
     for prefix in &fixture.reference_prefixes {
         command.push("-P".to_string());
         command.push((*prefix).to_string());
+    }
+    if let Some(path) = structure_export_path {
+        command.push("--structure-export".to_string());
+        command.push(path.display().to_string());
     }
     command
 }
@@ -596,6 +722,207 @@ fn parse_vcf(text: &str) -> Result<NormalizedVcf, String> {
     }
 
     Ok(NormalizedVcf { samples, records })
+}
+
+fn parse_structure_export(text: &str) -> Result<Value, String> {
+    serde_json::from_str(text).map_err(|err| err.to_string())
+}
+
+fn validate_structure_export(label: &str, fixture: &Fixture, export: &Value) -> Result<(), String> {
+    let context = format!("{label} structure export for {}", fixture.id);
+    let root = export
+        .as_object()
+        .ok_or_else(|| format!("{context}: root must be a JSON object"))?;
+    require_string_value(
+        root.get("schema"),
+        &context,
+        "schema",
+        "povu.lean4.structure.v1",
+    )?;
+    require_present(root.get("producer"), &context, "producer")?;
+
+    let accepted_gfa = require_object(root.get("accepted_gfa"), &context, "accepted_gfa")?;
+    require_present(
+        accepted_gfa.get("input_name"),
+        &context,
+        "accepted_gfa.input_name",
+    )?;
+    validate_array_objects(
+        accepted_gfa.get("segments"),
+        &context,
+        "accepted_gfa.segments",
+        &["order", "id", "sequence"],
+    )?;
+    validate_array_objects(
+        accepted_gfa.get("links"),
+        &context,
+        "accepted_gfa.links",
+        &["order", "from", "from_orient", "to", "to_orient", "overlap"],
+    )?;
+    validate_array_objects(
+        accepted_gfa.get("paths"),
+        &context,
+        "accepted_gfa.paths",
+        &["order", "name", "sample", "steps"],
+    )?;
+
+    require_array(
+        root.get("reference_prefixes"),
+        &context,
+        "reference_prefixes",
+    )?;
+    validate_array_objects(
+        root.get("boundary_candidates"),
+        &context,
+        "boundary_candidates",
+        &[
+            "order", "kind", "node_id", "family", "start", "end", "route", "boundary",
+        ],
+    )?;
+    validate_array_objects(
+        root.get("pvst_nodes"),
+        &context,
+        "pvst_nodes",
+        &[
+            "order",
+            "component",
+            "local_index",
+            "node_id",
+            "family",
+            "type",
+            "label",
+            "start",
+            "end",
+            "route",
+            "boundary",
+            "parent",
+            "children",
+            "tree_depth",
+        ],
+    )?;
+
+    let variant_calls = require_array(root.get("variant_calls"), &context, "variant_calls")?;
+    for (idx, call) in variant_calls.iter().enumerate() {
+        let call_context = format!("{context}: variant_calls[{idx}]");
+        let call_obj = call
+            .as_object()
+            .ok_or_else(|| format!("{call_context} must be an object"))?;
+        for field in [
+            "order",
+            "source",
+            "chrom",
+            "contig_order",
+            "pos",
+            "id",
+            "ref",
+            "ref_traversal",
+            "alternates",
+            "variant_type",
+            "tangled",
+            "qual",
+            "filter",
+            "format",
+            "reference_allele_count",
+            "ac",
+            "af",
+            "an",
+            "ns",
+            "genotypes",
+        ] {
+            require_present(call_obj.get(field), &call_context, field)?;
+        }
+        let source = require_object(call_obj.get("source"), &call_context, "source")?;
+        for field in [
+            "kind",
+            "node_id",
+            "family",
+            "endpoint_id",
+            "enclosing_site",
+            "level",
+        ] {
+            require_present(source.get(field), &call_context, &format!("source.{field}"))?;
+        }
+        validate_array_objects(
+            call_obj.get("alternates"),
+            &call_context,
+            "alternates",
+            &["index", "dna", "traversal", "count"],
+        )?;
+        validate_array_objects(
+            call_obj.get("genotypes"),
+            &call_context,
+            "genotypes",
+            &["sample", "value"],
+        )?;
+    }
+
+    Ok(())
+}
+
+fn require_present(value: Option<&Value>, context: &str, field: &str) -> Result<(), String> {
+    value
+        .map(|_| ())
+        .ok_or_else(|| format!("{context}: missing required field {field}"))
+}
+
+fn require_string_value(
+    value: Option<&Value>,
+    context: &str,
+    field: &str,
+    expected: &str,
+) -> Result<(), String> {
+    let actual = value
+        .and_then(Value::as_str)
+        .ok_or_else(|| format!("{context}: field {field} must be string {expected:?}"))?;
+    if actual == expected {
+        Ok(())
+    } else {
+        Err(format!(
+            "{context}: field {field} was {actual:?}, expected {expected:?}"
+        ))
+    }
+}
+
+fn require_object<'a>(
+    value: Option<&'a Value>,
+    context: &str,
+    field: &str,
+) -> Result<&'a serde_json::Map<String, Value>, String> {
+    value
+        .and_then(Value::as_object)
+        .ok_or_else(|| format!("{context}: field {field} must be an object"))
+}
+
+fn require_array<'a>(
+    value: Option<&'a Value>,
+    context: &str,
+    field: &str,
+) -> Result<&'a Vec<Value>, String> {
+    value
+        .and_then(Value::as_array)
+        .ok_or_else(|| format!("{context}: field {field} must be an array"))
+}
+
+fn validate_array_objects(
+    value: Option<&Value>,
+    context: &str,
+    field: &str,
+    required_fields: &[&str],
+) -> Result<(), String> {
+    let array = require_array(value, context, field)?;
+    for (idx, item) in array.iter().enumerate() {
+        let object = item
+            .as_object()
+            .ok_or_else(|| format!("{context}: {field}[{idx}] must be an object"))?;
+        for required in required_fields {
+            require_present(
+                object.get(*required),
+                context,
+                &format!("{field}[{idx}].{required}"),
+            )?;
+        }
+    }
+    Ok(())
 }
 
 fn comparable_vcf(vcf: &NormalizedVcf, check_record_order: bool) -> NormalizedVcf {
@@ -692,6 +1019,56 @@ fn render_mismatch(
         writeln!(&mut message, "--- raw povu stderr ---\n{raw_stderr}").unwrap();
     }
     message
+}
+
+fn render_structure_mismatch(
+    fixture: &Fixture,
+    command: &[String],
+    gfa: &str,
+    expected: &Value,
+    actual: &Value,
+    raw_expected: &str,
+    raw_actual: &str,
+    actual_path: &Path,
+) -> String {
+    let mut message = String::new();
+    writeln!(
+        &mut message,
+        "PVST/Variant structure mismatch for fixture '{}' ({})",
+        fixture.id, fixture.description
+    )
+    .unwrap();
+    writeln!(&mut message, "command: {}", shell_join(command)).unwrap();
+    writeln!(
+        &mut message,
+        "input fixture: {}",
+        fixture.gfa_path.display()
+    )
+    .unwrap();
+    writeln!(
+        &mut message,
+        "actual structure export: {}",
+        actual_path.display()
+    )
+    .unwrap();
+    writeln!(&mut message, "\n--- input GFA ---\n{gfa}").unwrap();
+    writeln!(
+        &mut message,
+        "--- expected canonical structure (Lean) ---\n{}",
+        pretty_json(expected).unwrap_or_else(|| raw_expected.to_string())
+    )
+    .unwrap();
+    writeln!(
+        &mut message,
+        "--- actual canonical structure (povu) ---\n{}",
+        pretty_json(actual).unwrap_or_else(|| raw_actual.to_string())
+    )
+    .unwrap();
+    message
+}
+
+fn pretty_json(value: &Value) -> Option<String> {
+    serde_json::to_string_pretty(value).ok()
 }
 
 fn render_unexpected_success(
@@ -823,6 +1200,7 @@ fn shell_quote(part: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
 
     const HEADER: &str = "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tHG1\tHG2\n";
 
@@ -876,6 +1254,91 @@ mod tests {
         assert!(diagnostic.contains("--- actual semantic VCF (povu) ---"));
         assert!(diagnostic.contains("C -> G"));
         assert!(diagnostic.contains("C -> T"));
+    }
+
+    #[test]
+    fn structure_export_validation_requires_pvst_parent_links() {
+        let fixture = Fixture {
+            id: "unit",
+            description: "structure validation coverage",
+            gfa_path: PathBuf::from("tests/lean4_conformance/fixtures/unit.gfa"),
+            reference_prefixes: vec!["HG1"],
+            expected: ExpectedOutcome::Vcf {
+                check_record_order: false,
+            },
+        };
+        let mut export = json!({
+            "schema": "povu.lean4.structure.v1",
+            "producer": "unit",
+            "accepted_gfa": {
+                "input_name": "unit.gfa",
+                "segments": [],
+                "links": [],
+                "paths": []
+            },
+            "reference_prefixes": ["HG1"],
+            "boundary_candidates": [],
+            "pvst_nodes": [{
+                "order": 0,
+                "component": 1,
+                "local_index": 0,
+                "node_id": "1:0",
+                "family": "dummy",
+                "type": "dummy",
+                "label": ".",
+                "start": null,
+                "end": null,
+                "route": null,
+                "boundary": null,
+                "children": [],
+                "tree_depth": 0
+            }],
+            "variant_calls": []
+        });
+
+        let err = validate_structure_export("unit", &fixture, &export).unwrap_err();
+        assert!(err.contains("pvst_nodes[0].parent"));
+
+        export["pvst_nodes"][0]["parent"] = Value::Null;
+        validate_structure_export("unit", &fixture, &export).unwrap();
+    }
+
+    #[test]
+    fn structure_mismatch_diagnostic_includes_expected_and_actual_exports() {
+        let fixture = Fixture {
+            id: "unit",
+            description: "structure diagnostic coverage",
+            gfa_path: PathBuf::from("tests/lean4_conformance/fixtures/unit.gfa"),
+            reference_prefixes: vec!["HG1"],
+            expected: ExpectedOutcome::Vcf {
+                check_record_order: false,
+            },
+        };
+        let expected = json!({"schema": "povu.lean4.structure.v1", "pvst_nodes": []});
+        let actual =
+            json!({"schema": "povu.lean4.structure.v1", "pvst_nodes": [{"parent": "wrong"}]});
+        assert_ne!(expected, actual);
+
+        let diagnostic = render_structure_mismatch(
+            &fixture,
+            &[
+                "povu".to_string(),
+                "gfa2vcf".to_string(),
+                "--structure-export".to_string(),
+                "actual.json".to_string(),
+            ],
+            "S\t0\tA\n",
+            &expected,
+            &actual,
+            "{}",
+            "{}",
+            Path::new("actual.json"),
+        );
+
+        assert!(diagnostic.contains("PVST/Variant structure mismatch"));
+        assert!(diagnostic.contains("--- expected canonical structure (Lean) ---"));
+        assert!(diagnostic.contains("--- actual canonical structure (povu) ---"));
+        assert!(diagnostic.contains("\"parent\": \"wrong\""));
     }
 
     #[test]

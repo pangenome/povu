@@ -179,6 +179,7 @@ ADD_LIBRARY(mto # io library
   ${MTO_SOURCES_DIR}/to_gfa.cpp
   ${MTO_SOURCES_DIR}/common.cpp
   ${MTO_SOURCES_DIR}/to_vcf.cpp
+  ${MTO_SOURCES_DIR}/to_structure_export.cpp
   ${MTO_SOURCES_DIR}/from_vcf.cpp
 )
 

@@ -172,6 +172,8 @@ private:
 	bool stdout_vcf{false};
 	// output directory for VCF separate files per ref chosen
 	std::filesystem::path output_dir{"."};
+	// optional canonical structure export for Lean/Rust conformance checks
+	std::optional<std::filesystem::path> structure_export_path_{std::nullopt};
 
 	/* genomic region filtering */
 	std::optional<std::string> genomic_region_str_{std::nullopt};
@@ -289,6 +291,19 @@ public:
 	bool get_stdout_vcf() const
 	{
 		return this->stdout_vcf;
+	}
+
+	[[nodiscard]]
+	const std::optional<std::filesystem::path> &
+	get_structure_export_path() const
+	{
+		return this->structure_export_path_;
+	}
+
+	[[nodiscard]]
+	bool has_structure_export_path() const
+	{
+		return this->structure_export_path_.has_value();
 	}
 
 	[[nodiscard]]
@@ -424,6 +439,11 @@ public:
 	void set_stdout_vcf(bool b)
 	{
 		this->stdout_vcf = b;
+	}
+
+	void set_structure_export_path(const std::string &s)
+	{
+		this->structure_export_path_ = std::filesystem::path{s};
 	}
 
 	void set_genomic_region(const std::string &s)
