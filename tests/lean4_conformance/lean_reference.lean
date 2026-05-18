@@ -629,6 +629,12 @@ def hgRefAltGenotypes : List String :=
   , genotypeJson "HG2" "1"
   ]
 
+def hgRefAltMissingGenotypes : List String :=
+  [ genotypeJson "HG1" "0"
+  , genotypeJson "HG2" "1"
+  , genotypeJson "HG3" "."
+  ]
+
 def refAltGenotypes : List String :=
   [ genotypeJson "ref" "0"
   , genotypeJson "alt" "1"
@@ -703,10 +709,7 @@ def nestedStructureCall : String :=
   variantCallJson 0 (sourceFlubble "1:2" ">1>4" 1) "HG1#1#chr1" 0 2
     ">1>4" "CT" ">1>3"
     [alternateJson 1 "C" ">1" 1] "DEL" false 1 acOne afHalf 2 2
-    [ genotypeJson "HG1" "0"
-    , genotypeJson "HG2" "1"
-    , genotypeJson "HG3" "."
-    ]
+    hgRefAltMissingGenotypes
 
 def nestedStructure : String :=
   structureText "nested_deletion.gfa"
@@ -738,6 +741,130 @@ def nestedStructure : String :=
     , flubbleNode 2 2 "1:2" ">1" ">4" (some "1:1") [] 2
     ]
     [nestedStructureCall]
+
+def nestedSubstitutionMissingOuterStructureCall : String :=
+  variantCallJson 0 (sourceFlubble "1:2" ">1>4" 1) "HG1#1#chr1" 0 3
+    ">1>4" "T" ">3"
+    [alternateJson 1 "G" ">6" 1] "SUB" false 1 acOne afHalf 2 2
+    hgRefAltMissingGenotypes
+
+def nestedSubstitutionMissingOuterStructure : String :=
+  structureText "nested_substitution_missing_outer.gfa"
+    [ segmentJson 0 0 "A"
+    , segmentJson 1 1 "C"
+    , segmentJson 2 2 "G"
+    , segmentJson 3 3 "T"
+    , segmentJson 4 4 "C"
+    , segmentJson 5 5 "A"
+    , segmentJson 6 6 "G"
+    ]
+    [ linkJson 0 0 "+" 1 "+"
+    , linkJson 1 0 "+" 2 "+"
+    , linkJson 2 1 "+" 3 "+"
+    , linkJson 3 1 "+" 6 "+"
+    , linkJson 4 3 "+" 4 "+"
+    , linkJson 5 6 "+" 4 "+"
+    , linkJson 6 4 "+" 5 "+"
+    , linkJson 7 2 "+" 5 "+"
+    ]
+    [ pathJson 0 "HG1#1#chr1" "HG1" [">0", ">1", ">3", ">4", ">5"]
+    , pathJson 1 "HG2#1#chr1" "HG2" [">0", ">1", ">6", ">4", ">5"]
+    , pathJson 2 "HG3#1#chr1" "HG3" [">0", ">2", ">5"]
+    ]
+    ["HG1"]
+    [ flubbleBoundary 0 "1:1" ">0" ">5"
+    , flubbleBoundary 1 "1:2" ">1" ">4"
+    ]
+    [ dummyNode ["1:1"]
+    , flubbleNode 1 1 "1:1" ">0" ">5" (some "1:0") ["1:2"] 1
+    , flubbleNode 2 2 "1:2" ">1" ">4" (some "1:1") [] 2
+    ]
+    [nestedSubstitutionMissingOuterStructureCall]
+
+def repeatAnchorSegments : List String :=
+  [ segmentJson 0 0 "A"
+  , segmentJson 1 1 "A"
+  , segmentJson 2 2 "A"
+  , segmentJson 3 3 "C"
+  ]
+
+def repeatAnchorDeletionLinks : List String :=
+  [ linkJson 0 0 "+" 1 "+"
+  , linkJson 1 1 "+" 2 "+"
+  , linkJson 2 0 "+" 2 "+"
+  , linkJson 3 2 "+" 3 "+"
+  ]
+
+def repeatAnchorInsertionLinks : List String :=
+  [ linkJson 0 0 "+" 2 "+"
+  , linkJson 1 0 "+" 1 "+"
+  , linkJson 2 1 "+" 2 "+"
+  , linkJson 3 2 "+" 3 "+"
+  ]
+
+def repeatAnchorDeletionPaths : List String :=
+  [ pathJson 0 "HG1#1#chr1" "HG1" [">0", ">1", ">2", ">3"]
+  , pathJson 1 "HG2#1#chr1" "HG2" [">0", ">2", ">3"]
+  ]
+
+def repeatAnchorInsertionPaths : List String :=
+  [ pathJson 0 "HG1#1#chr1" "HG1" [">0", ">2", ">3"]
+  , pathJson 1 "HG2#1#chr1" "HG2" [">0", ">1", ">2", ">3"]
+  ]
+
+def repeatAnchorDeletionStructureCall : String :=
+  variantCallJson 0 (sourceFlubble "1:1" ">0>2" 0) "HG1#1#chr1" 0 1
+    ">0>2" "AA" ">0>1"
+    [alternateJson 1 "A" ">0" 1] "DEL" false 1 acOne afHalf 2 2
+    hgRefAltGenotypes
+
+def repeatAnchorInsertionStructureCall : String :=
+  variantCallJson 0 (sourceFlubble "1:1" ">0>2" 0) "HG1#1#chr1" 0 1
+    ">0>2" "A" ">0"
+    [alternateJson 1 "AA" ">0>1" 1] "INS" false 1 acOne afHalf 2 2
+    hgRefAltGenotypes
+
+def repeatAnchorDeletionStructure : String :=
+  structureText "repeat_anchor_deletion.gfa" repeatAnchorSegments
+    repeatAnchorDeletionLinks repeatAnchorDeletionPaths ["HG1"]
+    (simpleBoundaryCandidates ">0" ">2") (simplePvst ">0" ">2")
+    [repeatAnchorDeletionStructureCall]
+
+def repeatAnchorInsertionStructure : String :=
+  structureText "repeat_anchor_insertion.gfa" repeatAnchorSegments
+    repeatAnchorInsertionLinks repeatAnchorInsertionPaths ["HG1"]
+    (simpleBoundaryCandidates ">0" ">2") (simplePvst ">0" ">2")
+    [repeatAnchorInsertionStructureCall]
+
+def complexSubstitutionSpanStructureCall : String :=
+  variantCallJson 0 (sourceFlubble "1:1" ">0>3" 0) "HG1#1#chr1" 0 2
+    ">0>3" "CG" ">1>2"
+    [alternateJson 1 "TA" ">4>5" 1] "SUB" false 1 acOne afHalf 2 2
+    hgRefAltGenotypes
+
+def complexSubstitutionSpanStructure : String :=
+  structureText "complex_substitution_span.gfa"
+    [ segmentJson 0 0 "A"
+    , segmentJson 1 1 "C"
+    , segmentJson 2 2 "G"
+    , segmentJson 3 3 "T"
+    , segmentJson 4 4 "T"
+    , segmentJson 5 5 "A"
+    ]
+    [ linkJson 0 0 "+" 1 "+"
+    , linkJson 1 1 "+" 2 "+"
+    , linkJson 2 2 "+" 3 "+"
+    , linkJson 3 0 "+" 4 "+"
+    , linkJson 4 4 "+" 5 "+"
+    , linkJson 5 5 "+" 3 "+"
+    ]
+    [ pathJson 0 "HG1#1#chr1" "HG1" [">0", ">1", ">2", ">3"]
+    , pathJson 1 "HG2#1#chr1" "HG2" [">0", ">4", ">5", ">3"]
+    ]
+    ["HG1"]
+    (simpleBoundaryCandidates ">0" ">3")
+    (simplePvst ">0" ">3")
+    [complexSubstitutionSpanStructureCall]
 
 def hairpinStructureCall : String :=
   variantCallJson 0 (sourceHairpin ">1>5") "ref" 0 2 ">1>5" "ACGTA"
@@ -839,6 +966,11 @@ def fixtureStructureOutput? : String → Option String
         (simpleBoundaryCandidates ">0" ">1") (simplePvst ">0" ">1")
         [deletionStructureCall])
   | "nested-deletion" => some nestedStructure
+  | "nested-substitution-missing-outer" =>
+      some nestedSubstitutionMissingOuterStructure
+  | "repeat-anchor-deletion" => some repeatAnchorDeletionStructure
+  | "repeat-anchor-insertion" => some repeatAnchorInsertionStructure
+  | "complex-substitution-span" => some complexSubstitutionSpanStructure
   | "hairpin-inversion-subr" => some hairpinStructure
   | "linear-no-variant" => some linearStructure
   | "two-ordered-substitutions" => some twoOrderedStructure
