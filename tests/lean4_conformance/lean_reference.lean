@@ -417,6 +417,130 @@ example : nestedDeletionCall.WellFormed := by
   native_decide
 
 /--
+Semantic expectation for `fixtures/nested_substitution_missing_outer.gfa`.
+
+This is the substitution analogue of `nested_deletion.gfa`: the emitted row is
+the inner site at `LV=1`, and the haplotype taking the outer sibling branch is
+missing for this child record.
+-/
+def nestedSubstitutionMissingOuterAlt : VCF.AlternateAllele :=
+  { construction := VCF.AlleleConstruction.substitution "T" "G"
+    traversal := ">6"
+    count := 1 }
+
+def nestedSubstitutionMissingOuterCall : VCF.VariantCall :=
+  { source := VCF.VariantSource.flubble nestedInnerNode
+    chrom := "HG1#1#chr1"
+    contigOrder := 0
+    pos := 3
+    id := ">1>4"
+    ref := "T"
+    refTraversal := ">3"
+    alternates := [nestedSubstitutionMissingOuterAlt]
+    variantType := VCF.VariantType.sub
+    tangled := false
+    enclosingSite? := some ">1>4"
+    level? := some 1
+    referenceAlleleCount := 1
+    genotypes := [sampleHG1Ref, sampleHG2Alt, sampleHG3Missing] }
+
+example : nestedSubstitutionMissingOuterCall.WellFormed := by
+  native_decide
+
+/--
+Semantic expectation for `fixtures/repeat_anchor_deletion.gfa`.
+
+The reference has `AAA` before a common suffix while the alternate drops the
+middle graph segment.  The raw graph VCF keeps the local anchor `>0` and right
+boundary `>2`; downstream left-normalization may rewrite the equivalent
+homopolymer representation, but povu does not do that here.
+-/
+def repeatAnchorDeletionAlt : VCF.AlternateAllele :=
+  { construction := VCF.AlleleConstruction.deletion "A" "A"
+    traversal := ">0"
+    count := 1 }
+
+def repeatAnchorDeletionCall : VCF.VariantCall :=
+  { source := VCF.VariantSource.flubble minimalSubstitutionNode
+    chrom := "HG1#1#chr1"
+    contigOrder := 0
+    pos := 1
+    id := ">0>2"
+    ref := "AA"
+    refTraversal := ">0>1"
+    alternates := [repeatAnchorDeletionAlt]
+    variantType := VCF.VariantType.del
+    tangled := false
+    enclosingSite? := some ">0>2"
+    level? := some 0
+    referenceAlleleCount := 1
+    genotypes := [sampleHG1Ref, sampleHG2Alt] }
+
+example : repeatAnchorDeletionCall.WellFormed := by
+  native_decide
+
+/--
+Semantic expectation for `fixtures/repeat_anchor_insertion.gfa`.
+
+The alternate adds one graph segment inside an `AAA` homopolymer.  The corpus
+expects the raw graph anchor, not reference-FASTA left/right shifting.
+-/
+def repeatAnchorInsertionAlt : VCF.AlternateAllele :=
+  { construction := VCF.AlleleConstruction.insertion "A" "A"
+    traversal := ">0>1"
+    count := 1 }
+
+def repeatAnchorInsertionCall : VCF.VariantCall :=
+  { source := VCF.VariantSource.flubble minimalSubstitutionNode
+    chrom := "HG1#1#chr1"
+    contigOrder := 0
+    pos := 1
+    id := ">0>2"
+    ref := "A"
+    refTraversal := ">0"
+    alternates := [repeatAnchorInsertionAlt]
+    variantType := VCF.VariantType.ins
+    tangled := false
+    enclosingSite? := some ">0>2"
+    level? := some 0
+    referenceAlleleCount := 1
+    genotypes := [sampleHG1Ref, sampleHG2Alt] }
+
+example : repeatAnchorInsertionCall.WellFormed := by
+  native_decide
+
+/--
+Semantic expectation for `fixtures/complex_substitution_span.gfa`.
+
+The alternate differs across two adjacent bases (`CG` -> `TA`).  Core povu VCF
+keeps this as one graph-faithful `SUB` record rather than decomposing it into
+two primitive substitutions.
+-/
+def complexSubstitutionSpanAlt : VCF.AlternateAllele :=
+  { construction := VCF.AlleleConstruction.substitution "CG" "TA"
+    traversal := ">4>5"
+    count := 1 }
+
+def complexSubstitutionSpanCall : VCF.VariantCall :=
+  { source := VCF.VariantSource.flubble minimalSubstitutionNode
+    chrom := "HG1#1#chr1"
+    contigOrder := 0
+    pos := 2
+    id := ">0>3"
+    ref := "CG"
+    refTraversal := ">1>2"
+    alternates := [complexSubstitutionSpanAlt]
+    variantType := VCF.VariantType.sub
+    tangled := false
+    enclosingSite? := some ">0>3"
+    level? := some 0
+    referenceAlleleCount := 1
+    genotypes := [sampleHG1Ref, sampleHG2Alt] }
+
+example : complexSubstitutionSpanCall.WellFormed := by
+  native_decide
+
+/--
 Semantic expectation for `fixtures/hairpin_inversion_subr.gfa`.
 
 The alternate path traverses the same five labelled segments in reverse
@@ -729,6 +853,15 @@ def fixtureOutput? : String → Option String
       some (vcfText ["HG1", "HG2"] (VCF.emitRecords [deletionFlubbleCall]))
   | "nested-deletion" =>
       some (vcfText ["HG1", "HG2", "HG3"] (VCF.emitRecords [nestedDeletionCall]))
+  | "nested-substitution-missing-outer" =>
+      some (vcfText ["HG1", "HG2", "HG3"]
+        (VCF.emitRecords [nestedSubstitutionMissingOuterCall]))
+  | "repeat-anchor-deletion" =>
+      some (vcfText ["HG1", "HG2"] (VCF.emitRecords [repeatAnchorDeletionCall]))
+  | "repeat-anchor-insertion" =>
+      some (vcfText ["HG1", "HG2"] (VCF.emitRecords [repeatAnchorInsertionCall]))
+  | "complex-substitution-span" =>
+      some (vcfText ["HG1", "HG2"] (VCF.emitRecords [complexSubstitutionSpanCall]))
   | "hairpin-inversion-subr" =>
       some (vcfText ["ref", "alt"] (VCF.emitRecords [hairpinInversionCall]))
   | "linear-no-variant" =>

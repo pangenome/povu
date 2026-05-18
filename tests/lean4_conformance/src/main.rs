@@ -247,6 +247,46 @@ fn fixtures(repo_root: &Path) -> Vec<Fixture> {
             },
         },
         Fixture {
+            id: "nested-substitution-missing-outer",
+            description:
+                "inner substitution remains level-1 while the outer sibling sample is missing",
+            gfa_path: fixture_dir.join("nested_substitution_missing_outer.gfa"),
+            reference_prefixes: vec!["HG1"],
+            expected: ExpectedOutcome::Vcf {
+                check_record_order: false,
+            },
+        },
+        Fixture {
+            id: "repeat-anchor-deletion",
+            description:
+                "homopolymer deletion is emitted at the raw graph anchor without left-shifting",
+            gfa_path: fixture_dir.join("repeat_anchor_deletion.gfa"),
+            reference_prefixes: vec!["HG1"],
+            expected: ExpectedOutcome::Vcf {
+                check_record_order: false,
+            },
+        },
+        Fixture {
+            id: "repeat-anchor-insertion",
+            description:
+                "homopolymer insertion is emitted at the raw graph anchor without normalization",
+            gfa_path: fixture_dir.join("repeat_anchor_insertion.gfa"),
+            reference_prefixes: vec!["HG1"],
+            expected: ExpectedOutcome::Vcf {
+                check_record_order: false,
+            },
+        },
+        Fixture {
+            id: "complex-substitution-span",
+            description:
+                "two-base allele difference remains one decomposition-sensitive SUB record",
+            gfa_path: fixture_dir.join("complex_substitution_span.gfa"),
+            reference_prefixes: vec!["HG1"],
+            expected: ExpectedOutcome::Vcf {
+                check_record_order: false,
+            },
+        },
+        Fixture {
             id: "hairpin-inversion-subr",
             description: "reverse traversal emits one SUBR hairpin inversion record",
             gfa_path: fixture_dir.join("hairpin_inversion_subr.gfa"),
