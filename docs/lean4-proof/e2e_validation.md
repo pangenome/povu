@@ -30,6 +30,10 @@ cargo run --manifest-path tests/lean4_conformance/Cargo.toml -- \
 | `insertion-flubble` | `tests/lean4_conformance/fixtures/insertion_flubble.gfa` | Lean semantic VCF | Top-level flubble where the alternate path inserts segment `2` after anchor segment `0`; protects anchored `INS` spelling (`A` to `AG`) and insertion traversal formatting. |
 | `deletion-flubble` | `tests/lean4_conformance/fixtures/deletion_flubble.gfa` | Lean semantic VCF | Top-level flubble where the alternate path skips reference segment `2`; protects anchored `DEL` spelling (`AG` to `A`) and deletion traversal formatting. |
 | `nested-deletion` | `tests/lean4_conformance/fixtures/nested_deletion.gfa` | Lean semantic VCF | Small outer/inner flubble shape derived from the paper's nested-flubble obligation; current povu emits the inner deletion with `LV=1` and a missing genotype for the outer-only sample. |
+| `nested-substitution-missing-outer` | `tests/lean4_conformance/fixtures/nested_substitution_missing_outer.gfa` | Lean semantic VCF | Substitution analogue of `nested-deletion`; protects `LV=1` child substitution output and missing genotype semantics for the outer sibling sample. |
+| `repeat-anchor-deletion` | `tests/lean4_conformance/fixtures/repeat_anchor_deletion.gfa` | Lean semantic VCF | Homopolymer deletion emitted at the raw graph anchor; protects the decision to delegate repeat left/right normalization downstream. |
+| `repeat-anchor-insertion` | `tests/lean4_conformance/fixtures/repeat_anchor_insertion.gfa` | Lean semantic VCF | Homopolymer insertion emitted at the raw graph anchor; complements repeat deletion and protects stable `AT` provenance through ambiguous sequence. |
+| `complex-substitution-span` | `tests/lean4_conformance/fixtures/complex_substitution_span.gfa` | Lean semantic VCF | Two-base `CG` to `TA` allele emitted as one graph-faithful `SUB`; protects against accidental primitive decomposition in raw output. |
 | `hairpin-inversion-subr` | `tests/lean4_conformance/fixtures/hairpin_inversion_subr.gfa` | Lean semantic VCF | Current SNE/SUBR regression shape through the full `gfa2vcf` path; protects reverse traversal, `SUBR`, and the absence of `ES`/`LV` for hairpin records. |
 | `linear-no-variant` | `tests/lean4_conformance/fixtures/linear_no_variant.gfa` | Lean semantic VCF with no records | Two identical paths over a linear graph; protects header/sample handling when no VCF records are emitted. |
 | `two-ordered-substitutions` | `tests/lean4_conformance/fixtures/two_ordered_substitutions.gfa` | Lean semantic VCF with strict record order | Two independent top-level flubbles on one contig; protects deterministic record ordering in addition to semantic row equality. |
@@ -38,7 +42,9 @@ cargo run --manifest-path tests/lean4_conformance/Cargo.toml -- \
 
 The same short notes are mirrored near the fixtures in
 `tests/lean4_conformance/fixtures/README.md` so future fixture additions have a
-nearby convention to follow.
+nearby convention to follow.  Exact semantic rows and modernization-specific
+tool-boundary notes for the expanded practical corpus are documented in
+`docs/vcf-modernization/practical_vcf_conformance.md`.
 
 ## Harness Registration
 
