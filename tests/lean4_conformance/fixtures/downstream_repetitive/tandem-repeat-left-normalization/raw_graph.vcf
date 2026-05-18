@@ -1,0 +1,16 @@
+##fileformat=VCFv4.2
+##source=povu-downstream-fixture
+##profile=raw-graph
+##INFO=<ID=AC,Number=A,Type=Integer,Description="Alternate allele count">
+##INFO=<ID=AF,Number=A,Type=Float,Description="Alternate allele frequency">
+##INFO=<ID=AN,Number=1,Type=Integer,Description="Total called alleles">
+##INFO=<ID=NS,Number=1,Type=Integer,Description="Samples with called genotypes">
+##INFO=<ID=AT,Number=R,Type=String,Description="Raw graph traversal provenance">
+##INFO=<ID=VARTYPE,Number=1,Type=String,Description="povu variant type">
+##INFO=<ID=TANGLED,Number=1,Type=String,Description="Graph-faithful complex marker">
+##INFO=<ID=ES,Number=1,Type=String,Description="Enclosing flubble site">
+##INFO=<ID=LV,Number=1,Type=Integer,Description="Flubble nesting level">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	HG1	HG2	HG3
+HG1#1#chr1	4	>3>5	AA	A	60	PASS	AC=1;AF=0.3333333333333333;AN=3;NS=3;AT=>3>4,>3;VARTYPE=DEL;TANGLED=F;ES=>3>5;LV=0	GT	0	1	0
+HG1#1#chr1	4	>3>4	A	AA	60	PASS	AC=1;AF=0.3333333333333333;AN=3;NS=3;AT=>3,>3>6;VARTYPE=INS;TANGLED=F;ES=>3>4;LV=0	GT	0	0	1

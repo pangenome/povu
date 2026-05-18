@@ -1,0 +1,20 @@
+##fileformat=VCFv4.2
+##source=povu-downstream-fixture
+##profile=popped
+##INFO=<ID=AC,Number=A,Type=Integer,Description="Alternate allele count">
+##INFO=<ID=AF,Number=A,Type=Float,Description="Alternate allele frequency">
+##INFO=<ID=AN,Number=1,Type=Integer,Description="Total called alleles">
+##INFO=<ID=NS,Number=1,Type=Integer,Description="Samples with called genotypes">
+##INFO=<ID=AT,Number=R,Type=String,Description="Raw graph traversal provenance">
+##INFO=<ID=VARTYPE,Number=1,Type=String,Description="povu variant type">
+##INFO=<ID=TANGLED,Number=1,Type=String,Description="Graph-faithful complex marker">
+##INFO=<ID=ES,Number=1,Type=String,Description="Enclosing flubble site">
+##INFO=<ID=LV,Number=1,Type=Integer,Description="Flubble nesting level">
+##INFO=<ID=ORIGIN,Number=1,Type=String,Description="Raw record id">
+##INFO=<ID=PARENT,Number=1,Type=String,Description="Raw parent record id">
+##INFO=<ID=PROFILE,Number=1,Type=String,Description="Downstream profile name">
+##INFO=<ID=RESCUED_CHILD,Number=1,Type=String,Description="Child was kept because its parent was popped">
+##INFO=<ID=POPPED_PARENT,Number=1,Type=String,Description="Popped parent id that enabled rescue">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	HG1	HG2	HG3
+HG1#1#chr1	3	>2>4:rescued	A	G	60	PASS	AC=1;AF=0.5;AN=2;NS=2;AT=>3,>6;VARTYPE=SUB;TANGLED=F;ES=>2>4;LV=1;ORIGIN=>2>4;PARENT=>0>5;PROFILE=popped;RESCUED_CHILD=T;POPPED_PARENT=>0>5	GT	0	.	1

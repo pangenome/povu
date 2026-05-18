@@ -1,0 +1,9 @@
+{
+  "schema": "povu.downstream_repetitive.expected_reject.v1",
+  "fixture_id": "nested-child-inside-insertion",
+  "profile": "raw-graph",
+  "status": "expected-reject",
+  "reason": "The nested child site is wholly inside an inserted alternate path and has no coordinate on the selected reference path HG1#1#chr1.",
+  "required_behavior": "Default raw VCF must reject the child or omit it while preserving graph-aware structure; it must not fabricate a primary-reference CHROM/POS.",
+  "blocked_until": "A raw graph-aware export or inserted-path coordinate contract is implemented."
+}

@@ -1,0 +1,9 @@
+{
+  "schema": "povu.downstream_repetitive.expected_reject.v1",
+  "fixture_id": "nested-child-inside-insertion",
+  "profile": "inserted-path-raw",
+  "status": "expected-reject",
+  "reason": "The future inserted-path raw mode needs deterministic contig naming, header emission, and consumer warning semantics before this child can be represented in VCF.",
+  "required_behavior": "Until that profile exists, downstream normalization must keep this case in an expected-reject or graph-aware sidecar stream.",
+  "blocked_until": "An inserted-path coordinate profile defines CHROM, POS, contig header, and origin provenance for child sites inside insertions."
+}
