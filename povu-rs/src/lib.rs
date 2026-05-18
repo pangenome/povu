@@ -36,6 +36,7 @@ mod analysis;
 mod vertex;
 mod edge;
 mod path;
+pub mod vcf;
 
 pub use error::{Error, Result};
 pub use graph::PovuGraph;
@@ -43,6 +44,11 @@ pub use analysis::GraphAnalysis;
 pub use vertex::Vertex;
 pub use edge::Edge;
 pub use path::{Path, Step, Orientation};
+pub use vcf::{
+    AlleleConstruction, AlleleFrequency, AlternateAllele, Contig, GenotypeAllele, GenotypeColumn,
+    Info as VcfInfo, OrderKey as VcfOrderKey, Record as VcfRecord, VariantCall, VariantSource,
+    VariantType, VcfDocument,
+};
 
 /// One-shot convenience function to convert GFA to VCF
 ///
