@@ -272,9 +272,36 @@ impl NativeGfa {
                     });
                 }
                 Some("W") => {
-                    return Err(Error::invalid_gfa(format!(
-                        "line {line_no}: W-line parsing is not implemented in the native Rust path yet"
-                    )));
+                    if fields.len() < 7 {
+                        return Err(Error::invalid_gfa(format!(
+                            "line {line_no}: W record requires sample, haplotype, sequence id, start, end, and walk"
+                        )));
+                    }
+                    let sample = fields[1];
+                    if sample.is_empty() || sample == "*" {
+                        return Err(Error::invalid_gfa(format!(
+                            "line {line_no}: W record sample must be concrete"
+                        )));
+                    }
+                    let start = parse_optional_u64(fields[4], line_no, "W start")?;
+                    let end = parse_optional_u64(fields[5], line_no, "W end")?;
+                    let name = walk_path_name(sample, fields[2], fields[3], start, end);
+                    if !path_names.insert(name.clone()) {
+                        return Err(Error::invalid_gfa(format!(
+                            "line {line_no}: duplicate path name '{name}'"
+                        )));
+                    }
+                    let steps = parse_walk_steps(fields[6], line_no)?;
+                    if steps.is_empty() {
+                        return Err(Error::invalid_gfa(format!(
+                            "line {line_no}: W walk must contain at least one step"
+                        )));
+                    }
+                    paths.push(PathRecord {
+                        name,
+                        sample: sample.to_string(),
+                        steps,
+                    });
                 }
                 Some("C") | Some("J") => {
                     return Err(Error::invalid_gfa(format!(
@@ -759,6 +786,62 @@ fn parse_path_steps(value: &str, line_no: usize) -> Result<Vec<Step>> {
         .collect()
 }
 
+fn parse_walk_steps(value: &str, line_no: usize) -> Result<Vec<Step>> {
+    if value.is_empty() || value == "*" {
+        return Ok(Vec::new());
+    }
+
+    let mut steps = Vec::new();
+    let mut idx = 0;
+    while idx < value.len() {
+        let orient = value[idx..]
+            .chars()
+            .next()
+            .expect("idx is in bounds for W walk");
+        let strand = match orient {
+            '>' => Strand::Forward,
+            '<' => Strand::Reverse,
+            other => {
+                return Err(Error::invalid_gfa(format!(
+                    "line {line_no}: W walk segment must start with '>' or '<', found '{other}'"
+                )))
+            }
+        };
+        idx += orient.len_utf8();
+
+        let segment_start = idx;
+        while idx < value.len() {
+            let ch = value[idx..]
+                .chars()
+                .next()
+                .expect("idx is in bounds for W walk segment");
+            if ch == '>' || ch == '<' {
+                break;
+            }
+            idx += ch.len_utf8();
+        }
+        if segment_start == idx {
+            return Err(Error::invalid_gfa(format!(
+                "line {line_no}: W walk contains an empty segment name"
+            )));
+        }
+        steps.push(Step::new(&value[segment_start..idx], strand));
+    }
+
+    Ok(steps)
+}
+
+fn parse_optional_u64(value: &str, line_no: usize, label: &str) -> Result<Option<u64>> {
+    if value == "*" {
+        return Ok(None);
+    }
+    value.parse::<u64>().map(Some).map_err(|err| {
+        Error::invalid_gfa(format!(
+            "line {line_no}: invalid {label} coordinate '{value}': {err}"
+        ))
+    })
+}
+
 fn sample_name(path_name: &str) -> String {
     path_name
         .split('#')
@@ -766,6 +849,27 @@ fn sample_name(path_name: &str) -> String {
         .filter(|name| !name.is_empty())
         .unwrap_or(path_name)
         .to_string()
+}
+
+fn walk_path_name(
+    sample: &str,
+    haplotype: &str,
+    sequence_id: &str,
+    start: Option<u64>,
+    end: Option<u64>,
+) -> String {
+    let base = if haplotype != "*" && sequence_id != "*" {
+        format!("{sample}#{haplotype}#{sequence_id}")
+    } else if sequence_id != "*" {
+        format!("{sample}#{sequence_id}")
+    } else {
+        sample.to_string()
+    };
+
+    match (start, end) {
+        (Some(start), Some(end)) => format!("{base}:{start}-{end}"),
+        _ => base,
+    }
 }
 
 fn read_reference_names(path: &Path) -> Result<Vec<String>> {

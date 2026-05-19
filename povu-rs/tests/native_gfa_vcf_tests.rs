@@ -24,6 +24,22 @@ fn native_record_lines(fixture: &str, reference: &str) -> Vec<String> {
         .collect()
 }
 
+fn native_record_lines_from_text(gfa: &str, reference: &str) -> Vec<String> {
+    let temp = tempfile::tempdir().expect("tempdir");
+    let gfa_path = temp.path().join("input.gfa");
+    let ref_file = temp.path().join("refs.txt");
+    fs::write(&gfa_path, gfa).expect("write GFA");
+    fs::write(&ref_file, format!("{reference}\n")).expect("write reference file");
+    let document = gfa_to_vcf_document(&gfa_path, Some(&ref_file)).expect("native VCF");
+    document
+        .to_vcf_string()
+        .expect("serialize VCF")
+        .lines()
+        .filter(|line| !line.starts_with('#'))
+        .map(str::to_string)
+        .collect()
+}
+
 #[test]
 fn flubble_stack_port_matches_lean_close_after_gap_rule() {
     let stack = vec![
@@ -62,6 +78,29 @@ fn native_gfa_to_vcf_matches_lean_minimal_substitution_fixture() {
         native_record_lines("minimal_substitution.gfa", "HG1"),
         vec![
             "HG1#1#chr1\t2\t>0>3\tC\tG\t60\tPASS\tAC=1;AF=0.5;AN=2;NS=2;AT=>1,>2;VARTYPE=SUB;TANGLED=F;ES=>0>3;LV=0\tGT\t0\t1"
+        ]
+    );
+}
+
+#[test]
+fn native_gfa_to_vcf_parses_w_lines_with_same_path_model() {
+    let gfa = "\
+H\tVN:Z:1.1
+S\t0\tA
+S\t1\tC
+S\t2\tG
+S\t3\tT
+L\t0\t+\t1\t+\t0M
+L\t1\t+\t3\t+\t0M
+L\t0\t+\t2\t+\t0M
+L\t2\t+\t3\t+\t0M
+W\tHG1\t1\tchr1\t0\t3\t>0>1>3
+W\tHG2\t1\tchr1\t0\t3\t>0>2>3
+";
+    assert_eq!(
+        native_record_lines_from_text(gfa, "HG1"),
+        vec![
+            "HG1#1#chr1:0-3\t2\t>0>3\tC\tG\t60\tPASS\tAC=1;AF=0.5;AN=2;NS=2;AT=>1,>2;VARTYPE=SUB;TANGLED=F;ES=>0>3;LV=0\tGT\t0\t1"
         ]
     );
 }
