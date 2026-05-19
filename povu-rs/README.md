@@ -12,7 +12,7 @@ Rust bindings for [Povu](https://github.com/pangenome/povu), a toolkit for explo
 - Query graph topology (vertices, edges, reference paths)
 - Detect flubbles (regions of variation/bubbles)
 - Access hierarchical PVST (Pangenome Variation Structure Tree)
-- Generate VCF variant calls
+- Generate VCF variant calls through the native Rust semantic GFA path
 - Thread-safe API
 
 ## Installation
@@ -104,6 +104,16 @@ println!("PVST has {} vertices", pvst.vertex_count());
 // analysis.write_vcf("output.vcf")?;
 ```
 
+### Native GFA to VCF
+
+The one-shot `povu::gfa_to_vcf` API uses the native Rust semantic path. It
+parses the accepted Lean GFA subset, projects simple path flubbles and hairpin
+inversions into `VariantCall`s, and serializes them with the Rust VCF writer.
+
+```rust
+povu::gfa_to_vcf("input.gfa", "output.vcf", None::<&std::path::Path>)?;
+```
+
 ## Examples
 
 Run the included examples:
@@ -134,6 +144,9 @@ The library is structured in three layers:
 2. **Low-level Bindings** (`src/ffi.rs`): Auto-generated bindings via bindgen
 3. **High-level API** (`src/*.rs`): Idiomatic Rust interface
 
+The native semantic GFA-to-VCF implementation lives in `src/native_gfa.rs` and
+feeds the existing `src/vcf.rs` writer without crossing the C++ FFI boundary.
+
 ### Build Process
 
 1. CMake builds the `povulib` static library
@@ -152,7 +165,7 @@ cargo doc --open
 
 ## Limitations & TODOs
 
-- VCF generation is not yet fully implemented in the FFI layer
+- `GraphAnalysis::write_vcf` is not yet backed by the native extractor
 - PVST tree traversal APIs are minimal
 - Detailed flubble iteration not yet exposed
 

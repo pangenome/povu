@@ -11,6 +11,8 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     /// Error from the underlying C++ library
     Povu { code: i32, message: String },
+    /// Invalid GFA input was supplied to the native Rust semantic path
+    InvalidGfa { message: String },
     /// Invalid semantic VCF input was supplied to the Rust emitter
     InvalidVcf { message: String },
     /// Operation is outside the currently verified Rust API boundary
@@ -29,6 +31,7 @@ impl fmt::Display for Error {
             Error::Povu { code, message } => {
                 write!(f, "Povu error (code {}): {}", code, message)
             }
+            Error::InvalidGfa { message } => write!(f, "Invalid GFA input: {}", message),
             Error::InvalidVcf { message } => write!(f, "Invalid VCF input: {}", message),
             Error::Unsupported { message } => write!(f, "Unsupported operation: {}", message),
             Error::NullPointer => write!(f, "Null pointer encountered"),
@@ -60,6 +63,12 @@ impl From<std::io::Error> for Error {
 }
 
 impl Error {
+    pub(crate) fn invalid_gfa(message: impl Into<String>) -> Self {
+        Error::InvalidGfa {
+            message: message.into(),
+        }
+    }
+
     pub(crate) fn invalid_vcf(message: impl Into<String>) -> Self {
         Error::InvalidVcf {
             message: message.into(),
