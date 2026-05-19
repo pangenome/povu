@@ -11,6 +11,10 @@ repository = "https://github.com/pangenome/povu"
 thiserror = "1.0"
 libc = "0.2"
 
+[features]
+default = ["ffi"]
+ffi = []
+
 [build-dependencies]
 cmake = "0.1"
 bindgen = "0.70"

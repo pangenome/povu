@@ -29,26 +29,35 @@
 //! - Generate VCF variant calls
 //! - Access hierarchical PVST (Pangenome Variation Structure Tree)
 
-mod ffi;
-mod error;
-mod graph;
+#[cfg(feature = "ffi")]
 mod analysis;
-mod vertex;
 mod edge;
+mod error;
+#[cfg(feature = "ffi")]
+mod ffi;
+#[cfg(feature = "ffi")]
+mod graph;
+pub mod native_gfa;
 mod path;
 pub mod vcf;
+mod vertex;
 
-pub use error::{Error, Result};
-pub use graph::PovuGraph;
+#[cfg(feature = "ffi")]
 pub use analysis::GraphAnalysis;
-pub use vertex::Vertex;
 pub use edge::Edge;
-pub use path::{Path, Step, Orientation};
+pub use error::{Error, Result};
+#[cfg(feature = "ffi")]
+pub use graph::PovuGraph;
+pub use native_gfa::{
+    detect_flubble_stack, gfa_to_vcf_document, FlubbleBoundary, FlubbleCandidate, NativeGfa,
+};
+pub use path::{Orientation, Path, Step};
 pub use vcf::{
     AlleleConstruction, AlleleFrequency, AlternateAllele, Contig, GenotypeAllele, GenotypeColumn,
     Info as VcfInfo, OrderKey as VcfOrderKey, Record as VcfRecord, VariantCall, VariantSource,
     VariantType, VcfDocument,
 };
+pub use vertex::Vertex;
 
 /// One-shot convenience function to convert GFA to VCF
 ///
@@ -69,29 +78,6 @@ pub fn gfa_to_vcf(
     vcf_path: impl AsRef<std::path::Path>,
     ref_file: Option<impl AsRef<std::path::Path>>,
 ) -> Result<()> {
-    use std::ffi::CString;
-
-    let gfa_path_c = CString::new(gfa_path.as_ref().to_string_lossy().as_ref())?;
-    let vcf_path_c = CString::new(vcf_path.as_ref().to_string_lossy().as_ref())?;
-    let ref_file_c = ref_file
-        .as_ref()
-        .map(|p| CString::new(p.as_ref().to_string_lossy().as_ref()))
-        .transpose()?;
-
-    let mut error = ffi::PovuError::default();
-
-    let success = unsafe {
-        ffi::povu_gfa_to_vcf(
-            gfa_path_c.as_ptr(),
-            vcf_path_c.as_ptr(),
-            ref_file_c.as_ref().map_or(std::ptr::null(), |c| c.as_ptr()),
-            &mut error as *mut _,
-        )
-    };
-
-    if !success {
-        return Err(Error::from_ffi_error(error));
-    }
-
-    Ok(())
+    let document = native_gfa::gfa_to_vcf_document(gfa_path, ref_file)?;
+    document.write_path(vcf_path)
 }
