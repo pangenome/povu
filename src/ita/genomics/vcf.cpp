@@ -105,7 +105,8 @@ void append_record(const bd::VG &g, pt::u32 ref_h_idx,
 		       pvst_vtx_ptr->get_height(),
 		       std::move(ref_at_haps),
 		       vt,
-		       is_tangled};
+		       is_tangled,
+		       pvst_vtx_ptr};
 
 	for (const auto &[_, slices] : wta)
 		vcf_rec.add_alt_set(slices);

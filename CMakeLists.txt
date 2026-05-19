@@ -179,6 +179,7 @@ ADD_LIBRARY(mto # io library
   ${MTO_SOURCES_DIR}/to_gfa.cpp
   ${MTO_SOURCES_DIR}/common.cpp
   ${MTO_SOURCES_DIR}/to_vcf.cpp
+  ${MTO_SOURCES_DIR}/to_structure_export.cpp
   ${MTO_SOURCES_DIR}/from_vcf.cpp
 )
 
@@ -355,6 +356,15 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
 message(STATUS "Install include directory: ${CMAKE_INSTALL_INCLUDEDIR}")
 message(STATUS "Install library directory: ${CMAKE_INSTALL_LIBDIR}")
 message(STATUS "Install binary directory: ${CMAKE_INSTALL_BINDIR}")
+
+# ================================ Rust FFI ==================================
+
+# Optional Rust FFI library
+option(POVU_BUILD_FFI "Build C FFI library for Rust bindings" OFF)
+
+if (POVU_BUILD_FFI)
+  add_subdirectory(povu-rs/povu-ffi)
+endif()
 
 # ================================ Tests =====================================
 

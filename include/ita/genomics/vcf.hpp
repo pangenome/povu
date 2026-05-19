@@ -61,6 +61,10 @@ class VcfRec
 	// walk traverses an RoV more than once
 	bool is_tangled_{false};
 
+	// PVST source node used to construct this semantic call. SUBR records
+	// currently come from the hairpin/SnE path and leave this unset.
+	const pvst::VertexBase *source_pvst_vtx_{nullptr};
+
 	/* info */
 	// number of refs in a given walk
 	std::vector<pt::idx_t> ref_count;
@@ -91,11 +95,12 @@ public:
 	VcfRec(pt::u32 ref_h_idx, pt::u32 pos, std::string id,
 	       std::string en_flub, ia::hap_slice ref_sl, pt::u32 height,
 	       std::set<pt::u32> &&ref_at_haps, ir::var_type_e var_typ,
-	       bool is_tangled)
+	       bool is_tangled,
+	       const pvst::VertexBase *source_pvst_vtx = nullptr)
 	    : ref_id_(ref_h_idx), pos_(pos), id_(std::move(id)),
 	      enc_flubble(std::move(en_flub)), ref_slice_(ref_sl),
 	      ref_at_haps_(ref_at_haps), height_(height), var_type_(var_typ),
-	      is_tangled_(is_tangled)
+	      is_tangled_(is_tangled), source_pvst_vtx_(source_pvst_vtx)
 	{}
 
 	// because of allele slice let's make these operators/methods explicit
@@ -240,6 +245,49 @@ public:
 	bool is_tangled() const
 	{
 		return this->is_tangled_;
+	}
+
+	[[nodiscard]]
+	const pvst::VertexBase *get_source_pvst_vtx() const
+	{
+		return this->source_pvst_vtx_;
+	}
+
+	[[nodiscard]]
+	pt::idx_t get_reference_allele_count() const
+	{
+		return this->ref_at_haps_.size();
+	}
+
+	[[nodiscard]]
+	pt::idx_t get_alt_allele_count(pt::idx_t idx) const
+	{
+		return this->alt_slices_.at(idx).size();
+	}
+
+	[[nodiscard]]
+	pt::idx_t get_alt_allele_group_count() const
+	{
+		return this->alt_slices_.size();
+	}
+
+	[[nodiscard]]
+	std::string get_alt_as_str(pt::idx_t idx) const
+	{
+		return this->alt_slices_.at(idx).front().as_str(this->var_type_);
+	}
+
+	[[nodiscard]]
+	std::string get_alt_as_dna_str(const bd::VG &g, pt::idx_t idx) const
+	{
+		return this->alt_slices_.at(idx).front().as_dna_str(
+			g, this->var_type_);
+	}
+
+	[[nodiscard]]
+	const std::vector<std::vector<std::string>> &get_genotype_cols() const
+	{
+		return this->genotype_cols_;
 	}
 
 	/* info */

@@ -151,9 +151,9 @@ public:
 
 class Refs
 {
-	lq::ref **refs_ptr_ptr;
+	lq::ref **refs_ptr_ptr{};
 
-	pt::idx_t ref_count_;
+	pt::idx_t ref_count_{};
 
 	// TODO we are storing this pointer twice. Let's not do that.
 	std::vector<Ref> refs_;

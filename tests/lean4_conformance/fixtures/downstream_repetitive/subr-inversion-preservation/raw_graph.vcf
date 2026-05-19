@@ -1,0 +1,13 @@
+##fileformat=VCFv4.2
+##source=povu-downstream-fixture
+##profile=raw-graph
+##INFO=<ID=AC,Number=A,Type=Integer,Description="Alternate allele count">
+##INFO=<ID=AF,Number=A,Type=Float,Description="Alternate allele frequency">
+##INFO=<ID=AN,Number=1,Type=Integer,Description="Total called alleles">
+##INFO=<ID=NS,Number=1,Type=Integer,Description="Samples with called genotypes">
+##INFO=<ID=AT,Number=R,Type=String,Description="Raw graph traversal provenance">
+##INFO=<ID=VARTYPE,Number=1,Type=String,Description="povu variant type">
+##INFO=<ID=TANGLED,Number=1,Type=String,Description="Graph-faithful complex marker">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	ref	alt
+ref	2	>1>5	ACGTA	TACGT	60	PASS	AC=1;AF=0.5;AN=2;NS=2;AT=>1>2>3>4>5,<5<4<3<2<1;VARTYPE=SUBR;TANGLED=F	GT	0	1

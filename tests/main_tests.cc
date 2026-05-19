@@ -2,6 +2,8 @@
 
 // integration tests
 #include "./integration_tests/args_tests.cc"
+#include "./integration_tests/gfa2vcf_tests.cc"
+#include "./integration_tests/genomics_tests.cc"
 #include "./integration_tests/pvst_tests.cc"
 
 // unit tests

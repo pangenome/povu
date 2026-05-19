@@ -1,6 +1,7 @@
 #include "./gfa2vcf.hpp"
 
 #include <cstdlib>    // for exit, mkdtemp, EXIT_FAILURE, size_t
+#include <exception>  // for exception
 #include <filesystem> // for remove_all, path
 #include <iostream>   // for basic_ostream, operator<<, cerr
 #include <string>     // for basic_string, char_traits, opera...
@@ -47,23 +48,35 @@ void do_gfa2vcf(const core::config &app_config)
 	decompose_config.set_task(core::task_e::decompose);
 	decompose_config.set_output_dir(temp_dir_str);
 
-	// Run decompose
-	decompose::do_decompose(decompose_config);
+	try {
+		// Run decompose
+		decompose::do_decompose(decompose_config);
 
-	// Step 2: Run call to generate VCF
-	if (ll > 0) {
-		std::cerr << fn_name << " Step 2: Calling variants..."
-			  << std::endl;
+		// Step 2: Run call to generate VCF
+		if (ll > 0) {
+			std::cerr << fn_name << " Step 2: Calling variants..."
+				  << std::endl;
+		}
+
+		// Create a config for call with stdout output and the temp forest
+		// directory
+		core::config call_config = app_config;
+		call_config.set_task(core::task_e::call);
+		call_config.set_forest_dir(temp_dir_str);
+
+		// Run call (it will handle everything including stdout output)
+		call::do_call(call_config);
 	}
-
-	// Create a config for call with stdout output and the temp forest
-	// directory
-	core::config call_config = app_config;
-	call_config.set_task(core::task_e::call);
-	call_config.set_forest_dir(temp_dir_str);
-
-	// Run call (it will handle everything including stdout output)
-	call::do_call(call_config);
+	catch (const std::exception &e) {
+		fs::remove_all(temp_dir_str);
+		std::cerr << fn_name << " Error: " << e.what() << std::endl;
+		exit(EXIT_FAILURE);
+	}
+	catch (...) {
+		fs::remove_all(temp_dir_str);
+		std::cerr << fn_name << " Error: unknown failure" << std::endl;
+		exit(EXIT_FAILURE);
+	}
 
 	// Clean up the temporary directory
 	fs::remove_all(temp_dir_str);

@@ -3,6 +3,7 @@
 #include <cassert>    // for assert
 #include <cstdlib>    // for size_t, exit, EXIT_FAILURE
 #include <filesystem> // for path
+#include <memory>     // for make_unique, unique_ptr
 // #include <optional>   // for optional
 #include <set>	   // for set
 #include <string>  // for basic_string, string, cha...
@@ -16,6 +17,7 @@
 #include "mto/common.hpp"    // for get_files, read_lines_to_...
 #include "mto/from_gfa.hpp"  // for to_bd
 #include "mto/from_pvst.hpp" // for read_pvst
+#include "mto/to_structure_export.hpp"
 #include "mto/to_vcf.hpp"    // for VcfOutput, init_vcfs, wri...
 
 #include "povu/common/bounded_queue.hpp" // for pbq, bounded_queue
@@ -123,6 +125,13 @@ void do_call(core::config &app_config)
 	// make sure VCF headers are written before starting to write records
 	init_vcfs_async.join();
 
+	std::unique_ptr<mto::to_structure_export::Writer> structure_export;
+	if (app_config.has_structure_export_path()) {
+		structure_export =
+			std::make_unique<mto::to_structure_export::Writer>(
+				app_config, *g, pvsts);
+	}
+
 	// if running out of memory, reduce the capacity and/or the chunk size
 	const std::size_t QUEUE_CAPACITY = app_config.get_queue_len();
 	pbq::bounded_queue<iv::VcfRecIdx> q(QUEUE_CAPACITY);
@@ -146,11 +155,16 @@ void do_call(core::config &app_config)
 		});
 
 	// consumer on this thread
-	while (auto opt_rec_idx = q.pop())
+	while (auto opt_rec_idx = q.pop()) {
+		if (structure_export)
+			structure_export->write_variant_calls(*opt_rec_idx);
 		mto::to_vcf::write_vcfs(*opt_rec_idx, *g, vout, app_config);
+	}
 
 	producer.join();  // wait for producer to finish
 	vout.flush_all(); // just in case
+	if (structure_export)
+		structure_export->finish();
 
 	delete g;
 	g = nullptr;
