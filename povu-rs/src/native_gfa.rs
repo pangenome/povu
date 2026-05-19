@@ -2,7 +2,8 @@ use crate::{
     AlleleConstruction, AlternateAllele, Contig, Error, GenotypeAllele, GenotypeColumn, Result,
     VariantCall, VariantSource, VariantType, VcfDocument,
 };
-use std::collections::{BTreeMap, HashSet};
+use rayon::prelude::*;
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fs;
 use std::path::Path;
 
@@ -644,27 +645,43 @@ impl NativeGfa {
 
     fn candidate_sites(&self, reference_idx: usize) -> BTreeMap<SiteKey, SiteDraft> {
         let reference = &self.paths[reference_idx];
+        let reference_index = reference_step_index(&reference.steps);
+        let per_path = self
+            .paths
+            .par_iter()
+            .enumerate()
+            .filter_map(|(path_idx, path)| {
+                if path_idx == reference_idx {
+                    return None;
+                }
+                let matches = collinear_matches(&reference_index, &path.steps);
+                let mut path_candidates = Vec::new();
+                for window in matches.windows(2) {
+                    let (ref_start, path_start) = window[0];
+                    let (ref_end, path_end) = window[1];
+                    if ref_end <= ref_start || path_end <= path_start {
+                        continue;
+                    }
+                    let ref_internal = &reference.steps[ref_start + 1..ref_end];
+                    let alt_internal = &path.steps[path_start + 1..path_end];
+                    if ref_internal == alt_internal {
+                        continue;
+                    }
+                    path_candidates.push(SiteDraft {
+                        start_idx: ref_start,
+                        end_idx: ref_end,
+                    });
+                }
+                (!path_candidates.is_empty()).then_some(path_candidates)
+            })
+            .collect::<Vec<_>>();
+
         let mut candidates = BTreeMap::<SiteKey, SiteDraft>::new();
-        for (path_idx, path) in self.paths.iter().enumerate() {
-            if path_idx == reference_idx {
-                continue;
-            }
-            let matches = collinear_matches(&reference.steps, &path.steps);
-            for window in matches.windows(2) {
-                let (ref_start, path_start) = window[0];
-                let (ref_end, path_end) = window[1];
-                if ref_end <= ref_start || path_end <= path_start {
-                    continue;
-                }
-                let ref_internal = &reference.steps[ref_start + 1..ref_end];
-                let alt_internal = &path.steps[path_start + 1..path_end];
-                if ref_internal == alt_internal {
-                    continue;
-                }
-                candidates.entry((ref_start, ref_end)).or_insert(SiteDraft {
-                    start_idx: ref_start,
-                    end_idx: ref_end,
-                });
+        for path_candidates in per_path {
+            for site in path_candidates {
+                candidates
+                    .entry((site.start_idx, site.end_idx))
+                    .or_insert(site);
             }
         }
         candidates
@@ -953,7 +970,69 @@ fn read_reference_names(path: &Path) -> Result<Vec<String>> {
         .collect())
 }
 
-fn collinear_matches(reference: &[Step], path: &[Step]) -> Vec<(usize, usize)> {
+fn reference_step_index(reference: &[Step]) -> HashMap<Step, Vec<usize>> {
+    let mut index = HashMap::<Step, Vec<usize>>::new();
+    for (idx, step) in reference.iter().enumerate() {
+        index.entry(step.clone()).or_default().push(idx);
+    }
+    index
+}
+
+#[derive(Clone, Copy)]
+struct MatchTrace {
+    ref_idx: usize,
+    path_idx: usize,
+    prev: Option<usize>,
+}
+
+fn collinear_matches(
+    reference_index: &HashMap<Step, Vec<usize>>,
+    path: &[Step],
+) -> Vec<(usize, usize)> {
+    let mut trace = Vec::<MatchTrace>::new();
+    let mut tail_ref = Vec::<usize>::new();
+    let mut tail_trace = Vec::<usize>::new();
+
+    for (path_idx, step) in path.iter().enumerate() {
+        let Some(ref_positions) = reference_index.get(step) else {
+            continue;
+        };
+        for &ref_idx in ref_positions.iter().rev() {
+            let len = tail_ref.partition_point(|&tail| tail < ref_idx);
+            let prev = if len > 0 {
+                Some(tail_trace[len - 1])
+            } else {
+                None
+            };
+            let trace_idx = trace.len();
+            trace.push(MatchTrace {
+                ref_idx,
+                path_idx,
+                prev,
+            });
+            if len == tail_ref.len() {
+                tail_ref.push(ref_idx);
+                tail_trace.push(trace_idx);
+            } else if ref_idx < tail_ref[len] {
+                tail_ref[len] = ref_idx;
+                tail_trace[len] = trace_idx;
+            }
+        }
+    }
+
+    let mut matches = Vec::with_capacity(tail_trace.len());
+    let mut cursor = tail_trace.last().copied();
+    while let Some(trace_idx) = cursor {
+        let item = trace[trace_idx];
+        matches.push((item.ref_idx, item.path_idx));
+        cursor = item.prev;
+    }
+    matches.reverse();
+    matches
+}
+
+#[cfg(test)]
+fn collinear_matches_dp(reference: &[Step], path: &[Step]) -> Vec<(usize, usize)> {
     let rows = reference.len();
     let cols = path.len();
     let mut dp = vec![vec![0_usize; cols + 1]; rows + 1];
@@ -1102,4 +1181,39 @@ fn reverse_complement(sequence: &str) -> String {
             other => other,
         })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn fwd(name: &str) -> Step {
+        Step::new(name, Strand::Forward)
+    }
+
+    #[test]
+    fn sparse_collinear_matches_preserve_lcs_length_with_repeats() {
+        let reference = vec![
+            fwd("A"),
+            fwd("B"),
+            fwd("A"),
+            fwd("C"),
+            fwd("D"),
+            fwd("A"),
+            fwd("E"),
+        ];
+        let path = vec![fwd("A"), fwd("B"), fwd("C"), fwd("A"), fwd("D"), fwd("E")];
+
+        let sparse = collinear_matches(&reference_step_index(&reference), &path);
+        let dp = collinear_matches_dp(&reference, &path);
+
+        assert_eq!(sparse.len(), dp.len());
+        for window in sparse.windows(2) {
+            assert!(window[0].0 < window[1].0);
+            assert!(window[0].1 < window[1].1);
+        }
+        for (ref_idx, path_idx) in sparse {
+            assert_eq!(reference[ref_idx], path[path_idx]);
+        }
+    }
 }
