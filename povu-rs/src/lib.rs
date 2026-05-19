@@ -49,7 +49,8 @@ pub use error::{Error, Result};
 #[cfg(feature = "ffi")]
 pub use graph::PovuGraph;
 pub use native_gfa::{
-    detect_flubble_stack, gfa_to_vcf_document, FlubbleBoundary, FlubbleCandidate, NativeGfa,
+    detect_flubble_stack, gfa_to_vcf_document, FlubbleBoundary, FlubbleCandidate,
+    FlubbleDecomposition, FlubbleSite, NativeGfa,
 };
 pub use path::{Orientation, Path, Step};
 pub use vcf::{

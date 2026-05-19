@@ -1,4 +1,6 @@
-use povu::{detect_flubble_stack, gfa_to_vcf, gfa_to_vcf_document, Error, FlubbleCandidate};
+use povu::{
+    detect_flubble_stack, gfa_to_vcf, gfa_to_vcf_document, Error, FlubbleCandidate, NativeGfa,
+};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -103,6 +105,61 @@ W\tHG2\t1\tchr1\t0\t3\t>0>2>3
             "HG1#1#chr1:0-3\t2\t>0>3\tC\tG\t60\tPASS\tAC=1;AF=0.5;AN=2;NS=2;AT=>1,>2;VARTYPE=SUB;TANGLED=F;ES=>0>3;LV=0\tGT\t0\t1"
         ]
     );
+}
+
+#[test]
+fn native_gfa_exposes_flubble_decomposition_sites() {
+    let gfa = "\
+H\tVN:Z:1.0
+S\t1\tA
+S\t2\tC
+S\t3\tG
+S\t4\tT
+S\t5\tAA
+S\t6\tA
+S\t7\tCCC
+L\t1\t+\t2\t+\t0M
+L\t2\t+\t3\t+\t0M
+L\t3\t+\t4\t+\t0M
+L\t2\t+\t5\t+\t0M
+L\t5\t+\t4\t+\t0M
+L\t4\t+\t6\t+\t0M
+L\t1\t+\t7\t+\t0M
+L\t7\t+\t6\t+\t0M
+P\tref\t1+,2+,3+,4+,6+\t*
+P\tinner_alt\t1+,2+,5+,4+,6+\t*
+P\touter_alt\t1+,7+,6+\t*
+";
+    let graph = NativeGfa::parse(gfa).expect("parse native GFA");
+    let decomposition = graph
+        .decompose_flubbles(&["ref".to_string()])
+        .expect("decompose flubbles");
+
+    assert_eq!(decomposition.reference_path, "ref");
+    assert_eq!(
+        decomposition
+            .sites
+            .iter()
+            .map(|site| (
+                site.id.as_str(),
+                site.parent_id.as_deref(),
+                site.level,
+                site.reference_start_step,
+                site.reference_end_step,
+                site.is_leaf,
+            ))
+            .collect::<Vec<_>>(),
+        vec![
+            (">1>6", None, 0, 0, 4, false),
+            (">2>4", Some(">1>6"), 1, 1, 3, true),
+        ]
+    );
+
+    let leaves = decomposition.leaf_sites_bottom_up();
+    assert_eq!(leaves.len(), 1);
+    assert_eq!(leaves[0].id, ">2>4");
+    assert_eq!(leaves[0].start.token(), ">2");
+    assert_eq!(leaves[0].end.token(), ">4");
 }
 
 #[test]
