@@ -101,6 +101,43 @@ pub struct NativeGfa {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct FlubbleSite {
+    pub id: String,
+    pub parent_id: Option<String>,
+    pub level: usize,
+    pub reference_start_step: usize,
+    pub reference_end_step: usize,
+    pub start: Step,
+    pub end: Step,
+    pub is_leaf: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct FlubbleDecomposition {
+    pub reference_path: String,
+    pub reference_path_index: usize,
+    pub sites: Vec<FlubbleSite>,
+}
+
+impl FlubbleDecomposition {
+    pub fn leaf_sites_bottom_up(&self) -> Vec<&FlubbleSite> {
+        let mut sites = self
+            .sites
+            .iter()
+            .filter(|site| site.is_leaf)
+            .collect::<Vec<_>>();
+        sites.sort_by_key(|site| {
+            (
+                site.reference_end_step - site.reference_start_step,
+                site.reference_start_step,
+                site.reference_end_step,
+            )
+        });
+        sites
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FlubbleCandidate {
     pub id: u64,
     pub class_id: u64,
@@ -404,6 +441,40 @@ impl NativeGfa {
                 reference.name.clone(),
                 Some(self.path_len(reference)?),
             )]))
+    }
+
+    pub fn decompose_flubbles(&self, reference_names: &[String]) -> Result<FlubbleDecomposition> {
+        let reference_idx = self.reference_path_index(reference_names)?;
+        let reference = &self.paths[reference_idx];
+        let candidates = self.candidate_sites(reference_idx);
+        let leaf_keys = leaf_site_keys(&candidates);
+        let leaf_set = leaf_keys.into_iter().collect::<HashSet<_>>();
+        let mut sites = Vec::with_capacity(candidates.len());
+
+        for (key, site) in &candidates {
+            let start = reference.steps[site.start_idx].clone();
+            let end = reference.steps[site.end_idx].clone();
+            let id = format!("{}{}", start.token(), end.token());
+            let parent_id = nearest_parent_id(&candidates, site, reference);
+            let level = nesting_level(&candidates, site);
+            sites.push(FlubbleSite {
+                id,
+                parent_id,
+                level,
+                reference_start_step: site.start_idx,
+                reference_end_step: site.end_idx,
+                start,
+                end,
+                is_leaf: leaf_set.contains(key),
+            });
+        }
+
+        sites.sort_by_key(|site| (site.reference_start_step, site.reference_end_step));
+        Ok(FlubbleDecomposition {
+            reference_path: reference.name.clone(),
+            reference_path_index: reference_idx,
+            sites,
+        })
     }
 
     fn reference_path_index(&self, reference_names: &[String]) -> Result<usize> {
