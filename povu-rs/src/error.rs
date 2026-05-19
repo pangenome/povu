@@ -82,6 +82,7 @@ impl Error {
     }
 
     /// Create an Error from a Povu FFI error
+    #[cfg(feature = "ffi")]
     pub(crate) fn from_ffi_error(error: crate::ffi::PovuError) -> Self {
         if error.message.is_null() {
             Error::Povu {

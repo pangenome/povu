@@ -29,19 +29,24 @@
 //! - Generate VCF variant calls
 //! - Access hierarchical PVST (Pangenome Variation Structure Tree)
 
+#[cfg(feature = "ffi")]
 mod analysis;
 mod edge;
 mod error;
+#[cfg(feature = "ffi")]
 mod ffi;
+#[cfg(feature = "ffi")]
 mod graph;
 pub mod native_gfa;
 mod path;
 pub mod vcf;
 mod vertex;
 
+#[cfg(feature = "ffi")]
 pub use analysis::GraphAnalysis;
 pub use edge::Edge;
 pub use error::{Error, Result};
+#[cfg(feature = "ffi")]
 pub use graph::PovuGraph;
 pub use native_gfa::{
     detect_flubble_stack, gfa_to_vcf_document, FlubbleBoundary, FlubbleCandidate, NativeGfa,

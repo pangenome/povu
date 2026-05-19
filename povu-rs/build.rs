@@ -23,6 +23,11 @@ fn emit_rerun_if_changed(path: impl AsRef<Path>) {
 }
 
 fn main() {
+    println!("cargo:rerun-if-env-changed=CARGO_FEATURE_FFI");
+    if env::var_os("CARGO_FEATURE_FFI").is_none() {
+        return;
+    }
+
     // Build the C++ library using CMake
     let dst = cmake::Config::new("..")
         .define("POVU_ENABLE_TESTING", "OFF")
