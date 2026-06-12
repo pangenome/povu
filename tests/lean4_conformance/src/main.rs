@@ -56,6 +56,19 @@ struct NormalizedRecord {
     genotypes: BTreeMap<String, String>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct FlubbleDebugStackEntry {
+    order: usize,
+    tree_edge_id: u64,
+    class_id: u64,
+}
+
+#[derive(Clone, Debug)]
+struct CycleOracle {
+    fixture_id: &'static str,
+    equivalent_edge_groups: &'static [&'static [u64]],
+}
+
 fn main() {
     if let Err(err) = run() {
         eprintln!("{err}");
@@ -1350,6 +1363,7 @@ fn validate_flubble_debug_export(fixture: &Fixture, export: &Value) -> Result<()
                 ));
             }
         }
+        validate_cycle_classes_against_oracle(fixture, frame_idx, stack_entries)?;
         for (row_idx, row) in next_seen_table.iter().enumerate() {
             let row_context = format!("{frame_context}: next_seen_table[{row_idx}]");
             let row = row
@@ -1377,10 +1391,167 @@ fn validate_flubble_debug_export(fixture: &Fixture, export: &Value) -> Result<()
     Ok(())
 }
 
+fn cycle_oracle_for_fixture(fixture_id: &str) -> Option<CycleOracle> {
+    match fixture_id {
+        "minimal-substitution" => Some(CycleOracle {
+            fixture_id: "minimal-substitution",
+            equivalent_edge_groups: &[&[1, 5], &[3], &[8]],
+        }),
+        "insertion-flubble" => Some(CycleOracle {
+            fixture_id: "insertion-flubble",
+            equivalent_edge_groups: &[&[1, 3, 5], &[8]],
+        }),
+        "deletion-flubble" => Some(CycleOracle {
+            fixture_id: "deletion-flubble",
+            equivalent_edge_groups: &[&[1, 3, 5], &[8]],
+        }),
+        "nested-deletion" => Some(CycleOracle {
+            fixture_id: "nested-deletion",
+            equivalent_edge_groups: &[&[1, 9], &[3, 7], &[5], &[12]],
+        }),
+        "nested-substitution-missing-outer" => Some(CycleOracle {
+            fixture_id: "nested-substitution-missing-outer",
+            equivalent_edge_groups: &[&[1, 9], &[3, 7], &[5], &[12], &[15]],
+        }),
+        "two-ordered-substitutions" => Some(CycleOracle {
+            fixture_id: "two-ordered-substitutions",
+            equivalent_edge_groups: &[&[1, 5, 9], &[3], &[7], &[12], &[15]],
+        }),
+        _ => None,
+    }
+}
+
+fn validate_cycle_classes_against_oracle(
+    fixture: &Fixture,
+    frame_idx: usize,
+    stack_entries: &[Value],
+) -> Result<(), String> {
+    let Some(oracle) = cycle_oracle_for_fixture(fixture.id) else {
+        return Ok(());
+    };
+    debug_assert_eq!(oracle.fixture_id, fixture.id);
+
+    let entries = parse_flubble_stack_entries(
+        &format!(
+            "povu flubble debug export for {}: flubble_debug.frames[{frame_idx}]",
+            fixture.id
+        ),
+        stack_entries,
+    )?;
+    validate_cycle_class_entries_against_oracle(fixture.id, frame_idx, &entries, &oracle)
+}
+
+fn parse_flubble_stack_entries(
+    context: &str,
+    stack_entries: &[Value],
+) -> Result<Vec<FlubbleDebugStackEntry>, String> {
+    let mut parsed = Vec::new();
+    for (entry_idx, entry) in stack_entries.iter().enumerate() {
+        let entry_context = format!("{context}: stack_entries[{entry_idx}]");
+        let entry = entry
+            .as_object()
+            .ok_or_else(|| format!("{entry_context} must be an object"))?;
+        parsed.push(FlubbleDebugStackEntry {
+            order: require_u64(entry.get("order"), &entry_context, "order")? as usize,
+            tree_edge_id: require_u64(entry.get("tree_edge_id"), &entry_context, "tree_edge_id")?,
+            class_id: require_u64(entry.get("class_id"), &entry_context, "class_id")?,
+        });
+    }
+    Ok(parsed)
+}
+
+fn validate_cycle_class_entries_against_oracle(
+    fixture_id: &str,
+    frame_idx: usize,
+    entries: &[FlubbleDebugStackEntry],
+    oracle: &CycleOracle,
+) -> Result<(), String> {
+    for entry in entries {
+        let matches = oracle
+            .equivalent_edge_groups
+            .iter()
+            .filter(|group| group.contains(&entry.tree_edge_id))
+            .count();
+        if matches != 1 {
+            return Err(format!(
+                "cycle class oracle mismatch for fixture {fixture_id}: frame {frame_idx}: candidate edge id {} with class id {} appears in {matches} oracle equivalence group(s)",
+                entry.tree_edge_id, entry.class_id
+            ));
+        }
+    }
+
+    for left_idx in 0..entries.len() {
+        for right_idx in left_idx + 1..entries.len() {
+            let left = &entries[left_idx];
+            let right = &entries[right_idx];
+            let same_class = left.class_id == right.class_id;
+            let cycle_equivalent =
+                oracle_cycle_equivalent(oracle, left.tree_edge_id, right.tree_edge_id);
+            match (same_class, cycle_equivalent) {
+                (true, false) => {
+                    return Err(render_cycle_class_oracle_failure(
+                        fixture_id,
+                        frame_idx,
+                        "soundness",
+                        left,
+                        right,
+                        "C++ assigned the same class id to candidate edges that the independent cycle-equivalence oracle keeps separate",
+                    ));
+                }
+                (false, true) => {
+                    return Err(render_cycle_class_oracle_failure(
+                        fixture_id,
+                        frame_idx,
+                        "completeness",
+                        left,
+                        right,
+                        "the independent cycle-equivalence oracle groups candidate edges that C++ assigned to different class ids",
+                    ));
+                }
+                _ => {}
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn oracle_cycle_equivalent(oracle: &CycleOracle, left: u64, right: u64) -> bool {
+    oracle
+        .equivalent_edge_groups
+        .iter()
+        .any(|group| group.contains(&left) && group.contains(&right))
+}
+
+fn render_cycle_class_oracle_failure(
+    fixture_id: &str,
+    frame_idx: usize,
+    direction: &str,
+    left: &FlubbleDebugStackEntry,
+    right: &FlubbleDebugStackEntry,
+    detail: &str,
+) -> String {
+    format!(
+        "cycle class oracle {direction} failure for fixture {fixture_id}: frame {frame_idx}: candidate edge ids {} and {} have class ids {} and {} (stack orders {} and {}): {detail}",
+        left.tree_edge_id,
+        right.tree_edge_id,
+        left.class_id,
+        right.class_id,
+        left.order,
+        right.order
+    )
+}
+
 fn require_present(value: Option<&Value>, context: &str, field: &str) -> Result<(), String> {
     value
         .map(|_| ())
         .ok_or_else(|| format!("{context}: missing required field {field}"))
+}
+
+fn require_u64(value: Option<&Value>, context: &str, field: &str) -> Result<u64, String> {
+    value
+        .and_then(Value::as_u64)
+        .ok_or_else(|| format!("{context}: {field} must be an unsigned integer"))
 }
 
 fn require_string_value(
@@ -1890,6 +2061,88 @@ mod tests {
                 .and_then(Value::as_str)
                 .is_some_and(|required_until| !required_until.trim().is_empty()));
         }
+    }
+
+    #[test]
+    fn cycle_class_oracle_accepts_positive_fixture_classes() {
+        let oracle = cycle_oracle_for_fixture("insertion-flubble").unwrap();
+        let entries = vec![
+            FlubbleDebugStackEntry {
+                order: 0,
+                tree_edge_id: 1,
+                class_id: 1,
+            },
+            FlubbleDebugStackEntry {
+                order: 1,
+                tree_edge_id: 8,
+                class_id: 0,
+            },
+            FlubbleDebugStackEntry {
+                order: 2,
+                tree_edge_id: 3,
+                class_id: 1,
+            },
+            FlubbleDebugStackEntry {
+                order: 3,
+                tree_edge_id: 5,
+                class_id: 1,
+            },
+        ];
+
+        validate_cycle_class_entries_against_oracle("insertion-flubble", 0, &entries, &oracle)
+            .unwrap();
+    }
+
+    #[test]
+    fn cycle_class_oracle_reports_soundness_direction() {
+        let oracle = cycle_oracle_for_fixture("insertion-flubble").unwrap();
+        let entries = vec![
+            FlubbleDebugStackEntry {
+                order: 0,
+                tree_edge_id: 1,
+                class_id: 7,
+            },
+            FlubbleDebugStackEntry {
+                order: 1,
+                tree_edge_id: 8,
+                class_id: 7,
+            },
+        ];
+
+        let err =
+            validate_cycle_class_entries_against_oracle("insertion-flubble", 0, &entries, &oracle)
+                .unwrap_err();
+
+        assert!(err.contains("fixture insertion-flubble"));
+        assert!(err.contains("candidate edge ids 1 and 8"));
+        assert!(err.contains("class ids 7 and 7"));
+        assert!(err.contains("soundness"));
+    }
+
+    #[test]
+    fn cycle_class_oracle_reports_completeness_direction() {
+        let oracle = cycle_oracle_for_fixture("insertion-flubble").unwrap();
+        let entries = vec![
+            FlubbleDebugStackEntry {
+                order: 0,
+                tree_edge_id: 1,
+                class_id: 7,
+            },
+            FlubbleDebugStackEntry {
+                order: 2,
+                tree_edge_id: 3,
+                class_id: 9,
+            },
+        ];
+
+        let err =
+            validate_cycle_class_entries_against_oracle("insertion-flubble", 0, &entries, &oracle)
+                .unwrap_err();
+
+        assert!(err.contains("fixture insertion-flubble"));
+        assert!(err.contains("candidate edge ids 1 and 3"));
+        assert!(err.contains("class ids 7 and 9"));
+        assert!(err.contains("completeness"));
     }
 
     #[test]

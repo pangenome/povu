@@ -74,6 +74,23 @@ The existing Lean/Rust conformance harness already compares:
 Those checks provide readable fixture-level diagnostics through
 `tests/lean4_conformance/src/main.rs`. They remain conformance evidence only.
 
+`bridge-check-cycle` adds a direct C++ class-id conformance check to the
+Lean/Rust fixture harness. For the small supported structure fixtures, the
+harness now carries an independent cycle-equivalence oracle over exported
+candidate `tree_edge_id`s and checks both directions of the Lean
+`CycleClassAssignment.Correct` obligation:
+
+- soundness: any two exported candidate edges with the same C++ `class_id` must
+  be grouped by the oracle;
+- completeness: any two candidate edges grouped by the oracle must have the
+  same exported C++ `class_id`.
+
+Failures name the fixture, frame index, candidate edge ids, class ids, stack
+orders, and the failed direction. Unit coverage includes the positive
+`insertion-flubble` class assignment plus synthetic soundness and completeness
+failures to keep diagnostics readable. This is still a finite fixture oracle,
+not a general proof of C++ bracket-stack cycle equivalence for arbitrary inputs.
+
 ## Formal, Conditional, Tested, And Open Items
 
 Formally proved in Lean:
@@ -96,6 +113,8 @@ Conditionally proved in Lean:
 Conformance-tested:
 
 - C++ CLI VCF and structure-export behavior on the Lean conformance fixtures;
+- exported C++ flubble candidate class ids against fixture-sized independent
+  cycle-equivalence groups for selected small supported structure fixtures;
 - C++ PVST nested hierarchy behavior on the integration graph in
   `tests/integration_tests/pvst_tests.cc`;
 - Rust native GFA-to-VCF behavior on the Lean fixture corpus;
@@ -108,8 +127,9 @@ Open implementation-proof bridge items:
   `GFA.Document.Accepted` by a checked translator proof;
 - C++ spanning-tree, tip/dummy augmentation, and bracket-stack state are not
   exported as a Lean `TraversalFrame` witness;
-- C++ class ids are not checked against `CycleClassAssignment.Correct`
-  soundness/completeness;
+- C++ class ids are not proved against `CycleClassAssignment.Correct` for
+  arbitrary supported inputs; the current checker covers only enumerated small
+  fixture oracle groups;
 - C++ PVST parent edges are not checked against Lean stack-span parent
   semantics for arbitrary supported laminar inputs;
 - no runtime cost instrumentation or machine-checked refinement connects
