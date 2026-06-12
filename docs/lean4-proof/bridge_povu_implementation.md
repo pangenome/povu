@@ -46,7 +46,7 @@ The proof-owned semantic pieces are:
 | Traversal-frame construction | C++ `compute_eq_class_stack` iterates spanning-tree vertices and collects black incoming tree edges into the equivalence-class stack. Lean `candidateStack` filters `frame.treeLinks` to real black edges. | Must show the C++ stack order equals the Lean `candidateStack frame` order for the same accepted graph/frame. | Conformance-tested indirectly by PVST and structure fixtures. Missing a machine-checkable frame/stack export. |
 | Bracket and cycle-class assignment | C++ `handle_vertex` computes bracket lists, assigns new classes to bracket/backedge state, and labels incoming tree edges. `compute_eq_class_metadata` then records the next later stack index for each class. | Must supply `CycleClassAssignment.Correct`: equal classes imply cycle-equivalent boundary candidates and cycle-equivalent candidates receive equal classes. | Open for formal proof. C++ tests observe expected PVST labels/hierarchy, but do not prove soundness/completeness. |
 | Flubble extraction | C++ `add_flubbles` emits a PVST vertex when `i + 1 < next_seen[i]`, matching the nonempty-gap condition against the next later same class. Rust `povu-rs/src/native_gfa.rs` exposes `detect_flubble_stack`, documented as a Rust port of Lean `detectStack`, with tests in `povu-rs/tests/native_gfa_vcf_tests.rs`. | Must match Lean `closeAfterGap?`, `firstSameClass?`, `Boundary.ordered`, and duplicate-free output. | Rust semantic detector is conformance-tested directly. C++ is conformance-tested indirectly through PVST/structure fixtures. |
-| Hierarchy construction | C++ `add_flubbles` maintains a class stack and parent vertex pointer, adding PVST edges as it emits flubbles. Existing C++ `PVSTTest.VertexHierarchy` checks one nested hierarchy. Lean hierarchy uses span containment and rejects unsupported non-laminar boundaries. | Must show emitted parent edges equal canonical strict span-containment parents under supported laminar inputs. | Conformance-tested for selected fixtures, including nested structure export. Missing a direct proof/export of spans and laminarity. |
+| Hierarchy construction | C++ `add_flubbles` maintains a class stack and parent vertex pointer, adding PVST edges as it emits flubbles. Existing C++ `PVSTTest.VertexHierarchy` checks one nested hierarchy. The Lean/Rust conformance harness now derives stack spans from the exported C++ flubble debug stack and compares exported PVST parent edges against canonical nearest strict span-containment parents. Lean hierarchy uses span containment and rejects unsupported non-laminar boundaries. | Must show emitted parent edges equal canonical strict span-containment parents under supported laminar inputs. | Conformance-tested for selected exported fixtures, including nested and sibling hierarchy cases. Still not a proof for arbitrary supported inputs. |
 | VCF/structure export | C++ conformance harness compares `povu gfa2vcf` VCF and `--structure-export` JSON to Lean references. Rust native VCF tests compare the Rust semantic extractor to Lean fixture expectations. | Lean `Pipeline.semanticGfaToVcf_correct` proves semantic emission when supplied semantic calls and hierarchy witnesses. | Conformance-tested. Not a proof that runtime C++ calls are the semantic witnesses. |
 
 ## New Conformance Evidence
@@ -91,6 +91,27 @@ orders, and the failed direction. Unit coverage includes the positive
 failures to keep diagnostics readable. This is still a finite fixture oracle,
 not a general proof of C++ bracket-stack cycle equivalence for arbitrary inputs.
 
+`bridge-check-hierarchy` adds a direct PVST parent-edge checker to the same
+fixture harness. For each supported C++ structure export, the harness:
+
+- reads the exported flubble debug stack entries, including stack order,
+  boundary vertex id, orientation, tree-edge id, and class id;
+- reconstructs the emitted base-flubble boundaries using the same first later
+  same-class, nonempty-gap rule as the Lean `detectStack` semantics;
+- canonicalizes boundary ids to match the PVST route labels;
+- derives each boundary span as the interval between the opening and closing
+  stack entries;
+- computes the expected PVST parent as the nearest strict containing span, or
+  the component dummy root for top-level boundaries;
+- compares that expected parent with the actual exported `pvst_nodes[].parent`.
+
+Hierarchy-check failures name the fixture, boundary id, node id, stack span,
+expected parent, and actual parent. Unit coverage includes nested parenthood,
+sibling top-level parenthood, reverse/reverse boundary canonicalization, and a
+synthetic parent mismatch diagnostic. This remains finite conformance evidence
+over exported fixture stacks, not a general theorem that C++ hierarchy
+construction is correct for every supported laminar input.
+
 ## Formal, Conditional, Tested, And Open Items
 
 Formally proved in Lean:
@@ -115,6 +136,8 @@ Conformance-tested:
 - C++ CLI VCF and structure-export behavior on the Lean conformance fixtures;
 - exported C++ flubble candidate class ids against fixture-sized independent
   cycle-equivalence groups for selected small supported structure fixtures;
+- exported C++ PVST parent edges against canonical stack-span containment for
+  supported fixture stacks, including nested and sibling cases;
 - C++ PVST nested hierarchy behavior on the integration graph in
   `tests/integration_tests/pvst_tests.cc`;
 - Rust native GFA-to-VCF behavior on the Lean fixture corpus;
@@ -130,8 +153,8 @@ Open implementation-proof bridge items:
 - C++ class ids are not proved against `CycleClassAssignment.Correct` for
   arbitrary supported inputs; the current checker covers only enumerated small
   fixture oracle groups;
-- C++ PVST parent edges are not checked against Lean stack-span parent
-  semantics for arbitrary supported laminar inputs;
+- C++ PVST parent edges are checked against Lean stack-span parent semantics on
+  exported fixtures, but not proved for arbitrary supported laminar inputs;
 - no runtime cost instrumentation or machine-checked refinement connects
   C++/Rust loops, maps, stacks, and allocations to the Lean `StageCost` records;
 - external library and container-operation assumptions are unnamed in code-level

@@ -59,8 +59,26 @@ struct NormalizedRecord {
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct FlubbleDebugStackEntry {
     order: usize,
+    boundary_vertex_id: u64,
+    orientation: String,
     tree_edge_id: u64,
     class_id: u64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct PvstFlubbleNode {
+    node_id: String,
+    boundary_id: String,
+    parent: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct StackSpanBoundary {
+    node_id: String,
+    boundary_id: String,
+    span_start: usize,
+    span_end: usize,
+    actual_parent: Option<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -880,6 +898,7 @@ fn run_vcf_fixture(
     validate_structure_export("Lean reference", fixture, &expected_structure)?;
     validate_structure_export("povu gfa2vcf", fixture, &actual_structure)?;
     validate_flubble_debug_export(fixture, &actual_structure)?;
+    validate_hierarchy_spans(fixture, &actual_structure)?;
 
     if structure_without_flubble_debug(&expected_structure)
         == structure_without_flubble_debug(&actual_structure)
@@ -1391,6 +1410,187 @@ fn validate_flubble_debug_export(fixture: &Fixture, export: &Value) -> Result<()
     Ok(())
 }
 
+fn validate_hierarchy_spans(fixture: &Fixture, export: &Value) -> Result<(), String> {
+    let context = format!("povu hierarchy span check for {}", fixture.id);
+    let root = export
+        .as_object()
+        .ok_or_else(|| format!("{context}: root must be a JSON object"))?;
+    let pvst_nodes = parse_pvst_flubble_nodes(&context, root.get("pvst_nodes"))?;
+    if pvst_nodes.is_empty() {
+        return Ok(());
+    }
+
+    let debug = require_object(root.get("flubble_debug"), &context, "flubble_debug")?;
+    let frames = require_array(debug.get("frames"), &context, "flubble_debug.frames")?;
+    let mut stack_span_boundaries = Vec::new();
+    for (frame_idx, frame) in frames.iter().enumerate() {
+        let frame_context = format!("{context}: flubble_debug.frames[{frame_idx}]");
+        let frame = frame
+            .as_object()
+            .ok_or_else(|| format!("{frame_context} must be an object"))?;
+        let stack_entries =
+            require_array(frame.get("stack_entries"), &frame_context, "stack_entries")?;
+        let entries = parse_flubble_stack_entries(&frame_context, stack_entries)?;
+        let mut frame_boundaries =
+            derive_stack_span_boundaries(fixture.id, frame_idx, &entries, &pvst_nodes)?;
+        stack_span_boundaries.append(&mut frame_boundaries);
+    }
+
+    validate_hierarchy_span_boundaries(fixture.id, &stack_span_boundaries)
+}
+
+fn parse_pvst_flubble_nodes(
+    context: &str,
+    value: Option<&Value>,
+) -> Result<BTreeMap<String, PvstFlubbleNode>, String> {
+    let nodes = require_array(value, context, "pvst_nodes")?;
+    let mut parsed = BTreeMap::new();
+    for (node_idx, node) in nodes.iter().enumerate() {
+        let node_context = format!("{context}: pvst_nodes[{node_idx}]");
+        let node = node
+            .as_object()
+            .ok_or_else(|| format!("{node_context} must be an object"))?;
+        let family = require_str(node.get("family"), &node_context, "family")?;
+        if family != "flubble" {
+            continue;
+        }
+        let node_id = require_str(node.get("node_id"), &node_context, "node_id")?.to_string();
+        let boundary_id = require_str(node.get("boundary"), &node_context, "boundary")?.to_string();
+        let parent = match node.get("parent") {
+            Some(Value::Null) => None,
+            Some(value) => Some(
+                value
+                    .as_str()
+                    .ok_or_else(|| format!("{node_context}: parent must be string or null"))?
+                    .to_string(),
+            ),
+            None => return Err(format!("{node_context}: missing required field parent")),
+        };
+        if parsed
+            .insert(
+                boundary_id.clone(),
+                PvstFlubbleNode {
+                    node_id,
+                    boundary_id: boundary_id.clone(),
+                    parent,
+                },
+            )
+            .is_some()
+        {
+            return Err(format!(
+                "{node_context}: duplicate flubble boundary id {boundary_id}"
+            ));
+        }
+    }
+    Ok(parsed)
+}
+
+fn derive_stack_span_boundaries(
+    fixture_id: &str,
+    frame_idx: usize,
+    entries: &[FlubbleDebugStackEntry],
+    pvst_nodes_by_boundary: &BTreeMap<String, PvstFlubbleNode>,
+) -> Result<Vec<StackSpanBoundary>, String> {
+    let mut boundaries = Vec::new();
+    for (entry_idx, entry) in entries.iter().enumerate() {
+        if entry_idx + 1 >= entries.len() {
+            continue;
+        }
+        let Some(close_idx) =
+            ((entry_idx + 1)..entries.len()).find(|idx| entries[*idx].class_id == entry.class_id)
+        else {
+            continue;
+        };
+        if entry_idx + 1 >= close_idx {
+            continue;
+        }
+
+        let boundary_id = canonical_boundary_id(entry, &entries[close_idx]);
+        let Some(node) = pvst_nodes_by_boundary.get(&boundary_id) else {
+            return Err(format!(
+                "hierarchy span check failed for fixture {fixture_id}: frame {frame_idx}: stack span {}..{} emitted boundary {boundary_id}, but no C++ PVST flubble node has that boundary id",
+                entry.order, entries[close_idx].order
+            ));
+        };
+        boundaries.push(StackSpanBoundary {
+            node_id: node.node_id.clone(),
+            boundary_id: node.boundary_id.clone(),
+            span_start: entry.order,
+            span_end: entries[close_idx].order,
+            actual_parent: node.parent.clone(),
+        });
+    }
+    Ok(boundaries)
+}
+
+fn canonical_boundary_id(open: &FlubbleDebugStackEntry, close: &FlubbleDebugStackEntry) -> String {
+    if open.orientation == "<" && close.orientation == "<" {
+        format!(">{}>{}", close.boundary_vertex_id, open.boundary_vertex_id)
+    } else {
+        format!(
+            "{}{}{}{}",
+            open.orientation, open.boundary_vertex_id, close.orientation, close.boundary_vertex_id
+        )
+    }
+}
+
+fn validate_hierarchy_span_boundaries(
+    fixture_id: &str,
+    boundaries: &[StackSpanBoundary],
+) -> Result<(), String> {
+    for boundary in boundaries {
+        let expected_parent = expected_span_parent(boundary, boundaries);
+        if expected_parent != boundary.actual_parent {
+            return Err(render_hierarchy_span_failure(
+                fixture_id,
+                boundary,
+                expected_parent.as_deref(),
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn expected_span_parent(
+    child: &StackSpanBoundary,
+    boundaries: &[StackSpanBoundary],
+) -> Option<String> {
+    boundaries
+        .iter()
+        .filter(|candidate| candidate.node_id != child.node_id)
+        .filter(|candidate| strictly_contains(candidate, child))
+        .min_by_key(|candidate| candidate.span_end - candidate.span_start)
+        .map(|candidate| candidate.node_id.clone())
+        .or_else(|| component_root_node_id(&child.node_id))
+}
+
+fn strictly_contains(parent: &StackSpanBoundary, child: &StackSpanBoundary) -> bool {
+    parent.span_start <= child.span_start
+        && child.span_end <= parent.span_end
+        && (parent.span_start < child.span_start || child.span_end < parent.span_end)
+}
+
+fn component_root_node_id(node_id: &str) -> Option<String> {
+    let (component, _) = node_id.split_once(':')?;
+    Some(format!("{component}:0"))
+}
+
+fn render_hierarchy_span_failure(
+    fixture_id: &str,
+    boundary: &StackSpanBoundary,
+    expected_parent: Option<&str>,
+) -> String {
+    format!(
+        "hierarchy span parent mismatch for fixture {fixture_id}: boundary {} node {} span {}..{} expected parent {} actual parent {}",
+        boundary.boundary_id,
+        boundary.node_id,
+        boundary.span_start,
+        boundary.span_end,
+        expected_parent.unwrap_or("null"),
+        boundary.actual_parent.as_deref().unwrap_or("null")
+    )
+}
+
 fn cycle_oracle_for_fixture(fixture_id: &str) -> Option<CycleOracle> {
     match fixture_id {
         "minimal-substitution" => Some(CycleOracle {
@@ -1453,6 +1653,13 @@ fn parse_flubble_stack_entries(
             .ok_or_else(|| format!("{entry_context} must be an object"))?;
         parsed.push(FlubbleDebugStackEntry {
             order: require_u64(entry.get("order"), &entry_context, "order")? as usize,
+            boundary_vertex_id: require_u64(
+                entry.get("boundary_vertex_id"),
+                &entry_context,
+                "boundary_vertex_id",
+            )?,
+            orientation: require_str(entry.get("orientation"), &entry_context, "orientation")?
+                .to_string(),
             tree_edge_id: require_u64(entry.get("tree_edge_id"), &entry_context, "tree_edge_id")?,
             class_id: require_u64(entry.get("class_id"), &entry_context, "class_id")?,
         });
@@ -1552,6 +1759,16 @@ fn require_u64(value: Option<&Value>, context: &str, field: &str) -> Result<u64,
     value
         .and_then(Value::as_u64)
         .ok_or_else(|| format!("{context}: {field} must be an unsigned integer"))
+}
+
+fn require_str<'a>(
+    value: Option<&'a Value>,
+    context: &str,
+    field: &str,
+) -> Result<&'a str, String> {
+    value
+        .and_then(Value::as_str)
+        .ok_or_else(|| format!("{context}: {field} must be a string"))
 }
 
 fn require_string_value(
@@ -1893,6 +2110,21 @@ mod tests {
 
     const HEADER: &str = "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tHG1\tHG2\n";
 
+    fn stack_entry(
+        order: usize,
+        boundary_vertex_id: u64,
+        tree_edge_id: u64,
+        class_id: u64,
+    ) -> FlubbleDebugStackEntry {
+        FlubbleDebugStackEntry {
+            order,
+            boundary_vertex_id,
+            orientation: ">".to_string(),
+            tree_edge_id,
+            class_id,
+        }
+    }
+
     #[test]
     fn normalizes_info_field_order() {
         let left = format!(
@@ -2069,21 +2301,29 @@ mod tests {
         let entries = vec![
             FlubbleDebugStackEntry {
                 order: 0,
+                boundary_vertex_id: 0,
+                orientation: ">".to_string(),
                 tree_edge_id: 1,
                 class_id: 1,
             },
             FlubbleDebugStackEntry {
                 order: 1,
+                boundary_vertex_id: 1,
+                orientation: ">".to_string(),
                 tree_edge_id: 8,
                 class_id: 0,
             },
             FlubbleDebugStackEntry {
                 order: 2,
+                boundary_vertex_id: 2,
+                orientation: ">".to_string(),
                 tree_edge_id: 3,
                 class_id: 1,
             },
             FlubbleDebugStackEntry {
                 order: 3,
+                boundary_vertex_id: 3,
+                orientation: ">".to_string(),
                 tree_edge_id: 5,
                 class_id: 1,
             },
@@ -2099,11 +2339,15 @@ mod tests {
         let entries = vec![
             FlubbleDebugStackEntry {
                 order: 0,
+                boundary_vertex_id: 0,
+                orientation: ">".to_string(),
                 tree_edge_id: 1,
                 class_id: 7,
             },
             FlubbleDebugStackEntry {
                 order: 1,
+                boundary_vertex_id: 1,
+                orientation: ">".to_string(),
                 tree_edge_id: 8,
                 class_id: 7,
             },
@@ -2125,11 +2369,15 @@ mod tests {
         let entries = vec![
             FlubbleDebugStackEntry {
                 order: 0,
+                boundary_vertex_id: 0,
+                orientation: ">".to_string(),
                 tree_edge_id: 1,
                 class_id: 7,
             },
             FlubbleDebugStackEntry {
                 order: 2,
+                boundary_vertex_id: 2,
+                orientation: ">".to_string(),
                 tree_edge_id: 3,
                 class_id: 9,
             },
@@ -2143,6 +2391,150 @@ mod tests {
         assert!(err.contains("candidate edge ids 1 and 3"));
         assert!(err.contains("class ids 7 and 9"));
         assert!(err.contains("completeness"));
+    }
+
+    #[test]
+    fn hierarchy_span_checker_accepts_nested_parenthood() {
+        let boundaries = vec![
+            StackSpanBoundary {
+                node_id: "1:1".to_string(),
+                boundary_id: ">0>5".to_string(),
+                span_start: 0,
+                span_end: 4,
+                actual_parent: Some("1:0".to_string()),
+            },
+            StackSpanBoundary {
+                node_id: "1:2".to_string(),
+                boundary_id: ">1>4".to_string(),
+                span_start: 1,
+                span_end: 3,
+                actual_parent: Some("1:1".to_string()),
+            },
+        ];
+
+        validate_hierarchy_span_boundaries("nested-deletion", &boundaries).unwrap();
+    }
+
+    #[test]
+    fn hierarchy_span_checker_accepts_sibling_parenthood() {
+        let boundaries = vec![
+            StackSpanBoundary {
+                node_id: "1:1".to_string(),
+                boundary_id: ">0>3".to_string(),
+                span_start: 0,
+                span_end: 2,
+                actual_parent: Some("1:0".to_string()),
+            },
+            StackSpanBoundary {
+                node_id: "1:2".to_string(),
+                boundary_id: ">3>6".to_string(),
+                span_start: 2,
+                span_end: 4,
+                actual_parent: Some("1:0".to_string()),
+            },
+        ];
+
+        validate_hierarchy_span_boundaries("two-ordered-substitutions", &boundaries).unwrap();
+    }
+
+    #[test]
+    fn hierarchy_span_checker_reports_precise_parent_mismatch() {
+        let boundaries = vec![
+            StackSpanBoundary {
+                node_id: "1:1".to_string(),
+                boundary_id: ">0>5".to_string(),
+                span_start: 0,
+                span_end: 4,
+                actual_parent: Some("1:0".to_string()),
+            },
+            StackSpanBoundary {
+                node_id: "1:2".to_string(),
+                boundary_id: ">1>4".to_string(),
+                span_start: 1,
+                span_end: 3,
+                actual_parent: None,
+            },
+        ];
+
+        let err = validate_hierarchy_span_boundaries("nested-deletion", &boundaries).unwrap_err();
+
+        assert!(err.contains("fixture nested-deletion"));
+        assert!(err.contains("boundary >1>4"));
+        assert!(err.contains("span 1..3"));
+        assert!(err.contains("expected parent 1:1"));
+        assert!(err.contains("actual parent null"));
+    }
+
+    #[test]
+    fn hierarchy_span_checker_derives_boundaries_from_stack_spans() {
+        let entries = vec![
+            stack_entry(0, 0, 1, 1),
+            stack_entry(1, 1, 3, 2),
+            stack_entry(2, 3, 5, 3),
+            stack_entry(3, 4, 7, 2),
+            stack_entry(4, 5, 9, 1),
+        ];
+        let pvst_nodes = BTreeMap::from([
+            (
+                ">0>5".to_string(),
+                PvstFlubbleNode {
+                    node_id: "1:1".to_string(),
+                    boundary_id: ">0>5".to_string(),
+                    parent: Some("1:0".to_string()),
+                },
+            ),
+            (
+                ">1>4".to_string(),
+                PvstFlubbleNode {
+                    node_id: "1:2".to_string(),
+                    boundary_id: ">1>4".to_string(),
+                    parent: Some("1:1".to_string()),
+                },
+            ),
+        ]);
+
+        let boundaries =
+            derive_stack_span_boundaries("nested-deletion", 0, &entries, &pvst_nodes).unwrap();
+
+        assert_eq!(
+            boundaries,
+            vec![
+                StackSpanBoundary {
+                    node_id: "1:1".to_string(),
+                    boundary_id: ">0>5".to_string(),
+                    span_start: 0,
+                    span_end: 4,
+                    actual_parent: Some("1:0".to_string()),
+                },
+                StackSpanBoundary {
+                    node_id: "1:2".to_string(),
+                    boundary_id: ">1>4".to_string(),
+                    span_start: 1,
+                    span_end: 3,
+                    actual_parent: Some("1:1".to_string()),
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn hierarchy_span_checker_canonicalizes_reverse_reverse_boundary() {
+        let open = FlubbleDebugStackEntry {
+            order: 0,
+            boundary_vertex_id: 9,
+            orientation: "<".to_string(),
+            tree_edge_id: 1,
+            class_id: 1,
+        };
+        let close = FlubbleDebugStackEntry {
+            order: 2,
+            boundary_vertex_id: 7,
+            orientation: "<".to_string(),
+            tree_edge_id: 3,
+            class_id: 1,
+        };
+
+        assert_eq!(canonical_boundary_id(&open, &close), ">7>9");
     }
 
     #[test]
