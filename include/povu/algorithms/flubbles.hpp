@@ -2,6 +2,7 @@
 #define PV_FLUBBLES_HPP
 
 #include <cstddef>     // for size_t
+#include <filesystem>  // for path
 #include <string_view> // for string_view
 #include <vector>      // for vector
 
@@ -59,5 +60,18 @@ struct eq_class_stack_t {
  *
  */
 pvst::Tree find_flubbles(pst::Tree &t, const core::config &app_config);
+
+/**
+ * @brief Sidecar path used to carry decomposition-only flubble state into the
+ * structure export writer.
+ */
+std::filesystem::path
+debug_sidecar_path(const std::filesystem::path &structure_export_path);
+
+/**
+ * @brief Clear any stale flubble debug sidecar for a new gfa2vcf run.
+ */
+void reset_debug_sidecar(const core::config &app_config);
+
 } // namespace povu::flubbles
 #endif

@@ -538,8 +538,11 @@ fn run_vcf_fixture(
 
     validate_structure_export("Lean reference", fixture, &expected_structure)?;
     validate_structure_export("povu gfa2vcf", fixture, &actual_structure)?;
+    validate_flubble_debug_export(fixture, &actual_structure)?;
 
-    if expected_structure == actual_structure {
+    if structure_without_flubble_debug(&expected_structure)
+        == structure_without_flubble_debug(&actual_structure)
+    {
         Ok(())
     } else {
         Err(render_structure_mismatch(
@@ -909,6 +912,138 @@ fn validate_structure_export(label: &str, fixture: &Fixture, export: &Value) -> 
             "genotypes",
             &["sample", "value"],
         )?;
+    }
+
+    Ok(())
+}
+
+fn structure_without_flubble_debug(export: &Value) -> Value {
+    let mut normalized = export.clone();
+    if let Some(root) = normalized.as_object_mut() {
+        root.remove("flubble_debug");
+    }
+    normalized
+}
+
+fn validate_flubble_debug_export(fixture: &Fixture, export: &Value) -> Result<(), String> {
+    let context = format!("povu flubble debug export for {}", fixture.id);
+    let root = export
+        .as_object()
+        .ok_or_else(|| format!("{context}: root must be a JSON object"))?;
+    let debug = require_object(root.get("flubble_debug"), &context, "flubble_debug")?;
+    require_string_value(
+        debug.get("schema"),
+        &context,
+        "flubble_debug.schema",
+        "povu.flubble-debug.v1",
+    )?;
+    let frames = require_array(debug.get("frames"), &context, "flubble_debug.frames")?;
+    if frames.is_empty() {
+        return Err(format!("{context}: flubble_debug.frames must not be empty"));
+    }
+
+    for (frame_idx, frame) in frames.iter().enumerate() {
+        let frame_context = format!("{context}: flubble_debug.frames[{frame_idx}]");
+        let frame = frame
+            .as_object()
+            .ok_or_else(|| format!("{frame_context} must be an object"))?;
+        require_string_value(
+            frame.get("schema"),
+            &frame_context,
+            "schema",
+            "povu.flubble-debug.frame.v1",
+        )?;
+        require_present(
+            frame.get("tree_vertex_count"),
+            &frame_context,
+            "tree_vertex_count",
+        )?;
+        require_present(
+            frame.get("tree_edge_count"),
+            &frame_context,
+            "tree_edge_count",
+        )?;
+        let stack_entries =
+            require_array(frame.get("stack_entries"), &frame_context, "stack_entries")?;
+        let next_seen_table = require_array(
+            frame.get("next_seen_table"),
+            &frame_context,
+            "next_seen_table",
+        )?;
+        if stack_entries.len() != next_seen_table.len() {
+            return Err(format!(
+                "{frame_context}: stack_entries length {} does not match next_seen_table length {}",
+                stack_entries.len(),
+                next_seen_table.len()
+            ));
+        }
+        for (entry_idx, entry) in stack_entries.iter().enumerate() {
+            let entry_context = format!("{frame_context}: stack_entries[{entry_idx}]");
+            let entry = entry
+                .as_object()
+                .ok_or_else(|| format!("{entry_context} must be an object"))?;
+            for field in [
+                "order",
+                "tree_edge_index",
+                "tree_edge_id",
+                "boundary_vertex_id",
+                "orientation",
+                "provenance",
+                "color",
+                "class_id",
+                "parent_tree_vertex",
+                "child_tree_vertex",
+                "next_seen",
+                "expected_next_seen",
+                "next_seen_in_range",
+                "next_seen_same_class",
+                "diagnostic",
+            ] {
+                require_present(entry.get(field), &entry_context, field)?;
+            }
+            let diagnostic = entry
+                .get("diagnostic")
+                .and_then(Value::as_str)
+                .ok_or_else(|| format!("{entry_context}: diagnostic must be a string"))?;
+            if diagnostic != "ok" {
+                return Err(format!("{entry_context}: {diagnostic}"));
+            }
+            let in_range = entry
+                .get("next_seen_in_range")
+                .and_then(Value::as_bool)
+                .ok_or_else(|| format!("{entry_context}: next_seen_in_range must be boolean"))?;
+            let same_class = entry
+                .get("next_seen_same_class")
+                .and_then(Value::as_bool)
+                .ok_or_else(|| format!("{entry_context}: next_seen_same_class must be boolean"))?;
+            if !in_range || !same_class {
+                return Err(format!(
+                    "{entry_context}: next_seen mismatch: in_range={in_range}, same_class={same_class}"
+                ));
+            }
+        }
+        for (row_idx, row) in next_seen_table.iter().enumerate() {
+            let row_context = format!("{frame_context}: next_seen_table[{row_idx}]");
+            let row = row
+                .as_object()
+                .ok_or_else(|| format!("{row_context} must be an object"))?;
+            for field in [
+                "stack_order",
+                "class_id",
+                "next_seen",
+                "expected_next_seen",
+                "diagnostic",
+            ] {
+                require_present(row.get(field), &row_context, field)?;
+            }
+            let diagnostic = row
+                .get("diagnostic")
+                .and_then(Value::as_str)
+                .ok_or_else(|| format!("{row_context}: diagnostic must be a string"))?;
+            if diagnostic != "ok" {
+                return Err(format!("{row_context}: {diagnostic}"));
+            }
+        }
     }
 
     Ok(())

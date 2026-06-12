@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <fstream>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
@@ -9,6 +10,7 @@
 
 #include "ita/variation/rov.hpp"
 #include "liteseq/refs.h"
+#include "povu/algorithms/flubbles.hpp"
 #include "povu/common/constants.hpp"
 #include "povu/refs/refs.hpp"
 
@@ -138,6 +140,35 @@ std::optional<std::string> maybe_node_id(
 		return std::nullopt;
 	return it->second;
 }
+
+void write_flubble_debug(std::ostream &out, const core::config &app_config)
+{
+	write_key(out, "flubble_debug");
+	out << '{';
+	write_key_string(out, "schema", "povu.flubble-debug.v1");
+	out << ',';
+	write_key(out, "frames");
+	out << '[';
+
+	bool first = true;
+	if (app_config.has_structure_export_path()) {
+		const fs::path sidecar = povu::flubbles::debug_sidecar_path(
+			*app_config.get_structure_export_path());
+		std::ifstream in(sidecar);
+		std::string line;
+		while (std::getline(in, line)) {
+			if (line.empty())
+				continue;
+			if (!first)
+				out << ',';
+			first = false;
+			out << line;
+		}
+	}
+
+	out << ']';
+	out << '}';
+}
 } // namespace
 
 Writer::Writer(const core::config &app_config, const bd::VG &graph,
@@ -211,6 +242,8 @@ void Writer::write_prefix(const core::config &app_config)
 	write_pvst_boundary_candidates();
 	out_ << ',';
 	write_pvst_nodes();
+	out_ << ',';
+	write_flubble_debug(out_, app_config);
 	out_ << ',';
 	write_key(out_, "variant_calls");
 	out_ << '[';

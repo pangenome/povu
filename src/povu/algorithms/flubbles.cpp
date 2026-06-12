@@ -2,14 +2,20 @@
 
 #include <algorithm>	 // for min, sort
 #include <assert.h>	 // for assert
+#include <filesystem>	 // for path, remove
+#include <fstream>	 // for ofstream
 #include <iostream>	 // for basic_ostream, operator<<
 #include <iterator>	 // for pair
 #include <list>		 // for list, _List_iterator, operator!=
 #include <map>		 // for map, operator==, _Rb_tree_ite...
 #include <memory>	 // for make_unique
+#include <mutex>	 // for mutex, lock_guard
+#include <optional>	 // for optional
 #include <set>		 // for set
 #include <stack>	 // for stack
+#include <stdexcept>	 // for runtime_error
 #include <string>	 // for char_traits, basic_string
+#include <string_view>	 // for string_view
 #include <unordered_map> // for unordered_map, operator!=
 #include <unordered_set> // for unordered_set
 #include <utility>	 // for pair, get, move, make_pair
@@ -20,6 +26,208 @@
 
 namespace povu::flubbles
 {
+namespace fs = std::filesystem;
+
+namespace
+{
+std::mutex debug_sidecar_mutex;
+
+void write_json_string(std::ostream &os, std::string_view value)
+{
+	os << '"';
+	for (char ch : value) {
+		switch (ch) {
+		case '"':
+			os << "\\\"";
+			break;
+		case '\\':
+			os << "\\\\";
+			break;
+		case '\b':
+			os << "\\b";
+			break;
+		case '\f':
+			os << "\\f";
+			break;
+		case '\n':
+			os << "\\n";
+			break;
+		case '\r':
+			os << "\\r";
+			break;
+		case '\t':
+			os << "\\t";
+			break;
+		default:
+			os << ch;
+			break;
+		}
+	}
+	os << '"';
+}
+
+void write_key(std::ostream &os, std::string_view key)
+{
+	write_json_string(os, key);
+	os << ':';
+}
+
+void write_key_string(std::ostream &os, std::string_view key,
+		      std::string_view value)
+{
+	write_key(os, key);
+	write_json_string(os, value);
+}
+
+std::string_view provenance(const pst::Tree &st, const pst::Edge &edge)
+{
+	const pst::Vertex &parent = st.get_vertex(edge.get_parent_v_idx());
+	const pst::Vertex &child = st.get_vertex(edge.get_child_v_idx());
+	if (parent.type() == pgt::v_type_e::dummy ||
+	    child.type() == pgt::v_type_e::dummy)
+		return "dummy";
+	if (edge.get_color() == pgt::color_e::black)
+		return "real";
+	return "auxiliary";
+}
+
+std::optional<pt::idx_t> expected_next_seen(const eq_class_stack_t &ecs,
+					    pt::idx_t idx)
+{
+	if (idx >= ecs.s.size())
+		return std::nullopt;
+	const pt::idx_t cls = ecs.s[idx].cls;
+	for (pt::idx_t later{idx + 1}; later < ecs.s.size(); ++later) {
+		if (ecs.s[later].cls == cls)
+			return later;
+	}
+	return idx;
+}
+
+void append_debug_sidecar_frame(const core::config &app_config,
+				const pst::Tree &st,
+				const eq_class_stack_t &ecs)
+{
+	if (!app_config.has_structure_export_path())
+		return;
+
+	const fs::path sidecar =
+		debug_sidecar_path(*app_config.get_structure_export_path());
+	std::lock_guard<std::mutex> lock(debug_sidecar_mutex);
+	std::ofstream out(sidecar, std::ios::app);
+	if (!out.is_open()) {
+		throw std::runtime_error("could not open flubble debug sidecar: " +
+					 sidecar.string());
+	}
+
+	out << '{';
+	write_key_string(out, "schema", "povu.flubble-debug.frame.v1");
+	out << ',';
+	write_key(out, "tree_vertex_count");
+	out << st.vtx_count() << ',';
+	write_key(out, "tree_edge_count");
+	out << st.tree_edge_count() << ',';
+	write_key(out, "stack_entries");
+	out << '[';
+	for (pt::idx_t idx{}; idx < ecs.s.size(); ++idx) {
+		if (idx > 0)
+			out << ',';
+		const auto [orientation, vertex_id, tree_edge_idx, class_id] =
+			ecs.s[idx];
+		const pst::Edge &edge = st.get_tree_edge(tree_edge_idx);
+		const auto expected = expected_next_seen(ecs, idx);
+		const pt::idx_t actual = ecs.next_seen[idx];
+		const bool next_seen_in_range = actual < ecs.s.size();
+		const bool actual_same_class =
+			next_seen_in_range && ecs.s[actual].cls == class_id;
+		const bool next_seen_matches =
+			expected.has_value() && actual == *expected;
+
+		out << '{';
+		write_key(out, "order");
+		out << idx << ',';
+		write_key(out, "tree_edge_index");
+		out << tree_edge_idx << ',';
+		write_key(out, "tree_edge_id");
+		out << edge.id() << ',';
+		write_key(out, "boundary_vertex_id");
+		out << vertex_id << ',';
+		write_key_string(out, "orientation", pgt::to_str(orientation));
+		out << ',';
+		write_key_string(out, "provenance", provenance(st, edge));
+		out << ',';
+		write_key_string(out, "color", pgt::to_str(edge.get_color()));
+		out << ',';
+		write_key(out, "class_id");
+		out << class_id << ',';
+		write_key(out, "parent_tree_vertex");
+		out << edge.get_parent_v_idx() << ',';
+		write_key(out, "child_tree_vertex");
+		out << edge.get_child_v_idx() << ',';
+		write_key(out, "next_seen");
+		out << actual << ',';
+		write_key(out, "expected_next_seen");
+		if (expected.has_value())
+			out << *expected;
+		else
+			out << "null";
+		out << ',';
+		write_key(out, "next_seen_in_range");
+		out << (next_seen_in_range ? "true" : "false") << ',';
+		write_key(out, "next_seen_same_class");
+		out << (actual_same_class ? "true" : "false") << ',';
+		write_key_string(out, "diagnostic",
+				 next_seen_matches
+					 ? "ok"
+					 : "mismatch: next_seen does not match the next later stack entry with the same class");
+		out << '}';
+	}
+	out << ']';
+	out << ",\"next_seen_table\":[";
+	for (pt::idx_t idx{}; idx < ecs.next_seen.size(); ++idx) {
+		if (idx > 0)
+			out << ',';
+		out << '{';
+		write_key(out, "stack_order");
+		out << idx << ',';
+		write_key(out, "class_id");
+		out << ecs.s[idx].cls << ',';
+		write_key(out, "next_seen");
+		out << ecs.next_seen[idx] << ',';
+		write_key(out, "expected_next_seen");
+		const auto expected = expected_next_seen(ecs, idx);
+		if (expected.has_value())
+			out << *expected;
+		else
+			out << "null";
+		out << ',';
+		write_key_string(out, "diagnostic",
+				 expected.has_value() &&
+						 ecs.next_seen[idx] == *expected
+					 ? "ok"
+					 : "mismatch: next_seen table entry is not the next same-class stack index");
+		out << '}';
+	}
+	out << "]}";
+	out << '\n';
+}
+} // namespace
+
+fs::path debug_sidecar_path(const fs::path &structure_export_path)
+{
+	return fs::path{structure_export_path.string() + ".flubble-debug.jsonl"};
+}
+
+void reset_debug_sidecar(const core::config &app_config)
+{
+	if (!app_config.has_structure_export_path())
+		return;
+	const fs::path sidecar =
+		debug_sidecar_path(*app_config.get_structure_export_path());
+	std::lock_guard<std::mutex> lock(debug_sidecar_mutex);
+	std::error_code ignored;
+	fs::remove(sidecar, ignored);
+}
 
 [[nodiscard]] constexpr pvst::endpoints
 normalize_endpoints(pt::id_t s_id, pgt::or_e s_or, pt::id_t e_id,
@@ -499,6 +707,7 @@ pvst::Tree find_flubbles(pst::Tree &st, const core::config &app_config)
 		compute_eq_class_stack(st, ecs.s);
 		compute_eq_class_metadata(ecs);
 	}
+	append_debug_sidecar_frame(app_config, st, ecs);
 
 	// create the pvst and add the root vertex
 	pvst::Tree pvst;
