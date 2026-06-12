@@ -105,6 +105,52 @@ theorem buildHierarchyFrom_boundaries (stack : List Link)
   simp [buildHierarchyFrom, Hierarchy.boundaries,
     map_nodeFor_boundaries stack boundaries boundaries]
 
+theorem buildHierarchyFrom_nodes_length (stack : List Link)
+    (boundaries : List Boundary) :
+    (buildHierarchyFrom stack boundaries).nodes.length = boundaries.length := by
+  simp [buildHierarchyFrom]
+
+theorem buildHierarchyFrom_nodes_length_le (stack : List Link)
+    (boundaries : List Boundary) :
+    (buildHierarchyFrom stack boundaries).nodes.length ≤ boundaries.length := by
+  rw [buildHierarchyFrom_nodes_length]
+  exact Nat.le_refl _
+
+theorem buildHierarchyFrom_parentReferenceSlots_length
+    (stack : List Link) (boundaries : List Boundary) :
+    (buildHierarchyFrom stack boundaries).parentReferenceSlots =
+      boundaries.length := by
+  simp [Hierarchy.parentReferenceSlots, buildHierarchyFrom_nodes_length]
+
+theorem buildHierarchyFrom_boundaryReferenceSlots_length
+    (stack : List Link) (boundaries : List Boundary) :
+    (buildHierarchyFrom stack boundaries).boundaryReferenceSlots =
+      boundaries.length := by
+  simp [Hierarchy.boundaryReferenceSlots, buildHierarchyFrom_nodes_length]
+
+/--
+For supported hierarchy inputs, parent and boundary-reference metadata remain
+flat: exactly one optional parent slot and one boundary-reference slot are
+stored per node.  No additional list-size invariant is needed because `Node`
+has no list-valued parent/reference metadata field.
+-/
+theorem buildHierarchyFrom_flatMetadataSlots_length
+    {stack : List Link} {boundaries : List Boundary}
+    (_hSupported : SupportedHierarchyInput stack boundaries) :
+    (buildHierarchyFrom stack boundaries).flatMetadataSlots =
+      boundaries.length + boundaries.length := by
+  simp [Hierarchy.flatMetadataSlots,
+    buildHierarchyFrom_parentReferenceSlots_length,
+    buildHierarchyFrom_boundaryReferenceSlots_length]
+
+theorem buildHierarchyFrom_flatMetadataSlots_le_two_mul
+    {stack : List Link} {boundaries : List Boundary}
+    (hSupported : SupportedHierarchyInput stack boundaries) :
+    (buildHierarchyFrom stack boundaries).flatMetadataSlots ≤
+      boundaries.length + boundaries.length := by
+  rw [buildHierarchyFrom_flatMetadataSlots_length hSupported]
+  exact Nat.le_refl _
+
 theorem buildHierarchyFrom_parent_correct {stack : List Link}
     {boundaries : List Boundary} {node : Node}
     (hNode : node ∈ (buildHierarchyFrom stack boundaries).nodes) :
@@ -173,6 +219,105 @@ theorem buildHierarchy_correct {g : Graph} {frame : TraversalFrame g}
       rw [buildHierarchyFrom_boundaries] at hMem
       have hBoundary := hFlubbleCorrect.1 boundary hMem
       exact hBoundary.1.2.2.2.1
+
+theorem buildHierarchy_nodes_length {g : Graph}
+    (frame : TraversalFrame g)
+    (classes : Flubble.CycleClassAssignment g) :
+    (buildHierarchy frame classes).nodes.length =
+      (Flubble.detectFlubbles frame classes).length := by
+  unfold buildHierarchy
+  exact buildHierarchyFrom_nodes_length
+    (Flubble.candidateStack frame)
+    (Flubble.detectFlubbles frame classes)
+
+theorem buildHierarchy_nodes_length_le_detectFlubbles_length {g : Graph}
+    (frame : TraversalFrame g)
+    (classes : Flubble.CycleClassAssignment g) :
+    (buildHierarchy frame classes).nodes.length ≤
+      (Flubble.detectFlubbles frame classes).length := by
+  rw [buildHierarchy_nodes_length]
+  exact Nat.le_refl _
+
+theorem buildHierarchy_parentReferenceSlots_length {g : Graph}
+    (frame : TraversalFrame g)
+    (classes : Flubble.CycleClassAssignment g) :
+    (buildHierarchy frame classes).parentReferenceSlots =
+      (Flubble.detectFlubbles frame classes).length := by
+  unfold buildHierarchy
+  exact buildHierarchyFrom_parentReferenceSlots_length
+    (Flubble.candidateStack frame)
+    (Flubble.detectFlubbles frame classes)
+
+theorem buildHierarchy_boundaryReferenceSlots_length {g : Graph}
+    (frame : TraversalFrame g)
+    (classes : Flubble.CycleClassAssignment g) :
+    (buildHierarchy frame classes).boundaryReferenceSlots =
+      (Flubble.detectFlubbles frame classes).length := by
+  unfold buildHierarchy
+  exact buildHierarchyFrom_boundaryReferenceSlots_length
+    (Flubble.candidateStack frame)
+    (Flubble.detectFlubbles frame classes)
+
+theorem buildHierarchy_flatMetadataSlots_length {g : Graph}
+    {frame : TraversalFrame g}
+    {classes : Flubble.CycleClassAssignment g}
+    (hSupported :
+      SupportedHierarchyInput
+        (Flubble.candidateStack frame)
+        (Flubble.detectFlubbles frame classes)) :
+    (buildHierarchy frame classes).flatMetadataSlots =
+      (Flubble.detectFlubbles frame classes).length +
+        (Flubble.detectFlubbles frame classes).length := by
+  unfold buildHierarchy
+  exact buildHierarchyFrom_flatMetadataSlots_length hSupported
+
+theorem buildHierarchy_nodes_length_le_graph_edgeCount {g : Graph}
+    (frame : TraversalFrame g)
+    (classes : Flubble.CycleClassAssignment g)
+    (hTreeLinksNodup : frame.treeLinks.Nodup) :
+    (buildHierarchy frame classes).nodes.length ≤ g.edgeCount := by
+  exact Nat.le_trans
+    (buildHierarchy_nodes_length_le_detectFlubbles_length frame classes)
+    (Flubble.detectFlubbles_length_le_graph_edgeCount
+      frame classes hTreeLinksNodup)
+
+theorem buildHierarchy_nodes_length_le_supportedInput_graph_edgeCount
+    {g : Graph} {frame : TraversalFrame g}
+    (classes : Flubble.CycleClassAssignment g)
+    (hInput : Flubble.SupportedInput g frame) :
+    (buildHierarchy frame classes).nodes.length ≤ g.edgeCount :=
+  buildHierarchy_nodes_length_le_graph_edgeCount
+    frame classes hInput.treeLinks_nodup
+
+theorem buildHierarchy_flatMetadataSlots_le_graph_edgeCount_twice
+    {g : Graph} {frame : TraversalFrame g}
+    {classes : Flubble.CycleClassAssignment g}
+    (hTreeLinksNodup : frame.treeLinks.Nodup)
+    (hSupported :
+      SupportedHierarchyInput
+        (Flubble.candidateStack frame)
+        (Flubble.detectFlubbles frame classes)) :
+    (buildHierarchy frame classes).flatMetadataSlots ≤
+      g.edgeCount + g.edgeCount := by
+  rw [buildHierarchy_flatMetadataSlots_length hSupported]
+  exact Nat.add_le_add
+    (Flubble.detectFlubbles_length_le_graph_edgeCount
+      frame classes hTreeLinksNodup)
+    (Flubble.detectFlubbles_length_le_graph_edgeCount
+      frame classes hTreeLinksNodup)
+
+theorem buildHierarchy_flatMetadataSlots_le_supportedInput_graph_edgeCount_twice
+    {g : Graph} {frame : TraversalFrame g}
+    {classes : Flubble.CycleClassAssignment g}
+    (hInput : Flubble.SupportedInput g frame)
+    (hSupported :
+      SupportedHierarchyInput
+        (Flubble.candidateStack frame)
+        (Flubble.detectFlubbles frame classes)) :
+    (buildHierarchy frame classes).flatMetadataSlots ≤
+      g.edgeCount + g.edgeCount :=
+  buildHierarchy_flatMetadataSlots_le_graph_edgeCount_twice
+    hInput.treeLinks_nodup hSupported
 
 theorem buildHierarchy_rejects_unsupported {stack : List Link}
     {boundaries : List Boundary}

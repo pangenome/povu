@@ -147,6 +147,25 @@ namespace Hierarchy
 def boundaries (hierarchy : Hierarchy) : List Boundary :=
   hierarchy.nodes.map Node.boundary
 
+/--
+One parent-reference metadata slot is emitted with each flat hierarchy node.
+There is no list-valued parent metadata in this representation.
+-/
+def parentReferenceSlots (hierarchy : Hierarchy) : Nat :=
+  hierarchy.nodes.length
+
+/--
+One boundary-reference slot is emitted with each flat hierarchy node.
+This names the reference side of the flat node representation separately from
+the optional parent slot above.
+-/
+def boundaryReferenceSlots (hierarchy : Hierarchy) : Nat :=
+  hierarchy.nodes.length
+
+/-- Total flat node/reference metadata slots tracked by output-size proofs. -/
+def flatMetadataSlots (hierarchy : Hierarchy) : Nat :=
+  hierarchy.parentReferenceSlots + hierarchy.boundaryReferenceSlots
+
 end Hierarchy
 
 /-- Parent interpretation for one hierarchy node. -/
