@@ -1,10 +1,10 @@
 #set document(
-  title: "Flubble Linear-Time Algorithm Proof",
+  title: "What Lean Proves About Flubbles",
   author: "povu Lean proof notes",
 )
 #set page(paper: "us-letter", margin: (x: 0.75in, y: 0.7in))
 #set text(font: "Libertinus Serif", size: 10pt)
-#set par(justify: true, leading: 0.55em)
+#set par(justify: true, leading: 0.58em)
 #set heading(numbering: "1.")
 
 #show raw.where(block: true): it => block(
@@ -16,413 +16,223 @@
 )
 
 #align(center)[
-  #text(size: 18pt, weight: "bold")[Flubble Linear-Time Algorithm Proof]
+  #text(size: 18pt, weight: "bold")[What Lean Proves About Flubbles]
 
-  #text(size: 9pt)[Rendered proof note for `revise-flubble-linear`, 2026-06-12]
+  #text(size: 9pt)[Human-readable proof note, 2026-06-12]
 ]
 
 #outline(title: [Contents], indent: auto)
 
-= Main Claim
+= Short Answer
 
-The fast indexed flubble detector/extractor is a linear-time algorithm over the
-candidate stack under the ordinary word-RAM convention that class-index lookup
-and update are constant-time operations. Lean now exposes this statement as:
+There are two natural questions.
 
-```lean
-PovuLean.Complexity.Flubble.indexed_flubble_stage_linear_in_candidateStack
-```
+#quote[
+Are there only linearly many flubbles in a graph?
+]
 
-Lean also now exposes the Nadia-facing count theorem:
+Yes, for the canonical flubbles used by the povu algorithm. Lean proves that,
+for a supported traversal frame `F` over a graph `G` and a correct cycle-class
+assignment `C`,
 
-```lean
-PovuLean.Algorithms.Flubble.flubble_count_le_numEdges
-```
+$ |"detectFlubbles"(F, C)| <= "edgeCount"(G). $
 
-For a supported traversal frame and certified cycle-class assignment, this
-states that the canonical detector output has length at most `edgeCount(G)`.
-That is the formal linear-number-of-flubbles statement for the current Lean
-definition: it counts deduplicated canonical `detectFlubbles` boundaries, not
-all pairwise cycle-equivalent candidate-edge pairs.
+The formal theorem is
+#link("https://github.com/pangenome/povu/blob/main/PovuLean/Algorithms/Flubble/Correctness.lean#L235")[#raw("PovuLean.Algorithms.Flubble.flubble_count_le_numEdges")].
+It is a count theorem for the canonical detector output. It is not a theorem
+about all pairwise cycle-equivalent edge pairs; that all-pairs interpretation
+can be quadratic and is not the flubble definition used here.
 
-The theorem covers the indexed detector, boundary emission, and flat hierarchy
-construction. It uses the mechanically checked indexed detector facts that the
-scan performs exactly one class-index lookup and one class-index update per
-candidate, plus the checked output-size facts that emitted flubble boundaries
-and hierarchy metadata are linear in the candidate stack.
+#quote[
+Is flubble finding linear time in graph size?
+]
 
-Once the candidate-stack size is bounded linearly by the graph-size measure
+Yes for the indexed flubble-finding stage, under the ordinary word-RAM model
+used in algorithms analysis. The indexed detector does one class-index lookup
+and one class-index update per candidate, emits at most one canonical boundary
+per candidate, and builds hierarchy metadata whose size is linear in the number
+of emitted boundaries. Once the candidate stack is linearly bounded by the
+graph-size measure, the whole indexed flubble stage is linear in graph size.
 
-$ n(G) = |V| + "edgeCount"(G), $
+The formal stage theorem is
+#link("https://github.com/pangenome/povu/blob/main/PovuLean/Complexity/Flubble.lean#L452")[#raw("PovuLean.Complexity.Flubble.indexed_flubble_stage_linear_in_graphSize")].
+The candidate-stack version is
+#link("https://github.com/pangenome/povu/blob/main/PovuLean/Complexity/Flubble.lean#L426")[#raw("indexed_flubble_stage_linear_in_candidateStack")].
 
-the same stage is linear in graph size. Lean exposes that corollary as:
+The full decomposition theorem is broader and conditional: Lean composes the
+flubble-stage result with named contracts for component decomposition,
+augmentation, traversal-frame construction, cycle-class assignment, and
+hairpin scanning. Those are standard linear graph-algorithm stages, but their
+linearity is not all mechanized in Lean yet.
 
-```lean
-PovuLean.Complexity.Flubble.indexed_flubble_stage_linear_in_graphSize
-```
+= The Flubble Definition Being Counted
 
-This is the algorithms-level message: after the traversal frame and
-cycle-class assignment provide a candidate stack of linear size, the indexed
-flubble detector/extractor and hierarchy builder add only linear work.
+The detector works over an ordered candidate stack
 
-= Algorithm Model
+$ S(F) = [e_0, e_1, dots, e_(m-1)]. $
 
-Let `G` be the Lean graph, with segment list `V` and directed black/grey link
-measure `edgeCount(G)`. A traversal frame `F : TraversalFrame G` contains an
-ordered tree-link list. The flubble stage scans only the candidate stack
+The stack contains the real black tree edges eligible to be flubble boundary
+endpoints. A cycle-class assignment `C` labels candidate edges by the
+cycle-equivalence class used in the flubble characterization.
 
-$ S(F) = "candidateStack"(F) = [e_0, e_1, dots, e_(m-1)], $
-
-the ordered subsequence of real black tree edges eligible to be flubble
-endpoints. A cycle-class assignment `C` labels candidates by the cycle
-equivalence classes needed by the flubble characterization.
-
-For candidate `e_i`, the detector asks for the first later same-class
-candidate after a nonempty gap:
+For a candidate `e_i`, the canonical rule is:
 
 $ j = min { k | i + 1 < k < m and C(e_i) = C(e_k) }. $
 
-When such `j` exists, the detector emits the canonical ordered boundary
+If such a `j` exists, the detector emits the ordered boundary
 
-$ b = "Boundary.ordered"(e_i, e_j). $
+$ "Boundary.ordered"(e_i, e_j). $
 
-The reference detector defines this relation directly. The fast detector keeps
-an index from class id to the next later candidate already seen in the reverse
-scan. Under the standard word-RAM model, table lookup and table update are
-constant-cost operations; the scan therefore does one constant amount of index
-work per stack candidate.
+The nonempty-gap condition `i + 1 < j` is part of the rule. The word
+"canonical" matters: a candidate edge can start at most one emitted flubble,
+namely the one closed by the first later same-class edge after the gap. This is
+why the number of canonical flubbles is linear. Counting every same-class pair
+would be a different relation and can be quadratic.
 
-== Hierarchy Construction
+Lean names this semantic boundary predicate
+#link("https://github.com/pangenome/povu/blob/main/PovuLean/Algorithms/Flubble/Spec.lean#L155")[#raw("IsFlubbleBoundary")].
+The detector correctness theorem links that predicate to the executable list
+returned by `detectFlubbles`:
+#link("https://github.com/pangenome/povu/blob/main/PovuLean/Algorithms/Flubble/Correctness.lean#L210")[#raw("detectFlubbles_correct")].
 
-Each emitted boundary has a span in the candidate stack. If
+= Why The Count Is Linear
 
-$ b = (e_i, e_j) " with " i < j, $
+The proof is simple once the canonical rule is fixed.
 
-then `boundarySpan? S b = some { start := i, finish := j }`. Supported
-hierarchy inputs are laminar: for any two distinct spans, one strictly contains
-the other or the spans are disjoint. Parenthood is nearest strict containment.
-The flat hierarchy records one node per detected flubble boundary and parent /
-boundary metadata slots for those nodes.
+1. The raw detector visits each candidate as a possible opener.
+2. For that opener it emits either zero boundaries or exactly one boundary.
+3. Deduplication cannot increase the list length.
 
-Lean proves that supported laminar inputs produce the canonical forest
-hierarchy and that the flat hierarchy output size is at most three slots per
-candidate-stack entry.
+Therefore
 
-= Mechanically Checked Lean Facts
+$ |"detectFlubbles"(F, C)| <= |S(F)|. $
 
-This section lists the theorem surface used by the algorithms claim. The names
-are checked by `lake build`.
+The stack `S(F)` is a filtered subsequence of the traversal frame's tree links.
+For supported input, the tree-link list has no duplicates and every tree link
+comes from the graph's link list. Since `edgeCount(G)` is the graph link count,
 
-== Flubble Semantics
+$ |S(F)| <= "edgeCount"(G). $
 
-Module: `PovuLean.Algorithms.Flubble.Spec`
+Combining the two inequalities gives
 
-Key names:
+$ |"detectFlubbles"(F, C)| <= "edgeCount"(G). $
 
-+ `PovuLean.Algorithms.Flubble.Boundary`
-+ `PovuLean.Algorithms.Flubble.Boundary.CanonicalIds`
-+ `PovuLean.Algorithms.Flubble.Boundary.ordered`
-+ `PovuLean.Algorithms.Flubble.CanonicalClassBoundary`
-+ `PovuLean.Algorithms.Flubble.IsPaperBoundary`
-+ `PovuLean.Algorithms.Flubble.IsFlubbleBoundary`
-+ `PovuLean.Algorithms.Flubble.NoDuplicateBoundaries`
+The underlying detector-size theorem is
+#link("https://github.com/pangenome/povu/blob/main/PovuLean/Algorithms/Flubble/Detect.lean#L196")[#raw("detectFlubbles_length_le_supportedInput_graph_edgeCount")].
+The paper-facing wrapper is
+#link("https://github.com/pangenome/povu/blob/main/PovuLean/Algorithms/Flubble/Correctness.lean#L235")[#raw("flubble_count_le_numEdges")].
 
-Module: `PovuLean.Algorithms.Flubble.InputInvariant`
+The theorem has a `CycleClassAssignment.Correct` hypothesis. That hypothesis is
+not needed for the raw list-length inequality, but it is needed to read the
+list as the list of semantic flubbles rather than merely same-class detector
+outputs. The class-assignment contract is here:
+#link("https://github.com/pangenome/povu/blob/main/PovuLean/Algorithms/Flubble/InputInvariant.lean#L93")[#raw("CycleClassAssignment.Correct")].
 
-Key names:
+= Why Finding Them Is Linear
 
-+ `PovuLean.Algorithms.Flubble.IsBoundaryCandidate`
-+ `PovuLean.Algorithms.Flubble.candidateStack`
-+ `PovuLean.Algorithms.Flubble.SupportedInput`
-+ `PovuLean.Algorithms.Flubble.CycleClassAssignment`
-+ `PovuLean.Algorithms.Flubble.CycleClassAssignment.Correct`
-+ `PovuLean.Algorithms.Flubble.SupportedGFAInput`
-+ `PovuLean.Algorithms.Flubble.SupportedGFAInput.toSupportedInput`
+The direct specification says "for each opener, find the first later
+same-class closer after a gap." A literal forward scan for every opener would
+be quadratic. The algorithmic move is the indexed detector.
 
-The `CycleClassAssignment.Correct` obligation is a substantive correctness
-question, independent of the linear-time accounting. It states that equal class
-ids are sound and complete for cycle-equivalent boundary candidates. The
-flubble linear-time theorem assumes this semantic classification is already
-available; it does not make the class-assignment proof disappear.
+The indexed detector scans the candidate stack in reverse and maintains a
+class-index table. At each candidate it performs:
 
-== Detector Correctness And Size Bounds
++ one lookup: what is the next later candidate in this class?
++ one update: this candidate is now the latest seen candidate in this class.
 
-Module: `PovuLean.Algorithms.Flubble.Detect`
+Lean proves this exact operation count:
+#link("https://github.com/pangenome/povu/blob/main/PovuLean/Algorithms/Flubble/Indexed.lean#L372")[#raw("detectStackIndexedRaw_one_lookup_and_update_per_candidate")].
 
-Key names:
+Lean also proves the indexed detector returns the same boundaries as the direct
+reference detector:
+#link("https://github.com/pangenome/povu/blob/main/PovuLean/Algorithms/Flubble/Indexed.lean#L266")[#raw("detectFlubblesIndexed_eq_detectFlubbles")].
+So the fast one-pass algorithm computes the same canonical flubble relation as
+the obvious specification.
 
-+ `PovuLean.Algorithms.Flubble.detectFlubbles`
-+ `PovuLean.Algorithms.Flubble.detectFlubbles_length_le_candidateStack_length`
-+ `PovuLean.Algorithms.Flubble.detectFlubbles_length_le_treeLinks_length`
-+ `PovuLean.Algorithms.Flubble.detectFlubbles_length_le_graph_links_length`
-+ `PovuLean.Algorithms.Flubble.detectFlubbles_length_le_graph_edgeCount`
-+ `PovuLean.Algorithms.Flubble.detectFlubbles_length_le_supportedInput_graph_edgeCount`
-+ `PovuLean.Algorithms.Flubble.detectFlubbles_noDuplicates`
+Under the usual word-RAM convention that class-index lookup and update are
+constant-time operations, the indexed detector work is linear in `|S(F)|`.
+Boundary emission is linear in the number of emitted boundaries, and the count
+theorem above bounds that number by `|S(F)|` and by `edgeCount(G)`.
 
-Module: `PovuLean.Algorithms.Flubble.Correctness`
+The hierarchy builder records one node per detected flubble and flat metadata
+for parent/boundary references. Lean proves the relevant graph-edge-count
+bounds:
 
-Key names:
++ #link("https://github.com/pangenome/povu/blob/main/PovuLean/Algorithms/FlubbleTree/Correctness.lean#L284")[#raw("buildHierarchy_nodes_length_le_supportedInput_graph_edgeCount")]
++ #link("https://github.com/pangenome/povu/blob/main/PovuLean/Algorithms/FlubbleTree/Correctness.lean#L309")[#raw("buildHierarchy_flatMetadataSlots_le_supportedInput_graph_edgeCount_twice")]
 
-+ `PovuLean.Algorithms.Flubble.detectFlubbles_sound`
-+ `PovuLean.Algorithms.Flubble.detectFlubbles_complete`
-+ `PovuLean.Algorithms.Flubble.detectFlubbles_canonical_noDuplicates`
-+ `PovuLean.Algorithms.Flubble.detectFlubbles_correct`
-+ `PovuLean.Algorithms.Flubble.flubble_count_le_numEdges`
-+ `PovuLean.Algorithms.Flubble.detectFlubbles_correct_for_gfa`
-
-These theorems prove that the Lean reference detector is sound and complete for
-the flubble-boundary relation, emits canonical duplicate-free boundaries, and
-has output size bounded by the candidate stack and graph edge count. The named
-`flubble_count_le_numEdges` theorem packages the graph-edge-count bound as the
-paper-facing canonical flubble count theorem.
-
-== Indexed Detector
-
-Module: `PovuLean.Algorithms.Flubble.Indexed`
-
-Semantic-equivalence names:
-
-+ `PovuLean.Algorithms.Flubble.lookup_indexedEntriesFrom_eq_firstSameClass?`
-+ `PovuLean.Algorithms.Flubble.indexedBoundaryAt?_eq_closeAfterGap?`
-+ `PovuLean.Algorithms.Flubble.detectStackIndexedRaw_eq_detectStackRaw`
-+ `PovuLean.Algorithms.Flubble.detectStackIndexed_eq_detectStack`
-+ `PovuLean.Algorithms.Flubble.detectFlubblesIndexed_eq_detectFlubbles`
-+ `PovuLean.Algorithms.Flubble.detectFlubblesIndexed_iff_isFlubbleBoundary`
-+ `PovuLean.Algorithms.Flubble.detectFlubblesIndexed_noDuplicates`
-
-Operation-count names:
-
-+ `PovuLean.Algorithms.Flubble.scanStackIndexedAux_visited`
-+ `PovuLean.Algorithms.Flubble.scanStackIndexedAux_lookups`
-+ `PovuLean.Algorithms.Flubble.scanStackIndexedAux_updates`
-+ `PovuLean.Algorithms.Flubble.detectStackIndexedRaw_one_lookup_and_update_per_candidate`
-
-These theorems justify using the indexed scan as the fast detector: it returns
-exactly the same boundaries as the reference detector and exposes the
-one-lookup / one-update per-candidate accounting used by the cost theorem.
-
-== Hierarchy Correctness And Size Bounds
-
-Module: `PovuLean.Algorithms.FlubbleTree.Spec`
-
-Key names:
-
-+ `PovuLean.Algorithms.FlubbleTree.Span`
-+ `PovuLean.Algorithms.FlubbleTree.boundarySpan?`
-+ `PovuLean.Algorithms.FlubbleTree.SupportedHierarchyInput`
-+ `PovuLean.Algorithms.FlubbleTree.UnsupportedHierarchyInput`
-+ `PovuLean.Algorithms.FlubbleTree.IsForestHierarchy`
-+ `PovuLean.Algorithms.FlubbleTree.IsCorrectHierarchy`
-
-Module: `PovuLean.Algorithms.FlubbleTree.Correctness`
-
-Key names:
-
-+ `PovuLean.Algorithms.FlubbleTree.buildHierarchyFrom_correct`
-+ `PovuLean.Algorithms.FlubbleTree.buildHierarchy_correct`
-+ `PovuLean.Algorithms.FlubbleTree.buildHierarchy_rejects_unsupported`
-+ `PovuLean.Algorithms.FlubbleTree.buildHierarchy_nodes_length`
-+ `PovuLean.Algorithms.FlubbleTree.buildHierarchy_nodes_length_le_detectFlubbles_length`
-+ `PovuLean.Algorithms.FlubbleTree.buildHierarchy_nodes_length_le_supportedInput_graph_edgeCount`
-+ `PovuLean.Algorithms.FlubbleTree.buildHierarchy_flatMetadataSlots_le_supportedInput_graph_edgeCount_twice`
-
-These theorems prove canonical hierarchy construction for supported laminar
-boundary spans, and prove the hierarchy output-size bounds used by the
-linear-time statement.
-
-== Cost And Composition Theorems
-
-Module: `PovuLean.Complexity.Flubble`
-
-Key names:
-
-+ `PovuLean.Complexity.Flubble.GraphSizes`
-+ `PovuLean.Complexity.Flubble.DecompositionSizes`
-+ `PovuLean.Complexity.Flubble.StageCost`
-+ `PovuLean.Complexity.Flubble.ClassIndexContract`
-+ `PovuLean.Complexity.Flubble.IndexedDetectorOperationContract`
-+ `PovuLean.Complexity.Flubble.IndexedDetectorOperationContract.operationCost_linear_in_candidates`
-+ `PovuLean.Complexity.Flubble.ConditionalExtractionCostContract`
-+ `PovuLean.Complexity.Flubble.boundaryOutputSize_linear_in_candidateStack`
-+ `PovuLean.Complexity.Flubble.hierarchyConstructionOutputSize_linear_in_candidateStack`
-+ `PovuLean.Complexity.Flubble.conditional_extraction_linear_in_candidateStack`
-+ `PovuLean.Complexity.Flubble.indexed_flubble_stage_linear_in_candidateStack`
-+ `PovuLean.Complexity.Flubble.indexed_flubble_stage_linear_in_graphSize`
-+ `PovuLean.Complexity.Flubble.DecompositionStageCosts.total_linear_with`
-
-The two `indexed_flubble_stage_*` theorems are the short algorithms-facing
-entry points. They package the indexed operation-count theorem, output-size
-bounds, hierarchy-size bounds, and candidate-stack size composition.
-
-= Full Pipeline Perspective
-
-The complete semantic decomposition theorem is:
+Putting these pieces together gives the flubble-stage theorem:
 
 ```lean
-PovuLean.Complexity.Decomposition.conditional_semantic_decompose_linear
+PovuLean.Complexity.Flubble.indexed_flubble_stage_linear_in_candidateStack
+PovuLean.Complexity.Flubble.indexed_flubble_stage_linear_in_graphSize
 ```
 
-Its conclusion combines a proof-side linear cost bound with semantic VCF
-correctness:
+The graph-size theorem takes the candidate-stack linear-size bound as a
+hypothesis. In ordinary graph terms, that is the statement that the traversal
+frame has not expanded the list of candidate edges superlinearly. The Lean
+detector count theorem itself already proves the emitted flubble list is
+bounded by `edgeCount(G)` under supported input.
 
-```lean
-LinearBound costs.total sizes.inputGraphSize
-  /\ VCF.EmissionCorrect frame classes scan
-       (Algorithms.FlubbleTree.buildHierarchy frame classes)
-       calls
-       (VCF.emitRecords calls)
-```
+= What Is Mechanized, Exactly?
 
-The theorem uses `SemanticDecomposeIntermediateSizeBounds` to compose all
-intermediate measures back to the graph size. The candidate-stack bound in that
-record is the bridge from the flubble-stage theorem to the whole graph-size
-measure.
+Lean currently checks the following.
 
-Five upstream full-pipeline stage linearities are textbook linear algorithmic
-facts but are not mechanized in Lean yet:
++ The semantic definition of canonical flubble boundaries over a traversal
+  candidate stack.
++ Soundness and completeness of `detectFlubbles` for that boundary relation.
++ Duplicate freedom and canonicalization of the detector output.
++ The count theorem
+  #link("https://github.com/pangenome/povu/blob/main/PovuLean/Algorithms/Flubble/Correctness.lean#L235")[#raw("flubble_count_le_numEdges")].
++ Equivalence of the indexed detector to the reference detector.
++ One lookup and one update per candidate in the indexed scan.
++ Linear output-size bounds for detected boundaries and flubble hierarchy
+  metadata.
++ Linear-time flubble-stage composition under the explicit cost contracts.
 
-+ component decomposition,
-+ tip/dummy augmentation,
-+ traversal-frame construction,
-+ cycle-class assignment, and
-+ hairpin scan.
+The full semantic decomposition theorem is
+#link("https://github.com/pangenome/povu/blob/main/PovuLean/Complexity/Decomposition.lean#L155")[#raw("conditional_semantic_decompose_linear")].
+It proves the arithmetic composition: if the named upstream stages are linear,
+and if the intermediate sizes stay linear in graph size, then the semantic
+pipeline cost is linear in graph size. It also returns semantic VCF correctness
+for the corresponding Lean witnesses.
 
-They are standard graph/tree traversal or stack/indexing facts under the same
-word-RAM model, but the current Lean theorem accepts them as named stage
-contracts. This is a mechanization boundary, not evidence of an algorithmic
-unknown. The separate deployed-code refinement question is whether current C++,
-Rust, parser, export, and serialization paths instantiate the semantic
-witnesses and cost slots for arbitrary supported inputs.
+= What Remains Outside This Proof
 
-= Implementation Conformance Context
+There are three boundaries worth keeping separate.
 
-The implementation material validates and audits conformance to the algorithmic
-model. It is not the main theorem.
+First, Lean has not introduced a graph-only set called something like
+`flubbles G` and proved a cardinality theorem for that object. The current
+count theorem is intentionally over the existing canonical detector list
+`detectFlubbles frame classes`. That is the right theorem for the algorithm as
+implemented in the Lean model.
 
-Relevant documentation and surfaces:
+Second, `CycleClassAssignment.Correct` is a genuine correctness obligation.
+The count and runtime accounting assume a class assignment whose equal class
+ids are sound and complete for cycle-equivalent candidate edges. Fixture-level
+C++ audits compare exported classes with an independent cycle-equivalence
+oracle, but that is conformance evidence, not a Lean proof for arbitrary C++
+executions.
 
-+ `docs/lean4-proof/bridge_cost_instrumentation.md`
-+ `docs/lean4-proof/bridge_povu_implementation.md`
-+ `docs/lean4-proof/checked_translator.md`
-+ `src/povu/common/stage_cost.cpp`
-+ `include/povu/common/stage_cost.hpp`
-+ `tests/lean4_conformance/src/main.rs`
-+ `src/mto/to_structure_export.cpp`
-+ `povu-rs/src/native_gfa.rs`
-+ `povu-rs/tests/native_gfa_vcf_tests.rs`
+Third, the document is not a formal proof that the current C++ or Rust binaries
+run in linear time. The C++ counters, Rust tests, and conformance harness are
+implementation evidence connecting the real code to the Lean boundary. The
+algorithm theorem itself is the standard word-RAM claim about the flubble
+algorithm: canonical flubble count is linear, and the indexed flubble-finding
+stage is linear once supplied with a linear-size candidate stack and constant
+time class-index operations.
 
-== C++ Stage Counters
+= Build And Render
 
-`POVU_STAGE_COST_TRACE=1` emits stage-counter lines with stable `contract=`
-identifiers aligned with Lean stage slots:
-
-+ `componentDecomposition`
-+ `tipDummyAugmentation`
-+ `traversalFrameConstruction`
-+ `cycleClassAssignment`
-+ `boundaryEmission`
-+ `hierarchyConstruction`
-
-These counters are useful for audits and regression checks. They are not Lean
-proof objects and they do not by themselves prove a C++ runtime theorem.
-
-== Rust And Fixture Evidence
-
-The Rust semantic port in `povu-rs/src/native_gfa.rs` contains
-`detect_flubble_stack`, with tests for close-after-gap,
-first-later-same-class, canonicalization, and duplicate removal. The C++
-conformance path exposes stack, class, and hierarchy information through
-`--structure-export` and `src/mto/to_structure_export.cpp`.
-
-The Lean conformance harness can produce checked-translator artifacts such as:
+The Lean names linked above are checked by:
 
 ```bash
-cargo run --manifest-path tests/lean4_conformance/Cargo.toml -- \
-  --repo-root . --fixture minimal-substitution \
-  --checked-translator build/lean4-conformance/minimal-substitution-witness.json
+lake build
 ```
 
-These artifacts connect selected fixtures to the semantic theorem boundary
-`PovuLean.Pipeline.semanticGfaToVcf_correct`. They provide finite conformance
-evidence for maintained examples; they do not synthesize a Lean proof term for
-all current implementation executions.
-
-== Cycle-Class And Hierarchy Audits
-
-The cycle-class checker compares exported C++ class ids against an independent
-fixture-sized cycle-equivalence oracle in both directions: same class id implies
-same oracle group, and same oracle group implies same class id. This targets
-the nontrivial `CycleClassAssignment.Correct` obligation.
-
-The hierarchy span checker reconstructs flubble boundaries from exported stack
-entries using the Lean first-later same-class nonempty-gap rule, computes stack
-spans, derives nearest strict span-containment parents, and compares those
-parents with exported PVST parent edges.
-
-Both checks are valuable conformance evidence. They remain fixture-level audits,
-not arbitrary-input refinement proofs.
-
-= Scope Summary
-
-The algorithm theorem is:
-
-#quote[
-Under the standard word-RAM convention for constant-cost class-index
-lookup/update, the indexed flubble detector/extractor and flat hierarchy
-construction are linear in the candidate stack. Once the candidate-stack size
-is linearly bounded by `|V| + edgeCount`, the flubble stage is linear in graph
-size.
-]
-
-The Lean mechanization currently checks:
-
-+ flubble boundary semantics,
-+ detector soundness, completeness, canonicalization, and duplicate freedom,
-+ the canonical flubble count bound `flubble_count_le_numEdges`,
-+ indexed detector equivalence to the reference detector,
-+ exact indexed scan lookup/update counts,
-+ detector and hierarchy output-size bounds,
-+ the candidate-stack and graph-size linearity corollaries for the flubble
-  stage, and
-+ conditional full semantic decomposition composition.
-
-The implementation evidence currently covers:
-
-+ C++ stage counters and structure export,
-+ fixture-level C++ class and hierarchy audits,
-+ Rust semantic detector tests, and
-+ checked-translator artifacts for selected semantic VCF fixtures.
-
-The deployed-code refinement scope still includes parser refinement, arbitrary
-C++ traversal-frame and class-assignment witnesses, arbitrary hierarchy
-refinement, serialization/FFI accounting, and a concrete runtime cost model for
-the implementation containers. Those are implementation-refinement obligations,
-not caveats to the standard algorithms statement above.
-
-= Build And Reference Check
-
-The rendered PDF for this source is a generated build artifact. Render for
-validation to an output path outside git:
-
-```text
-/tmp/flubble_linear_proof.pdf
-```
-
-Build command:
+The PDF is generated from this Typst source and should not be committed:
 
 ```bash
 typst compile docs/lean4-proof/flubble_linear_proof.typ \
   /tmp/flubble_linear_proof.pdf
-```
-
-The Lean names listed in this document are checked by `lake build`. A focused
-temporary `#check` file may import:
-
-```lean
-import PovuLean.Algorithms.Flubble.Correctness
-import PovuLean.Algorithms.Flubble.Indexed
-import PovuLean.Algorithms.FlubbleTree.Correctness
-import PovuLean.Complexity.Flubble
-import PovuLean.Complexity.Decomposition
-import PovuLean.Pipeline
 ```
