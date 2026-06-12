@@ -1,4 +1,6 @@
-use povu::{detect_flubble_stack, gfa_to_vcf, gfa_to_vcf_document, Error, FlubbleCandidate};
+use povu::{
+    detect_flubble_stack, gfa_to_vcf, gfa_to_vcf_document, Error, FlubbleBoundary, FlubbleCandidate,
+};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -70,6 +72,65 @@ fn flubble_stack_port_matches_lean_close_after_gap_rule() {
         },
     ];
     assert!(detect_flubble_stack(&immediate_same).is_empty());
+}
+
+#[test]
+fn flubble_stack_port_preserves_lean_first_later_same_class_rule() {
+    let stack = vec![
+        FlubbleCandidate {
+            id: 10,
+            class_id: 1,
+        },
+        FlubbleCandidate {
+            id: 20,
+            class_id: 2,
+        },
+        FlubbleCandidate {
+            id: 30,
+            class_id: 1,
+        },
+        FlubbleCandidate {
+            id: 40,
+            class_id: 3,
+        },
+        FlubbleCandidate {
+            id: 50,
+            class_id: 1,
+        },
+    ];
+
+    assert_eq!(
+        detect_flubble_stack(&stack),
+        vec![
+            FlubbleBoundary {
+                open_edge: 10,
+                close_edge: 30,
+            },
+            FlubbleBoundary {
+                open_edge: 30,
+                close_edge: 50,
+            },
+        ]
+    );
+}
+
+#[test]
+fn flubble_stack_port_canonicalizes_and_deduplicates_like_lean_detector() {
+    let stack = vec![
+        FlubbleCandidate { id: 9, class_id: 1 },
+        FlubbleCandidate { id: 7, class_id: 2 },
+        FlubbleCandidate { id: 5, class_id: 1 },
+        FlubbleCandidate { id: 7, class_id: 3 },
+        FlubbleCandidate { id: 9, class_id: 1 },
+    ];
+
+    assert_eq!(
+        detect_flubble_stack(&stack),
+        vec![FlubbleBoundary {
+            open_edge: 5,
+            close_edge: 9,
+        }]
+    );
 }
 
 #[test]
