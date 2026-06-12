@@ -93,11 +93,15 @@ For the VCF files produced read the [detailed docs here](./vcf.md)
 ## Lean proof notes
 
 The Lean proof documentation is collected under
-[`lean4-proof/`](./lean4-proof/).  The rendered flubble linear decomposition
-proof boundary is available as
-[`lean4-proof/flubble_linear_proof.pdf`](./lean4-proof/flubble_linear_proof.pdf),
-with Typst source in
+[`lean4-proof/`](./lean4-proof/).  The flubble linear decomposition proof
+boundary is maintained as Typst source in
 [`lean4-proof/flubble_linear_proof.typ`](./lean4-proof/flubble_linear_proof.typ).
+Generated PDF renders are build artifacts and are not committed. To render a
+local copy:
+
+```bash
+typst compile docs/lean4-proof/flubble_linear_proof.typ /tmp/flubble_linear_proof.pdf
+```
 
 
 ## Input

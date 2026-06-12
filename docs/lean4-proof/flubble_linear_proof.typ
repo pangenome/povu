@@ -469,17 +469,11 @@ proof remains open.
 
 = Build And Reference Check
 
-The rendered PDF for this source is:
-
-```text
-docs/lean4-proof/flubble_linear_proof.pdf
-```
-
-Build command:
+The rendered PDF for this source is a generated build artifact and should be
+written outside the repository, for example:
 
 ```bash
-typst compile docs/lean4-proof/flubble_linear_proof.typ \
-  docs/lean4-proof/flubble_linear_proof.pdf
+typst compile docs/lean4-proof/flubble_linear_proof.typ /tmp/flubble_linear_proof.pdf
 ```
 
 The Lean names listed above are intended to be checked with a temporary

@@ -6,6 +6,9 @@ Testing/
 __pycache__/
 .lake/
 
+# generated proof renders
+docs/lean4-proof/*.pdf
+
 # common povu output files
 *.vcf
 *.dot
