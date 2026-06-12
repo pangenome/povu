@@ -90,10 +90,18 @@ The ref list is the list of P lines against which we will call variants
 
 For the VCF files produced read the [detailed docs here](./vcf.md)
 
+## Lean proof notes
+
+The Lean proof documentation is collected under
+[`lean4-proof/`](./lean4-proof/).  The rendered flubble linear decomposition
+proof boundary is available as
+[`lean4-proof/flubble_linear_proof.pdf`](./lean4-proof/flubble_linear_proof.pdf),
+with Typst source in
+[`lean4-proof/flubble_linear_proof.typ`](./lean4-proof/flubble_linear_proof.typ).
+
 
 ## Input
 povu can currently supports GFA version 1.0
 Input GFA
 
 Expect the segments in the input GFA to have unique numeric [segment names](https://github.com/GFA-spec/GFA-spec/blob/master/GFA1.md#s-segment-line).
-
