@@ -33,6 +33,18 @@ and update are constant-time operations. Lean now exposes this statement as:
 PovuLean.Complexity.Flubble.indexed_flubble_stage_linear_in_candidateStack
 ```
 
+Lean also now exposes the Nadia-facing count theorem:
+
+```lean
+PovuLean.Algorithms.Flubble.flubble_count_le_numEdges
+```
+
+For a supported traversal frame and certified cycle-class assignment, this
+states that the canonical detector output has length at most `edgeCount(G)`.
+That is the formal linear-number-of-flubbles statement for the current Lean
+definition: it counts deduplicated canonical `detectFlubbles` boundaries, not
+all pairwise cycle-equivalent candidate-edge pairs.
+
 The theorem covers the indexed detector, boundary emission, and flat hierarchy
 construction. It uses the mechanically checked indexed detector facts that the
 scan performs exactly one class-index lookup and one class-index update per
@@ -155,11 +167,14 @@ Key names:
 + `PovuLean.Algorithms.Flubble.detectFlubbles_complete`
 + `PovuLean.Algorithms.Flubble.detectFlubbles_canonical_noDuplicates`
 + `PovuLean.Algorithms.Flubble.detectFlubbles_correct`
++ `PovuLean.Algorithms.Flubble.flubble_count_le_numEdges`
 + `PovuLean.Algorithms.Flubble.detectFlubbles_correct_for_gfa`
 
 These theorems prove that the Lean reference detector is sound and complete for
 the flubble-boundary relation, emits canonical duplicate-free boundaries, and
-has output size bounded by the candidate stack and graph edge count.
+has output size bounded by the candidate stack and graph edge count. The named
+`flubble_count_le_numEdges` theorem packages the graph-edge-count bound as the
+paper-facing canonical flubble count theorem.
 
 == Indexed Detector
 
@@ -363,6 +378,7 @@ The Lean mechanization currently checks:
 
 + flubble boundary semantics,
 + detector soundness, completeness, canonicalization, and duplicate freedom,
++ the canonical flubble count bound `flubble_count_le_numEdges`,
 + indexed detector equivalence to the reference detector,
 + exact indexed scan lookup/update counts,
 + detector and hierarchy output-size bounds,
