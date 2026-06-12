@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -45,7 +46,10 @@ struct PovuRun {
 	std::string stderr_text;
 };
 
-PovuRun run_gfa2vcf(const std::filesystem::path &gfa_fp)
+PovuRun run_gfa2vcf(
+	const std::filesystem::path &gfa_fp,
+	const std::optional<std::filesystem::path> &structure_export_fp =
+		std::nullopt)
 {
 	const std::filesystem::path povu =
 		std::filesystem::path(POVU_SOURCE_DIR) / "bin" / "povu";
@@ -65,9 +69,18 @@ PovuRun run_gfa2vcf(const std::filesystem::path &gfa_fp)
 		close(stdout_fd);
 		close(stderr_fd);
 
-		execl(povu.c_str(), povu.c_str(), "gfa2vcf", "-i",
-		      gfa_fp.c_str(), "-t", "1", "-P", "HG1",
-		      static_cast<char *>(nullptr));
+		if (structure_export_fp.has_value()) {
+			execl(povu.c_str(), povu.c_str(), "gfa2vcf", "-i",
+			      gfa_fp.c_str(), "-t", "1", "-P", "HG1",
+			      "--structure-export",
+			      structure_export_fp->c_str(),
+			      static_cast<char *>(nullptr));
+		}
+		else {
+			execl(povu.c_str(), povu.c_str(), "gfa2vcf", "-i",
+			      gfa_fp.c_str(), "-t", "1", "-P", "HG1",
+			      static_cast<char *>(nullptr));
+		}
 		_exit(127);
 	}
 
@@ -120,4 +133,34 @@ TEST(Gfa2VcfTest, RejectsSegmentMissingSequenceWithoutSignal)
 
 	expect_controlled_rejection(gfa_fp);
 	std::filesystem::remove(gfa_fp);
+}
+
+TEST(Gfa2VcfTest, StructureExportIncludesFlubbleDebugFrame)
+{
+	const std::filesystem::path gfa_fp =
+		std::filesystem::path(POVU_SOURCE_DIR) /
+		"tests/lean4_conformance/fixtures/insertion_flubble.gfa";
+	const std::filesystem::path structure_export_fp =
+		unique_temp_path("povu_structure_export", ".json");
+	const std::filesystem::path sidecar_fp =
+		std::filesystem::path(structure_export_fp.string() +
+				      ".flubble-debug.jsonl");
+
+	PovuRun run = run_gfa2vcf(gfa_fp, structure_export_fp);
+	ASSERT_TRUE(WIFEXITED(run.status)) << run.stderr_text;
+	ASSERT_EQ(WEXITSTATUS(run.status), 0) << run.stderr_text;
+
+	const std::string export_text = read_file(structure_export_fp);
+	EXPECT_NE(export_text.find("\"flubble_debug\""), std::string::npos)
+		<< export_text;
+	EXPECT_NE(export_text.find("\"stack_entries\""), std::string::npos)
+		<< export_text;
+	EXPECT_NE(export_text.find("\"next_seen_table\""), std::string::npos)
+		<< export_text;
+	EXPECT_NE(export_text.find("\"diagnostic\":\"ok\""), std::string::npos)
+		<< export_text;
+	EXPECT_TRUE(std::filesystem::exists(sidecar_fp));
+
+	std::filesystem::remove(structure_export_fp);
+	std::filesystem::remove(sidecar_fp);
 }

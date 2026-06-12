@@ -7,6 +7,7 @@
 #include <string>     // for basic_string, char_traits, opera...
 
 #include "fmt/core.h"		    // for format
+#include "povu/algorithms/flubbles.hpp"
 #include "povu/common/compat.hpp"   // for format, pv_cmp
 #include "subcommand/call.hpp"	    // for do_call
 #include "subcommand/decompose.hpp" // for do_decompose
@@ -42,6 +43,7 @@ void do_gfa2vcf(const core::config &app_config)
 		std::cerr << fn_name << " Step 1: Decomposing graph..."
 			  << std::endl;
 	}
+	povu::flubbles::reset_debug_sidecar(app_config);
 
 	// Create a config for decompose with the temp directory
 	core::config decompose_config = app_config;
