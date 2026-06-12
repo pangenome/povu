@@ -16,6 +16,7 @@
 
 #include "fmt/core.h"		       // for format
 #include "povu/common/compat.hpp"      // for pv_cmp, format, contains
+#include "povu/common/stage_cost.hpp"
 #include "povu/graph/bracket_list.hpp" // for Bracket
 
 namespace povu::flubbles
@@ -86,6 +87,8 @@ compute_ai_zi(const pst::Tree &st, pt::idx_t a_e_idx, pt::idx_t z_e_idx)
 void add_flubbles(const pst::Tree &st, const eq_class_stack_t &ecs,
 		  pvst::Tree &vst)
 {
+	stage_cost::Scope stage{stage_cost::Stage::hierarchy_construction,
+				static_cast<std::uint64_t>(ecs.s.size())};
 	std::string fn_name = pv_cmp::format(
 		"[povu::algorithms::flubble_tree::{}]", __func__);
 
@@ -152,6 +155,7 @@ void add_flubbles(const pst::Tree &st, const eq_class_stack_t &ecs,
 		s.push({cl_curr, i});
 		in_s.insert(cl_curr);
 	}
+	stage.set_output_items(vst.vtx_count());
 }
 
 /**
@@ -162,6 +166,8 @@ void add_flubbles(const pst::Tree &st, const eq_class_stack_t &ecs,
  */
 void compute_eq_class_metadata(eq_class_stack_t &ecs)
 {
+	stage_cost::Scope stage{stage_cost::Stage::boundary_emission,
+				static_cast<std::uint64_t>(ecs.s.size())};
 	std::string fn_name = pv_cmp::format(
 		"[povu::algorithms::flubble_tree::{}]", __func__);
 
@@ -186,10 +192,21 @@ void compute_eq_class_metadata(eq_class_stack_t &ecs)
 		next_seen[i] = next_idx;
 		next_seen_map[cl_curr] = i;
 	}
+
+	std::uint64_t boundary_count{};
+	for (pt::idx_t i{}; i < stack_.size(); ++i) {
+		if (stack_[i].id != pc::INVALID_IDX && (i + 1) < next_seen[i])
+			++boundary_count;
+	}
+	stage.set_output_items(boundary_count);
 }
 
 void compute_eq_class_stack(const pst::Tree &st, std::vector<oic_t> &stack)
 {
+	stage_cost::Scope stage{
+		stage_cost::Stage::traversal_frame_construction,
+		static_cast<std::uint64_t>(st.vtx_count()) +
+			st.tree_edge_count()};
 	std::string fn_name = pv_cmp::format(
 		"[povu::algorithms::flubble_tree::{}]", __func__);
 
@@ -271,6 +288,7 @@ void compute_eq_class_stack(const pst::Tree &st, std::vector<oic_t> &stack)
 	for (auto it = mini_stack.begin(); it != mini_stack.end(); ++it) {
 		stack.emplace_back(*it);
 	}
+	stage.set_output_items(stack.size());
 	return;
 }
 
@@ -462,6 +480,10 @@ void handle_vertex(pst::Tree &t, std::size_t v, std::vector<boundary> &hairpins,
 
 void simple_cycle_equiv(pst::Tree &t, const core::config &app_config)
 {
+	stage_cost::Scope stage{
+		stage_cost::Stage::cycle_class_assignment,
+		static_cast<std::uint64_t>(t.vtx_count()) +
+			t.tree_edge_count() + t.back_edge_count()};
 
 	std::string fn_name =
 		pv_cmp::format("[povu::algorithms::{}]", __func__);
@@ -485,6 +507,7 @@ void simple_cycle_equiv(pst::Tree &t, const core::config &app_config)
 				  << std::endl;
 		}
 	}
+	stage.set_output_items(t.tree_edge_count() + t.back_edge_count());
 }
 
 pvst::Tree find_flubbles(pst::Tree &st, const core::config &app_config)

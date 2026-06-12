@@ -12,6 +12,7 @@
 #include "povu/common/compat.hpp"    // for contains, pv_cmp, format
 #include "povu/common/constants.hpp" // for UNDEFINED_ID
 #include "povu/common/core.hpp"
+#include "povu/common/stage_cost.hpp"
 #include "povu/graph/types.hpp" // for v_end_e, side_n_id_t, complement
 
 namespace povu::bidirected
@@ -475,6 +476,9 @@ void VG::print_gfa(std::ostream &os) const
 // does not handle refs, should it?
 std::vector<VG *> VG::componetize(const povu::bidirected::VG &g)
 {
+	stage_cost::Scope stage{
+		stage_cost::Stage::component_decomposition,
+		static_cast<std::uint64_t>(g.vtx_count()) + g.edge_count()};
 
 	std::unordered_set<pt::idx_t> visited;
 	visited.reserve(g.vtx_count());
@@ -593,6 +597,7 @@ std::vector<VG *> VG::componetize(const povu::bidirected::VG &g)
 		}
 	}
 
+	stage.set_output_items(components.size());
 	return components;
 }
 } // namespace povu::bidirected

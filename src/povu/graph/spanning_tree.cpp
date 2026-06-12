@@ -11,6 +11,7 @@
 #include "fmt/core.h"		       // for format
 #include "povu/common/compat.hpp"      // for pv_cmp, format, contains
 #include "povu/common/constants.hpp"   // for INVALID_CLS, COL_SEP, INVALI...
+#include "povu/common/stage_cost.hpp"
 #include "povu/graph/bidirected.hpp"   // for Vertex, VG, pgt, Edge
 #include "povu/graph/bracket_list.hpp" // for WBracketList, Bracket, Bracke...
 #include "povu/graph/types.hpp"	       // for v_type_e, v_end_e, color_e
@@ -260,6 +261,10 @@ Tree::Tree(std::size_t size)
 
 Tree Tree::from_bd(const bd::VG &g)
 {
+	stage_cost::Scope augmentation_stage{
+		stage_cost::Stage::tip_dummy_augmentation,
+		static_cast<std::uint64_t>(g.vtx_count()) + g.edge_count() +
+			g.tips().size()};
 
 	const bool has_tips{!g.tips().empty()};
 	const pt::idx_t root_idx{0};
@@ -451,6 +456,9 @@ Tree Tree::from_bd(const bd::VG &g)
 		t.get_vertex_mut(0).set_post_order(order++);
 	}
 
+	augmentation_stage.set_output_items(
+		static_cast<std::uint64_t>(t.vtx_count()) +
+		t.tree_edge_count() + t.back_edge_count());
 	return t;
 }
 

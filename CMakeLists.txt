@@ -162,6 +162,7 @@ ADD_LIBRARY(povulib
   ${POVULIB_SOURCES_DIR}/refs/refs.cpp
 
   # common
+  ${POVULIB_SOURCES_DIR}/common/stage_cost.cpp
   ${POVULIB_SOURCES_DIR}/common/utils.cpp
 
   # graph
