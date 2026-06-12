@@ -30,10 +30,35 @@ cargo run --manifest-path tests/lean4_conformance/Cargo.toml -- \
 
 cargo run --manifest-path tests/lean4_conformance/Cargo.toml -- \
   --repo-root . --skip-build --skip-lean-build --povu-bin bin/povu
+
+cargo run --manifest-path tests/lean4_conformance/Cargo.toml -- \
+  --repo-root . --fixture minimal-substitution \
+  --checked-translator build/lean4-conformance/minimal-substitution-witness.json
 ```
 
 The second form is only for local iteration after `lake build` and `bin/povu`
 already exist.
+
+The `--checked-translator` form runs the same C++ CLI and Lean reference paths,
+then writes a machine-checkable JSON artifact instead of only printing pass/fail
+text.  The artifact schema is `povu.lean4.checked-translator.v1`.  Each
+supported fixture result contains:
+
+- the Lean theorem boundary being targeted,
+  `PovuLean.Pipeline.semanticGfaToVcf_correct`;
+- every trusted assumption still needed before the artifact can be read as a
+  formal runtime proof;
+- the accepted-GFA structure exported by current povu;
+- exported C++ decomposition state visible through `--structure-export`,
+  including boundary candidates, PVST nodes, and variant calls;
+- the matching Lean structure reference and normalized VCF witness;
+- explicit boolean checks showing that the povu VCF and structure export matched
+  the Lean semantic references.
+
+Expected rejection fixtures are represented with status
+`unsupported_diagnostic`, the precise expected reason, exit code, stdout, and
+stderr.  This lets downstream tooling distinguish "checked semantic witness"
+from "unsupported by the accepted subset" without scraping harness prose.
 
 ## Fixture Coverage
 
@@ -101,6 +126,8 @@ yet prove:
 - the serialized VCF row normalizes to the same semantic record as the Lean
   reference;
 - sample columns and genotype calls match the Lean fixture expectation.
+- when requested, the checked translator artifact can serialize those successful
+  comparisons into stable JSON for downstream bridge checks.
 
 The harness intentionally normalizes away byte details that are outside the
 trusted theorem and are not meaningful for this fixture:
@@ -113,6 +140,15 @@ trusted theorem and are not meaningful for this fixture:
 
 It does not normalize allele spelling, positions, record IDs, INFO values,
 sample names, genotype values, `QUAL`, `FILTER`, or `FORMAT`.
+
+The checked translator artifact is not a new proof obligation and does not hide
+the remaining trusted base.  Its `trusted_assumptions` array names the current
+external assumptions: byte-parser refinement to Lean `GFA.Document`, faithful
+serialization of C++ state, unexported traversal-frame and cycle-class
+correctness, hierarchy laminarity/parenthood correctness, variant-call
+extraction refinement, and missing runtime cost witnesses.  Downstream bridge
+tasks can retire those assumptions one at a time by replacing them with direct
+checks or proofs.
 
 ## Diagnostics
 

@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use serde_json::Value;
+use serde_json::{json, Value};
 
 use povu_lean4_conformance::downstream_profiles;
 
@@ -31,6 +31,7 @@ struct Options {
     povu_bin: Option<PathBuf>,
     fixture_filter: Option<String>,
     downstream_repetitive: bool,
+    checked_translator: Option<PathBuf>,
     skip_build: bool,
     skip_lean_build: bool,
 }
@@ -97,6 +98,11 @@ fn run() -> Result<(), String> {
         ));
     }
 
+    if let Some(output_path) = &options.checked_translator {
+        let output_path = absolutize(&repo_root, output_path.clone());
+        return run_checked_translator(&repo_root, &povu_bin, &selected, &output_path);
+    }
+
     let mut failures = Vec::new();
     for fixture in selected {
         match run_fixture(&repo_root, &povu_bin, fixture) {
@@ -140,6 +146,12 @@ where
             "--downstream-repetitive" => {
                 options.downstream_repetitive = true;
             }
+            "--checked-translator" => {
+                options.checked_translator = Some(PathBuf::from(next_value(
+                    &mut iter,
+                    "--checked-translator",
+                )?));
+            }
             "--skip-build" => {
                 options.skip_build = true;
             }
@@ -170,6 +182,8 @@ fn print_help() {
          --povu-bin <path>        Existing povu binary to run. Defaults to <repo>/bin/povu.\n  \
          --fixture <id>           Run one fixture only.\n  \
          --downstream-repetitive  Run downstream repetitive profile corpus instead of Lean fixtures.\n  \
+         --checked-translator <path>\n  \
+                                  Write checked translator witness JSON instead of normal pass/fail text.\n  \
          --skip-build             Do not configure/build the povu CLI before running fixtures.\n  \
          --skip-lean-build        Do not run lake build before running the Lean reference.\n"
     );
@@ -396,6 +410,320 @@ fn run_status(label: &str, command: &mut Command) -> Result<(), String> {
     } else {
         Err(format!("{label} failed with status {status}"))
     }
+}
+
+fn run_checked_translator(
+    repo_root: &Path,
+    povu_bin: &Path,
+    fixtures: &[&Fixture],
+    output_path: &Path,
+) -> Result<(), String> {
+    let mut results = Vec::new();
+    for fixture in fixtures {
+        results.push(checked_translator_fixture(repo_root, povu_bin, fixture)?);
+    }
+
+    let artifact = json!({
+        "schema": "povu.lean4.checked-translator.v1",
+        "producer": "povu-lean4-conformance",
+        "lean_theorem_boundary": "PovuLean.Pipeline.semanticGfaToVcf_correct",
+        "trusted_assumptions": checked_translator_assumptions(),
+        "fixtures": results,
+    });
+
+    if let Some(parent) = output_path
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+    {
+        fs::create_dir_all(parent).map_err(|err| {
+            format!(
+                "failed to create checked translator output dir {}: {err}",
+                parent.display()
+            )
+        })?;
+    }
+    let text = serde_json::to_string_pretty(&artifact)
+        .map_err(|err| format!("failed to serialize checked translator artifact: {err}"))?;
+    fs::write(output_path, format!("{text}\n")).map_err(|err| {
+        format!(
+            "failed to write checked translator artifact {}: {err}",
+            output_path.display()
+        )
+    })?;
+    println!(
+        "checked translator: wrote {} fixture result(s) to {}",
+        fixtures.len(),
+        output_path.display()
+    );
+    Ok(())
+}
+
+fn checked_translator_assumptions() -> Value {
+    json!([
+        {
+            "id": "accepted_gfa_bytes_refine_lean_document",
+            "statement": "The C++ GFA parser accepts exactly the bytes represented by accepted_gfa and those records refine the Lean GFA.Document used by the reference witness.",
+            "required_until": "A checked byte parser or parser-refinement proof connects liteseq/current povu parsing to PovuLean.GFA."
+        },
+        {
+            "id": "structure_export_preserves_cpp_state",
+            "statement": "The --structure-export JSON faithfully serializes the C++ graph, PVST hierarchy, boundary metadata, and variant-call state produced by the executed gfa2vcf run.",
+            "required_until": "The export path is itself covered by a checked serialization/refinement proof or a lower-level state checker."
+        },
+        {
+            "id": "traversal_frame_and_cycle_classes_correct",
+            "statement": "The unexported C++ traversal frame, candidate stack, bracket classes, and next_seen table satisfy the Lean TraversalFrame and CycleClassAssignment.Correct obligations for the exported boundaries.",
+            "required_until": "bridge-export-flubble and bridge-check-cycle expose and check stack, class, and next_seen state directly."
+        },
+        {
+            "id": "hierarchy_laminarity_and_parenthood_correct",
+            "statement": "The exported PVST parent/child edges are the canonical Lean span-containment hierarchy for supported laminar flubble boundaries.",
+            "required_until": "bridge-check-hierarchy independently checks exported spans and parenthood for every supported fixture."
+        },
+        {
+            "id": "variant_call_extraction_refines_lean_reference",
+            "statement": "The C++ variant caller's alleles, traversal strings, genotypes, source metadata, and ordering are preserved by the exported variant_calls and comparable to Lean semantic VariantCall witnesses.",
+            "required_until": "A direct checked mapping from C++ records to PovuLean.VCF.VariantCall replaces fixture-by-fixture equality."
+        },
+        {
+            "id": "cost_counters_match_lean_stage_contracts",
+            "statement": "No runtime cost witness is checked here; linear-time stage contracts remain external to this semantic witness artifact.",
+            "required_until": "bridge-cost-instrumentation provides checked counters or proof obligations for the Lean complexity contracts."
+        }
+    ])
+}
+
+fn checked_translator_fixture(
+    repo_root: &Path,
+    povu_bin: &Path,
+    fixture: &Fixture,
+) -> Result<Value, String> {
+    let gfa = fs::read_to_string(&fixture.gfa_path).map_err(|err| {
+        format!(
+            "failed to read fixture {} ({}): {err}",
+            fixture.id,
+            fixture.gfa_path.display()
+        )
+    })?;
+
+    match &fixture.expected {
+        ExpectedOutcome::Vcf { check_record_order } => checked_translator_supported_fixture(
+            repo_root,
+            povu_bin,
+            fixture,
+            &gfa,
+            *check_record_order,
+        ),
+        ExpectedOutcome::PovuFailure { reason } => {
+            checked_translator_unsupported_fixture(povu_bin, fixture, &gfa, reason)
+        }
+    }
+}
+
+fn checked_translator_supported_fixture(
+    repo_root: &Path,
+    povu_bin: &Path,
+    fixture: &Fixture,
+    gfa: &str,
+    check_record_order: bool,
+) -> Result<Value, String> {
+    let structure_export_path = create_structure_export_path(fixture)?;
+    let actual_output = run_povu(povu_bin, fixture, Some(&structure_export_path))?;
+    let expected_output = run_lean_reference(repo_root, fixture)?;
+    let expected_structure_output = run_lean_structure_reference(repo_root, fixture)?;
+
+    if !expected_output.status.success() {
+        return Err(format_command_failure(
+            fixture,
+            "Lean reference",
+            &lean_reference_command(repo_root, fixture),
+            &expected_output,
+        ));
+    }
+    if !expected_structure_output.status.success() {
+        return Err(format_command_failure(
+            fixture,
+            "Lean structure reference",
+            &lean_structure_reference_command(repo_root, fixture),
+            &expected_structure_output,
+        ));
+    }
+    if !actual_output.status.success() {
+        return Err(format_command_failure(
+            fixture,
+            "povu gfa2vcf",
+            &povu_command_display(povu_bin, fixture, Some(&structure_export_path)),
+            &actual_output,
+        ));
+    }
+
+    let expected_stdout = String::from_utf8_lossy(&expected_output.stdout);
+    let actual_stdout = String::from_utf8_lossy(&actual_output.stdout);
+    let expected = parse_vcf(&expected_stdout).map_err(|err| {
+        format!(
+            "Lean reference emitted invalid VCF for checked translator fixture {}: {err}",
+            fixture.id
+        )
+    })?;
+    let actual = parse_vcf(&actual_stdout).map_err(|err| {
+        format!(
+            "povu emitted invalid VCF for checked translator fixture {}: {err}",
+            fixture.id
+        )
+    })?;
+    let expected_for_compare = comparable_vcf(&expected, check_record_order);
+    let actual_for_compare = comparable_vcf(&actual, check_record_order);
+    if expected_for_compare != actual_for_compare {
+        return Err(render_mismatch(
+            fixture,
+            &povu_command_display(povu_bin, fixture, Some(&structure_export_path)),
+            gfa,
+            &expected,
+            &actual,
+            &actual_stdout,
+            &String::from_utf8_lossy(&actual_output.stderr),
+        ));
+    }
+
+    let expected_structure_stdout = String::from_utf8_lossy(&expected_structure_output.stdout);
+    let expected_structure = parse_structure_export(&expected_structure_stdout).map_err(|err| {
+        format!(
+            "Lean reference emitted invalid structure export for checked translator fixture {}: {err}",
+            fixture.id
+        )
+    })?;
+    let actual_structure_text = fs::read_to_string(&structure_export_path).map_err(|err| {
+        format!(
+            "povu did not write checked translator structure export for {} at {}: {err}",
+            fixture.id,
+            structure_export_path.display()
+        )
+    })?;
+    let actual_structure = parse_structure_export(&actual_structure_text).map_err(|err| {
+        format!(
+            "povu emitted invalid structure export for checked translator fixture {}: {err}",
+            fixture.id
+        )
+    })?;
+
+    validate_structure_export("Lean reference", fixture, &expected_structure)?;
+    validate_structure_export("povu gfa2vcf", fixture, &actual_structure)?;
+    if expected_structure != actual_structure {
+        return Err(render_structure_mismatch(
+            fixture,
+            &povu_command_display(povu_bin, fixture, Some(&structure_export_path)),
+            gfa,
+            &expected_structure,
+            &actual_structure,
+            &expected_structure_stdout,
+            &actual_structure_text,
+            &structure_export_path,
+        ));
+    }
+
+    if let Some(parent) = structure_export_path.parent() {
+        let _ = fs::remove_dir_all(parent);
+    }
+
+    Ok(json!({
+        "fixture_id": fixture.id,
+        "description": fixture.description,
+        "status": "checked_semantic_witness",
+        "input_gfa_path": fixture.gfa_path.display().to_string(),
+        "reference_prefixes": fixture.reference_prefixes,
+        "povu_command": povu_command_display(povu_bin, fixture, Some(Path::new("<temp>/actual.json"))),
+        "checks": {
+            "povu_exit_success": true,
+            "lean_vcf_reference_success": true,
+            "lean_structure_reference_success": true,
+            "normalized_vcf_matches_lean": true,
+            "structure_export_matches_lean": true,
+            "record_order_checked": check_record_order
+        },
+        "semantic_witness": {
+            "theorem_boundary": "PovuLean.Pipeline.semanticGfaToVcf_correct",
+            "accepted_gfa": actual_structure.get("accepted_gfa").cloned().unwrap_or(Value::Null),
+            "reference_prefixes": actual_structure.get("reference_prefixes").cloned().unwrap_or(Value::Null),
+            "boundary_candidates": actual_structure.get("boundary_candidates").cloned().unwrap_or(Value::Null),
+            "pvst_nodes": actual_structure.get("pvst_nodes").cloned().unwrap_or(Value::Null),
+            "variant_calls": actual_structure.get("variant_calls").cloned().unwrap_or(Value::Null),
+            "normalized_vcf": normalized_vcf_to_json(&actual)
+        },
+        "lean_reference_witness": {
+            "structure_export": expected_structure,
+            "normalized_vcf": normalized_vcf_to_json(&expected)
+        }
+    }))
+}
+
+fn checked_translator_unsupported_fixture(
+    povu_bin: &Path,
+    fixture: &Fixture,
+    gfa: &str,
+    reason: &str,
+) -> Result<Value, String> {
+    let actual_output = run_povu(povu_bin, fixture, None)?;
+    if actual_output.status.success() {
+        return Err(render_unexpected_success(
+            fixture,
+            &povu_command_display(povu_bin, fixture, None),
+            gfa,
+            &String::from_utf8_lossy(&actual_output.stdout),
+            &String::from_utf8_lossy(&actual_output.stderr),
+            reason,
+        ));
+    }
+    let code = actual_output.status.code().ok_or_else(|| {
+        render_uncontrolled_failure(
+            fixture,
+            &povu_command_display(povu_bin, fixture, None),
+            gfa,
+            &String::from_utf8_lossy(&actual_output.stdout),
+            &String::from_utf8_lossy(&actual_output.stderr),
+            reason,
+            &actual_output,
+        )
+    })?;
+
+    Ok(json!({
+        "fixture_id": fixture.id,
+        "description": fixture.description,
+        "status": "unsupported_diagnostic",
+        "input_gfa_path": fixture.gfa_path.display().to_string(),
+        "reference_prefixes": fixture.reference_prefixes,
+        "povu_command": povu_command_display(povu_bin, fixture, None),
+        "diagnostic": {
+            "reason": reason,
+            "exit_code": code,
+            "stdout": String::from_utf8_lossy(&actual_output.stdout).to_string(),
+            "stderr": String::from_utf8_lossy(&actual_output.stderr).to_string()
+        }
+    }))
+}
+
+fn normalized_vcf_to_json(vcf: &NormalizedVcf) -> Value {
+    let records: Vec<_> = vcf
+        .records
+        .iter()
+        .map(|record| {
+            json!({
+                "chrom": record.chrom,
+                "pos": record.pos,
+                "id": record.id,
+                "ref": record.ref_allele,
+                "alt": record.alt_alleles.clone(),
+                "qual": record.qual,
+                "filter": record.filter,
+                "info": record.info.clone(),
+                "format": record.format,
+                "genotypes": record.genotypes.clone()
+            })
+        })
+        .collect();
+    json!({
+        "samples": vcf.samples.clone(),
+        "records": records
+    })
 }
 
 fn run_fixture(repo_root: &Path, povu_bin: &Path, fixture: &Fixture) -> Result<(), String> {
@@ -1540,5 +1868,43 @@ mod tests {
         assert_eq!(parsed.records[0].pos, 4);
         assert_eq!(comparable_vcf(&parsed, true).records[0].pos, 4);
         assert_eq!(comparable_vcf(&parsed, false).records[0].pos, 2);
+    }
+
+    #[test]
+    fn checked_translator_assumptions_are_named_and_actionable() {
+        let assumptions = checked_translator_assumptions();
+        let assumptions = assumptions.as_array().expect("assumption array");
+        assert!(assumptions.len() >= 5);
+        for assumption in assumptions {
+            let object = assumption.as_object().expect("assumption object");
+            assert!(object
+                .get("id")
+                .and_then(Value::as_str)
+                .is_some_and(|id| !id.trim().is_empty()));
+            assert!(object
+                .get("statement")
+                .and_then(Value::as_str)
+                .is_some_and(|statement| !statement.trim().is_empty()));
+            assert!(object
+                .get("required_until")
+                .and_then(Value::as_str)
+                .is_some_and(|required_until| !required_until.trim().is_empty()));
+        }
+    }
+
+    #[test]
+    fn normalized_vcf_json_is_machine_checkable() {
+        let parsed = parse_vcf(&format!(
+            "{}HG1#1#chr1\t2\t>0>3\tC\tG\t60\tPASS\tAC=1;AF=0.5\tGT\t0\t1\n",
+            HEADER
+        ))
+        .unwrap();
+        let witness = normalized_vcf_to_json(&parsed);
+
+        assert_eq!(witness["samples"], json!(["HG1", "HG2"]));
+        assert_eq!(witness["records"][0]["chrom"], "HG1#1#chr1");
+        assert_eq!(witness["records"][0]["pos"], 2);
+        assert_eq!(witness["records"][0]["info"]["AC"], "1");
+        assert_eq!(witness["records"][0]["genotypes"]["HG2"], "1");
     }
 }
