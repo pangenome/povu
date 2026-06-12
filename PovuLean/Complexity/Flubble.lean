@@ -417,6 +417,62 @@ theorem conditional_extraction_linear_in_candidateStack {g : Graph}
   exact ⟨hTotal, hBoundarySizeWith, hHierarchySizeWith⟩
 
 /--
+Algorithms-facing linearity statement for the indexed flubble stage.
+
+Under the standard random-access class-index convention captured by
+`ConditionalExtractionCostContract`, the indexed detector, boundary emission,
+and flat hierarchy construction are linear in the candidate-stack length.
+-/
+theorem indexed_flubble_stage_linear_in_candidateStack {g : Graph}
+    {frame : TraversalFrame g}
+    {classes : Algorithms.Flubble.CycleClassAssignment g}
+    {costs : ExtractionPipelineCosts}
+    (hSupported :
+      Algorithms.FlubbleTree.SupportedHierarchyInput
+        (Algorithms.Flubble.candidateStack frame)
+        (Algorithms.Flubble.detectFlubbles frame classes))
+    (hCost : ConditionalExtractionCostContract frame classes costs) :
+    LinearBound costs.total
+      (Algorithms.Flubble.candidateStack frame).length :=
+  (conditional_extraction_linear_in_candidateStack
+    (g := g)
+    (frame := frame)
+    (classes := classes)
+    (costs := costs)
+    hSupported
+    hCost).1
+
+/--
+Graph-size corollary for the indexed flubble stage.
+
+Once the candidate-stack length is bounded linearly by
+`segments.length + edgeCount`, the indexed flubble detector/extractor and flat
+hierarchy construction are linear in that graph-size measure.
+-/
+theorem indexed_flubble_stage_linear_in_graphSize {g : Graph}
+    {frame : TraversalFrame g}
+    {classes : Algorithms.Flubble.CycleClassAssignment g}
+    {costs : ExtractionPipelineCosts}
+    (hSupported :
+      Algorithms.FlubbleTree.SupportedHierarchyInput
+        (Algorithms.Flubble.candidateStack frame)
+        (Algorithms.Flubble.detectFlubbles frame classes))
+    (hCandidateStack :
+      LinearBound (Algorithms.Flubble.candidateStack frame).length
+        (GraphSizes.ofGraph g).total)
+    (hCost : ConditionalExtractionCostContract frame classes costs) :
+    LinearBound costs.total (GraphSizes.ofGraph g).total :=
+  LinearBound.compose_size
+    (indexed_flubble_stage_linear_in_candidateStack
+      (g := g)
+      (frame := frame)
+      (classes := classes)
+      (costs := costs)
+      hSupported
+      hCost)
+    hCandidateStack
+
+/--
 Named costs for the flubble decomposition stages that downstream proofs may
 compose.  The fields are intentionally abstract; this record is only a theorem
 interface until bridged to a concrete implementation model.

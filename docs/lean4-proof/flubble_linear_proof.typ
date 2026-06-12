@@ -1,5 +1,5 @@
 #set document(
-  title: "Flubble Linear Decomposition Proof Boundary",
+  title: "Flubble Linear-Time Algorithm Proof",
   author: "povu Lean proof notes",
 )
 #set page(paper: "us-letter", margin: (x: 0.75in, y: 0.7in))
@@ -16,128 +16,92 @@
 )
 
 #align(center)[
-  #text(size: 18pt, weight: "bold")[Flubble Linear Decomposition Proof Boundary]
+  #text(size: 18pt, weight: "bold")[Flubble Linear-Time Algorithm Proof]
 
-  #text(size: 9pt)[Rendered proof note for `render-flubble-linear`, 2026-06-12]
+  #text(size: 9pt)[Rendered proof note for `revise-flubble-linear`, 2026-06-12]
 ]
 
 #outline(title: [Contents], indent: auto)
 
-= Purpose
+= Main Claim
 
-This note is a distributable mathematical description of the current flubble
-decomposition proof story in povu. It deliberately separates four layers:
+The fast indexed flubble detector/extractor is a linear-time algorithm over the
+candidate stack under the ordinary word-RAM convention that class-index lookup
+and update are constant-time operations. Lean now exposes this statement as:
 
-+ facts formally proved in Lean,
-+ conditional linear-time theorems and their stage contracts,
-+ current C++/Rust bridge and conformance evidence, and
-+ the remaining open gap to a full arbitrary C++ runtime refinement proof.
+```lean
+PovuLean.Complexity.Flubble.indexed_flubble_stage_linear_in_candidateStack
+```
 
-The formal boundary is semantic. Lean proves properties of proof-side graph,
-walk, detector, hierarchy, cost, and VCF emission models. Current C++ and Rust
-behavior is supported by conformance tests and bridge artifacts, but there is
-not yet a Lean theorem stating that every current povu execution refines the
-semantic model or satisfies the proof-side runtime-cost records.
+The theorem covers the indexed detector, boundary emission, and flat hierarchy
+construction. It uses the mechanically checked indexed detector facts that the
+scan performs exactly one class-index lookup and one class-index update per
+candidate, plus the checked output-size facts that emitted flubble boundaries
+and hierarchy metadata are linear in the candidate stack.
 
-= Mathematical Model
+Once the candidate-stack size is bounded linearly by the graph-size measure
 
-Let a graph be represented by a Lean `Graph` with segment list `V` and directed
-link list `E`. The proof-side graph-size measure used by the cost layer is
+$ n(G) = |V| + "edgeCount"(G), $
 
-$ n(G) = |V| + "edgeCount"(G). $
+the same stage is linear in graph size. Lean exposes that corollary as:
 
-A traversal frame `F : TraversalFrame G` carries an ordered list of tree links.
-The flubble detector does not scan all links directly. It scans the candidate
-stack
+```lean
+PovuLean.Complexity.Flubble.indexed_flubble_stage_linear_in_graphSize
+```
+
+This is the algorithms-level message: after the traversal frame and
+cycle-class assignment provide a candidate stack of linear size, the indexed
+flubble detector/extractor and hierarchy builder add only linear work.
+
+= Algorithm Model
+
+Let `G` be the Lean graph, with segment list `V` and directed black/grey link
+measure `edgeCount(G)`. A traversal frame `F : TraversalFrame G` contains an
+ordered tree-link list. The flubble stage scans only the candidate stack
 
 $ S(F) = "candidateStack"(F) = [e_0, e_1, dots, e_(m-1)], $
 
 the ordered subsequence of real black tree edges eligible to be flubble
-endpoints. A cycle-class assignment `C` classifies candidate links. Its formal
-correctness contract says class equality is sound and complete for the Lean
-cycle-equivalence relation on boundary candidates.
+endpoints. A cycle-class assignment `C` labels candidates by the cycle
+equivalence classes needed by the flubble characterization.
 
-For candidate `e_i`, the base detector looks for the first later same-class
+For candidate `e_i`, the detector asks for the first later same-class
 candidate after a nonempty gap:
 
 $ j = min { k | i + 1 < k < m and C(e_i) = C(e_k) }. $
 
-If such `j` exists, the candidate pair is canonicalized by edge id:
+When such `j` exists, the detector emits the canonical ordered boundary
 
 $ b = "Boundary.ordered"(e_i, e_j). $
 
-The decomposition relation for base flubbles is therefore:
+The reference detector defines this relation directly. The fast detector keeps
+an index from class id to the next later candidate already seen in the reverse
+scan. Under the standard word-RAM model, table lookup and table update are
+constant-cost operations; the scan therefore does one constant amount of index
+work per stack candidate.
 
-$ "IsFlubbleBoundary"(F, C, b) <=> b " is a paper boundary and "
-  b " arises from the canonical close-after-gap scan over " S(F). $
+== Hierarchy Construction
 
-The emitted boundary list is deduplicated and deterministic. The indexed
-detector introduces a class-index state so the same relation can be computed by
-one pass over `S(F)`: one lookup and one update per candidate.
-
-== Hierarchy Semantics
-
-Each boundary has a span in the candidate stack. If
+Each emitted boundary has a span in the candidate stack. If
 
 $ b = (e_i, e_j) " with " i < j, $
 
-then `boundarySpan? S b = some { start := i, finish := j }`. A hierarchy input
-is supported when every emitted boundary has a span and all spans are laminar:
-for every two distinct spans, one strictly contains the other or they are
-disjoint. Parent semantics is nearest strict span containment:
+then `boundarySpan? S b = some { start := i, finish := j }`. Supported
+hierarchy inputs are laminar: for any two distinct spans, one strictly contains
+the other or the spans are disjoint. Parenthood is nearest strict containment.
+The flat hierarchy records one node per detected flubble boundary and parent /
+boundary metadata slots for those nodes.
 
-$ "parent"(b) = "arg min"_(p) "width"(p) $
+Lean proves that supported laminar inputs produce the canonical forest
+hierarchy and that the flat hierarchy output size is at most three slots per
+candidate-stack entry.
 
-among spans `p` that strictly contain the span for `b`; if no such span exists,
-`b` is a root of the flubble forest. Lean represents the hierarchy as a flat
-list of nodes with optional parent boundaries and proves it is a forest that
-preserves detector order, duplicate freedom, and canonical endpoint orientation.
+= Mechanically Checked Lean Facts
 
-== Cost Model
+This section lists the theorem surface used by the algorithms claim. The names
+are checked by `lake build`.
 
-The flubble extraction cost model is proof-side, not an observed timing model.
-It has four slots:
-
-+ `indexedOperations`,
-+ `scanBookkeeping`,
-+ `boundaryEmission`, and
-+ `hierarchyConstruction`.
-
-The indexed operation contract supplies constant lookup/update costs and the
-exact count theorem that the indexed scan performs one lookup and one update per
-candidate. Boundary output size is bounded by `m = |S(F)|`. Under supported
-hierarchy input, flat hierarchy output size is bounded by `3m`: one node slot
-plus two reference metadata slots per detected boundary.
-
-Thus Lean proves the conditional statement:
-
-$ T_"extract"(F, C) in O(|S(F)|), $
-
-assuming the explicit operation, bookkeeping, boundary-emission, and hierarchy
-construction cost contracts.
-
-For the full semantic decomposition pipeline, Lean composes named stage costs:
-
-+ component decomposition,
-+ tip/dummy augmentation,
-+ traversal-frame construction,
-+ cycle-class assignment,
-+ hairpin scan, and
-+ flubble extraction plus hierarchy construction.
-
-Given intermediate-size bounds back to `n(G)`, the composed theorem concludes:
-
-$ T_"decompose"(G) in O(n(G)). $
-
-This theorem is conditional on the named stage contracts. It is not a statement
-that current C++ povu has already been formally proved linear.
-
-= Formally Proved In Lean
-
-The following names are Lean definitions or theorems in the `PovuLean` library.
-They are the formal proof boundary this document relies on.
-
-== Flubble Definition And Input Contracts
+== Flubble Semantics
 
 Module: `PovuLean.Algorithms.Flubble.Spec`
 
@@ -163,11 +127,13 @@ Key names:
 + `PovuLean.Algorithms.Flubble.SupportedGFAInput`
 + `PovuLean.Algorithms.Flubble.SupportedGFAInput.toSupportedInput`
 
-These definitions establish the semantic input model: a supported frame, a
-candidate stack of eligible real black tree links, and a correct cycle-class
-assignment.
+The `CycleClassAssignment.Correct` obligation is a substantive correctness
+question, independent of the linear-time accounting. It states that equal class
+ids are sound and complete for cycle-equivalent boundary candidates. The
+flubble linear-time theorem assumes this semantic classification is already
+available; it does not make the class-assignment proof disappear.
 
-== Detector Correctness And Bounds
+== Detector Correctness And Size Bounds
 
 Module: `PovuLean.Algorithms.Flubble.Detect`
 
@@ -192,14 +158,14 @@ Key names:
 + `PovuLean.Algorithms.Flubble.detectFlubbles_correct_for_gfa`
 
 These theorems prove that the Lean reference detector is sound and complete for
-the flubble boundary relation, emits canonical duplicate-free boundaries, and
+the flubble-boundary relation, emits canonical duplicate-free boundaries, and
 has output size bounded by the candidate stack and graph edge count.
 
-== Indexed Detector And Equivalence
+== Indexed Detector
 
 Module: `PovuLean.Algorithms.Flubble.Indexed`
 
-Key semantic-equivalence names:
+Semantic-equivalence names:
 
 + `PovuLean.Algorithms.Flubble.lookup_indexedEntriesFrom_eq_firstSameClass?`
 + `PovuLean.Algorithms.Flubble.indexedBoundaryAt?_eq_closeAfterGap?`
@@ -209,18 +175,18 @@ Key semantic-equivalence names:
 + `PovuLean.Algorithms.Flubble.detectFlubblesIndexed_iff_isFlubbleBoundary`
 + `PovuLean.Algorithms.Flubble.detectFlubblesIndexed_noDuplicates`
 
-Key operation-count names:
+Operation-count names:
 
 + `PovuLean.Algorithms.Flubble.scanStackIndexedAux_visited`
 + `PovuLean.Algorithms.Flubble.scanStackIndexedAux_lookups`
 + `PovuLean.Algorithms.Flubble.scanStackIndexedAux_updates`
 + `PovuLean.Algorithms.Flubble.detectStackIndexedRaw_one_lookup_and_update_per_candidate`
 
-These theorems justify replacing the reference scan by an indexed scan without
-changing the emitted boundaries, while exposing the per-candidate operation
-counts needed by the linear-time cost theorem.
+These theorems justify using the indexed scan as the fast detector: it returns
+exactly the same boundaries as the reference detector and exposes the
+one-lookup / one-update per-candidate accounting used by the cost theorem.
 
-== Hierarchy Correctness
+== Hierarchy Correctness And Size Bounds
 
 Module: `PovuLean.Algorithms.FlubbleTree.Spec`
 
@@ -245,11 +211,11 @@ Key names:
 + `PovuLean.Algorithms.FlubbleTree.buildHierarchy_nodes_length_le_supportedInput_graph_edgeCount`
 + `PovuLean.Algorithms.FlubbleTree.buildHierarchy_flatMetadataSlots_le_supportedInput_graph_edgeCount_twice`
 
-These theorems prove that supported laminar boundary spans produce the canonical
-flat hierarchy and that hierarchy output metadata is linear in the detector
-output and, under supported input, graph edge count.
+These theorems prove canonical hierarchy construction for supported laminar
+boundary spans, and prove the hierarchy output-size bounds used by the
+linear-time statement.
 
-== Cost And Linearity Theorems
+== Cost And Composition Theorems
 
 Module: `PovuLean.Complexity.Flubble`
 
@@ -265,44 +231,24 @@ Key names:
 + `PovuLean.Complexity.Flubble.boundaryOutputSize_linear_in_candidateStack`
 + `PovuLean.Complexity.Flubble.hierarchyConstructionOutputSize_linear_in_candidateStack`
 + `PovuLean.Complexity.Flubble.conditional_extraction_linear_in_candidateStack`
++ `PovuLean.Complexity.Flubble.indexed_flubble_stage_linear_in_candidateStack`
++ `PovuLean.Complexity.Flubble.indexed_flubble_stage_linear_in_graphSize`
 + `PovuLean.Complexity.Flubble.DecompositionStageCosts.total_linear_with`
 
-Module: `PovuLean.Complexity.Decomposition`
+The two `indexed_flubble_stage_*` theorems are the short algorithms-facing
+entry points. They package the indexed operation-count theorem, output-size
+bounds, hierarchy-size bounds, and candidate-stack size composition.
 
-Key names:
+= Full Pipeline Perspective
 
-+ `PovuLean.Complexity.Decomposition.SemanticDecomposeIntermediateSizes`
-+ `PovuLean.Complexity.Decomposition.SemanticDecomposeIntermediateSizeBounds`
-+ `PovuLean.Complexity.Decomposition.SemanticDecomposePipelineCosts`
-+ `PovuLean.Complexity.Decomposition.SemanticDecomposeStageContracts`
-+ `PovuLean.Complexity.Decomposition.conditional_semantic_decompose_linear`
-
-The `conditional_semantic_decompose_linear` theorem composes stage linearity,
-intermediate-size bounds, flubble extraction linearity, and semantic VCF
-correctness into one proof-side statement.
-
-== Semantic Pipeline Result
-
-Module: `PovuLean.Pipeline`
-
-Key name:
-
-+ `PovuLean.Pipeline.semanticGfaToVcf_correct`
-
-This theorem is the semantic GFA-to-VCF join point. Given accepted GFA input,
-supported flubble input, correct cycle classes, correct hairpin scan, supported
-hierarchy input, and semantic variant-call witnesses, emitted VCF records are
-correct.
-
-= Conditional Linear-Time Theorem
-
-The strongest current full-pipeline theorem is:
+The complete semantic decomposition theorem is:
 
 ```lean
 PovuLean.Complexity.Decomposition.conditional_semantic_decompose_linear
 ```
 
-Its conclusion is:
+Its conclusion combines a proof-side linear cost bound with semantic VCF
+correctness:
 
 ```lean
 LinearBound costs.total sizes.inputGraphSize
@@ -312,44 +258,33 @@ LinearBound costs.total sizes.inputGraphSize
        (VCF.emitRecords calls)
 ```
 
-The theorem receives these stage contracts through
-`SemanticDecomposeStageContracts`:
+The theorem uses `SemanticDecomposeIntermediateSizeBounds` to compose all
+intermediate measures back to the graph size. The candidate-stack bound in that
+record is the bridge from the flubble-stage theorem to the whole graph-size
+measure.
 
-+ `componentDecompositionLinear`,
-+ `tipDummyAugmentationLinear`,
-+ `traversalFrameConstructionLinear`,
-+ `cycleClassAssignmentLinear`,
-+ `hairpinScanLinear`, and
-+ `flubbleExtractionAndHierarchy`.
+Five upstream full-pipeline stage linearities are textbook linear algorithmic
+facts but are not mechanized in Lean yet:
 
-It also receives `SemanticDecomposeIntermediateSizeBounds`, which is the proof
-that component graph size, augmented graph size, traversal-frame size,
-candidate-stack size, and hairpin-boundary count are each linear in the input
-graph-size measure.
++ component decomposition,
++ tip/dummy augmentation,
++ traversal-frame construction,
++ cycle-class assignment, and
++ hairpin scan.
 
-The flubble portion is delegated to:
+They are standard graph/tree traversal or stack/indexing facts under the same
+word-RAM model, but the current Lean theorem accepts them as named stage
+contracts. This is a mechanization boundary, not evidence of an algorithmic
+unknown. The separate deployed-code refinement question is whether current C++,
+Rust, parser, export, and serialization paths instantiate the semantic
+witnesses and cost slots for arbitrary supported inputs.
 
-```lean
-PovuLean.Complexity.Flubble.conditional_extraction_linear_in_candidateStack
-```
+= Implementation Conformance Context
 
-That theorem assumes:
+The implementation material validates and audits conformance to the algorithmic
+model. It is not the main theorem.
 
-+ constant class-index lookup/update costs,
-+ exact lookup/update counts from the indexed detector theorem,
-+ scan bookkeeping linear in the candidate stack,
-+ boundary emission linear in emitted boundaries,
-+ hierarchy construction linear in hierarchy output size, and
-+ supported laminar hierarchy input.
-
-Therefore the correct claim is: Lean proves conditional semantic linearity under
-named contracts. The incorrect claim would be: current arbitrary C++ povu
-executions have already been formally proved to run in linear time.
-
-= C++ Bridge And Conformance Evidence
-
-The implementation bridge is evidence, not a formal refinement theorem.
-Relevant documentation and surfaces are:
+Relevant documentation and surfaces:
 
 + `docs/lean4-proof/bridge_cost_instrumentation.md`
 + `docs/lean4-proof/bridge_povu_implementation.md`
@@ -361,11 +296,10 @@ Relevant documentation and surfaces are:
 + `povu-rs/src/native_gfa.rs`
 + `povu-rs/tests/native_gfa_vcf_tests.rs`
 
-== Cost Instrumentation
+== C++ Stage Counters
 
-The opt-in environment variable `POVU_STAGE_COST_TRACE=1` emits stage-counter
-lines with stable `contract=` identifiers. These identifiers align implementation
-trace points with the Lean stage slots:
+`POVU_STAGE_COST_TRACE=1` emits stage-counter lines with stable `contract=`
+identifiers aligned with Lean stage slots:
 
 + `componentDecomposition`
 + `tipDummyAugmentation`
@@ -374,25 +308,18 @@ trace points with the Lean stage slots:
 + `boundaryEmission`
 + `hierarchyConstruction`
 
-The counters report calls, size proxies, outputs, and elapsed nanoseconds. They
-are useful bridge artifacts, but elapsed time and container behavior are not
-Lean cost witnesses.
+These counters are useful for audits and regression checks. They are not Lean
+proof objects and they do not by themselves prove a C++ runtime theorem.
 
-== Flubble Export And Structure Evidence
+== Rust And Fixture Evidence
 
-The C++ conformance path exposes canonical structure information through
-`--structure-export` in the CLI and `src/mto/to_structure_export.cpp`. The
-bridge documentation describes exported stack/class/hierarchy information used
-by fixture-level checks. The Rust semantic port in `povu-rs/src/native_gfa.rs`
-contains `detect_flubble_stack`, with tests for close-after-gap,
-first-later-same-class, canonicalization, and duplicate removal.
+The Rust semantic port in `povu-rs/src/native_gfa.rs` contains
+`detect_flubble_stack`, with tests for close-after-gap,
+first-later-same-class, canonicalization, and duplicate removal. The C++
+conformance path exposes stack, class, and hierarchy information through
+`--structure-export` and `src/mto/to_structure_export.cpp`.
 
-This is conformance evidence over maintained fixtures and port-level tests. It
-does not quantify over all supported graphs.
-
-== Checked Translator
-
-The checked-translator artifact is produced by the Lean conformance harness:
+The Lean conformance harness can produce checked-translator artifacts such as:
 
 ```bash
 cargo run --manifest-path tests/lean4_conformance/Cargo.toml -- \
@@ -400,84 +327,80 @@ cargo run --manifest-path tests/lean4_conformance/Cargo.toml -- \
   --checked-translator build/lean4-conformance/minimal-substitution-witness.json
 ```
 
-Its schema is `povu.lean4.checked-translator.v1`. It records the fixture,
-current povu command, Lean theorem boundary, trusted assumptions, exported C++
-structure, Lean reference structure, and normalized semantic VCF witness. The
-artifact targets `PovuLean.Pipeline.semanticGfaToVcf_correct`; it does not
-synthesize a Lean proof term.
+These artifacts connect selected fixtures to the semantic theorem boundary
+`PovuLean.Pipeline.semanticGfaToVcf_correct`. They provide finite conformance
+evidence for maintained examples; they do not synthesize a Lean proof term for
+all current implementation executions.
 
-== Cycle Class Checker
+== Cycle-Class And Hierarchy Audits
 
-The bridge audit records a direct fixture checker for C++ class ids against an
-independent cycle-equivalence oracle. It tests both directions of the Lean
-`CycleClassAssignment.Correct` obligation on selected small supported structure
-fixtures:
+The cycle-class checker compares exported C++ class ids against an independent
+fixture-sized cycle-equivalence oracle in both directions: same class id implies
+same oracle group, and same oracle group implies same class id. This targets
+the nontrivial `CycleClassAssignment.Correct` obligation.
 
-+ same exported C++ class id implies same oracle group, and
-+ same oracle group implies same exported C++ class id.
+The hierarchy span checker reconstructs flubble boundaries from exported stack
+entries using the Lean first-later same-class nonempty-gap rule, computes stack
+spans, derives nearest strict span-containment parents, and compares those
+parents with exported PVST parent edges.
 
-This is strong finite conformance evidence. It is not a theorem for arbitrary
-supported inputs.
+Both checks are valuable conformance evidence. They remain fixture-level audits,
+not arbitrary-input refinement proofs.
 
-== Hierarchy Span Checker
+= Scope Summary
 
-The bridge audit also records a PVST parent-edge checker. It reconstructs
-flubble boundaries from exported stack entries using the Lean first-later
-same-class nonempty-gap rule, computes stack spans, derives nearest strict
-span-containment parents, and compares them with exported PVST parents.
-
-Again, the result is fixture-level conformance evidence for exported stacks,
-not a general proof of C++ hierarchy construction.
-
-= Remaining Open Gap
-
-A full arbitrary C++ runtime refinement proof still needs a machine-checkable
-bridge from implementation executions to the Lean witnesses and cost contracts.
-The missing items are:
-
-+ parser refinement from accepted byte-level GFA records to Lean
-  `GFA.Document.Accepted` and `GFA.Document.toGraph`;
-+ component-decomposition refinement showing C++ components preserve Lean graph
-  semantics and have total size linear in the input;
-+ traversal-frame refinement exporting the C++ spanning tree, tip/dummy
-  augmentation, ordered tree links, real/black flags, and candidate-stack order
-  as a Lean `TraversalFrame`;
-+ class refinement proving C++ bracket classes satisfy
-  `CycleClassAssignment.Correct` for arbitrary supported inputs;
-+ extraction refinement proving C++ `next_seen` and flubble emission match Lean
-  `closeAfterGap?`, `firstSameClass?`, `Boundary.ordered`, and
-  `detectFlubbles`;
-+ hierarchy refinement proving C++ PVST parent edges match Lean nearest strict
-  stack-span containment for arbitrary supported laminar inputs;
-+ a concrete runtime cost model for loops, allocations, serialization, FFI, and
-  container operations such as `std::vector`, `std::map`,
-  `std::unordered_map`, `std::unordered_set`, `std::set`, `std::list`, Rust
-  collections, and serialization buffers; and
-+ proof that observed or exported stage counters instantiate the Lean
-  `StageCost`, `ExtractionPipelineCosts`, and
-  `SemanticDecomposePipelineCosts` records.
-
-Until those obligations are discharged, the precise project status is:
+The algorithm theorem is:
 
 #quote[
-Lean proves semantic detector correctness, hierarchy correctness, indexed
-detector equivalence, output-size bounds, and conditional linear-time
-composition. Current povu has bridge artifacts and conformance evidence for
-selected implementation surfaces. A formal arbitrary C++ runtime refinement
-proof remains open.
+Under the standard word-RAM convention for constant-cost class-index
+lookup/update, the indexed flubble detector/extractor and flat hierarchy
+construction are linear in the candidate stack. Once the candidate-stack size
+is linearly bounded by `|V| + edgeCount`, the flubble stage is linear in graph
+size.
 ]
+
+The Lean mechanization currently checks:
+
++ flubble boundary semantics,
++ detector soundness, completeness, canonicalization, and duplicate freedom,
++ indexed detector equivalence to the reference detector,
++ exact indexed scan lookup/update counts,
++ detector and hierarchy output-size bounds,
++ the candidate-stack and graph-size linearity corollaries for the flubble
+  stage, and
++ conditional full semantic decomposition composition.
+
+The implementation evidence currently covers:
+
++ C++ stage counters and structure export,
++ fixture-level C++ class and hierarchy audits,
++ Rust semantic detector tests, and
++ checked-translator artifacts for selected semantic VCF fixtures.
+
+The deployed-code refinement scope still includes parser refinement, arbitrary
+C++ traversal-frame and class-assignment witnesses, arbitrary hierarchy
+refinement, serialization/FFI accounting, and a concrete runtime cost model for
+the implementation containers. Those are implementation-refinement obligations,
+not caveats to the standard algorithms statement above.
 
 = Build And Reference Check
 
-The rendered PDF for this source is a generated build artifact and should be
-written outside the repository, for example:
+The rendered PDF for this source is a generated build artifact. Render for
+validation to an output path outside git:
 
-```bash
-typst compile docs/lean4-proof/flubble_linear_proof.typ /tmp/flubble_linear_proof.pdf
+```text
+/tmp/flubble_linear_proof.pdf
 ```
 
-The Lean names listed above are intended to be checked with a temporary
-`#check` file importing:
+Build command:
+
+```bash
+typst compile docs/lean4-proof/flubble_linear_proof.typ \
+  /tmp/flubble_linear_proof.pdf
+```
+
+The Lean names listed in this document are checked by `lake build`. A focused
+temporary `#check` file may import:
 
 ```lean
 import PovuLean.Algorithms.Flubble.Correctness

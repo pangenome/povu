@@ -14,8 +14,12 @@ implementation.
 ## Bottom Line
 
 The batch proves the semantic flubble detector, hierarchy output-size bounds,
-indexed-detector equivalence, and conditional extraction/decomposition cost
-composition in Lean.  The full decomposition theorem is conditional on named
+indexed-detector equivalence, exact indexed lookup/update counts, and
+flubble-stage linearity in Lean.  The algorithms-facing theorem is that the
+indexed flubble detector/extractor plus flat hierarchy construction is linear
+in the candidate stack under the standard word-RAM class-index convention; once
+the candidate stack is bounded linearly by graph size, the stage is linear in
+`|V| + edgeCount`.  The full decomposition theorem is conditional on named
 stage contracts and intermediate-size bounds.  The current C++ and Rust
 implementations are validated against fixture and port-level conformance tests,
 but the project must still build a concrete cost model plus a checked bridge
@@ -50,7 +54,7 @@ implementation until a later bridge supplies those contracts for that code.
 | Indexed operation linearity | `PovuLean.Complexity.Flubble` (`PovuLean/Complexity/Flubble.lean`) | `IndexedDetectorOperationContract.operationCost_linear_in_candidates` | Requires a `ClassIndexContract` with constant lookup/update costs and exact lookup/update counts. |
 | Output-size reuse | `PovuLean.Complexity.Flubble` (`PovuLean/Complexity/Flubble.lean`) | `OutputSizeReuseContract.flubbles_linear_in_input`, `OutputSizeReuseContract.hierarchy_linear_in_input` | Requires output-size bounds and an output-linear-in-input hypothesis. |
 | Boundary and hierarchy output-size composition | `PovuLean.Complexity.Flubble` (`PovuLean/Complexity/Flubble.lean`) | `boundaryOutputSize_linear_in_candidateStack`, `hierarchyConstructionOutputSize_linear_in_candidateStack` | The boundary result uses the indexed detector count bound.  The hierarchy result additionally requires `FlubbleTree.SupportedHierarchyInput`. |
-| Conditional extraction and hierarchy linearity | `PovuLean.Complexity.Flubble` (`PovuLean/Complexity/Flubble.lean`) | `ExtractionPipelineCosts`, `ConditionalExtractionCostContract`, `conditional_extraction_linear_in_candidateStack` | Requires constant-time class-index operations, scan bookkeeping linear in candidates, boundary emission linear in emitted boundaries, hierarchy construction linear in hierarchy output size, and supported hierarchy input.  The conclusion is linear in `candidateStack` length. |
+| Indexed flubble-stage linearity | `PovuLean.Complexity.Flubble` (`PovuLean/Complexity/Flubble.lean`) | `ExtractionPipelineCosts`, `ConditionalExtractionCostContract`, `conditional_extraction_linear_in_candidateStack`, `indexed_flubble_stage_linear_in_candidateStack`, `indexed_flubble_stage_linear_in_graphSize` | Requires constant-time class-index operations, scan bookkeeping linear in candidates, boundary emission linear in emitted boundaries, hierarchy construction linear in hierarchy output size, supported hierarchy input, and, for the graph-size corollary, a candidate-stack linear-size bound.  The conclusion is linear in `candidateStack` length and then in graph size once that size bound is supplied. |
 | Abstract decomposition-stage arithmetic | `PovuLean.Complexity.Flubble` (`PovuLean/Complexity/Flubble.lean`) | `DecompositionStageCosts.detectorPrefix_linear_with`, `DecompositionStageCosts.hierarchySuffix_linear_with`, `DecompositionStageCosts.total_linear_with` | Composes supplied per-stage linear bounds; does not supply those bounds for an implementation. |
 | Conditional full semantic decomposition | `PovuLean.Complexity.Decomposition` (`PovuLean/Complexity/Decomposition.lean`) | `SemanticDecomposeIntermediateSizes`, `SemanticDecomposeIntermediateSizeBounds`, `SemanticDecomposePipelineCosts`, `SemanticDecomposeStageContracts`, `conditional_semantic_decompose_linear` | Requires accepted semantic GFA, supported flubble/hierarchy/hairpin witnesses, semantic call witnesses, intermediate-size bounds, and linear contracts for component decomposition, tip/dummy augmentation, traversal-frame construction, cycle-class assignment, hairpin scan, and flubble extraction/hierarchy.  The conclusion is a proof-side `LinearBound costs.total sizes.inputGraphSize` plus semantic VCF correctness. |
 
@@ -58,7 +62,10 @@ The external stage names required by
 `PovuLean.Complexity.Decomposition.conditional_semantic_decompose_linear` are:
 `componentDecompositionLinear`, `tipDummyAugmentationLinear`,
 `traversalFrameConstructionLinear`, `cycleClassAssignmentLinear`,
-`hairpinScanLinear`, and `flubbleExtractionAndHierarchy`.
+`hairpinScanLinear`, and `flubbleExtractionAndHierarchy`.  The first five are
+textbook-linear graph/tree traversal or stack/indexing facts that are not yet
+mechanized in Lean.  The sixth is discharged by the indexed flubble-stage
+theorem above.
 
 ## Validated By C++/Rust Conformance Tests
 
