@@ -1,6 +1,7 @@
 import PovuLean.Core
 import PovuLean.GFA
 import PovuLean.Algorithms
+import PovuLean.Complexity
 import PovuLean.VCF
 import PovuLean.Pipeline
 
