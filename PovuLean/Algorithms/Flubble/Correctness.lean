@@ -224,6 +224,21 @@ theorem detectFlubbles_correct {g : Graph} {frame : TraversalFrame g}
   , fun _ hBoundary => detectFlubbles_complete hBoundary
   , detectFlubbles_canonical_noDuplicates frame classes ⟩
 
+/--
+Canonical flubble count bound for supported core graph inputs.
+
+This is the paper-facing linear count theorem for the current Lean detector
+surface: the deduplicated list of canonical `IsFlubbleBoundary` witnesses
+emitted by `detectFlubbles` has length at most the graph edge count.  It does
+not count all pairwise cycle-equivalent edge pairs.
+-/
+theorem flubble_count_le_numEdges {g : Graph} {frame : TraversalFrame g}
+    {classes : CycleClassAssignment g}
+    (hInput : SupportedInput g frame)
+    (_hClasses : CycleClassAssignment.Correct frame classes) :
+    (detectFlubbles frame classes).length ≤ g.edgeCount :=
+  detectFlubbles_length_le_supportedInput_graph_edgeCount classes hInput
+
 /-- GFA semantic-input corollary of the core correctness theorem. -/
 theorem detectFlubbles_correct_for_gfa {doc : GFA.Document}
     {accepted : doc.Accepted} {frame : TraversalFrame doc.toGraph}

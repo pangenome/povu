@@ -98,8 +98,9 @@ Proven in Lean:
 - VCF semantic records derived from verified structures are well formed and
   faithful to reference paths, allele slices, genotypes, coordinates, and
   supported INFO fields;
-- output-size bounds, including at most `|E|` flubbles under the final
-  supported assumptions.
+- output-size bounds, including `flubble_count_le_numEdges`: the canonical
+  `detectFlubbles` output for a supported traversal frame and certified
+  cycle-class assignment is bounded by graph `edgeCount`.
 
 Tested externally:
 
@@ -641,7 +642,8 @@ Lean should prove structural bounds first:
 
 - connected-component output partitions are bounded by input vertices/edges;
 - tip/dummy/virtual augmentation adds bounded edges under stated rules;
-- detected flubble count is at most `|E|` for the final graph size measure;
+- detected canonical flubble count is at most `|E|` for `detectFlubbles` under
+  supported traversal-frame and cycle-class-correctness hypotheses;
 - flubble forest node/edge counts are linear in the number of real flubbles and
   therefore in input edges under the count theorem;
 - semantic VCF record counts are bounded by the chosen RoV/reference/allele
@@ -659,8 +661,9 @@ linear-time proof requires:
 
 Therefore:
 
-- prove `flubble_count_le_numEdges` and flubble-forest output-size bounds in
-  the first algorithm wave;
+- treat `flubble_count_le_numEdges` as the proved canonical detector count
+  theorem, and keep graph-only `flubbles G` or forest output-size strengthenings
+  as separate obligations;
 - track executable cost-model theorems such as
   `buildFlubbleForest_linear_time` as later optional obligations;
 - validate current production performance externally with benchmarks and

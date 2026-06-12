@@ -615,13 +615,21 @@ Paper claim:
 
 - In a biedged graph `G = (V, E)`, there are at most `|E|` flubbles.
 
-Candidate Lean theorem:
+Lean detector-surface theorem:
 
 ```lean
-theorem flubble_count_le_numEdges
-    (G : BiedgedGraph) (hG : PovuInputInvariant G) :
-    (flubbles G).card <= G.edgeCount
+theorem PovuLean.Algorithms.Flubble.flubble_count_le_numEdges
+    {g : Graph} {frame : TraversalFrame g}
+    {classes : CycleClassAssignment g}
+    (hInput : SupportedInput g frame)
+    (hClasses : CycleClassAssignment.Correct frame classes) :
+    (detectFlubbles frame classes).length <= g.edgeCount
 ```
+
+This is intentionally stated over the existing canonical detector list:
+`detectFlubbles` emits deduplicated canonical `IsFlubbleBoundary` values for a
+supported traversal frame and certified cycle-class assignment.  It is not a
+graph-only count of all pairwise cycle-equivalent edge pairs.
 
 Likely proof dependencies:
 
