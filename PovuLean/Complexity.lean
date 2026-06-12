@@ -1,5 +1,6 @@
 import PovuLean.Complexity.Basic
 import PovuLean.Complexity.Flubble
+import PovuLean.Complexity.Decomposition
 
 /-!
 Cost and asymptotic proof vocabulary for povu Lean modules.

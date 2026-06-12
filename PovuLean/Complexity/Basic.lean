@@ -80,6 +80,25 @@ theorem reuse_output_size {cost outputSize n c k : Nat}
     LinearBoundWith cost n c k :=
   trans_cost hCost hOutput
 
+/--
+Compose a linear cost bound through a linear intermediate-size bound.
+
+If a stage is linear in an intermediate measure `m`, and `m` is linear in the
+input measure `n`, then the stage is linear in `n`.
+-/
+theorem compose_size {cost m n c k cm km : Nat}
+    (hCost : LinearBoundWith cost m c k)
+    (hSize : LinearBoundWith m n cm km) :
+    LinearBoundWith cost n (c * cm) (c * km + k) := by
+  unfold LinearBoundWith at hCost hSize ⊢
+  calc
+    cost ≤ c * m + k := hCost
+    _ ≤ c * (cm * n + km) + k :=
+      Nat.add_le_add_right (Nat.mul_le_mul_left c hSize) k
+    _ = (c * cm) * n + (c * km + k) := by
+      rw [Nat.mul_add, Nat.mul_assoc]
+      omega
+
 end LinearBoundWith
 
 namespace LinearBound
@@ -117,6 +136,17 @@ theorem reuse_output_size {cost outputSize n : Nat}
     (hOutput : LinearBound outputSize n) :
     LinearBound cost n :=
   trans_cost hCost hOutput
+
+/--
+Existential version of `LinearBoundWith.compose_size`.
+-/
+theorem compose_size {cost m n : Nat}
+    (hCost : LinearBound cost m)
+    (hSize : LinearBound m n) :
+    LinearBound cost n := by
+  rcases hCost with ⟨c, k, hCost⟩
+  rcases hSize with ⟨cm, km, hSize⟩
+  exact ⟨c * cm, c * km + k, LinearBoundWith.compose_size hCost hSize⟩
 
 end LinearBound
 
