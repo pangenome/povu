@@ -124,6 +124,30 @@ structure ClassIndexContract where
   updateConstant : ∃ k, updateCost ≤ k
 
 /--
+Per-candidate operation contract for the indexed detector.
+
+`visitedCandidates` is the candidate-stack length consumed by the scan.
+`lookupCount` and `updateCount` are stated separately so a concrete map model can
+plug in its lookup/update costs while reusing the detector's exact one-lookup
+and one-update-per-candidate theorem.
+-/
+structure IndexedDetectorOperationContract where
+  visitedCandidates : Nat
+  lookupCount : Nat
+  updateCount : Nat
+  lookupCount_eq : lookupCount = visitedCandidates
+  updateCount_eq : updateCount = visitedCandidates
+  classIndex : ClassIndexContract
+
+namespace IndexedDetectorOperationContract
+
+def operationCost (contract : IndexedDetectorOperationContract) : Nat :=
+  contract.lookupCount * contract.classIndex.lookupCost
+    + contract.updateCount * contract.classIndex.updateCost
+
+end IndexedDetectorOperationContract
+
+/--
 Bounds connecting traversal-frame materialization to the input graph.
 
 These fields are assumptions to be passed to future theorems, not global facts

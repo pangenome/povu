@@ -1,6 +1,7 @@
 import PovuLean.Algorithms.Flubble.InputInvariant
 import PovuLean.Algorithms.Flubble.Spec
 import PovuLean.Algorithms.Flubble.Detect
+import PovuLean.Algorithms.Flubble.Indexed
 import PovuLean.Algorithms.Flubble.Correctness
 import PovuLean.Algorithms.Flubble.Examples
 
